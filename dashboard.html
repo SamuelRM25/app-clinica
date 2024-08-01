@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Clínica Médica</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        .container {
+            display: flex;
+            height: 100%;
+        }
+        #sidebar {
+            background-color: #f8f9fa;
+            width: 250px;
+            transition: width 0.3s;
+            overflow-x: hidden;
+        }
+        #sidebar.collapsed {
+            width: 60px;
+        }
+        #content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .menu-item {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .menu-item:hover {
+            background-color: #e9ecef;
+        }
+        .menu-item i {
+            margin-right: 15px;
+            width: 20px;
+        }
+        #sidebar.collapsed .menu-text {
+            display: none;
+        }
+        #toggle-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            max-width: 600px;
+        }
+        label, input, select, textarea {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        input[type="submit"], button {
+            width: auto;
+        }
+        .btn {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar">
+            <button id="toggle-btn">☰</button>
+            <div class="menu-item" data-section="citas">
+                <i class="far fa-calendar-alt"></i>
+                <span class="menu-text">Citas</span>
+            </div>
+            <div class="menu-item" data-section="programacion">
+                <i class="fas fa-calendar-plus"></i>
+                <span class="menu-text">Programación</span>
+            </div>
+            <div class="menu-item" data-section="doctores">
+                <i class="fas fa-user-md"></i>
+                <span class="menu-text">Doctores</span>
+            </div>
+            <div class="menu-item" data-section="nuevo-expediente">
+                <i class="fas fa-folder-plus"></i>
+                <span class="menu-text">Nuevo Expediente</span>
+            </div>
+            <div class="menu-item" data-section="historial-clinico">
+                <i class="fas fa-history"></i>
+                <span class="menu-text">Historial Clínico</span>
+            </div>
+        </div>
+
+        <div id="content">
+            <div id="citas" class="section">
+                <h2>Citas del Día</h2>
+                <table id="citas-table">
+                    <tr>
+                        <th>Hora</th>
+                        <th>Paciente</th>
+                        <th>Doctor</th>
+                        <th>Acción</th>
+                    </tr>
+                    <tr>
+                        <td>09:00</td>
+                        <td>Juan Pérez</td>
+                        <td>Dra. Rodríguez</td>
+                        <td><button class="btn expediente-btn" data-paciente="Juan Pérez">Ver Expediente</button></td>
+                    </tr>
+                    <tr>
+                        <td>10:30</td>
+                        <td>María González</td>
+                        <td>Dr. Sánchez</td>
+                        <td><button class="btn expediente-btn" data-paciente="María González">Ver Expediente</button></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="programacion" class="section">
+                <h2>Programación de Citas</h2>
+                <form>
+                    <label for="fecha">Fecha:</label>
+                    <input type="date" id="fecha" name="fecha">
+                    <label for="hora">Hora:</label>
+                    <input type="time" id="hora" name="hora">
+                    <label for="paciente">Paciente:</label>
+                    <input type="text" id="paciente" name="paciente">
+                    <label for="doctor">Doctor:</label>
+                    <select id="doctor" name="doctor">
+                        <option value="rodriguez">Dra. Rodríguez</option>
+                        <option value="sanchez">Dr. Sánchez</option>
+                    </select>
+                    <input type="submit" value="Programar Cita">
+                </form>
+            </div>
+
+            <div id="doctores" class="section">
+                <h2>Gestión de Doctores</h2>
+                <form id="doctores-form">
+                    <label for="nombre-doctor">Nombre del Doctor:</label>
+                    <input type="text" id="nombre-doctor" name="nombre-doctor">
+                    <label for="especialidad">Especialidad:</label>
+                    <input type="text" id="especialidad" name="especialidad">
+                    <input type="submit" value="Agregar Doctor">
+                </form>
+                <h3>Lista de Doctores</h3>
+                <table id="tabla-doctores">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Especialidad</th>
+                        <th>Acción</th>
+                    </tr>
+                    <tr>
+                        <td>Dra. Rodríguez</td>
+                        <td>Cardiología</td>
+                        <td><button class="btn eliminar-doctor-btn">Eliminar</button></td>
+                    </tr>
+                    <tr>
+                        <td>Dr. Sánchez</td>
+                        <td>Pediatría</td>
+                        <td><button class="btn eliminar-doctor-btn">Eliminar</button></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="nuevo-expediente" class="section">
+                <h2>Nuevo Expediente</h2>
+                <form id="expediente-form">
+                    <label for="num-expediente">Número de expediente clínico:</label>
+                    <input type="text" id="num-expediente" name="num-expediente">
+                    <label for="nombre-paciente">Nombre del paciente:</label>
+                    <input type="text" id="nombre-paciente" name="nombre-paciente">
+                    <label for="apellidos-paciente">Apellidos del paciente:</label>
+                    <input type="text" id="apellidos-paciente" name="apellidos-paciente">
+                    <label for="edad">Edad:</label>
+                    <input type="number" id="edad" name="edad">
+                    <label for="fecha-nacimiento">Fecha de nacimiento:</label>
+                    <input type="date" id="fecha-nacimiento" name="fecha-nacimiento">
+                    <label for="sexo">Sexo:</label>
+                    <select id="sexo" name="sexo">
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                    <label for="ocupacion">Ocupación:</label>
+                    <input type="text" id="ocupacion" name="ocupacion">
+                    <label for="estado-civil">Estado civil:</label>
+                    <select id="estado-civil" name="estado-civil">
+                        <option value="soltero">Soltero/a</option>
+                        <option value="casado">Casado/a</option>
+                        <option value="divorciado">Divorciado/a</option>
+                        <option value="viudo">Viudo/a</option>
+                    </select>
+                    <label for="nacionalidad">Nacionalidad:</label>
+                    <input type="text" id="nacionalidad" name="nacionalidad">
+                    <label for="tipo-sangre">Tipo de sangre:</label>
+                    <select id="tipo-sangre" name="tipo-sangre">
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                    <label for="telefono">Teléfono:</label>
+                    <input type="tel" id="telefono" name="telefono">
+                    <label for="email">Correo electrónico:</label>
+                    <input type="email" id="email" name="email">
+                    <label for="motivo-consulta">Motivo de consulta:</label>
+                    <textarea id="motivo-consulta" name="motivo-consulta" rows="4"></textarea>
+                    <input type="submit" value="Guardar Expediente">
+                </form>
+            </div>
+
+            <div id="historial-clinico" class="section">
+                <h2>Historial Clínico</h2>
+                <table id="historial-table">
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Fecha de Consulta</th>
+                        <th>Diagnóstico</th>
+                        <th>Acción</th>
+                    </tr>
+                    <tr>
+                        <td>Juan Pérez</td>
+                        <td>2023-07-15</td>
+                        <td>Gripe estacional</td>
+                        <td><button class="btn expediente-btn" data-paciente="Juan Pérez">Ver Expediente</button></td>
+                    </tr>
+                    <tr>
+                        <td>María González</td>
+                        <td>2023-07-10</td>
+                        <td>Revisión anual</td>
+                        <td><button class="btn expediente-btn" data-paciente="María González">Ver Expediente</button></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-btn');
+        const menuItems = document.querySelectorAll('.menu-item');
+        const sections = document.querySelectorAll('.section');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionName = item.getAttribute('data-section');
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === sectionName) {
+                        section.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // Activar la primera sección por defecto
+        sections[0].classList.add('active');
+
+        // Manejar clics en los botones de expediente
+        document.querySelectorAll('.expediente-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const paciente = e.target.getAttribute('data-paciente');
+                alert(`Abriendo expediente de: ${paciente}`);
+                // Aquí se puede agregar lógica para mostrar el expediente del paciente
+            });
+        });
+
+        // Manejar el formulario de doctores
+        document.getElementById('doctores-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('nombre-doctor').value;
+            const especialidad = document.getElementById('especialidad').value;
+            const tablaDoctores = document.getElementById('tabla-doctores');
+            const nuevaFila = tablaDoctores.insertRow(-1);
+            nuevaFila.innerHTML = `
+                <td>${nombre}</td>
+                <td>${especialidad}</td>
+                <td><button class="btn eliminar-doctor-btn">Eliminar</button></td>
+            `;
+            e.target.reset();
+        });
+
+        // Manejar la eliminación de doctores
+        document.getElementById('tabla-doctores').addEventListener('click', (e) => {
+            if (e.target.classList.contains('eliminar-doctor-btn')) {
+                if (confirm('¿Está seguro de que desea eliminar este doctor?')) {
+                    e.target.closest('tr').remove();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

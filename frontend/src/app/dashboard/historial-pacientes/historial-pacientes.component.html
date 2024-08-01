@@ -1,0 +1,26 @@
+<div class="historial-pacientes-container">
+    <div class="historial-calendar">
+      <!-- Aquí irá el calendario -->
+      <h3>Calendario de Pacientes</h3>
+      <!-- Código para mostrar el calendario -->
+    </div>
+  
+    <h3>Historial de Pacientes</h3>
+    <table class="historial-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Fecha de Cita</th>
+          <th>Detalles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let paciente of historialPacientes">
+          <td>{{ paciente.nombre }}</td>
+          <td>{{ paciente.fechaCita | date }}</td>
+          <td><button (click)="verExpediente(paciente.id)">Ver Expediente</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  

@@ -1,0 +1,23 @@
+/* Estilos básicos para el módulo Inventario */
+
+/* Contenedor principal del módulo Inventario */
+.inventario-container {
+    padding: 20px;
+    background-color: #e9ecef;
+  }
+  
+  /* Tabla de inventario */
+  .inventario-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .inventario-table th, .inventario-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+  }
+  
+  .inventario-table th {
+    background-color: #f8f9fa;
+  }
+  

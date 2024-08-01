@@ -1,0 +1,35 @@
+/* Estilos básicos para el módulo Home */
+
+/* Contenedor principal del módulo Home */
+.home-container {
+    padding: 20px;
+    background-color: #f9f9f9;
+  }
+  
+  /* Tarjeta de estadísticas */
+  .stats-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  /* Títulos en las tarjetas */
+  .stats-card h3 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+  }
+  
+  /* Datos en las tarjetas */
+  .stats-card p {
+    font-size: 1.2em;
+    margin: 0;
+  }
+  
+  /* Estilos para los títulos de las secciones */
+  .home-section-title {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+  

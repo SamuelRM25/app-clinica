@@ -1,0 +1,48 @@
+/* Estilos básicos para el módulo Historia Clínica */
+
+/* Contenedor principal del módulo Historia Clínica */
+.historia-clinica-container {
+    padding: 20px;
+    background-color: #f5f5f5;
+  }
+  
+  /* Formulario de historia clínica */
+  .historia-clinica-form {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+  }
+  
+  .historia-clinica-form h3 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+  }
+  
+  .historia-clinica-form label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .historia-clinica-form textarea {
+    width: 100%;
+    height: 150px;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .historia-clinica-form button {
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .historia-clinica-form button:hover {
+    background-color: #218838;
+  }
+  
