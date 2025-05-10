@@ -1,0 +1,36 @@
+#calendar {
+    margin: 20px auto;
+    max-width: 1100px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fc-event {
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+}
+
+.fc-daygrid-event {
+    white-space: normal;
+}
+
+.fc-toolbar-title {
+    font-size: 1.5em !important;
+    font-weight: bold;
+}
+
+.fc-button {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.fc-button:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}

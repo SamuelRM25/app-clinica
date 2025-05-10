@@ -1,0 +1,127 @@
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #1e40af;
+    --background-color: #f1f5f9;
+}
+
+body {
+    background-color: var(--background-color);
+    min-height: 100vh;
+}
+
+/* Auth Pages */
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.auth-logo img {
+    height: 60px;
+    width: auto;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Dashboard */
+.dashboard-header {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Add these styles to your existing styles.css */
+
+.avatar {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+}
+
+.bg-light-primary {
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+.bg-light-success {
+    background-color: rgba(22, 163, 74, 0.1);
+}
+
+.bg-light-warning {
+    background-color: rgba(234, 179, 8, 0.1);
+}
+
+.bg-light-info {
+    background-color: rgba(6, 182, 212, 0.1);
+}
+
+.text-primary {
+    color: #2563eb !important;
+}
+
+.text-success {
+    color: #16a34a !important;
+}
+
+.text-warning {
+    color: #eab308 !important;
+}
+
+.text-info {
+    color: #06b6d4 !important;
+}
+
+.sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+}
+
+.main-content {
+    background-color: #f8fafc;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--primary-color);
+}
+
+.nav-pills .nav-link {
+    color: #4b5563;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: #f3f4f6;
+}
