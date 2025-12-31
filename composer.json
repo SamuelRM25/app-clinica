@@ -1,0 +1,11 @@
+{
+  "name": "app-clinica/php-app",
+  "description": "Aplicación PHP para Render",
+  "type": "project",
+  "require": {
+    "php": ">=7.4"
+  },
+  "scripts": {
+    "start": "php -S 0.0.0.0:$PORT index.php"
+  }
+}
