@@ -1,6 +1,0 @@
-.git
-.gitignore
-README.md
-Dockerfile
-docker-entrypoint.sh
-*.log
