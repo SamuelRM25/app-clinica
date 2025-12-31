@@ -1,8 +1,9 @@
 #!/bin/bash
-# Script para configurar Apache con el puerto dinámico de Render
+# docker-entrypoint.sh
 
-# Reemplazar el puerto 80 por el puerto asignado por Render
-sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf
+# Reemplazar $PORT en los archivos de configuración
+sed -i "s/\${PORT}/$PORT/g" /etc/apache2/ports.conf
+sed -i "s/\${PORT}/$PORT/g" /etc/apache2/sites-available/000-default.conf
 
-# Ejecutar Apache
+# Iniciar Apache
 exec apache2-foreground
