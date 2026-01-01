@@ -25,7 +25,8 @@ try {
             p.nombre, 
             p.apellido,
             p.fecha_nacimiento,
-            p.genero
+            p.genero,
+            p.telefono
         FROM historial_clinico h
         JOIN pacientes p ON h.id_paciente = p.id_paciente
         WHERE h.id_historial = ?
@@ -46,6 +47,12 @@ try {
     $fecha_consulta = new DateTime($receta['fecha_consulta']);
     $fecha_formateada = $fecha_consulta->format('d/m/Y');
     
+    // Información de la clínica
+    $clinica_nombre = "Centro Médico Herrera Sáenz";
+    $clinica_direccion = "7ma Av 7-25 Zona 1, Atrás del parqueo Hospital Antiguo. Huehuetenango";
+    $clinica_telefono = "(+502) 4195-8112";
+    $clinica_email = "contacto@herrerasaenz.com";
+    
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -56,287 +63,414 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro Médico Herrera Sáenz</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
     <style>
         :root {
-            --professional-blue: #1e3a8a;
-            --clinical-blue: #3b82f6;
-            --text-dark: #1f2937;
-            --text-muted: #6b7280;
+            /* Colores minimalistas */
+            --primary-color: #1e40af;
+            --secondary-color: #3b82f6;
+            --text-color: #333333;
+            --text-muted: #666666;
+            --border-color: #e0e0e0;
+            --background-color: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 40px;
-            background-color: #e5e7eb;
-            color: var(--text-dark);
-        }
-
-        .prescription-container {
-            width: 148mm;
-            min-height: 210mm;
-            margin: 0 auto;
-            background-color: white;
-            padding: 40px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            position: relative;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-
-        /* Branding Header */
-        .clinic-header {
+        
+        /* Contenedor de receta */
+        .prescription-container {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Cabecera */
+        .prescription-header {
+            padding: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            border-bottom: 2px solid var(--professional-blue);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
         }
-
-        .logo-section img {
-            height: 60px;
-            margin-bottom: 10px;
-        }
-
-        .clinic-name {
-            font-family: 'Playfair Display', serif;
-            color: var(--professional-blue);
-            font-size: 24px;
+        
+        .clinic-info h1 {
+            font-size: 32px;
             font-weight: 700;
-            margin: 0;
+            margin-bottom: 8px;
         }
-
-        .clinic-info {
+        
+        .clinic-details {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .prescription-meta {
             text-align: right;
-            font-size: 11px;
-            line-height: 1.5;
-            color: var(--text-muted);
         }
-
-        /* Patient Info Section */
-        .patient-section {
-            background-color: #f3f4f6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
+        
+        .prescription-meta strong {
+            font-size: 16px;
+        }
+        
+        /* Símbolo Rx de fondo */
+        .rx-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 200px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Información del paciente */
+        .patient-info {
+            padding: 30px 40px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .info-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
         }
-
+        
         .info-item {
             display: flex;
             flex-direction: column;
         }
-
+        
         .info-label {
-            font-size: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-muted);
             margin-bottom: 4px;
-            font-weight: 600;
         }
-
+        
         .info-value {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-dark);
-            line-height: 1.2;
+            font-size: 16px;
+            font-weight: 500;
         }
-
-        /* Rx Section */
-        .rx-section {
-            flex-grow: 1;
-            position: relative;
-            padding-left: 50px;
-            z-index: 1;
-        }
-
-        .rx-symbol {
-            position: absolute;
-            left: 0;
-            top: -5px;
-            font-size: 42px;
-            font-family: 'Playfair Display', serif;
-            color: var(--clinical-blue);
-            font-style: italic;
-            font-weight: 700;
-        }
-
+        
+        /* Cuerpo de la receta */
         .prescription-body {
-            font-size: 15px;
-            line-height: 1.8;
-            white-space: pre-wrap;
-            min-height: 350px;
-            padding-top: 5px;
+            padding: 50px 40px;
+            min-height: 400px;
         }
-
-        /* Footer / Signature */
+        
+        .prescription-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .prescription-title h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .prescription-content {
+            font-size: 18px;
+            line-height: 2;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            background-color: #f8fafc;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+        }
+        
+        /* Pie de página */
         .prescription-footer {
-            margin-top: auto;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 30px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            padding: 30px 40px;
+            border-top: 1px solid var(--border-color);
+            background-color: #f8fafc;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
             align-items: flex-end;
         }
-
+        
         .doctor-signature {
             text-align: center;
         }
-
+        
         .signature-line {
-            width: 200px;
+            width: 250px;
             height: 1px;
-            background-color: var(--text-dark);
+            background-color: var(--text-color);
             margin: 0 auto 10px;
         }
-
+        
         .doctor-name {
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 2px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
         }
-
+        
         .doctor-specialty {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        .document-meta {
+            text-align: right;
             font-size: 12px;
             color: var(--text-muted);
         }
-
-        .qr-placeholder {
-            text-align: right;
-            font-size: 9px;
-            color: #ccc;
-        }
-
-        /* Decorative Elements */
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 100px;
-            color: rgba(0, 0, 0, 0.03);
-            pointer-events: none;
-            z-index: 0;
-            font-weight: 900;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        /* Utility Buttons */
+        
+        /* Botones de acción */
         .action-buttons {
             position: fixed;
             bottom: 30px;
             right: 30px;
             display: flex;
             gap: 15px;
-            z-index: 100;
+            z-index: 1000;
         }
-
-        .btn {
+        
+        .action-btn {
             padding: 12px 24px;
-            border-radius: 50px;
+            border-radius: 8px;
             border: none;
+            font-weight: 500;
+            font-size: 14px;
             cursor: pointer;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
-
-        .btn:hover { transform: translateY(-2px); }
-        .btn-print { background-color: var(--clinical-blue); color: white; }
-        .btn-close { background-color: white; color: var(--text-dark); }
-
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-print {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-close {
+            background-color: #6b7280;
+            color: white;
+        }
+        
+        /* Estilos para impresión */
         @media print {
-            body { 
-                background-color: white; 
+            body {
                 padding: 0;
+                background: white;
             }
-            .prescription-container { 
+            
+            .prescription-container {
                 box-shadow: none;
-                padding: 0;
-                width: 148mm;
-                height: 210mm;
+                border-radius: 0;
+                width: 210mm;
+                height: 297mm;
             }
-            .action-buttons { display: none; }
+            
+            .action-buttons {
+                display: none;
+            }
+            
+            .prescription-header {
+                background: var(--primary-color) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .prescription-container {
+                width: 100%;
+                max-width: 400px;
+                margin: 20px;
+            }
+            
+            .prescription-header {
+                padding: 30px 20px;
+            }
+            
+            .clinic-info h1 {
+                font-size: 24px;
+            }
+            
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .prescription-body {
+                padding: 30px 20px;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .action-buttons {
+                bottom: 20px;
+                right: 20px;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="prescription-container">
-        <div class="watermark">CMSILOE</div>
+        <!-- Marca de agua -->
+        <div class="rx-watermark">Rx</div>
         
-        <header class="clinic-header" style="z-index: 1; position: relative;">
-            <div class="logo-section">
-                <img src="../../assets/img/siloe.png" alt="Clinica Siloe">
-                <h1 class="clinic-name">Clínica Médica Siloé</h1>
-            </div>
-            <div class="clinic-info">
-                <strong>Servicios Médicos Integrales</strong><br>
-                Nentón, Huehuetenango, Guatemala<br>
-                Tel: (+502) 4623-2418<br>
-                Email: contacto@clinicasiloe.com
+        <!-- Cabecera -->
+        <header class="prescription-header">
+            <div class="header-content">
+                <div class="clinic-info">
+                    <h1>Centro Médico Herrera Sáenz</h1>
+                    <div class="clinic-details">
+                        <?php echo htmlspecialchars($clinica_direccion); ?><br>
+                        Tel: <?php echo htmlspecialchars($clinica_telefono); ?>
+                    </div>
+                </div>
+                <div class="prescription-meta">
+                    <strong>Fecha de Emisión</strong><br>
+                    <?php echo $fecha_formateada; ?><br>
+                    <strong>Folio</strong><br>
+                    #REC-<?php echo str_pad($id_historial, 5, '0', STR_PAD_LEFT); ?>
+                </div>
             </div>
         </header>
-
-        <section class="patient-section">
-            <div class="info-item">
-                <span class="info-label">Paciente</span>
-                <span class="info-value"><?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?></span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Fecha</span>
-                <span class="info-value"><?php echo $fecha_formateada; ?></span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Edad / Género</span>
-                <span class="info-value"><?php echo $edad; ?> años / <?php echo htmlspecialchars($receta['genero']); ?></span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Folio de Consulta</span>
-                <span class="info-value">#REC-<?php echo str_pad($id_historial, 5, '0', STR_PAD_LEFT); ?></span>
+        
+        <!-- Información del paciente -->
+        <section class="patient-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Paciente</span>
+                    <span class="info-value"><?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Edad / Género</span>
+                    <span class="info-value"><?php echo $edad; ?> años / <?php echo htmlspecialchars($receta['genero']); ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Teléfono</span>
+                    <span class="info-value"><?php echo htmlspecialchars($receta['telefono'] ?? 'N/A'); ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Médico</span>
+                    <span class="info-value">Dr. <?php echo htmlspecialchars($receta['medico_responsable']); ?></span>
+                </div>
             </div>
         </section>
-
-        <main class="rx-section">
-            <div class="rx-symbol">Rx</div>
-            <div class="prescription-body">
-<?php 
-    // Sanitize lines to prevent alignment issues
-    $raw_receta = $receta['receta_medica'];
-    $clean_lines = array_map('trim', explode("\n", $raw_receta));
-    echo htmlspecialchars(implode("\n", $clean_lines));
-?>
+        
+        <!-- Cuerpo de la receta -->
+        <main class="prescription-body">
+            <div class="prescription-title">
+                <h2>Prescripción Médica</h2>
+            </div>
+            <div class="prescription-content">
+                <?php 
+                // Sanitizar y formatear contenido de la receta
+                $raw_receta = $receta['receta_medica'];
+                $clean_lines = array_map('trim', explode("\n", $raw_receta));
+                $formatted_content = htmlspecialchars(implode("\n", array_filter($clean_lines)));
+                echo $formatted_content;
+                ?>
             </div>
         </main>
-
+        
+        <!-- Pie de página -->
         <footer class="prescription-footer">
-            <div class="doctor-signature">
-                <div class="signature-line"></div>
-                <div class="doctor-name">Dr(a). <?php echo htmlspecialchars($receta['medico_responsable']); ?></div>
-                <div class="doctor-specialty"><?php echo htmlspecialchars($receta['especialidad_medico']); ?></div>
-            </div>
-            <div class="qr-placeholder">
-                <div style="margin-bottom: 5px;">Documento generado por CM Siloé Management System</div>
-                <div style="font-size: 8px;">Este es un documento médico válido y confidencial.</div>
+            <div class="footer-content">
+                <div class="doctor-signature">
+                    <div class="signature-line"></div>
+                    <div class="doctor-name">Dr. <?php echo htmlspecialchars($receta['medico_responsable']); ?></div>
+                    <div class="doctor-specialty"><?php echo htmlspecialchars($receta['especialidad_medico']); ?></div>
+                </div>
+                <div class="document-meta">
+                    <div>Documento generado por CMS - Herrera Sáenz</div>
+                    <div>Este es un documento médico válido y confidencial</div>
+                </div>
             </div>
         </footer>
     </div>
-
+    
+    <!-- Botones de acción -->
     <div class="action-buttons">
-        <button class="btn btn-close" onclick="window.close()">Cerrar</button>
-        <button class="btn btn-print" onclick="window.print()">
-            Imprimir Receta
+        <button class="action-btn btn-close" onclick="window.close()">
+            <i class="bi bi-x-lg"></i>
+            Cerrar
+        </button>
+        <button class="action-btn btn-print" onclick="window.print()">
+            <i class="bi bi-printer"></i>
+            Imprimir
         </button>
     </div>
-
+    
     <script>
-        // Set date to local formatting if needed or keep PHP value
+        // Mejorar experiencia de impresión
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optimizar para dispositivos móviles
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                document.querySelector('.prescription-content').style.fontSize = '16px';
+            }
+            
+            // Auto-enfoque en el botón de imprimir para mejor accesibilidad
+            document.querySelector('.btn-print').focus();
+        });
+        
+        // Manejar tecla Escape para cerrar ventana
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
     </script>
 </body>
 </html>

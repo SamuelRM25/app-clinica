@@ -1,4 +1,7 @@
 <?php
+// Iniciar buffer de salida para evitar salida accidental
+ob_start();
+
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -6,58 +9,97 @@ require_once '../../includes/functions.php';
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
 
-verify_session();
+// Establecer header JSON
+header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_paciente = $_POST['id_paciente'];
-    $nombre_paciente = $_POST['nombre_paciente'];
-    $procedimientos = $_POST['procedimientos'] ?? [];
-    $cobro = $_POST['cobro'];
+try {
+    // Verificar sesión
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception('Sesión no válida o expirada');
+    }
 
-    // Filtrar procedimientos vacíos (del campo "otro" si no se llenó)
-    $procedimientos_filtrados = array_filter($procedimientos, function($value) {
-        return !empty($value);
+    // Verificar que sea POST
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception('Método no permitido');
+    }
+
+    // Obtener y validar datos
+    $id_paciente = $_POST['id_paciente'] ?? null;
+    $nombre_paciente = $_POST['nombre_paciente'] ?? null;
+    $procedimientos_array = $_POST['procedimientos'] ?? [];
+    $cobro = $_POST['cobro'] ?? null;
+    $fecha_procedimiento = $_POST['fecha_procedimiento'] ?? null;
+
+    // Filtrar procedimientos vacíos
+    $procedimientos_filtrados = array_filter($procedimientos_array, function($value) {
+        return !empty(trim($value));
     });
 
-    if (empty($id_paciente) || empty($procedimientos_filtrados) || !is_numeric($cobro)) {
-        header('Location: index.php?status=error&message=Faltan datos por llenar.');
-        exit;
+    // Validar campos requeridos
+    if (empty($id_paciente)) {
+        throw new Exception('Debe seleccionar un paciente');
     }
 
-    try {
-        $database = new Database();
-        $conn = $database->getConnection();
-
-        // Preparar la consulta para insertar
-        $stmt = $conn->prepare(
-            "INSERT INTO procedimientos_menores (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, usuario) VALUES (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :usuario)"
-        );
-
-        // Combinar todos los procedimientos en un solo texto
-        $procedimiento_texto = implode(', ', $procedimientos_filtrados);
-        
-        // Obtener la fecha y hora actual en la zona horaria de Guatemala
-        $fecha_actual = date('Y-m-d H:i:s');
-
-        $stmt->bindParam(':id_paciente', $id_paciente);
-        $stmt->bindParam(':nombre_paciente', $nombre_paciente);
-        $stmt->bindParam(':procedimiento', $procedimiento_texto);
-        $stmt->bindParam(':cobro', $cobro);
-        $stmt->bindParam(':fecha_procedimiento', $fecha_actual);
-        $stmt->bindParam(':usuario', $_SESSION['nombre']);
-        
-        $stmt->execute();
-
-        header('Location: index.php?status=success&message=Procedimiento guardado exitosamente.');
-        exit;
-
-    } catch (PDOException $e) {
-        header('Location: index.php?status=error&message=' . urlencode('Error al guardar: ' . $e->getMessage()));
-        exit;
+    if (empty($procedimientos_filtrados)) {
+        throw new Exception('Debe seleccionar o agregar al menos un procedimiento');
     }
-} else {
-    // Si no es POST, redirigir
-    header('Location: index.php');
-    exit;
+
+    if (empty($cobro) || !is_numeric($cobro)) {
+        throw new Exception('Debe ingresar un costo válido');
+    }
+
+    if (empty($fecha_procedimiento)) {
+        throw new Exception('Debe seleccionar una fecha y hora');
+    }
+
+    // Combinar procedimientos en un solo texto
+    $procedimiento_final = implode(', ', $procedimientos_filtrados);
+
+    // Conectar a la base de datos
+    $database = new Database();
+    $conn = $database->getConnection();
+
+    // Preparar la consulta para insertar
+    $stmt = $conn->prepare(
+        "INSERT INTO procedimientos_menores 
+        (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, usuario) 
+        VALUES 
+        (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :usuario)"
+    );
+
+    $stmt->bindParam(':id_paciente', $id_paciente);
+    $stmt->bindParam(':nombre_paciente', $nombre_paciente);
+    $stmt->bindParam(':procedimiento', $procedimiento_final);
+    $stmt->bindParam(':cobro', $cobro);
+    $stmt->bindParam(':fecha_procedimiento', $fecha_procedimiento);
+    $stmt->bindParam(':usuario', $_SESSION['nombre']);
+    
+    $stmt->execute();
+
+    // Limpiar buffer y enviar respuesta exitosa
+    ob_clean();
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Procedimiento registrado exitosamente',
+        'id' => $conn->lastInsertId()
+    ]);
+
+} catch (PDOException $e) {
+    // Error de base de datos
+    ob_clean();
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Error al guardar en la base de datos: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    // Otros errores
+    ob_clean();
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage()
+    ]);
 }
+
+// Finalizar buffer y enviar
+ob_end_flush();
 ?>

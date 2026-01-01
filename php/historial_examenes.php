@@ -1,5 +1,5 @@
 <?php
-// sales/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
+// historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
 // Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
 session_start();
 
@@ -14,60 +14,41 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 verify_session();
 
-// Establecer zona horaria
-date_default_timezone_set('America/Guatemala');
+// Título de la página
+$page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
 
-// Obtener información del usuario
-$user_name = $_SESSION['nombre'];
-$user_type = $_SESSION['tipoUsuario'];
-$user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+// Configuración de paginación
+$limit = 20; // Registros por página
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page > 1) ? ($page - 1) * $limit : 0;
 
 try {
     // Conectar a la base de datos
     $database = new Database();
     $conn = $database->getConnection();
     
-    // Obtener todas las ventas con paginación
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $limit = 10;
-    $offset = ($page - 1) * $limit;
+    // Obtener total de registros
+    $stmt_count = $conn->query("SELECT COUNT(*) as total FROM examenes_realizados");
+    $total_registros = $stmt_count->fetch(PDO::FETCH_ASSOC)['total'];
+    $total_paginas = ceil($total_registros / $limit);
     
-    // Obtener total de registros para paginación
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ventas");
-    $stmt->execute();
-    $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $total_pages = ceil($total_records / $limit);
-    
-    // Obtener datos de ventas con paginación
+    // Obtener exámenes paginados
     $stmt = $conn->prepare("
-        SELECT id_venta, fecha_venta, nombre_cliente, tipo_pago, total, estado 
-        FROM ventas 
-        ORDER BY fecha_venta DESC 
-        LIMIT ? OFFSET ?
+        SELECT id_examen_realizado, nombre_paciente, tipo_examen, cobro, fecha_examen 
+        FROM examenes_realizados 
+        ORDER BY fecha_examen DESC 
+        LIMIT :limit OFFSET :offset
     ");
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
-    $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Calcular estadísticas rápidas
-    $stmt = $conn->query("SELECT SUM(total) as total_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE() AND estado = 'Pagado'");
-    $total_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['total_hoy'] ?? 0;
-    
-    $stmt = $conn->query("SELECT COUNT(*) as ventas_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE()");
-    $ventas_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['ventas_hoy'] ?? 0;
-    
-    // Título de la página
-    $page_title = "Ventas - Centro Médico Herrera Saenz";
+    $examenes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
     // Manejo de errores
-    $ventas = [];
-    $total_records = 0;
-    $total_pages = 1;
-    $total_hoy = 0;
-    $ventas_hoy = 0;
-    $error_message = "Error al cargar ventas: " . $e->getMessage();
+    $examenes = [];
+    $total_paginas = 1;
+    $error_message = "Error al cargar el historial: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -88,12 +69,12 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- Incluir header -->
-    <?php include_once '../../includes/header.php'; ?>
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <style>
     /* 
-     * Módulo de Ventas - Centro Médico Herrera Saenz
+     * Historial de Exámenes - Centro Médico Herrera Saenz
      * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
      * Versión: 3.0
      */
@@ -552,98 +533,14 @@ try {
         background: var(--color-border-light);
     }
     
-    .action-btn.success {
-        background: var(--color-success);
-    }
-    
-    .action-btn.success:hover {
-        background: #10b981;
-    }
-    
-    /* ============ ESTADÍSTICAS RÁPIDAS ============ */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.2s both;
-    }
-    
-    .stat-card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        transition: all var(--transition-normal);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-        opacity: 0.7;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--color-primary-light);
-    }
-    
-    .stat-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-    }
-    
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        color: white;
-    }
-    
-    .stat-icon.primary { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
-    .stat-icon.success { background: linear-gradient(135deg, var(--color-success), #10b981); }
-    .stat-icon.warning { background: linear-gradient(135deg, var(--color-warning), #d97706); }
-    .stat-icon.info { background: linear-gradient(135deg, var(--color-info), #0ea5e9); }
-    
-    .stat-title {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-text-light);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.25rem;
-    }
-    
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--color-text);
-        line-height: 1;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* ============ TABLA DE VENTAS ============ */
+    /* ============ TABLA DE HISTORIAL ============ */
     .table-container {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: 1.5rem;
         margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.3s both;
+        animation: fadeIn 0.6s ease-out 0.2s both;
         overflow: hidden;
     }
     
@@ -706,18 +603,17 @@ try {
         border-bottom: none;
     }
     
-    /* Celdas especializadas */
-    .sale-cell {
+    .patient-cell {
         display: flex;
         align-items: center;
         gap: 1rem;
     }
     
-    .sale-icon {
+    .patient-avatar {
         width: 36px;
         height: 36px;
         background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-        border-radius: var(--radius-md);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -727,37 +623,19 @@ try {
         flex-shrink: 0;
     }
     
-    .sale-info {
+    .patient-info {
         display: flex;
         flex-direction: column;
     }
     
-    .sale-id {
+    .patient-name {
         font-weight: 600;
         color: var(--color-text);
     }
     
-    .sale-time {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-    }
-    
-    .client-name {
-        font-weight: 600;
-        color: var(--color-text);
-    }
-    
-    .payment-badge {
-        background: var(--color-border-light);
-        color: var(--color-text);
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
+    .examen-type {
         font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        border: 1px solid var(--color-border);
+        color: var(--color-text);
     }
     
     .amount-badge {
@@ -774,66 +652,37 @@ try {
         opacity: 0.3;
     }
     
-    .status-badge {
+    .time-badge {
+        background: var(--color-border-light);
+        color: var(--color-text);
         padding: 0.375rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border: 1px solid var(--color-border);
+    }
+    
+    /* Separador de jornada */
+    .jornada-row {
+        background: var(--color-border-light);
+    }
+    
+    .jornada-cell {
+        padding: 0.75rem 1rem;
         font-weight: 600;
+        color: var(--color-primary);
+        font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        display: inline-block;
+        border-bottom: 2px solid var(--color-primary);
+        opacity: 0.8;
     }
     
-    .status-badge.pagado {
-        background: var(--color-success);
-        color: white;
-    }
-    
-    .status-badge.pendiente {
-        background: var(--color-warning);
-        color: var(--color-text);
-    }
-    
-    .status-badge.cancelado {
-        background: var(--color-error);
-        color: white;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
-        background: transparent;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all var(--transition-normal);
-        text-decoration: none;
-    }
-    
-    .btn-icon:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: translateY(-2px);
-    }
-    
-    .btn-icon.view:hover {
-        background: var(--color-info);
-        border-color: var(--color-info);
-    }
-    
-    .btn-icon.print:hover {
-        background: var(--color-text);
-        border-color: var(--color-text);
+    .jornada-icon {
+        margin-right: 0.5rem;
     }
     
     /* Estado vacío */
@@ -897,7 +746,7 @@ try {
         border-color: var(--color-primary);
     }
     
-    /* ============ MODALES ============ */
+    /* ============ MODAL DE REPORTES ============ */
     .modal-content {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -925,6 +774,31 @@ try {
     .modal-footer {
         border-top: 1px solid var(--color-border);
         padding: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: var(--color-text);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        color: var(--color-text);
+        font-size: 0.95rem;
+        transition: all var(--transition-normal);
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+        opacity: 0.3;
     }
     
     /* ============ BOTÓN TOGGLE SIDEBAR ============ */
@@ -958,46 +832,10 @@ try {
         left: 100px;
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
-    }
-    
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-        }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
-        }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
-        }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
-        }
-    }
-    
     /* ============ RESPONSIVE DESIGN ============ */
     @media (max-width: 1200px) {
         .main-content {
             padding: 1.5rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
     }
     
@@ -1079,23 +917,9 @@ try {
             justify-content: flex-start;
         }
         
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
         .data-table {
             display: block;
             overflow-x: auto;
-        }
-        
-        .action-buttons {
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        .btn-icon {
-            width: 32px;
-            height: 32px;
         }
     }
     
@@ -1107,6 +931,38 @@ try {
         .action-btn {
             padding: 0.5rem 1rem;
             font-size: 0.8rem;
+        }
+    }
+    
+    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
+    .marble-effect {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: -1;
+        opacity: 0.3;
+        background-image: 
+            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
+        animation: marbleFloat 20s ease-in-out infinite;
+    }
+    
+    @keyframes marbleFloat {
+        0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+        25% {
+            transform: translate(10px, 5px) rotate(0.5deg);
+        }
+        50% {
+            transform: translate(5px, 10px) rotate(-0.5deg);
+        }
+        75% {
+            transform: translate(-5px, 5px) rotate(0.3deg);
         }
     }
     </style>
@@ -1142,11 +998,11 @@ try {
                     <!-- Información del usuario -->
                     <div class="user-info">
                         <div class="user-avatar">
-                            <?php echo strtoupper(substr($user_name, 0, 1)); ?>
+                            <?php echo strtoupper(substr($_SESSION['nombre'], 0, 1)); ?>
                         </div>
                         <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['nombre']); ?></span>
+                            <span class="user-role"><?php echo htmlspecialchars($_SESSION['especialidad'] ?? 'Profesional Médico'); ?></span>
                         </div>
                     </div>
                     
@@ -1162,7 +1018,7 @@ try {
         <!-- Sidebar de navegación -->
         <nav class="sidebar" id="sidebar">
             <ul class="nav-menu">
-                <?php $role = $user_type; ?>
+                <?php $role = $_SESSION['tipoUsuario']; ?>
                 
                 <!-- Dashboard (siempre visible) -->
                 <li class="nav-item">
@@ -1201,7 +1057,7 @@ try {
                 
                 <!-- Exámenes -->
                 <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
+                    <a href="../examinations/index.php" class="nav-link active">
                         <i class="bi bi-clipboard2-pulse nav-icon"></i>
                         <span class="nav-text">Exámenes</span>
                     </a>
@@ -1234,7 +1090,7 @@ try {
                 </li>
                 
                 <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link active">
+                    <a href="../sales/index.php" class="nav-link">
                         <i class="bi bi-receipt nav-icon"></i>
                         <span class="nav-text">Ventas</span>
                     </a>
@@ -1270,161 +1126,132 @@ try {
             <!-- Encabezado de página -->
             <div class="page-header">
                 <div class="page-title-section">
-                    <h1 class="page-title">Gestión de Ventas</h1>
-                    <p class="page-subtitle">Administre y consulte el historial de transacciones</p>
+                    <h1 class="page-title">Historial de Exámenes</h1>
+                    <p class="page-subtitle">Visualice actividades y genere reportes</p>
                 </div>
                 <div class="page-actions">
-                    <button type="button" class="action-btn secondary" data-bs-toggle="modal" data-bs-target="#reportModal">
-                        <i class="bi bi-file-earmark-bar-graph"></i>
-                        <span>Reporte por Jornada</span>
-                    </button>
-                    <a href="../dispensary/index.php" class="action-btn">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Nueva Venta</span>
+                    <a href="index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Regresar</span>
                     </a>
+                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#reportModal">
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                        <span>Generar Reporte</span>
+                    </button>
                 </div>
             </div>
             
-            <!-- Estadísticas rápidas -->
-            <div class="stats-grid">
-                <!-- Total de ventas -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ventas Totales</div>
-                            <div class="stat-value"><?php echo $total_records; ?></div>
-                        </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-receipt"></i>
-                        </div>
+            <!-- Mensaje de error -->
+            <?php if (!empty($error_message)): ?>
+                <div class="table-container">
+                    <div class="alert alert-danger border-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <?php echo htmlspecialchars($error_message); ?>
                     </div>
                 </div>
-                
-                <!-- Ventas de hoy -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ventas Hoy</div>
-                            <div class="stat-value"><?php echo $ventas_hoy; ?></div>
-                        </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-cart-check"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Total recaudado hoy -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Total Hoy</div>
-                            <div class="stat-value">Q<?php echo number_format($total_hoy, 2); ?></div>
-                        </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-currency-dollar"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <?php endif; ?>
             
-            <!-- Tabla de ventas -->
+            <!-- Tabla de historial -->
             <div class="table-container">
                 <div class="table-header">
                     <h3 class="table-title">
-                        <i class="bi bi-receipt table-title-icon"></i>
-                        Historial de Ventas
+                        <i class="bi bi-clock-history table-title-icon"></i>
+                        Exámenes Realizados
                     </h3>
                     <div class="text-muted">
-                        Página <?php echo $page; ?> de <?php echo $total_pages; ?>
+                        Total: <?php echo $total_registros; ?> registros
                     </div>
                 </div>
                 
                 <div class="table-responsive">
-                    <?php if (empty($ventas)): ?>
+                    <?php if (empty($examenes)): ?>
                         <div class="empty-state">
                             <div class="empty-icon">
-                                <i class="bi bi-receipt"></i>
+                                <i class="bi bi-clipboard-x"></i>
                             </div>
-                            <h4 class="text-muted mb-2">No hay ventas registradas</h4>
-                            <p class="text-muted mb-3">Las nuevas ventas aparecerán aquí automáticamente.</p>
-                            <a href="../dispensary/index.php" class="action-btn">
+                            <h4 class="text-muted mb-2">No se encontraron registros</h4>
+                            <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
+                            <a href="index.php" class="action-btn">
                                 <i class="bi bi-plus-lg"></i>
-                                Registrar primera venta
+                                Registrar primer examen
                             </a>
                         </div>
                     <?php else: ?>
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Venta</th>
-                                    <th>Cliente</th>
-                                    <th>Método de Pago</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <th>Paciente</th>
+                                    <th>Tipo de Examen</th>
+                                    <th>Cobro</th>
+                                    <th>Fecha y Hora</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($ventas as $venta): ?>
-                                    <?php 
-                                    $fecha_venta = new DateTime($venta['fecha_venta']);
-                                    $hora_venta = $fecha_venta->format('h:i A');
-                                    $fecha_formateada = $fecha_venta->format('d/m/Y');
-                                    ?>
+                                <?php 
+                                $prev_jornada = null;
+                                foreach ($examenes as $exam): 
+                                    // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
+                                    $timestamp = strtotime($exam['fecha_examen']);
+                                    $hora = (int)date('H', $timestamp);
+                                    $fecha_base = date('Y-m-d', $timestamp);
+                                    
+                                    if ($hora < 8) {
+                                        $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
+                                    } else {
+                                        $jornada_date = $fecha_base;
+                                    }
+
+                                    // Mostrar divisor si cambia la jornada
+                                    if ($jornada_date !== $prev_jornada):
+                                        $display_date = date('d/m/Y', strtotime($jornada_date));
+                                        // Formato amigable: Hoy, Ayer, o fecha
+                                        if ($jornada_date == date('Y-m-d')) {
+                                            $display_text = "Jornada de Hoy ($display_date)";
+                                        } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
+                                            $display_text = "Jornada de Ayer ($display_date)";
+                                        } else {
+                                            $display_text = "Jornada del " . $display_date;
+                                        }
+                                ?>
+                                    <tr class="jornada-row">
+                                        <td colspan="4" class="jornada-cell">
+                                            <i class="bi bi-calendar-range jornada-icon"></i>
+                                            <?php echo $display_text; ?>
+                                        </td>
+                                    </tr>
+                                <?php 
+                                    $prev_jornada = $jornada_date;
+                                    endif; 
+                                    
+                                    // Obtener iniciales del paciente
+                                    $patient_name = htmlspecialchars($exam['nombre_paciente']);
+                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                ?>
                                     <tr>
                                         <td>
-                                            <div class="sale-cell">
-                                                <div class="sale-icon">
-                                                    <i class="bi bi-cart"></i>
+                                            <div class="patient-cell">
+                                                <div class="patient-avatar">
+                                                    <?php echo $patient_initials; ?>
                                                 </div>
-                                                <div class="sale-info">
-                                                    <div class="sale-id">#VTA-<?php echo str_pad($venta['id_venta'], 5, '0', STR_PAD_LEFT); ?></div>
-                                                    <div class="sale-time"><?php echo $hora_venta; ?></div>
+                                                <div class="patient-info">
+                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="client-name"><?php echo htmlspecialchars($venta['nombre_cliente']); ?></div>
-                                        </td>
-                                        <td>
-                                            <span class="payment-badge">
-                                                <i class="bi bi-credit-card"></i>
-                                                <?php echo htmlspecialchars($venta['tipo_pago']); ?>
-                                            </span>
+                                            <span class="examen-type"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
                                         </td>
                                         <td>
                                             <span class="amount-badge">
-                                                Q<?php echo number_format($venta['total'], 2); ?>
+                                                <i class="bi bi-currency-dollar"></i>
+                                                Q<?php echo number_format($exam['cobro'], 2); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <?php 
-                                            $status_class = match(strtolower($venta['estado'])) {
-                                                'pagado' => 'pagado',
-                                                'pendiente' => 'pendiente',
-                                                'cancelado' => 'cancelado',
-                                                default => 'pendiente'
-                                            };
-                                            ?>
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <?php echo htmlspecialchars($venta['estado']); ?>
+                                            <span class="time-badge">
+                                                <i class="bi bi-clock"></i>
+                                                <?php echo date('h:i A', strtotime($exam['fecha_examen'])); ?>
                                             </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button type="button" 
-                                                        class="btn-icon view view-details" 
-                                                        title="Ver detalles"
-                                                        data-id="<?php echo $venta['id_venta']; ?>">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <a href="../dispensary/print_receipt.php?id=<?php echo $venta['id_venta']; ?>" 
-                                                   target="_blank" 
-                                                   class="btn-icon print" 
-                                                   title="Imprimir recibo">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -1434,7 +1261,7 @@ try {
                 </div>
                 
                 <!-- Paginación -->
-                <?php if ($total_pages > 1): ?>
+                <?php if ($total_paginas > 1): ?>
                     <div class="pagination-container">
                         <ul class="pagination">
                             <?php if ($page > 1): ?>
@@ -1449,7 +1276,7 @@ try {
                                 <span class="page-link"><?php echo $page; ?></span>
                             </li>
 
-                            <?php if ($page < $total_pages): ?>
+                            <?php if ($page < $total_paginas): ?>
                                 <li class="page-item">
                                     <a class="page-link" href="?page=<?php echo $page + 1; ?>">
                                         <i class="bi bi-chevron-right"></i>
@@ -1463,79 +1290,13 @@ try {
         </main>
     </div>
     
-    <!-- Modal para ver detalles de venta -->
-    <div class="modal fade" id="viewDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-receipt text-primary"></i>
-                        Detalles de Venta
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <p class="text-muted small mb-1">Cliente</p>
-                            <p class="fw-bold" id="modal-cliente">---</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="text-muted small mb-1">Fecha y Hora</p>
-                            <p class="fw-bold" id="modal-fecha">---</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="text-muted small mb-1">Método de Pago</p>
-                            <p class="fw-bold" id="modal-tipo-pago">---</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="text-muted small mb-1">Estado</p>
-                            <p class="fw-bold" id="modal-estado">---</p>
-                        </div>
-                    </div>
-                    
-                    <h6 class="fw-bold mb-3">Productos Adquiridos</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm" id="modal-items">
-                            <thead>
-                                <tr>
-                                    <th>Medicamento</th>
-                                    <th>Presentación</th>
-                                    <th class="text-center">Cantidad</th>
-                                    <th class="text-end">Precio Unitario</th>
-                                    <th class="text-end">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Los ítems se cargarán dinámicamente -->
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="4" class="text-end">Total:</th>
-                                    <th class="text-end" id="modal-total">---</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <a href="#" class="action-btn" id="modal-print-btn" target="_blank">
-                        <i class="bi bi-printer"></i>
-                        Imprimir Recibo
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para reporte por jornada -->
+    <!-- Modal para reportes -->
     <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-file-earmark-bar-graph text-success"></i>
+                        <i class="bi bi-file-earmark-pdf text-primary"></i>
                         Reporte por Jornada
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1545,15 +1306,15 @@ try {
                         La jornada comprende desde las <strong>08:00 AM</strong> de la fecha seleccionada hasta las <strong>08:00 AM</strong> del día siguiente.
                     </p>
                     <div class="form-group mb-4">
-                        <label class="form-label">Seleccionar Fecha de Inicio</label>
-                        <input type="date" class="form-control" id="reportDate" value="<?php echo date('Y-m-d'); ?>">
+                        <label class="form-label">Seleccionar Fecha de Jornada</label>
+                        <input type="text" class="form-control" id="reportDate" placeholder="Seleccionar fecha...">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="action-btn success" id="btnGenerateReport">
-                        <i class="bi bi-file-earmark-pdf"></i>
-                        Generar Reporte
+                    <button type="button" class="action-btn" id="btnGenerateReport">
+                        <i class="bi bi-download"></i>
+                        Generar y Descargar
                     </button>
                 </div>
             </div>
@@ -1561,9 +1322,15 @@ try {
     </div>
     
     <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
-    // Módulo de Ventas - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del módulo de ventas
+    // Historial de Exámenes - Centro Médico Herrera Saenz
+    // JavaScript para funcionalidades del historial
     
     // Esperar a que el DOM esté completamente cargado
     document.addEventListener('DOMContentLoaded', function() {
@@ -1573,9 +1340,8 @@ try {
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
         const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const viewDetailsButtons = document.querySelectorAll('.view-details');
-        const btnGenerateReport = document.getElementById('btnGenerateReport');
         const reportDateInput = document.getElementById('reportDate');
+        const btnGenerateReport = document.getElementById('btnGenerateReport');
         
         // ============ FUNCIONALIDAD DEL TEMA ============
         
@@ -1659,130 +1425,173 @@ try {
             }
         }
         
-        // ============ FUNCIONALIDAD DE DETALLES DE VENTA ============
-        
-        // Cargar detalles de venta al hacer clic en el botón "Ver detalles"
-        function handleViewDetails(event) {
-            event.preventDefault();
-            
-            const button = event.currentTarget;
-            const saleId = button.getAttribute('data-id');
-            
-            if (!saleId) return;
-            
-            // Mostrar estado de carga
-            const modalBody = document.querySelector('#viewDetailsModal .modal-body');
-            modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('viewDetailsModal'));
-            modal.show();
-            
-            // Cargar datos de la venta
-            fetch(`get_sale_details.php?id=${saleId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Actualizar información principal
-                        document.getElementById('modal-cliente').textContent = data.venta.nombre_cliente || 'No especificado';
-                        
-                        // Formatear fecha
-                        const fechaVenta = new Date(data.venta.fecha_venta);
-                        const fechaFormateada = fechaVenta.toLocaleDateString('es-GT', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                        document.getElementById('modal-fecha').textContent = fechaFormateada;
-                        
-                        document.getElementById('modal-tipo-pago').textContent = data.venta.tipo_pago || 'No especificado';
-                        document.getElementById('modal-estado').textContent = data.venta.estado || 'No especificado';
-                        
-                        // Actualizar total
-                        document.getElementById('modal-total').textContent = `Q${parseFloat(data.venta.total || 0).toFixed(2)}`;
-                        
-                        // Actualizar enlace de impresión
-                        const printBtn = document.getElementById('modal-print-btn');
-                        printBtn.href = `../dispensary/print_receipt.php?id=${saleId}`;
-                        
-                        // Actualizar tabla de ítems
-                        const itemsTable = document.querySelector('#modal-items tbody');
-                        itemsTable.innerHTML = '';
-                        
-                        if (data.items && data.items.length > 0) {
-                            data.items.forEach(item => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${item.nombre_medicamento || 'Producto'}</td>
-                                    <td>${item.presentacion || 'N/A'}</td>
-                                    <td class="text-center">${item.cantidad || 0}</td>
-                                    <td class="text-end">Q${parseFloat(item.precio_unitario || 0).toFixed(2)}</td>
-                                    <td class="text-end">Q${parseFloat(item.subtotal || 0).toFixed(2)}</td>
-                                `;
-                                itemsTable.appendChild(row);
-                            });
-                        } else {
-                            itemsTable.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay ítems registrados</td></tr>';
-                        }
-                    } else {
-                        throw new Error(data.message || 'Error al cargar los datos');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    modalBody.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Error al cargar los detalles de la venta: ${error.message}
-                        </div>
-                    `;
-                });
-        }
-        
         // ============ FUNCIONALIDAD DEL REPORTE ============
         
-        // Generar reporte por jornada
+        // Inicializar datepicker
+        function initializeDatepicker() {
+            flatpickr(reportDateInput, {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                defaultDate: "today",
+                allowInput: true
+            });
+        }
+        
+        // Generar reporte PDF
         function generateReport() {
             const date = reportDateInput.value;
+            const btn = btnGenerateReport;
             
             if (!date) {
-                alert('Por favor seleccione una fecha');
+                Swal.fire('Error', 'Por favor seleccione una fecha', 'warning');
                 return;
             }
             
-            // Abrir reporte en nueva pestaña
-            window.open(`generate_shift_report.php?date=${date}`, '_blank');
+            // Estado de carga
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando...';
             
-            // Cerrar modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
-            if (modal) {
-                modal.hide();
-            }
+            console.log('Iniciando generacion de reporte para fecha:', date);
+            
+            fetch(`get_report_data.php?date=${date}`)
+                .then(response => {
+                    console.log('Respuesta del servidor recibida', response);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text().then(text => {
+                        console.log('Texto crudo de respuesta:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error('Error al parsear JSON:', e);
+                            throw new Error('La respuesta del servidor no es un JSON válido: ' + text.substring(0, 100));
+                        }
+                    });
+                })
+                .then(res => {
+                    console.log('Datos procesados:', res);
+                    if (res.status === 'success') {
+                        try {
+                            generatePDF(res);
+                            console.log('PDF generado correctamente');
+                            
+                            // Cerrar modal
+                            const modalElement = document.getElementById('reportModal');
+                            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            }
+                            
+                            // Mostrar confirmación
+                            Swal.fire({
+                                title: '¡Reporte Generado!',
+                                text: 'El reporte se ha descargado correctamente.',
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        } catch (pdfError) {
+                            console.error('Error generando PDF:', pdfError);
+                            Swal.fire('Error', 'Error al crear el archivo PDF: ' + pdfError.message, 'error');
+                        }
+                    } else {
+                        console.error('Error reportado por el backend:', res);
+                        Swal.fire('Error', res.message || 'Error desconocido', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Capturado error en fetch:', err);
+                    Swal.fire('Error', 'Hubo un problema: ' + err.message, 'error');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
         }
         
-        // ============ ANIMACIONES AL CARGAR ============
+        // Función auxiliar para obtener el día siguiente
+        function getNextDay(dateString) {
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + 1);
+            return date.toISOString().split('T')[0];
+        }
         
-        // Animar elementos al cargar la página
-        function animateOnLoad() {
-            const cards = document.querySelectorAll('.stat-card, .table-container');
+        // Generar PDF con jsPDF
+        function generatePDF(res) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                
-                setTimeout(() => {
-                    card.style.transition = 'all 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
+            // Colores
+            const primaryColor = [124, 144, 219]; // Azul lavanda pastel
+            
+            // Encabezado
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text("Reporte de Exámenes Clínicos", 105, 28, { align: 'center' });
+            
+            // Información del reporte
+            doc.setTextColor(50, 50, 50);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Información del Reporte:", 14, 50);
+            
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Jornada Reportada: ${res.metadata.jornada_start} - ${res.metadata.jornada_end}`, 14, 56);
+            doc.text(`Generado por: ${res.metadata.generated_by}`, 14, 62);
+            doc.text(`Fecha de Creación: ${res.metadata.generated_at}`, 14, 68);
+            
+            // Tabla de datos
+            const tableBody = res.data.map(item => [
+                item.nombre_paciente,
+                item.tipo_examen,
+                new Date(item.fecha_examen).toLocaleString('es-GT', {
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }),
+                `Q${parseFloat(item.cobro).toFixed(2)}`
+            ]);
+            
+            doc.autoTable({
+                startY: 75,
+                head: [['Paciente', 'Examen', 'Fecha y Hora', 'Cobro']],
+                body: tableBody,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                columnStyles: {
+                    0: { cellWidth: 50 },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 45 },
+                    3: { cellWidth: 25, halign: 'right' }
+                },
+                foot: [['', '', 'TOTAL ACUMULADO', `Q${res.total.toFixed(2)}`]],
+                footStyles: {
+                    fillColor: [240, 240, 240],
+                    textColor: [0, 0, 0],
+                    fontStyle: 'bold',
+                    halign: 'right'
+                }
             });
+            
+            // Guardar archivo
+            const fileName = `Reporte_Examenes_${reportDateInput.value}.pdf`;
+            doc.save(fileName);
         }
         
         // ============ INICIALIZACIÓN ============
@@ -1790,14 +1599,12 @@ try {
         // Inicializar componentes
         initializeTheme();
         initializeSidebar();
-        animateOnLoad();
+        initializeDatepicker();
         
         // ============ EVENT LISTENERS ============
         
         // Tema
-        if (themeSwitch) {
-            themeSwitch.addEventListener('click', toggleTheme);
-        }
+        themeSwitch.addEventListener('click', toggleTheme);
         
         // Sidebar (escritorio)
         if (sidebarToggle) {
@@ -1808,11 +1615,6 @@ try {
         if (mobileSidebarToggle) {
             mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
         }
-        
-        // Botones de ver detalles de venta
-        viewDetailsButtons.forEach(button => {
-            button.addEventListener('click', handleViewDetails);
-        });
         
         // Generar reporte
         if (btnGenerateReport) {
@@ -1829,15 +1631,11 @@ try {
         
         // ============ CONSOLA DE DESARROLLO ============
         
-        console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
+        console.log('Historial de Exámenes - Centro Médico Herrera Saenz');
         console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
-        console.log('Total de ventas: <?php echo $total_records; ?>');
+        console.log('Usuario: <?php echo htmlspecialchars($_SESSION['nombre']); ?>');
+        console.log('Rol: <?php echo htmlspecialchars($_SESSION['tipoUsuario']); ?>');
     });
     </script>
-    
-    <!-- Incluir footer -->
-    <?php include_once '../../includes/footer.php'; ?>
 </body>
 </html>
