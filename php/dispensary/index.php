@@ -1,6 +1,6 @@
 <?php
 // inventory/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
+// Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
 // Verificar sesión activa
@@ -48,6 +48,30 @@ try {
     $stmt->execute();
     $inventario = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Obtener estadísticas para el dashboard
+    // Ventas del día
+    $today = date('Y-m-d');
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE DATE(fecha_venta) = ?");
+    $stmt->execute([$today]);
+    $today_sales = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Ventas del mes
+    $month_start = date('Y-m-01');
+    $month_end = date('Y-m-t');
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
+    $stmt->execute([$month_start, $month_end]);
+    $month_sales = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Total de ventas
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas");
+    $stmt->execute();
+    $total_sales = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Productos en inventario
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(cantidad_med) as total FROM inventario WHERE cantidad_med > 0");
+    $stmt->execute();
+    $inventory_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     // Información del usuario
     $user_name = $_SESSION['nombre'];
     $user_type = $_SESSION['tipoUsuario'];
@@ -65,6 +89,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Módulo de Ventas del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
@@ -79,733 +104,694 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <style>
-    /* 
-     * Módulo de Ventas - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE (Mismo que dashboard)
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) - Colores pastel */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
     .dashboard-container {
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
+        min-height: 100vh;
         position: relative;
+        width: 100%;
+        transition: all var(--transition-base);
     }
     
-    /* ============ HEADER SUPERIOR ============ */
+    /* User Details (Footer replacement) */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
     .dashboard-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
         position: sticky;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        background-color: rgba(var(--color-card-rgb), 0.95);
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
     }
     
-    .brand-text {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .clinic-name {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text);
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-    }
-    
-    .clinic-subname {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-primary);
-        letter-spacing: 0.5px;
-    }
-    
-    /* Control de tema y usuario */
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px; /* Altura del header */
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        text-decoration: none;
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
+        text-decoration: none;
         font-weight: 500;
+        transition: all var(--transition-base);
+    }
+    
+    .logout-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
+    }
+    
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
+    .main-content {
+        flex: 1;
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
+    }
+    
+    /* ==========================================================================
+       COMPONENTES DE DASHBOARD (Ventas)
+       ========================================================================== */
+    
+    /* Tarjetas de estadísticas */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+    
+    .stat-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
-    .nav-link:hover {
-        background: var(--color-border-light);
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-primary);
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-info));
+    }
+    
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
+    }
+    
+    .stat-title {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .stat-value {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        color: var(--color-text);
+        line-height: 1;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon.primary {
+        background: rgba(var(--color-primary-rgb), 0.1);
         color: var(--color-primary);
-        transform: translateX(4px);
     }
     
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
+    .stat-icon.success {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
     }
     
-    .nav-link.active {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: var(--shadow-md);
+    .stat-icon.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
     }
     
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
+    .stat-icon.info {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
     }
     
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
-    }
-    
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
-    
-    /* ============ PUNTO DE VENTA ============ */
+    /* Punto de Venta */
     .pos-container {
         display: grid;
         grid-template-columns: 1fr 400px;
-        gap: 1.5rem;
-        height: calc(100vh - 180px);
-        margin-top: 1.5rem;
-        animation: fadeIn 0.6s ease-out;
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
+    @media (max-width: 1200px) {
+        .pos-container {
+            grid-template-columns: 1fr;
         }
     }
     
-    /* Área de búsqueda y selección */
+    /* Área de búsqueda */
     .pos-selection-area {
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-    
-    .selection-card {
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        height: 100%;
-        transition: all var(--transition-normal);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
     }
     
-    .selection-card:hover {
+    .pos-selection-area:hover {
         box-shadow: var(--shadow-lg);
     }
     
     .section-title {
-        font-size: 1.25rem;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text);
-        margin-bottom: 1.5rem;
+        margin-bottom: var(--space-lg);
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-sm);
     }
     
     .section-title-icon {
         color: var(--color-primary);
     }
     
-    /* Búsqueda */
     .search-container {
         position: relative;
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-lg);
     }
     
     .search-input {
         width: 100%;
-        padding: 0.875rem 1rem 0.875rem 3rem;
+        padding: var(--space-md) var(--space-lg) var(--space-md) 3rem;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-surface);
         color: var(--color-text);
-        font-size: 0.95rem;
-        transition: all var(--transition-normal);
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: 1rem center;
-        background-size: 1rem;
+        font-size: var(--font-size-base);
+        transition: all var(--transition-base);
     }
     
     .search-input:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.25);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.25);
     }
     
-    /* Resultados de búsqueda */
     .search-results {
         position: absolute;
         top: 100%;
         left: 0;
         right: 0;
-        z-index: 200;
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-xl);
         max-height: 400px;
         overflow-y: auto;
+        z-index: 100;
         display: none;
-        margin-top: 0.5rem;
-        animation: slideDown 0.3s ease-out;
     }
     
     .search-result-item {
-        padding: 1rem;
+        padding: var(--space-md);
         border-bottom: 1px solid var(--color-border);
         cursor: pointer;
-        transition: background-color var(--transition-fast);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        transition: background-color var(--transition-base);
     }
     
     .search-result-item:hover {
-        background: var(--color-border-light);
+        background: var(--color-surface);
     }
     
     .search-result-item:last-child {
         border-bottom: none;
     }
     
-    .search-item-info {
-        flex: 1;
-    }
-    
-    .search-item-name {
-        font-weight: 600;
-        color: var(--color-text);
-        margin-bottom: 0.25rem;
-    }
-    
-    .search-item-details {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-    }
-    
-    .search-item-stock {
-        text-align: right;
-    }
-    
-    .stock-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        background: rgba(52, 211, 153, 0.1);
-        color: var(--color-success);
-    }
-    
-    .stock-badge.warning {
-        background: rgba(251, 191, 36, 0.1);
-        color: var(--color-warning);
-    }
-    
-    .stock-badge.danger {
-        background: rgba(248, 113, 113, 0.1);
-        color: var(--color-error);
-    }
-    
     /* Detalles de selección */
     .selection-details {
-        background: var(--color-border-light);
+        background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-top: 1.5rem;
+        border-radius: var(--radius-md);
+        padding: var(--space-lg);
+        margin-top: var(--space-lg);
         display: none;
-        animation: fadeIn 0.5s ease-out;
     }
     
-    .selected-product {
-        margin-bottom: 1.5rem;
-    }
-    
-    .selected-product-name {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text);
-        margin-bottom: 0.25rem;
-    }
-    
-    .selected-product-details {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-    }
-    
-    /* Formulario de cantidad y precio */
     .selection-form {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        align-items: end;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md);
+        margin-top: var(--space-md);
     }
     
     .form-group {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--space-xs);
     }
     
     .form-label {
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text);
     }
     
     .form-input {
-        padding: 0.75rem 1rem;
+        padding: var(--space-sm) var(--space-md);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-surface);
+        border-radius: var(--radius-sm);
+        background: var(--color-card);
         color: var(--color-text);
-        font-size: 0.95rem;
-        transition: all var(--transition-normal);
+        font-size: var(--font-size-base);
+        transition: all var(--transition-base);
     }
     
     .form-input:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.25);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.25);
     }
     
-    .form-input-group {
-        display: flex;
-        align-items: center;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-    }
-    
-    .form-input-group .form-input {
-        flex: 1;
-        border: none;
-        border-radius: 0;
-    }
-    
-    .form-input-group .input-addon {
-        padding: 0.75rem 1rem;
-        background: var(--color-border-light);
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        white-space: nowrap;
-    }
-    
-    /* Botón agregar */
     .add-button {
         grid-column: span 2;
-        padding: 0.875rem;
+        padding: var(--space-md);
         background: var(--color-primary);
         color: white;
         border: none;
         border-radius: var(--radius-md);
         font-weight: 600;
-        font-size: 1rem;
         cursor: pointer;
-        transition: all var(--transition-normal);
+        transition: all var(--transition-base);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
     
     .add-button:hover {
-        background: var(--color-primary-dark);
+        background: var(--color-primary);
+        opacity: 0.9;
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
     }
     
     /* Área del carrito */
     .pos-cart-area {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    
-    .cart-card {
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        height: 100%;
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         display: flex;
         flex-direction: column;
-        transition: all var(--transition-normal);
     }
     
-    .cart-card:hover {
+    .pos-cart-area:hover {
         box-shadow: var(--shadow-lg);
     }
     
-    /* Encabezado del carrito */
     .cart-header {
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
         border-bottom: 1px solid var(--color-border);
     }
     
-    .cart-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    /* Formulario del cliente */
-    .client-form {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    /* Lista de items del carrito */
     .cart-items {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 1.5rem;
-        min-height: 200px;
+        margin-bottom: var(--space-lg);
+        min-height: 300px;
     }
     
     .cart-items-table {
@@ -814,37 +800,24 @@ try {
     }
     
     .cart-items-table th {
+        padding: var(--space-sm) var(--space-md);
         text-align: left;
-        padding: 0.75rem;
         font-weight: 600;
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
-    }
-    
-    .tab-button.active {
-        color: var(--color-primary);
-        background: rgba(124, 144, 219, 0.1);
-    }
-
-    .cart-items-table td {
-        padding: 1rem 0.75rem;
-        border-bottom: 1px solid var(--color-border);
         color: var(--color-text);
-        transition: background-color var(--transition-normal);
+        border-bottom: 2px solid var(--color-border);
+        font-size: var(--font-size-sm);
     }
     
-    .cart-items-table tbody tr:hover td {
-        background: var(--color-border-light);
+    .cart-items-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: middle;
     }
     
     .cart-item-product {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: var(--space-xs);
     }
     
     .cart-item-name {
@@ -853,69 +826,24 @@ try {
     }
     
     .cart-item-details {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-    }
-    
-    .cart-item-quantity {
-        text-align: center;
-    }
-    
-    .quantity-badge {
-        display: inline-block;
-        padding: 0.375rem 0.75rem;
-        background: var(--color-border-light);
-        color: var(--color-text);
-        border-radius: var(--radius-md);
-        font-weight: 600;
-        border: 1px solid var(--color-border);
-    }
-    
-    .cart-item-price {
-        text-align: right;
-        font-weight: 600;
-    }
-    
-    .cart-item-actions {
-        text-align: right;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
     
     .remove-button {
         background: none;
         border: none;
-        color: var(--color-error);
+        color: var(--color-danger);
         cursor: pointer;
-        padding: 0.5rem;
+        padding: var(--space-xs);
         border-radius: var(--radius-sm);
-        transition: all var(--transition-normal);
-        font-size: 0.875rem;
+        transition: all var(--transition-base);
     }
     
     .remove-button:hover {
-        background: rgba(248, 113, 113, 0.1);
-        color: var(--color-error);
+        background: rgba(var(--color-danger-rgb), 0.1);
     }
     
-    /* Carrito vacío */
-    .empty-cart {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        text-align: center;
-        color: var(--color-text-light);
-    }
-    
-    .empty-cart-icon {
-        font-size: 3rem;
-        color: var(--color-border);
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    
-    /* Total y acciones */
     .cart-footer {
         margin-top: auto;
     }
@@ -923,206 +851,148 @@ try {
     .cart-total {
         background: var(--color-primary);
         color: white;
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        margin-bottom: 1.5rem;
-        box-shadow: var(--shadow-md);
+        padding: var(--space-lg);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-md);
+        text-align: right;
     }
     
     .total-label {
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: var(--font-size-sm);
         opacity: 0.9;
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-xs);
     }
     
     .total-amount {
-        font-size: 2rem;
+        font-size: var(--font-size-2xl);
         font-weight: 700;
     }
     
     .cart-actions {
         display: flex;
-        gap: 1rem;
+        gap: var(--space-md);
     }
     
     .checkout-button {
         flex: 1;
-        padding: 1rem;
+        padding: var(--space-md);
         background: var(--color-success);
         color: white;
         border: none;
         border-radius: var(--radius-md);
         font-weight: 600;
-        font-size: 1rem;
         cursor: pointer;
-        transition: all var(--transition-normal);
+        transition: all var(--transition-base);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: var(--space-sm);
     }
     
     .checkout-button:hover {
-        background: #10b981;
+        background: var(--color-success);
+        opacity: 0.9;
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-    
-    .notification {
-        padding: 1rem;
-        border-radius: var(--radius-md);
-        margin-bottom: 1.5rem;
-        font-weight: 500;
-        animation: slideDown 0.4s ease-out;
-    }
-
-    .notification.error {
-        background: rgba(248, 113, 113, 0.1);
-        color: var(--color-text);
-        border-left: 4px solid var(--color-error);
-    }
-
-    .notification.success {
-        background: rgba(52, 211, 153, 0.1);
-        color: var(--color-text);
-        border-left: 4px solid var(--color-success);
     }
     
     .clear-button {
-        padding: 1rem 1.5rem;
+        padding: var(--space-md) var(--space-lg);
         background: var(--color-surface);
         color: var(--color-text);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         font-weight: 600;
-        font-size: 0.95rem;
         cursor: pointer;
-        transition: all var(--transition-normal);
+        transition: all var(--transition-base);
     }
     
     .clear-button:hover {
-        background: var(--color-border-light);
-    }
-    
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
         background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
-        transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
-        color: var(--color-text);
+        border-color: var(--color-danger);
+        color: var(--color-danger);
     }
     
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
+    /* Estados vacíos */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
     }
     
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--color-border);
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
     }
     
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
+    @media (max-width: 991px) {
+        .dashboard-container {
+            width: 100%;
+        }
+
         .main-content {
-            padding: 1.5rem;
+            padding: var(--space-md);
+        }
+        
+        .mobile-toggle {
+            display: none;
+        }
+        
+        .header-content {
+            padding: var(--space-md);
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
         }
         
         .pos-container {
             grid-template-columns: 1fr;
-            height: auto;
-        }
-        
-        .pos-selection-area {
-            height: 500px;
-        }
-        
-        .pos-cart-area {
-            height: auto;
-            min-height: 500px;
+            gap: var(--space-md);
         }
     }
     
-    @media (max-width: 992px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
-        
-        .sidebar.show {
-            transform: translateX(0);
-        }
-        
-        .main-content {
-            margin-left: 0;
-            width: 100%;
-        }
-        
-        .sidebar-toggle {
-            display: none;
-        }
-        
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
-            display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
-            display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1rem;
+    @media (max-width: 767px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
         
         .header-content {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
+            flex-wrap: wrap;
         }
         
         .header-controls {
             width: 100%;
             justify-content: space-between;
-        }
-        
-        .main-content {
-            padding: 1rem;
+            margin-top: var(--space-md);
         }
         
         .selection-form {
@@ -1139,86 +1009,89 @@ try {
     }
     
     @media (max-width: 480px) {
-        .selection-card {
-            padding: 1.25rem;
+        .main-content {
+            padding: var(--space-sm);
         }
         
-        .cart-card {
-            padding: 1.25rem;
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .pos-selection-area,
+        .pos-cart-area {
+            padding: var(--space-md);
         }
         
         .section-title {
-            font-size: 1.125rem;
+            font-size: var(--font-size-lg);
         }
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
-    }
+    /* ==========================================================================
+       UTILIDADES
+       ========================================================================== */
+    .text-primary { color: var(--color-primary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .text-info { color: var(--color-info); }
+    .text-muted { color: var(--color-text-secondary); }
     
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-        }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
-        }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
-        }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
-        }
-    }
+    .bg-primary { background-color: var(--color-primary); }
+    .bg-success { background-color: var(--color-success); }
+    .bg-warning { background-color: var(--color-warning); }
+    .bg-danger { background-color: var(--color-danger); }
+    .bg-info { background-color: var(--color-info); }
     
-    /* ============ PREFERENCIAS DE MOVIMIENTO REDUCIDO ============ */
-    @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-        }
-        
-        .marble-effect {
-            display: none;
-        }
-    }
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: var(--space-xs); }
+    .mb-2 { margin-bottom: var(--space-sm); }
+    .mb-3 { margin-bottom: var(--space-md); }
+    .mb-4 { margin-bottom: var(--space-lg); }
+    .mb-5 { margin-bottom: var(--space-xl); }
+    
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: var(--space-xs); }
+    .mt-2 { margin-top: var(--space-sm); }
+    .mt-3 { margin-top: var(--space-md); }
+    .mt-4 { margin-top: var(--space-lg); }
+    .mt-5 { margin-top: var(--space-xl); }
+    
+    .d-none { display: none; }
+    .d-block { display: block; }
+    .d-flex { display: flex; }
+    
+    .gap-1 { gap: var(--space-xs); }
+    .gap-2 { gap: var(--space-sm); }
+    .gap-3 { gap: var(--space-md); }
+    .gap-4 { gap: var(--space-lg); }
+    .gap-5 { gap: var(--space-xl); }
+    
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    
+    .fw-bold { font-weight: 700; }
+    .fw-semibold { font-weight: 600; }
+    .fw-medium { font-weight: 500; }
+    .fw-normal { font-weight: 400; }
+    .fw-light { font-weight: 300; }
     </style>
 </head>
 <body>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
-    
+    <!-- Contenedor Principal -->
     <div class="dashboard-container">
-        <!-- Header superior -->
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
-                <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
-                </div>
-                
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -1229,135 +1102,42 @@ try {
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
+                    <div class="header-user">
+                        <div class="header-avatar">
                             <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                    
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="action-btn logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $user_type; ?>
-                
-                <!-- Dashboard -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes -->
-                <?php if (in_array($role, ['admin', 'doc', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link active">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
-        
-        <!-- Contenido principal -->
+        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Bienvenida -->
-            <div class="stat-card mb-4" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.5rem;">
+            <!-- Bienvenida personalizada -->
+            <div class="stat-card mb-4 animate-in">
                 <div class="stat-header">
                     <div>
-                        <h2 style="font-size: 1.75rem; margin-bottom: 0.5rem;">
+                        <h2 id="greeting" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
                             <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
                         </h2>
-                        <p class="text-muted">
-                            <i class="bi bi-capsule me-1"></i> Módulo de Ventas
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-receipt me-1"></i> Módulo de Ventas
                             <span class="mx-2">•</span>
                             <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
                             <span class="mx-2">•</span>
@@ -1370,148 +1150,208 @@ try {
                 </div>
             </div>
             
+            <!-- Estadísticas principales -->
+            <div class="stats-grid">
+                <!-- Ventas del día -->
+                <div class="stat-card animate-in delay-1">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Ventas Hoy</div>
+                            <div class="stat-value"><?php echo $today_sales['count'] ?? 0; ?></div>
+                        </div>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                    </div>
+                    <div class="text-muted">
+                        Total: Q<?php echo number_format($today_sales['total'] ?? 0, 2); ?>
+                    </div>
+                </div>
+                
+                <!-- Ventas del mes -->
+                <div class="stat-card animate-in delay-2">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Ventas Mes</div>
+                            <div class="stat-value"><?php echo $month_sales['count'] ?? 0; ?></div>
+                        </div>
+                        <div class="stat-icon success">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="text-muted">
+                        Total: Q<?php echo number_format($month_sales['total'] ?? 0, 2); ?>
+                    </div>
+                </div>
+                
+                <!-- Total ventas -->
+                <div class="stat-card animate-in delay-3">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Total Ventas</div>
+                            <div class="stat-value"><?php echo $total_sales['count'] ?? 0; ?></div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                    </div>
+                    <div class="text-muted">
+                        Total: Q<?php echo number_format($total_sales['total'] ?? 0, 2); ?>
+                    </div>
+                </div>
+                
+                <!-- Productos en inventario -->
+                <div class="stat-card animate-in delay-4">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Productos</div>
+                            <div class="stat-value"><?php echo $inventory_stats['count'] ?? 0; ?></div>
+                        </div>
+                        <div class="stat-icon info">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                    </div>
+                    <div class="text-muted">
+                        Unidades: <?php echo $inventory_stats['total'] ?? 0; ?>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Punto de Venta -->
             <div class="pos-container">
                 <!-- Panel izquierdo: Búsqueda y selección -->
-                <div class="pos-selection-area">
-                    <div class="selection-card">
-                        <h3 class="section-title">
-                            <i class="bi bi-search section-title-icon"></i>
-                            Buscar Medicamentos
-                        </h3>
-                        
-                        <!-- Búsqueda -->
-                        <div class="search-container">
-                            <input type="text" 
-                                   class="search-input" 
-                                   id="searchMedication" 
-                                   placeholder="Escriba el nombre o molécula del medicamento..."
-                                   autocomplete="off">
-                            <div class="search-results" id="searchResults"></div>
+                <div class="pos-selection-area animate-in">
+                    <h3 class="section-title">
+                        <i class="bi bi-search section-title-icon"></i>
+                        Buscar Medicamentos
+                    </h3>
+                    
+                    <!-- Búsqueda -->
+                    <div class="search-container">
+                        <input type="text" 
+                               class="search-input" 
+                               id="searchMedication" 
+                               placeholder="Escriba el nombre o molécula del medicamento..."
+                               autocomplete="off">
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                    
+                    <!-- Detalles de selección -->
+                    <div class="selection-details" id="selectionDetails">
+                        <div class="selected-product mb-3">
+                            <h4 class="selected-product-name" id="selectedProductName">---</h4>
+                            <p class="selected-product-details" id="selectedProductDetails">---</p>
+                            <div class="text-muted">
+                                Disponible: <span id="availableStock" class="fw-bold text-primary">0</span> unidades
+                            </div>
                         </div>
                         
-                        <!-- Detalles de selección -->
-                        <div class="selection-details" id="selectionDetails">
-                            <div class="selected-product">
-                                <h4 class="selected-product-name" id="selectedProductName">---</h4>
-                                <p class="selected-product-details" id="selectedProductDetails">---</p>
+                        <form class="selection-form" id="addToCartForm">
+                            <div class="form-group">
+                                <label class="form-label">Precio Unitario</label>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">Q</span>
+                                    <input type="number" 
+                                           class="form-input" 
+                                           id="unitPrice" 
+                                           step="0.01" 
+                                           min="0" 
+                                           required
+                                           style="flex: 1;">
+                                </div>
                             </div>
                             
-                            <form class="selection-form" id="addToCartForm">
-                                <div class="form-group">
-                                    <label class="form-label">Precio Unitario</label>
-                                    <div class="form-input-group">
-                                        <span class="input-addon">Q</span>
-                                        <input type="number" 
-                                               class="form-input" 
-                                               id="unitPrice" 
-                                               step="0.01" 
-                                               min="0" 
-                                               required>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Cantidad</label>
-                                    <div class="form-input-group">
-                                        <input type="number" 
-                                               class="form-input" 
-                                               id="quantity" 
-                                               min="1" 
-                                               value="1" 
-                                               required>
-                                        <span class="input-addon">
-                                            Disp: <span id="availableStock" class="ms-1 fw-bold text-primary">0</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <button type="button" class="add-button" id="addToCartBtn">
-                                    <i class="bi bi-cart-plus"></i>
-                                    Agregar al Carrito
-                                </button>
-                            </form>
-                        </div>
+                            <div class="form-group">
+                                <label class="form-label">Cantidad</label>
+                                <input type="number" 
+                                       class="form-input" 
+                                       id="quantity" 
+                                       min="1" 
+                                       value="1" 
+                                       required>
+                            </div>
+                            
+                            <button type="button" class="add-button" id="addToCartBtn">
+                                <i class="bi bi-cart-plus"></i>
+                                Agregar al Carrito
+                            </button>
+                        </form>
                     </div>
                 </div>
                 
                 <!-- Panel derecho: Carrito de compras -->
-                <div class="pos-cart-area">
-                    <div class="cart-card">
-                        <!-- Encabezado del carrito -->
-                        <div class="cart-header">
-                            <h3 class="cart-title">
-                                <i class="bi bi-cart4"></i>
-                                Carrito de Ventas
-                            </h3>
+                <div class="pos-cart-area animate-in delay-1">
+                    <!-- Encabezado del carrito -->
+                    <div class="cart-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-cart4 section-title-icon"></i>
+                            Carrito de Ventas
+                        </h3>
+                        
+                        <!-- Datos del cliente -->
+                        <div class="client-form mt-3">
+                            <div class="form-group">
+                                <label class="form-label">Nombre del Cliente</label>
+                                <input type="text" 
+                                       class="form-input" 
+                                       id="clientName" 
+                                       placeholder="Nombre completo del cliente...">
+                            </div>
                             
-                            <!-- Datos del cliente -->
-                            <div class="client-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label">Nombre del Cliente</label>
-                                        <input type="text" 
-                                               class="form-input" 
-                                               id="clientName" 
-                                               placeholder="Nombre completo del cliente...">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label class="form-label">Método de Pago</label>
-                                        <select class="form-input" id="paymentMethod">
-                                            <option value="Efectivo">Efectivo</option>
-                                            <option value="Tarjeta">Tarjeta</option>
-                                            <option value="Transferencia">Transferencia</option>
-                                            <option value="Seguro">Seguro Médico</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div class="form-group mt-2">
+                                <label class="form-label">Método de Pago</label>
+                                <select class="form-input" id="paymentMethod">
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Seguro">Seguro Médico</option>
+                                </select>
                             </div>
                         </div>
-                        
-                        <!-- Lista de items -->
-                        <div class="cart-items">
-                            <div class="empty-cart" id="emptyCart">
-                                <div class="empty-cart-icon">
-                                    <i class="bi bi-cart-x"></i>
-                                </div>
-                                <h4 class="text-muted mb-2">Carrito Vacío</h4>
-                                <p class="text-muted mb-3">Busque y agregue productos para realizar una venta.</p>
+                    </div>
+                    
+                    <!-- Lista de items -->
+                    <div class="cart-items">
+                        <div class="empty-state" id="emptyCart">
+                            <div class="empty-icon">
+                                <i class="bi bi-cart-x"></i>
                             </div>
-                            
-                            <table class="cart-items-table" id="cartTable" style="display: none;">
-                                <thead>
-                                    <tr>
-                                        <th>Producto</th>
-                                        <th style="text-align: center;">Cant.</th>
-                                        <th style="text-align: right;">Subtotal</th>
-                                        <th style="width: 40px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="cartItemsBody">
-                                    <!-- Items se insertarán aquí dinámicamente -->
-                                </tbody>
-                            </table>
+                            <h4 class="text-muted mb-2">Carrito Vacío</h4>
+                            <p class="text-muted mb-3">Busque y agregue productos para realizar una venta.</p>
                         </div>
                         
-                        <!-- Total y acciones -->
-                        <div class="cart-footer">
-                            <div class="cart-total">
-                                <div class="total-label">Total a Pagar</div>
-                                <div class="total-amount" id="cartTotal">Q0.00</div>
-                            </div>
+                        <table class="cart-items-table" id="cartTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th style="text-align: center;">Cant.</th>
+                                    <th style="text-align: right;">Subtotal</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartItemsBody">
+                                <!-- Items se insertarán aquí dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Total y acciones -->
+                    <div class="cart-footer">
+                        <div class="cart-total">
+                            <div class="total-label">Total a Pagar</div>
+                            <div class="total-amount" id="cartTotal">Q0.00</div>
+                        </div>
+                        
+                        <div class="cart-actions">
+                            <button class="clear-button" id="clearCartBtn">
+                                <i class="bi bi-trash"></i>
+                                Vaciar Carrito
+                            </button>
                             
-                            <div class="cart-actions">
-                                <button class="clear-button" id="clearCartBtn">
-                                    <i class="bi bi-trash"></i>
-                                    Vaciar Carrito
-                                </button>
-                                
-                                <button class="checkout-button" id="checkoutBtn">
-                                    <i class="bi bi-printer-fill"></i>
-                                    Procesar Venta
-                                </button>
-                            </div>
+                            <button class="checkout-button" id="checkoutBtn">
+                                <i class="bi bi-printer-fill"></i>
+                                Procesar Venta
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1519,595 +1359,585 @@ try {
         </main>
     </div>
     
-    <!-- JavaScript -->
+    <!-- JavaScript Optimizado (mismo que dashboard con funcionalidad POS) -->
     <script>
-    // Módulo de Ventas - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del punto de venta
+    // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+    // Módulo de Ventas - Punto de Venta
     
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const greetingElement = document.getElementById('greeting-text');
-        const currentTimeElement = document.getElementById('current-time');
+    (function() {
+        'use strict';
         
-        // Elementos del POS
-        const searchMedication = document.getElementById('searchMedication');
-        const searchResults = document.getElementById('searchResults');
-        const selectionDetails = document.getElementById('selectionDetails');
-        const selectedProductName = document.getElementById('selectedProductName');
-        const selectedProductDetails = document.getElementById('selectedProductDetails');
-        const unitPrice = document.getElementById('unitPrice');
-        const quantity = document.getElementById('quantity');
-        const availableStock = document.getElementById('availableStock');
-        const addToCartBtn = document.getElementById('addToCartBtn');
-        const clientName = document.getElementById('clientName');
-        const paymentMethod = document.getElementById('paymentMethod');
-        const emptyCart = document.getElementById('emptyCart');
-        const cartTable = document.getElementById('cartTable');
-        const cartItemsBody = document.getElementById('cartItemsBody');
-        const cartTotal = document.getElementById('cartTotal');
-        const clearCartBtn = document.getElementById('clearCartBtn');
-        const checkoutBtn = document.getElementById('checkoutBtn');
+        // ==========================================================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ==========================================================================
+        const CONFIG = {
+            themeKey: 'dashboard-theme',
+
+            transitionDuration: 300,
+            animationDelay: 100
+        };
         
-        // ============ DATOS GLOBALES ============
+        // ==========================================================================
+        // REFERENCIAS A ELEMENTOS DOM
+        // ==========================================================================
+        const DOM = {
+            html: document.documentElement,
+            body: document.body,
+            themeSwitch: document.getElementById('themeSwitch'),
+            greetingElement: document.getElementById('greeting-text'),
+            currentTimeElement: document.getElementById('current-time'),
+            
+            // Elementos del POS
+            searchMedication: document.getElementById('searchMedication'),
+            searchResults: document.getElementById('searchResults'),
+            selectionDetails: document.getElementById('selectionDetails'),
+            selectedProductName: document.getElementById('selectedProductName'),
+            selectedProductDetails: document.getElementById('selectedProductDetails'),
+            unitPrice: document.getElementById('unitPrice'),
+            quantity: document.getElementById('quantity'),
+            availableStock: document.getElementById('availableStock'),
+            addToCartBtn: document.getElementById('addToCartBtn'),
+            clientName: document.getElementById('clientName'),
+            paymentMethod: document.getElementById('paymentMethod'),
+            emptyCart: document.getElementById('emptyCart'),
+            cartTable: document.getElementById('cartTable'),
+            cartItemsBody: document.getElementById('cartItemsBody'),
+            cartTotal: document.getElementById('cartTotal'),
+            clearCartBtn: document.getElementById('clearCartBtn'),
+            checkoutBtn: document.getElementById('checkoutBtn')
+        };
+        
+        // ==========================================================================
+        // DATOS GLOBALES
+        // ==========================================================================
         let cartItems = [];
         let currentInventory = <?php echo json_encode($inventario); ?>;
         let selectedItem = null;
         
-        // ============ FUNCIONALIDAD DEL TEMA ============
-        
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        }
-        
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
-            
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
-        }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            }
-        }
-        
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
+        // ==========================================================================
+        // MANEJO DE TEMA (DÍA/NOCHE)
+        // ==========================================================================
+        class ThemeManager {
+            constructor() {
+                this.theme = this.getInitialTheme();
+                this.applyTheme(this.theme);
+                this.setupEventListeners();
             }
             
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-        }
-        
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ SALUDO DINÁMICO ============
-        
-        // Actualizar saludo según hora del día
-        function updateGreeting() {
-            const hour = new Date().getHours();
-            let greeting = '';
-            
-            if (hour < 12) {
-                greeting = 'Buenos días';
-            } else if (hour < 19) {
-                greeting = 'Buenas tardes';
-            } else {
-                greeting = 'Buenas noches';
-            }
-            
-            if (greetingElement) {
-                greetingElement.textContent = greeting;
-            }
-        }
-        
-        // ============ RELOJ EN TIEMPO REAL ============
-        
-        // Actualizar hora actual
-        function updateCurrentTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('es-GT', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            if (currentTimeElement) {
-                currentTimeElement.textContent = timeString;
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DEL PUNTO DE VENTA ============
-        
-        // Búsqueda de medicamentos en tiempo real
-        function performSearch(searchTerm) {
-            searchResults.innerHTML = '';
-            
-            if (searchTerm.length < 2) {
-                searchResults.style.display = 'none';
-                return;
-            }
-            
-            const term = searchTerm.toLowerCase();
-            const results = currentInventory.filter(item => 
-                item.nom_medicamento.toLowerCase().includes(term) || 
-                item.mol_medicamento.toLowerCase().includes(term)
-            ).slice(0, 10);
-            
-            if (results.length > 0) {
-                searchResults.style.display = 'block';
+            getInitialTheme() {
+                const savedTheme = localStorage.getItem(CONFIG.themeKey);
+                if (savedTheme) return savedTheme;
                 
-                results.forEach(item => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'search-result-item';
-                    
-                    // Verificar si ya está en el carrito
-                    const inCart = cartItems.some(cartItem => cartItem.id === item.id_inventario);
-                    
-                    // Determinar clase de stock
-                    let stockClass = 'success';
-                    if (item.disponible <= 0) stockClass = 'danger';
-                    else if (item.disponible <= 5) stockClass = 'warning';
-                    
-                    resultItem.innerHTML = `
-                        <div class="search-item-info">
-                            <div class="search-item-name">${item.nom_medicamento}</div>
-                            <div class="search-item-details">${item.mol_medicamento} • ${item.presentacion_med}</div>
-                        </div>
-                        <div class="search-item-stock">
-                            <span class="stock-badge ${stockClass}">${item.disponible} disp.</span>
-                        </div>
-                    `;
-                    
-                    resultItem.addEventListener('click', () => selectProduct(item));
-                    searchResults.appendChild(resultItem);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) return 'dark';
+                
+                return 'light';
+            }
+            
+            applyTheme(theme) {
+                DOM.html.setAttribute('data-theme', theme);
+                localStorage.setItem(CONFIG.themeKey, theme);
+                
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+                }
+            }
+            
+            toggleTheme() {
+                const newTheme = this.theme === 'light' ? 'dark' : 'light';
+                this.theme = newTheme;
+                this.applyTheme(newTheme);
+                
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        DOM.themeSwitch.style.transform = 'rotate(0)';
+                    }, CONFIG.transitionDuration);
+                }
+            }
+            
+            setupEventListeners() {
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                }
+                
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(CONFIG.themeKey)) {
+                        this.theme = e.matches ? 'dark' : 'light';
+                        this.applyTheme(this.theme);
+                    }
                 });
-            } else {
-                searchResults.style.display = 'block';
-                searchResults.innerHTML = '<div class="search-result-item text-muted text-center">No se encontraron resultados</div>';
             }
         }
         
-        // Seleccionar producto
-        function selectProduct(item) {
-            selectedItem = item;
-            
-            // Actualizar interfaz
-            selectedProductName.textContent = `${item.nom_medicamento} (${item.presentacion_med})`;
-            selectedProductDetails.textContent = `${item.mol_medicamento} • ${item.casa_farmaceutica}`;
-            availableStock.textContent = item.disponible;
-            quantity.max = item.disponible;
-            quantity.value = 1;
-            
-            // Obtener precio de venta
-            getSalePrice(item.id_inventario).then(price => {
-                unitPrice.value = price.toFixed(2);
-            });
-            
-            // Mostrar detalles de selección
-            selectionDetails.style.display = 'block';
-            searchResults.style.display = 'none';
-            searchMedication.value = item.nom_medicamento;
-            
-            // Enfocar en cantidad
-            quantity.focus();
-        }
-        
-        // Obtener precio de venta del producto
-        async function getSalePrice(idInventario) {
-            try {
-                const response = await fetch(`get_precio.php?id_inventario=${idInventario}`);
-                const data = await response.json();
-                return data.status === 'success' ? parseFloat(data.precio_venta) : 0;
-            } catch (error) {
-                console.error('Error al obtener precio:', error);
-                return 0;
-            }
-        }
-        
-        // Agregar producto al carrito
-        function addToCart() {
-            if (!selectedItem) return;
-            
-            const price = parseFloat(unitPrice.value);
-            const qty = parseInt(quantity.value);
-            const stock = parseInt(availableStock.textContent);
-            
-            // Validaciones
-            if (isNaN(price) || price <= 0) {
-                showAlert('Precio inválido', 'error');
-                return;
+        // ==========================================================================
+        // COMPONENTES DINÁMICOS
+        // ==========================================================================
+        class DynamicComponents {
+            constructor() {
+                this.setupGreeting();
+                this.setupClock();
+                this.setupPOS();
+                this.setupAnimations();
             }
             
-            if (isNaN(qty) || qty <= 0 || qty > stock) {
-                showAlert('Cantidad inválida o insuficiente stock', 'error');
-                return;
+            setupGreeting() {
+                if (!DOM.greetingElement) return;
+                
+                const hour = new Date().getHours();
+                let greeting = '';
+                
+                if (hour < 12) {
+                    greeting = 'Buenos días';
+                } else if (hour < 19) {
+                    greeting = 'Buenas tardes';
+                } else {
+                    greeting = 'Buenas noches';
+                }
+                
+                DOM.greetingElement.textContent = greeting;
             }
             
-            // Verificar si ya está en el carrito
-            const existingIndex = cartItems.findIndex(item => item.id === selectedItem.id_inventario);
+            setupClock() {
+                if (!DOM.currentTimeElement) return;
+                
+                const updateClock = () => {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('es-GT', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    DOM.currentTimeElement.textContent = timeString;
+                };
+                
+                updateClock();
+                setInterval(updateClock, 60000);
+            }
             
-            if (existingIndex !== -1) {
-                // Actualizar cantidad existente
-                const newQty = cartItems[existingIndex].quantity + qty;
-                if (newQty > stock) {
-                    showAlert('La cantidad total excede el stock disponible', 'error');
+            setupPOS() {
+                this.setupSearch();
+                this.setupCart();
+            }
+            
+            setupSearch() {
+                // Búsqueda en tiempo real
+                DOM.searchMedication.addEventListener('input', () => {
+                    this.performSearch(DOM.searchMedication.value);
+                });
+                
+                // Cerrar resultados al hacer clic fuera
+                document.addEventListener('click', (event) => {
+                    if (!DOM.searchMedication.contains(event.target) && !DOM.searchResults.contains(event.target)) {
+                        DOM.searchResults.style.display = 'none';
+                    }
+                });
+            }
+            
+            performSearch(searchTerm) {
+                DOM.searchResults.innerHTML = '';
+                
+                if (searchTerm.length < 2) {
+                    DOM.searchResults.style.display = 'none';
                     return;
                 }
-                cartItems[existingIndex].quantity = newQty;
-                cartItems[existingIndex].subtotal = newQty * price;
-            } else {
-                // Agregar nuevo item
-                cartItems.push({
-                    id: selectedItem.id_inventario,
-                    name: selectedItem.nom_medicamento,
-                    details: `${selectedItem.mol_medicamento} • ${selectedItem.presentacion_med}`,
-                    price: price,
-                    quantity: qty,
-                    subtotal: price * qty
-                });
-            }
-            
-            // Actualizar interfaz del carrito
-            updateCartDisplay();
-            
-            // Reservar stock
-            reserveStock(selectedItem.id_inventario, 
-                cartItems.find(item => item.id === selectedItem.id_inventario).quantity);
-            
-            // Resetear selección
-            resetSelection();
-            
-            // Mostrar confirmación
-            showAlert('Producto agregado al carrito', 'success');
-        }
-        
-        // Reservar stock en el servidor
-        async function reserveStock(idInventario, cantidad) {
-            try {
-                await fetch('reserve_item.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_inventario: idInventario, cantidad: cantidad })
-                });
-            } catch (error) {
-                console.error('Error al reservar stock:', error);
-            }
-        }
-        
-        // Liberar stock del servidor
-        async function releaseStock(idInventario) {
-            try {
-                await fetch('release_item.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id_inventario: idInventario })
-                });
-            } catch (error) {
-                console.error('Error al liberar stock:', error);
-            }
-        }
-        
-        // Actualizar display del carrito
-        function updateCartDisplay() {
-            // Actualizar tabla
-            cartItemsBody.innerHTML = '';
-            
-            if (cartItems.length === 0) {
-                emptyCart.style.display = 'flex';
-                cartTable.style.display = 'none';
-                cartTotal.textContent = 'Q0.00';
-            } else {
-                emptyCart.style.display = 'none';
-                cartTable.style.display = 'table';
                 
-                let total = 0;
+                const term = searchTerm.toLowerCase();
+                const results = currentInventory.filter(item => 
+                    item.nom_medicamento.toLowerCase().includes(term) || 
+                    item.mol_medicamento.toLowerCase().includes(term)
+                ).slice(0, 10);
                 
-                cartItems.forEach((item, index) => {
-                    total += item.subtotal;
+                if (results.length > 0) {
+                    DOM.searchResults.style.display = 'block';
                     
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <div class="cart-item-product">
-                                <div class="cart-item-name">${item.name}</div>
-                                <div class="cart-item-details">${item.details}</div>
-                            </div>
-                        </td>
-                        <td class="cart-item-quantity">
-                            <span class="quantity-badge">${item.quantity}</span>
-                        </td>
-                        <td class="cart-item-price">Q${item.subtotal.toFixed(2)}</td>
-                        <td class="cart-item-actions">
-                            <button class="remove-button" data-index="${index}">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    
-                    cartItemsBody.appendChild(row);
-                });
-                
-                // Actualizar total
-                cartTotal.textContent = `Q${total.toFixed(2)}`;
-                
-                // Agregar event listeners a botones de eliminar
-                document.querySelectorAll('.remove-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const index = parseInt(this.getAttribute('data-index'));
-                        removeFromCart(index);
-                    });
-                });
-            }
-        }
-        
-        // Remover item del carrito
-        function removeFromCart(index) {
-            const removedItem = cartItems[index];
-            
-            // Liberar stock
-            releaseStock(removedItem.id);
-            
-            // Remover del array
-            cartItems.splice(index, 1);
-            
-            // Actualizar display
-            updateCartDisplay();
-            
-            showAlert('Producto removido del carrito', 'info');
-        }
-        
-        // Vaciar carrito
-        function clearCart() {
-            if (cartItems.length === 0) return;
-            
-            // Liberar todo el stock reservado
-            cartItems.forEach(item => {
-                releaseStock(item.id);
-            });
-            
-            // Limpiar array
-            cartItems = [];
-            
-            // Actualizar display
-            updateCartDisplay();
-            
-            showAlert('Carrito vaciado', 'info');
-        }
-        
-        // Procesar venta
-        async function processSale() {
-            // Validaciones
-            if (cartItems.length === 0) {
-                showAlert('El carrito está vacío', 'error');
-                return;
-            }
-            
-            if (!clientName.value.trim()) {
-                showAlert('Ingrese el nombre del cliente', 'error');
-                clientName.focus();
-                return;
-            }
-            
-            // Preparar datos de la venta
-            const saleData = {
-                nombre_cliente: clientName.value.trim(),
-                tipo_pago: paymentMethod.value,
-                total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
-                estado: 'Pagado',
-                items: cartItems.map(item => ({
-                    id_inventario: item.id,
-                    nombre: item.name,
-                    cantidad: item.quantity,
-                    precio_unitario: item.price,
-                    subtotal: item.subtotal
-                }))
-            };
-            
-            // Mostrar carga
-            Swal.fire({
-                title: 'Procesando venta...',
-                text: 'Por favor espere',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-            
-            try {
-                // Enviar al servidor
-                const response = await fetch('save_venta.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(saleData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Venta completada!',
-                        text: 'Redirigiendo al comprobante...',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        // Abrir recibo en nueva pestaña
-                        window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
+                    results.forEach(item => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'search-result-item';
                         
-                        // Recargar página
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                        // Determinar clase de stock
+                        let stockClass = 'text-success';
+                        if (item.disponible <= 0) stockClass = 'text-danger';
+                        else if (item.disponible <= 5) stockClass = 'text-warning';
+                        
+                        resultItem.innerHTML = `
+                            <div style="font-weight: 600;">${item.nom_medicamento}</div>
+                            <div style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                                ${item.mol_medicamento} • ${item.presentacion_med}
+                            </div>
+                            <div class="${stockClass}" style="font-size: 0.875rem; font-weight: 600;">
+                                ${item.disponible} disponible${item.disponible !== 1 ? 's' : ''}
+                            </div>
+                        `;
+                        
+                        resultItem.addEventListener('click', () => this.selectProduct(item));
+                        DOM.searchResults.appendChild(resultItem);
                     });
                 } else {
-                    showAlert(data.message || 'Error al procesar la venta', 'error');
+                    DOM.searchResults.style.display = 'block';
+                    DOM.searchResults.innerHTML = '<div class="search-result-item text-center text-muted">No se encontraron resultados</div>';
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error de conexión con el servidor', 'error');
+            }
+            
+            selectProduct(item) {
+                selectedItem = item;
+                
+                // Actualizar interfaz
+                DOM.selectedProductName.textContent = `${item.nom_medicamento} (${item.presentacion_med})`;
+                DOM.selectedProductDetails.textContent = `${item.mol_medicamento} • ${item.casa_farmaceutica}`;
+                DOM.availableStock.textContent = item.disponible;
+                DOM.quantity.max = item.disponible;
+                DOM.quantity.value = 1;
+                
+                // Obtener precio de venta
+                this.getSalePrice(item.id_inventario).then(price => {
+                    DOM.unitPrice.value = price.toFixed(2);
+                });
+                
+                // Mostrar detalles de selección
+                DOM.selectionDetails.style.display = 'block';
+                DOM.searchResults.style.display = 'none';
+                DOM.searchMedication.value = item.nom_medicamento;
+                
+                // Enfocar en cantidad
+                DOM.quantity.focus();
+            }
+            
+            async getSalePrice(idInventario) {
+                try {
+                    const response = await fetch(`get_precio.php?id_inventario=${idInventario}`);
+                    const data = await response.json();
+                    return data.status === 'success' ? parseFloat(data.precio_venta) : 0;
+                } catch (error) {
+                    console.error('Error al obtener precio:', error);
+                    return 0;
+                }
+            }
+            
+            async reserveStock(idInventario, cantidad) {
+                try {
+                    await fetch('reserve_item.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id_inventario: idInventario, cantidad: cantidad })
+                    });
+                } catch (error) {
+                    console.error('Error al reservar stock:', error);
+                }
+            }
+            
+            async releaseStock(idInventario) {
+                try {
+                    await fetch('release_item.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id_inventario: idInventario })
+                    });
+                } catch (error) {
+                    console.error('Error al liberar stock:', error);
+                }
+            }
+            
+            setupCart() {
+                // Agregar al carrito
+                DOM.addToCartBtn.addEventListener('click', () => this.addToCart());
+                
+                // Permitir Enter en cantidad para agregar
+                DOM.quantity.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.addToCart();
+                    }
+                });
+                
+                // Vaciar carrito
+                DOM.clearCartBtn.addEventListener('click', () => this.clearCart());
+                
+                // Procesar venta
+                DOM.checkoutBtn.addEventListener('click', () => this.processSale());
+            }
+            
+            addToCart() {
+                if (!selectedItem) return;
+                
+                const price = parseFloat(DOM.unitPrice.value);
+                const qty = parseInt(DOM.quantity.value);
+                const stock = parseInt(DOM.availableStock.textContent);
+                
+                // Validaciones
+                if (isNaN(price) || price <= 0) {
+                    this.showAlert('Precio inválido', 'error');
+                    return;
+                }
+                
+                if (isNaN(qty) || qty <= 0 || qty > stock) {
+                    this.showAlert('Cantidad inválida o insuficiente stock', 'error');
+                    return;
+                }
+                
+                // Verificar si ya está en el carrito
+                const existingIndex = cartItems.findIndex(item => item.id === selectedItem.id_inventario);
+                
+                if (existingIndex !== -1) {
+                    const newQty = cartItems[existingIndex].quantity + qty;
+                    if (newQty > stock) {
+                        this.showAlert('La cantidad total excede el stock disponible', 'error');
+                        return;
+                    }
+                    cartItems[existingIndex].quantity = newQty;
+                    cartItems[existingIndex].subtotal = newQty * price;
+                } else {
+                    cartItems.push({
+                        id: selectedItem.id_inventario,
+                        name: selectedItem.nom_medicamento,
+                        details: `${selectedItem.mol_medicamento} • ${selectedItem.presentacion_med}`,
+                        price: price,
+                        quantity: qty,
+                        subtotal: price * qty
+                    });
+                }
+                
+                // Actualizar interfaz del carrito
+                this.updateCartDisplay();
+                
+                // Reservar stock
+                this.reserveStock(selectedItem.id_inventario, 
+                    cartItems.find(item => item.id === selectedItem.id_inventario).quantity);
+                
+                // Resetear selección
+                this.resetSelection();
+                
+                // Mostrar confirmación
+                this.showAlert('Producto agregado al carrito', 'success');
+            }
+            
+            updateCartDisplay() {
+                DOM.cartItemsBody.innerHTML = '';
+                
+                if (cartItems.length === 0) {
+                    DOM.emptyCart.style.display = 'flex';
+                    DOM.cartTable.style.display = 'none';
+                    DOM.cartTotal.textContent = 'Q0.00';
+                } else {
+                    DOM.emptyCart.style.display = 'none';
+                    DOM.cartTable.style.display = 'table';
+                    
+                    let total = 0;
+                    
+                    cartItems.forEach((item, index) => {
+                        total += item.subtotal;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <div class="cart-item-product">
+                                    <div class="cart-item-name">${item.name}</div>
+                                    <div class="cart-item-details">${item.details}</div>
+                                </div>
+                            </td>
+                            <td style="text-align: center; font-weight: 600;">${item.quantity}</td>
+                            <td style="text-align: right; font-weight: 600;">Q${item.subtotal.toFixed(2)}</td>
+                            <td>
+                                <button class="remove-button" data-index="${index}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        DOM.cartItemsBody.appendChild(row);
+                    });
+                    
+                    // Actualizar total
+                    DOM.cartTotal.textContent = `Q${total.toFixed(2)}`;
+                    
+                    // Agregar event listeners a botones de eliminar
+                    document.querySelectorAll('.remove-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const index = parseInt(this.getAttribute('data-index'));
+                            DynamicComponents.prototype.removeFromCart(index);
+                        });
+                    });
+                }
+            }
+            
+            removeFromCart(index) {
+                const removedItem = cartItems[index];
+                
+                // Liberar stock
+                this.releaseStock(removedItem.id);
+                
+                // Remover del array
+                cartItems.splice(index, 1);
+                
+                // Actualizar display
+                this.updateCartDisplay();
+                
+                this.showAlert('Producto removido del carrito', 'info');
+            }
+            
+            clearCart() {
+                if (cartItems.length === 0) return;
+                
+                // Liberar todo el stock reservado
+                cartItems.forEach(item => {
+                    this.releaseStock(item.id);
+                });
+                
+                // Limpiar array
+                cartItems = [];
+                
+                // Actualizar display
+                this.updateCartDisplay();
+                
+                this.showAlert('Carrito vaciado', 'info');
+            }
+            
+            async processSale() {
+                if (cartItems.length === 0) {
+                    this.showAlert('El carrito está vacío', 'error');
+                    return;
+                }
+                
+                if (!DOM.clientName.value.trim()) {
+                    this.showAlert('Ingrese el nombre del cliente', 'error');
+                    DOM.clientName.focus();
+                    return;
+                }
+                
+                // Preparar datos de la venta
+                const saleData = {
+                    nombre_cliente: DOM.clientName.value.trim(),
+                    tipo_pago: DOM.paymentMethod.value,
+                    total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
+                    estado: 'Pagado',
+                    items: cartItems.map(item => ({
+                        id_inventario: item.id,
+                        nombre: item.name,
+                        cantidad: item.quantity,
+                        precio_unitario: item.price,
+                        subtotal: item.subtotal
+                    }))
+                };
+                
+                // Mostrar carga
+                Swal.fire({
+                    title: 'Procesando venta...',
+                    text: 'Por favor espere',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                
+                try {
+                    const response = await fetch('save_venta.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(saleData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Venta completada!',
+                            text: 'Redirigiendo al comprobante...',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            // Abrir recibo en nueva pestaña
+                            window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
+                            
+                            // Recargar página
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        });
+                    } else {
+                        this.showAlert(data.message || 'Error al procesar la venta', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showAlert('Error de conexión con el servidor', 'error');
+                }
+            }
+            
+            resetSelection() {
+                selectedItem = null;
+                DOM.selectionDetails.style.display = 'none';
+                DOM.searchMedication.value = '';
+                DOM.searchResults.style.display = 'none';
+                DOM.unitPrice.value = '';
+                DOM.quantity.value = 1;
+                DOM.availableStock.textContent = '0';
+            }
+            
+            showAlert(message, type = 'info') {
+                const colors = {
+                    success: '#198754',
+                    error: '#dc3545',
+                    warning: '#ffc107',
+                    info: '#0dcaf0'
+                };
+                
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: type,
+                    title: message,
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: 'var(--color-card)',
+                    color: 'var(--color-text)'
+                });
+            }
+            
+            setupAnimations() {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-in');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                
+                document.querySelectorAll('.stat-card, .pos-selection-area, .pos-cart-area').forEach(el => {
+                    observer.observe(el);
+                });
             }
         }
         
-        // Resetear selección
-        function resetSelection() {
-            selectedItem = null;
-            selectionDetails.style.display = 'none';
-            searchMedication.value = '';
-            searchResults.style.display = 'none';
-            unitPrice.value = '';
-            quantity.value = 1;
-            availableStock.textContent = '0';
-        }
-        
-        // Mostrar alerta
-        function showAlert(message, type = 'info') {
-            const colors = {
-                success: '#34d399',
-                error: '#f87171',
-                warning: '#fbbf24',
-                info: '#38bdf8'
+        // ==========================================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ==========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar componentes
+            const themeManager = new ThemeManager();
+            const dynamicComponents = new DynamicComponents();
+            
+            // Exponer APIs necesarias globalmente
+            window.dashboard = {
+                theme: themeManager,
+                components: dynamicComponents,
+                pos: dynamicComponents
             };
             
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: type,
-                title: message,
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)'
-            });
-        }
-        
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        updateGreeting();
-        updateCurrentTime();
-        
-        // Configurar intervalo para el reloj
-        setInterval(updateCurrentTime, 60000);
-        
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
-        }
-        
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
-        }
-        
-        // Búsqueda
-        searchMedication.addEventListener('input', function() {
-            performSearch(this.value);
+            // Log de inicialización
+            console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
+            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+            console.log('Productos disponibles: <?php echo count($inventario); ?>');
+            console.log('Ventas hoy: <?php echo $today_sales['count'] ?? 0; ?>');
+            console.log('Total ventas hoy: Q<?php echo number_format($today_sales['total'] ?? 0, 2); ?>');
         });
-        
-        // Cerrar resultados al hacer clic fuera
-        document.addEventListener('click', function(event) {
-            if (!searchMedication.contains(event.target) && !searchResults.contains(event.target)) {
-                searchResults.style.display = 'none';
-            }
-        });
-        
-        // Agregar al carrito
-        addToCartBtn.addEventListener('click', addToCart);
-        
-        // Permitir Enter en cantidad para agregar
-        quantity.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addToCart();
-            }
-        });
-        
-        // Vaciar carrito
-        clearCartBtn.addEventListener('click', clearCart);
-        
-        // Procesar venta
-        checkoutBtn.addEventListener('click', processSale);
-        
-        // Cerrar sidebar al cambiar tamaño de ventana
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        });
-        
-        // ============ CONSOLA DE DESARROLLO ============
-        
-        console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño Minimalista con Efecto Mármol');
-        console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-        console.log('Productos disponibles: <?php echo count($inventario); ?>');
-    });
+    })();
     </script>
 </body>
 </html>

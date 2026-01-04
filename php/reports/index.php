@@ -1,7 +1,15 @@
 <?php
 // index.php - Módulo de Reportes - Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
+// Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
+
+// Verificar sesión activa
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../auth/login.php");
+    exit;
+}
+
+// Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
@@ -9,45 +17,75 @@ require_once '../../includes/functions.php';
 date_default_timezone_set('America/Guatemala');
 verify_session();
 
-// Obtener rol de usuario
-$user_type = $_SESSION['tipoUsuario'];
-$user_name = $_SESSION['nombre'];
-$user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
-
-// Obtener fechas para filtros (predeterminado: mes actual)
-$fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
-$fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-t');
-
-    // Ajustar para rangos de jornada
-    // Jornada 1: 08:00 AM a 05:00 PM (17:00)
-    // Jornada 2: 05:00 PM (17:00) a 08:00 AM del día siguiente
-    $start_datetime = $fecha_inicio . ' 08:00:00';
-$end_datetime = date('Y-m-d', strtotime($fecha_fin . ' +1 day')) . ' 07:59:59';
-
 try {
+    // Conectar a la base de datos
     $database = new Database();
     $conn = $database->getConnection();
-
-    // ============ CÁLCULO DE MÉTRICAS PRINCIPALES ============
-
-    // 1. Ventas de medicamentos (ingresos brutos por ventas)
+    
+    // Obtener información del usuario
+    $user_id = $_SESSION['user_id'];
+    $user_type = $_SESSION['tipoUsuario'];
+    $user_name = $_SESSION['nombre'];
+    $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    
+    // Obtener fechas para filtros (predeterminado: mes actual)
+    $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
+    $fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-t');
+    
+    // Ajustar para rangos de jornada
+    $start_datetime = $fecha_inicio . ' 08:00:00';
+    $end_datetime = date('Y-m-d', strtotime($fecha_fin . ' +1 day')) . ' 07:59:59';
+    
+    // ============ CONSULTAS ESTADÍSTICAS PARA EL DASHBOARD ============
+    
+    // Configurar filtros según tipo de usuario
+    $is_doctor = $user_type === 'doc';
+    $doctor_filter = $is_doctor ? " AND id_doctor = ?" : "";
+    $today = date('Y-m-d');
+    
+    // 1. Citas de hoy
+    $params = $is_doctor ? [$today, $user_id] : [$today];
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ?" . $doctor_filter);
+    $stmt->execute($params);
+    $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 2. Total de citas en el sistema
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas");
+    $stmt->execute();
+    $total_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 3. Hospitalizaciones Activas
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo'");
+    $stmt->execute();
+    $active_hospitalizations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 4. Compras pendientes
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
+    $stmt->execute();
+    $pending_purchases = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // ============ CÁLCULO DE MÉTRICAS DE REPORTES ============
+    
+    // 1. Ventas de medicamentos
     $stmt_sales = $conn->prepare("SELECT SUM(total) as total_sales FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
     $stmt_sales->execute([$start_datetime, $end_datetime]);
     $total_sales_meds = $stmt_sales->fetch(PDO::FETCH_ASSOC)['total_sales'] ?? 0;
-
-    // 2. Compras de medicamentos (egresos - dinero gastado en reabastecimiento)
+    
+    // 2. Compras de medicamentos
     $stmt_purchases = $conn->prepare("SELECT SUM(total_amount) as total_purchases FROM purchase_headers WHERE purchase_date BETWEEN ? AND ?");
     $stmt_purchases->execute([$fecha_inicio, $fecha_fin]);
     $total_purchases_meds = $stmt_purchases->fetch(PDO::FETCH_ASSOC)['total_purchases'] ?? 0;
-
-    // 3. Cálculo de Ganancia Real sobre lo vendido (Precio Venta - Precio Costo)
+    
+    // 3. Cálculo de Ganancia Real
     $stmt_actual_profit = $conn->prepare("
         SELECT 
-            SUM(dv.cantidad * dv.precio_unitario) as revenue,
-            SUM(dv.cantidad * i.costo_med) as cost
+            SUM(dv.cantidad_vendida * dv.precio_unitario) as revenue,
+            SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, c.precio_unidad, 0)) as cost
         FROM detalle_ventas dv
         JOIN ventas v ON dv.id_venta = v.id_venta
-        JOIN inventario i ON dv.id_medicamento = i.id_med
+        JOIN inventario i ON dv.id_inventario = i.id_inventario
+        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id_item
+        LEFT JOIN compras c ON i.id_purchase_item = c.id_compras
         WHERE v.fecha_venta BETWEEN ? AND ?
     ");
     $stmt_actual_profit->execute([$start_datetime, $end_datetime]);
@@ -55,33 +93,33 @@ try {
     $sales_revenue = $profit_data['revenue'] ?? 0;
     $sales_cost = $profit_data['cost'] ?? 0;
     $actual_sales_margin = $sales_revenue - $sales_cost;
-
+    
     // 4. Procedimientos menores
     $stmt_proc = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ?");
     $stmt_proc->execute([$start_datetime, $end_datetime]);
     $total_procedures = $stmt_proc->fetchColumn() ?: 0;
-
+    
     // 5. Exámenes realizados
     $stmt_exams = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ?");
     $stmt_exams->execute([$start_datetime, $end_datetime]);
     $total_exams_revenue = $stmt_exams->fetchColumn() ?: 0;
-
-    // 6. Cobros de consultas (Ajustado a rango jornada si es posible, de lo contrario fecha_consulta)
+    
+    // 6. Cobros de consultas
     $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ?");
     $stmt_billings->execute([$fecha_inicio, $fecha_fin]);
     $total_billings = $stmt_billings->fetchColumn() ?: 0;
-
+    
     // 7. Ingresos brutos totales
     $total_gross_revenue = $total_sales_meds + $total_procedures + $total_exams_revenue + $total_billings;
-
-    // 8. Utilidad Bruta (Total Ingresos - Costo de lo Vendido)
+    
+    // 8. Utilidad Bruta
     $total_gross_profit = $total_gross_revenue - $sales_cost;
-
-    // 9. Desempeño neto (Ingresos Totales - Compras Totales) - Flujo de Caja
+    
+    // 9. Desempeño neto
     $net_cash_flow = $total_gross_revenue - $total_purchases_meds;
-
+    
     // ============ MÉTRICAS 'BIG DATA' PARA GRÁFICOS ============
-
+    
     // A. Tendencia de Ventas Diarias (Últimos 30 días)
     $stmt_trend = $conn->prepare("
         SELECT DATE(fecha_venta) as fecha, SUM(total) as total 
@@ -92,7 +130,7 @@ try {
     ");
     $stmt_trend->execute([$end_datetime]);
     $sales_trend_data = $stmt_trend->fetchAll(PDO::FETCH_ASSOC);
-
+    
     // B. Distribución de Ingresos por Categoría
     $category_data = [
         'Ventas' => (float)$total_sales_meds,
@@ -100,493 +138,500 @@ try {
         'Procedimientos' => (float)$total_procedures,
         'Exámenes' => (float)$total_exams_revenue
     ];
-
+    
     // C. Top 5 Medicamentos más vendidos
     $stmt_top_meds = $conn->prepare("
-        SELECT i.nombre_med, SUM(dv.cantidad) as total_vendido
+        SELECT i.nom_medicamento as nombre_med, SUM(dv.cantidad_vendida) as total_vendido
         FROM detalle_ventas dv
-        JOIN inventario i ON dv.id_medicamento = i.id_med
+        JOIN inventario i ON dv.id_inventario = i.id_inventario
         JOIN ventas v ON dv.id_venta = v.id_venta
         WHERE v.fecha_venta BETWEEN ? AND ?
-        GROUP BY i.id_med
+        GROUP BY i.id_inventario
         ORDER BY total_vendido DESC
         LIMIT 5
     ");
     $stmt_top_meds->execute([$start_datetime, $end_datetime]);
     $top_meds_data = $stmt_top_meds->fetchAll(PDO::FETCH_ASSOC);
-
+    
     // ============ MÉTRICAS ADICIONALES ============
-
+    
     // Total de pacientes registrados
     $total_pacientes = $conn->query("SELECT COUNT(*) FROM pacientes")->fetchColumn();
-
+    
     // Citas en el período
     $stmt_citas = $conn->prepare("SELECT COUNT(*) FROM citas WHERE fecha_cita BETWEEN ? AND ?");
     $stmt_citas->execute([$start_datetime, $end_datetime]);
     $citas_count = $stmt_citas->fetchColumn();
-
+    
     // Exámenes realizados en el período (conteo)
     $stmt_examenes_count = $conn->prepare("SELECT COUNT(*) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ?");
     $stmt_examenes_count->execute([$start_datetime, $end_datetime]);
     $examenes_count = $stmt_examenes_count->fetchColumn();
-
+    
     // Medicamentos en stock
     $total_medicamentos = $conn->query("SELECT COUNT(*) FROM inventario WHERE cantidad_med > 0")->fetchColumn();
-
+    
+    // Título de la página
+    $page_title = "Reportes - Centro Médico Herrera Saenz";
+    
 } catch (Exception $e) {
-    die("Error: No se pudo conectar a la base de datos");
+    // Manejo de errores
+    error_log("Error en módulo de reportes: " . $e->getMessage());
+    die("Error al cargar los reportes. Por favor, contacte al administrador.");
 }
-
-// Título de la página
-$page_title = "Reportes - Centro Médico Herrera Saenz";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Módulo de Reportes - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     
-    <!-- Google Fonts - Inter -->
+    <!-- Google Fonts - Inter (moderno y legible) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
-    /* 
-     * Módulo de Reportes - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) - Colores pastel */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
     .dashboard-container {
-        min-height: 100vh;
         display: flex;
-        flex-direction: column;
+        flex-direction: column; /* Apilar Header y Main verticalmente */
+        min-height: 100vh;
         position: relative;
+        width: 100%; /* Asegurar que no se desborde */
+        transition: all var(--transition-base);
     }
     
-    /* ============ HEADER SUPERIOR ============ */
+    /* User Avatar (Sidebar replacement) */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
     .dashboard-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
         position: sticky;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        background-color: rgba(var(--color-card-rgb), 0.95); 
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
     }
     
-    .brand-text {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .clinic-name {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text);
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-    }
-    
-    .clinic-subname {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-primary);
-        letter-spacing: 0.5px;
-    }
-    
-    /* Control de tema y usuario */
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
+    /* Control de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    /* Información usuario en header */
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px; /* Altura del header */
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    /* Botón de cerrar sesión */
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        text-decoration: none;
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
+        text-decoration: none;
         font-weight: 500;
-        position: relative;
-        overflow: hidden;
+        transition: all var(--transition-base);
     }
     
-    .nav-link:hover {
-        background: var(--color-border-light);
-        color: var(--color-primary);
-        transform: translateX(4px);
-    }
-    
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
-    }
-    
-    .nav-link.active {
-        background: var(--color-primary);
+    .logout-btn:hover {
+        background: var(--color-danger);
         color: white;
-        box-shadow: var(--shadow-md);
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
     }
     
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
     .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
+        flex: 1;
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
     }
     
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
+
     
-    /* ============ ENCABEZADO DE PÁGINA ============ */
+    /* ==========================================================================
+       COMPONENTES DE REPORTES
+       ========================================================================== */
+    
+    /* Encabezado de página */
     .page-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out;
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+        margin-bottom: var(--space-xl);
+        animation: fadeInUp 0.6s ease-out forwards;
     }
     
     .page-title-section {
@@ -595,44 +640,45 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
     }
     
     .page-title {
-        font-size: 1.75rem;
+        font-size: var(--font-size-2xl);
         font-weight: 700;
         color: var(--color-text);
-        margin-bottom: 0.25rem;
+        margin-bottom: var(--space-xs);
     }
     
     .page-subtitle {
-        font-size: 0.95rem;
-        color: var(--color-text-light);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
     
     .page-actions {
         display: flex;
-        gap: 1rem;
+        gap: var(--space-sm);
         align-items: center;
     }
     
     /* Botones de acción */
     .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         background: var(--color-primary);
         color: white;
         border: none;
         border-radius: var(--radius-md);
-        padding: 0.625rem 1.25rem;
         font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
         text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
     }
     
     .action-btn:hover {
-        background: var(--color-primary-dark);
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+        background: var(--color-primary);
+        opacity: 0.9;
+        color: white;
     }
     
     .action-btn.secondary {
@@ -642,27 +688,91 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
     }
     
     .action-btn.secondary:hover {
-        background: var(--color-border-light);
+        background: var(--color-surface);
+        color: var(--color-text);
     }
     
-    /* ============ ESTADÍSTICAS PRINCIPALES ============ */
+    /* Panel de filtros */
+    .filter-panel {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+    
+    .filter-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: var(--space-md);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .filter-form {
+        display: flex;
+        gap: var(--space-md);
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        min-width: 180px;
+        flex: 1;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+    }
+    
+    .form-control {
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-base);
+        background: var(--color-surface);
+        color: var(--color-text);
+        transition: all var(--transition-base);
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+    }
+    
+    /* Tarjetas de estadísticas */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.2s both;
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+        animation: fadeInUp 0.6s ease-out 0.2s both;
     }
     
     .stat-card {
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        transition: all var(--transition-normal);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
         text-align: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-primary);
     }
     
     .stat-card::before {
@@ -671,15 +781,8 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-        opacity: 0.7;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--color-primary-light);
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-info));
     }
     
     .stat-icon {
@@ -691,114 +794,57 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
         justify-content: center;
         font-size: 1.75rem;
         color: white;
-        margin: 0 auto 1rem;
+        margin: 0 auto var(--space-md);
     }
     
     .stat-icon.primary { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
     .stat-icon.success { background: linear-gradient(135deg, var(--color-success), #10b981); }
     .stat-icon.warning { background: linear-gradient(135deg, var(--color-warning), #d97706); }
     .stat-icon.info { background: linear-gradient(135deg, var(--color-info), #0ea5e9); }
-    .stat-icon.danger { background: linear-gradient(135deg, var(--color-error), #dc2626); }
+    .stat-icon.danger { background: linear-gradient(135deg, var(--color-danger), #dc2626); }
     
     .stat-value {
-        font-size: 2rem;
+        font-size: var(--font-size-3xl);
         font-weight: 700;
         color: var(--color-text);
         line-height: 1;
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-xs);
     }
     
     .stat-label {
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
-        color: var(--color-text-light);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     
-    /* ============ PANEL DE FILTROS ============ */
-    .filter-panel {
-        background: var(--color-surface);
+    /* Secciones de contenido */
+    .content-section {
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.3s both;
-    }
-    
-    .filter-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .filter-form {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-    
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        min-width: 180px;
-        flex: 1;
-    }
-    
-    .form-label {
-        font-weight: 500;
-        color: var(--color-text);
-        font-size: 0.875rem;
-    }
-    
-    .form-control {
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        font-size: 0.95rem;
-        background: var(--color-surface);
-        color: var(--color-text);
-        transition: all var(--transition-normal);
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px var(--color-primary-light);
-    }
-    
-    /* ============ SECCIÓN DE CONTABILIDAD ============ */
-    .accounting-section {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.4s both;
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        animation: fadeInUp 0.6s ease-out 0.3s both;
     }
     
     .section-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
         border-bottom: 1px solid var(--color-border);
     }
     
     .section-title {
-        font-size: 1.25rem;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text);
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-sm);
     }
     
     .section-title-icon {
@@ -806,248 +852,120 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
     }
     
     /* Tablas de datos */
-    .table-container {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.5s both;
-        overflow: hidden;
-    }
-    
-    .table-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--color-border);
-    }
-    
-    .table-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .table-title-icon {
-        color: var(--color-primary);
-    }
-    
     .table-responsive {
-        width: 100%;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .data-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
     }
     
     .data-table th {
+        padding: var(--space-md);
         text-align: left;
-        padding: 1rem;
         font-weight: 600;
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
+        color: var(--color-text);
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
+        background: var(--color-surface);
     }
     
     .data-table td {
-        padding: 1rem;
+        padding: var(--space-md);
         border-bottom: 1px solid var(--color-border);
-        color: var(--color-text);
-        transition: background-color var(--transition-normal);
+        vertical-align: middle;
     }
     
-    .data-table tbody tr:hover td {
-        background: var(--color-border-light);
+    .data-table tbody tr {
+        transition: all var(--transition-base);
     }
     
-    .data-table tbody tr:last-child td {
-        border-bottom: none;
+    .data-table tbody tr:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
     }
     
     /* Badges para montos */
     .amount-badge {
-        background: var(--color-border-light);
-        padding: 0.375rem 0.75rem;
+        background: var(--color-surface);
+        padding: var(--space-xs) var(--space-sm);
         border-radius: var(--radius-md);
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         font-weight: 600;
         display: inline-flex;
         align-items: center;
-        gap: 0.25rem;
-        border: 1px solid transparent;
+        gap: var(--space-xs);
     }
     
     .amount-badge.income {
-        background: rgba(52, 211, 153, 0.1);
-        color: #059669; /* Darker green for contrast */
-        border-color: rgba(52, 211, 153, 0.2);
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
     }
     
     .amount-badge.expense {
-        background: rgba(248, 113, 113, 0.1);
-        color: #dc2626; /* Darker red for contrast */
-        border-color: rgba(248, 113, 113, 0.2);
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
     }
     
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
-        transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
-        color: var(--color-text);
+    /* Gráficos */
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
     }
     
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
-    }
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
     
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
-    }
-    
-    /* ============ MODAL DE EXPORTACIÓN ============ */
-    .modal-content {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-xl);
-    }
-    
-    .modal-header {
-        border-bottom: 1px solid var(--color-border);
-        padding: 1.5rem;
-    }
-    
-    .modal-title {
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .modal-body {
-        padding: 1.5rem;
-    }
-    
-    .modal-footer {
-        border-top: 1px solid var(--color-border);
-        padding: 1.5rem;
-    }
-    
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
-        .main-content {
-            padding: 1.5rem;
-        }
-        
+    /* Pantallas grandes (TV, monitores 4K) */
+    @media (min-width: 1600px) {
         .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        }
-    }
-    
-    @media (max-width: 992px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
-        
-        .sidebar.show {
-            transform: translateX(0);
+            grid-template-columns: repeat(4, 1fr);
         }
         
         .main-content {
-            margin-left: 0;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+    }
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 991px) {
+        
+        .dashboard-container {
             width: 100%;
         }
         
-        .sidebar-toggle {
-            display: none;
-        }
-        
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
-            display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
-            display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1rem;
+        .main-content {
+            padding: var(--space-md);
         }
         
         .header-content {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
+            padding: var(--space-md);
         }
         
-        .header-controls {
-            width: 100%;
-            justify-content: space-between;
+        .mobile-toggle {
+            display: none;
         }
         
-        .main-content {
-            padding: 1rem;
+        .header-content {
+            padding: var(--space-md);
         }
         
         .page-header {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
+            align-items: stretch;
+            gap: var(--space-md);
         }
         
         .page-actions {
             width: 100%;
-            justify-content: flex-start;
+            justify-content: center;
         }
         
         .filter-form {
@@ -1060,90 +978,127 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
         }
         
         .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+    }
+    
+    /* Móviles */
+    @media (max-width: 767px) {
+        
+        .stats-grid {
             grid-template-columns: 1fr;
         }
         
+        .brand-logo {
+            height: 32px;
+        }
+        
+        .header-content {
+            flex-wrap: wrap;
+        }
+        
+        .header-controls {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            margin-top: var(--space-md);
+        }
+        
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logout-btn span {
+            display: none;
+        }
+        
+        .logout-btn {
+            padding: var(--space-sm);
+        }
+        
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .content-section {
+            padding: var(--space-md);
+        }
+        
         .data-table {
-            display: block;
-            overflow-x: auto;
+            font-size: var(--font-size-sm);
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: var(--space-sm);
         }
     }
     
+    /* Móviles pequeños */
     @media (max-width: 480px) {
-        .stat-card {
-            padding: 1.25rem;
+        .main-content {
+            padding: var(--space-sm);
         }
         
         .filter-panel {
-            padding: 1.25rem;
+            padding: var(--space-md);
         }
         
-        .accounting-section {
-            padding: 1.25rem;
-        }
-        
-        .table-container {
-            padding: 1.25rem;
+        .section-title {
+            font-size: var(--font-size-lg);
         }
         
         .action-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
+            width: 100%;
+            justify-content: center;
         }
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-        }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
-        }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
-        }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
-        }
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
     }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
     </style>
+    
 </head>
 <body>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
-    
     <div class="dashboard-container">
-        <!-- Header superior -->
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
                 
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -1154,132 +1109,31 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
+                    <div class="header-user">
+                        <div class="header-avatar">
                             <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                    
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="action-btn logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $user_type; ?>
-                
-                <!-- Dashboard (siempre visible) -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes (todos los roles) -->
-                <?php if (in_array($role, ['admin', 'doc', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link active">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
-        
-        <!-- Contenido principal -->
         <main class="main-content">
             <!-- Encabezado de página -->
             <div class="page-header">
@@ -1288,17 +1142,17 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                     <p class="page-subtitle">Análisis detallado y métricas de la clínica</p>
                 </div>
                 <div class="page-actions">
-                    <?php if ($role === 'admin'): ?>
-                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#exportModal">
+                    <?php if ($user_type === 'admin'): ?>
+                    <a href="export_jornada.php" target="_blank" class="action-btn">
                         <i class="bi bi-download me-2"></i>
                         Exportar Jornada
-                    </button>
+                    </a>
                     <?php endif; ?>
                 </div>
             </div>
             
             <!-- Panel de filtros -->
-            <div class="filter-panel">
+            <div class="filter-panel animate-in">
                 <h3 class="filter-title">
                     <i class="bi bi-funnel"></i>
                     Filtros de Periodo
@@ -1338,7 +1192,7 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
             <!-- Estadísticas principales -->
             <div class="stats-grid">
                 <!-- Pacientes registrados -->
-                <div class="stat-card">
+                <div class="stat-card animate-in delay-1">
                     <div class="stat-icon primary">
                         <i class="bi bi-people"></i>
                     </div>
@@ -1347,7 +1201,7 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 </div>
                 
                 <!-- Citas en período -->
-                <div class="stat-card">
+                <div class="stat-card animate-in delay-2">
                     <div class="stat-icon success">
                         <i class="bi bi-calendar-event"></i>
                     </div>
@@ -1356,7 +1210,7 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 </div>
                 
                 <!-- Exámenes realizados -->
-                <div class="stat-card">
+                <div class="stat-card animate-in delay-3">
                     <div class="stat-icon info">
                         <i class="bi bi-clipboard2-pulse"></i>
                     </div>
@@ -1365,7 +1219,7 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 </div>
                 
                 <!-- Medicamentos en stock -->
-                <div class="stat-card">
+                <div class="stat-card animate-in delay-4">
                     <div class="stat-icon warning">
                         <i class="bi bi-capsule"></i>
                     </div>
@@ -1374,48 +1228,38 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 </div>
             </div>
             
-            <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL (Nueva) -->
-            <div class="table-container mb-4">
-                <div class="table-header">
-                    <h4 class="table-title">
-                        <i class="bi bi-bar-chart-line table-title-icon text-primary"></i>
+            <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
+            <div class="content-section animate-in">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-bar-chart-line section-title-icon"></i>
                         Big Data Analytics - Inteligencia de Negocio
-                    </h4>
+                    </h3>
                 </div>
                 
                 <div class="row g-4 mb-4">
                     <!-- Gráfico de Tendencia -->
                     <div class="col-lg-8">
-                        <div class="card border-0 bg-transparent shadow-none">
-                            <div class="card-body p-0">
-                                <h5 class="card-title text-muted mb-3">Tendencia de Ingresos (Últimos 30 días)</h5>
-                                <div style="height: 300px; position: relative;">
-                                    <canvas id="salesTrendChart"></canvas>
-                                </div>
-                            </div>
+                        <div style="height: 300px;">
+                            <canvas id="salesTrendChart"></canvas>
                         </div>
                     </div>
                     
                     <!-- Gráfico de Distribución -->
                     <div class="col-lg-4">
-                        <div class="card border-0 bg-transparent shadow-none">
-                            <div class="card-body p-0">
-                                <h5 class="card-title text-muted mb-3">Distribución de Ingresos</h5>
-                                <div style="height: 300px; position: relative;">
-                                    <canvas id="revenueDistChart"></canvas>
-                                </div>
-                            </div>
+                        <div style="height: 300px;">
+                            <canvas id="revenueDistChart"></canvas>
                         </div>
                     </div>
                 </div>
                 
-                <div class="row g-4 mt-2">
+                <div class="row g-4">
                     <!-- Top Medicamentos -->
                     <div class="col-md-6">
-                        <h5 class="card-title text-muted mb-3">Medicamentos más vendidos</h5>
+                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Medicamentos más vendidos</h4>
                         <div class="table-responsive">
                             <table class="data-table">
-                                <thead class="bg-light">
+                                <thead>
                                     <tr>
                                         <th>Medicamento</th>
                                         <th class="text-end">Cantidad</th>
@@ -1438,22 +1282,22 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                     
                     <!-- Resumen Quick Insights -->
                     <div class="col-md-6">
-                        <h5 class="card-title text-muted mb-3">Insights de Rendimiento</h5>
+                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Insights de Rendimiento</h4>
                         <div class="row g-2">
                             <div class="col-6">
-                                <div class="p-3 border rounded bg-light">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
                                     <small class="text-muted d-block text-truncate">Margen Bruto Promedio</small>
                                     <span class="h4 mb-0"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="p-3 border rounded bg-light">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
                                     <small class="text-muted d-block text-truncate">Costo Méd. Vendidos</small>
                                     <span class="h4 mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
                                 </div>
                             </div>
                             <div class="col-12 mt-2">
-                                <div class="p-3 border rounded bg-light">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
                                     <small class="text-muted d-block">Ganancia Estimada en Ventas</small>
                                     <span class="h4 mb-0 text-success">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
                                     <p class="mb-0 text-muted small mt-1">Comparando costo de compra vs precio de venta</p>
@@ -1465,7 +1309,7 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
             </div>
 
             <!-- Sección de contabilidad -->
-            <div class="accounting-section">
+            <div class="content-section animate-in delay-1">
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-cash-coin section-title-icon"></i>
@@ -1480,10 +1324,10 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 <div class="row g-4">
                     <!-- Ingresos -->
                     <div class="col-md-6">
-                        <div class="table-container">
-                            <div class="table-header">
-                                <h4 class="table-title">
-                                    <i class="bi bi-arrow-down-right table-title-icon text-success"></i>
+                        <div class="content-section" style="padding: var(--space-md); margin: 0;">
+                            <div class="section-header" style="margin-bottom: var(--space-md); padding-bottom: var(--space-sm);">
+                                <h4 class="section-title" style="font-size: var(--font-size-lg);">
+                                    <i class="bi bi-arrow-down-right section-title-icon text-success"></i>
                                     Ingresos Totales
                                 </h4>
                                 <span class="amount-badge income">
@@ -1539,10 +1383,10 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                     
                     <!-- Egresos -->
                     <div class="col-md-6">
-                        <div class="table-container">
-                            <div class="table-header">
-                                <h4 class="table-title">
-                                    <i class="bi bi-arrow-up-right table-title-icon text-danger"></i>
+                        <div class="content-section" style="padding: var(--space-md); margin: 0;">
+                            <div class="section-header" style="margin-bottom: var(--space-md); padding-bottom: var(--space-sm);">
+                                <h4 class="section-title" style="font-size: var(--font-size-lg);">
+                                    <i class="bi bi-arrow-up-right section-title-icon text-danger"></i>
                                     Egresos Totales
                                 </h4>
                                 <span class="amount-badge expense">
@@ -1581,10 +1425,10 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 <!-- Resumen de desempeño -->
                 <div class="row mt-4">
                     <div class="col-12">
-                        <div class="table-container">
-                            <div class="table-header">
-                                <h4 class="table-title">
-                                    <i class="bi bi-graph-up-arrow table-title-icon text-primary"></i>
+                        <div class="content-section" style="padding: var(--space-md); margin: 0;">
+                            <div class="section-header" style="margin-bottom: var(--space-md); padding-bottom: var(--space-sm);">
+                                <h4 class="section-title" style="font-size: var(--font-size-lg);">
+                                    <i class="bi bi-graph-up-arrow section-title-icon text-primary"></i>
                                     Resumen de Desempeño
                                 </h4>
                             </div>
@@ -1649,13 +1493,13 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
             </div>
             
             <!-- Sección de datos detallados -->
-            <div class="row g-4">
+            <div class="row g-4 animate-in delay-2">
                 <!-- Procedimientos menores -->
                 <div class="col-lg-6">
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h4 class="table-title">
-                                <i class="bi bi-bandaid table-title-icon"></i>
+                    <div class="content-section" style="height: 100%;">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="bi bi-bandaid section-title-icon"></i>
                                 Procedimientos Menores Recientes
                             </h4>
                             <span class="amount-badge income">
@@ -1706,10 +1550,10 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
                 
                 <!-- Exámenes realizados -->
                 <div class="col-lg-6">
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h4 class="table-title">
-                                <i class="bi bi-clipboard2-pulse table-title-icon"></i>
+                    <div class="content-section" style="height: 100%;">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="bi bi-clipboard2-pulse section-title-icon"></i>
                                 Exámenes Recientes
                             </h4>
                             <span class="amount-badge income">
@@ -1761,282 +1605,232 @@ $page_title = "Reportes - Centro Médico Herrera Saenz";
         </main>
     </div>
     
-    <!-- Modal para exportar jornada -->
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-download text-primary me-2"></i>
-                        Exportar Reporte de Jornada
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group mb-4">
-                        <label class="form-label">Seleccionar Fecha de Jornada</label>
-                        <input type="date" 
-                               class="form-control" 
-                               id="exportDate" 
-                               value="<?php echo date('Y-m-d'); ?>">
-                        <div class="form-text text-muted mt-2">
-                            <i class="bi bi-info-circle me-1"></i>
-                            La jornada comprende de <strong>08:00 AM</strong> a <strong>05:00 PM</strong> (jornada diurna) o de <strong>05:00 PM</strong> a <strong>08:00 AM</strong> del día siguiente (jornada nocturna).
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Formato de Exportación</label>
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-primary text-start" onclick="exportReport('html')">
-                                <i class="bi bi-eye me-2"></i>
-                                Vista Previa (HTML)
-                            </button>
-                            <button type="button" class="btn btn-outline-success text-start" onclick="exportReport('csv')">
-                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>
-                                Descargar CSV
-                            </button>
-                            <button type="button" class="btn btn-outline-success text-start" onclick="exportReport('excel')">
-                                <i class="bi bi-file-earmark-excel me-2"></i>
-                                Descargar Excel
-                            </button>
-                            <button type="button" class="btn btn-outline-primary text-start" onclick="exportReport('word')">
-                                <i class="bi bi-file-earmark-word me-2"></i>
-                                Descargar Word
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <!-- JavaScript Optimizado -->
     <script>
     // Módulo de Reportes - Centro Médico Herrera Saenz
     // JavaScript para funcionalidades del módulo de reportes
     
-    // Esperar a que el DOM esté completamente cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+    (function() {
+        'use strict';
         
-        // ============ FUNCIONALIDAD DEL TEMA ============
-        
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        }
-        
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
-            
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
-        }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            }
-        }
-        
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
-            }
-            
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-        }
-        
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DE EXPORTACIÓN ============
-        
-        // Exportar reporte en diferentes formatos
-        window.exportReport = function(format) {
-            const date = document.getElementById('exportDate').value;
-            const url = `export_jornada.php?date=${date}&format=${format}`;
-            
-            if (format === 'html') {
-                window.open(url, '_blank');
-            } else {
-                window.location.href = url;
-            }
-            
-            // Cerrar modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-            modal.hide();
-        }
-        
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
-        }
-        
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
-        }
-        
-        // Cerrar sidebar al cambiar tamaño de ventana (responsive)
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        });
-        
-        // ============ GRÁFICOS BIG DATA (Chart.js) ============
-        
-        const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
-        const textColor = isDarkMode ? '#94a3b8' : '#64748b';
-        const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        // ==========================================================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ==========================================================================
+        const CONFIG = {
+            themeKey: 'dashboard-theme',
 
-        // 1. Gráfico de Tendencia de Ventas
-        const trendCtx = document.getElementById('salesTrendChart').getContext('2d');
-        const salesTrendData = <?php echo json_encode($sales_trend_data); ?>;
+            transitionDuration: 300
+        };
         
-        new Chart(trendCtx, {
-            type: 'line',
-            data: {
-                labels: salesTrendData.map(d => d.fecha),
-                datasets: [{
-                    label: 'Ventas Diarias',
-                    data: salesTrendData.map(d => d.total),
-                    borderColor: '#7c90db',
-                    backgroundColor: 'rgba(124, 144, 219, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#7c90db'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: textColor, font: { size: 10 } }
-                    },
-                    y: {
-                        grid: { color: gridColor },
-                        ticks: { color: textColor, font: { size: 10 }, callback: v => 'Q' + v }
-                    }
+        // ==========================================================================
+        // REFERENCIAS A ELEMENTOS DOM
+        // ==========================================================================
+        const DOM = {
+            html: document.documentElement,
+            body: document.body,
+            themeSwitch: document.getElementById('themeSwitch')
+        };
+        
+        // ==========================================================================
+        // MANEJO DE TEMA (DÍA/NOCHE)
+        // ==========================================================================
+        class ThemeManager {
+            constructor() {
+                this.theme = this.getInitialTheme();
+                this.applyTheme(this.theme);
+                this.setupEventListeners();
+            }
+            
+            getInitialTheme() {
+                const savedTheme = localStorage.getItem(CONFIG.themeKey);
+                if (savedTheme) return savedTheme;
+                
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) return 'dark';
+                
+                return 'light';
+            }
+            
+            applyTheme(theme) {
+                DOM.html.setAttribute('data-theme', theme);
+                localStorage.setItem(CONFIG.themeKey, theme);
+                
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
                 }
             }
-        });
-
-        // 2. Gráfico de Distribución de Ingresos
-        const distCtx = document.getElementById('revenueDistChart').getContext('2d');
-        const categoryData = <?php echo json_encode($category_data); ?>;
-        
-        new Chart(distCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(categoryData),
-                datasets: [{
-                    data: Object.values(categoryData),
-                    backgroundColor: ['#7c90db', '#8dd7bf', '#f8b195', '#38bdf8'],
-                    borderWidth: 0,
-                    hoverOffset: 15
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: textColor, padding: 20, font: { size: 11 } }
-                    }
-                },
-                cutout: '70%'
+            
+            toggleTheme() {
+                const newTheme = this.theme === 'light' ? 'dark' : 'light';
+                this.theme = newTheme;
+                this.applyTheme(newTheme);
+                
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        DOM.themeSwitch.style.transform = 'rotate(0)';
+                    }, CONFIG.transitionDuration);
+                }
             }
+            
+            setupEventListeners() {
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                }
+                
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(CONFIG.themeKey)) {
+                        this.theme = e.matches ? 'dark' : 'light';
+                        this.applyTheme(this.theme);
+                    }
+                });
+            }
+        }
+        
+        // ==========================================================================
+        // ANIMACIONES Y GRÁFICOS
+        // ==========================================================================
+        class AnimationManager {
+            constructor() {
+                this.setupAnimations();
+                this.setupCharts();
+            }
+            
+            setupAnimations() {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-in');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                
+                document.querySelectorAll('.stat-card, .content-section, .filter-panel').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+            
+            setupCharts() {
+                const isDarkMode = DOM.html.getAttribute('data-theme') === 'dark';
+                const textColor = isDarkMode ? '#94a3b8' : '#64748b';
+                const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                
+                // 1. Gráfico de Tendencia de Ventas
+                const trendCtx = document.getElementById('salesTrendChart');
+                if (trendCtx) {
+                    const salesTrendData = <?php echo json_encode($sales_trend_data); ?>;
+                    
+                    new Chart(trendCtx, {
+                        type: 'line',
+                        data: {
+                            labels: salesTrendData.map(d => d.fecha),
+                            datasets: [{
+                                label: 'Ventas Diarias',
+                                data: salesTrendData.map(d => d.total),
+                                borderColor: '#7c90db',
+                                backgroundColor: 'rgba(124, 144, 219, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#7c90db'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: textColor, font: { size: 10 } }
+                                },
+                                y: {
+                                    grid: { color: gridColor },
+                                    ticks: { 
+                                        color: textColor, 
+                                        font: { size: 10 }, 
+                                        callback: v => 'Q' + v 
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // 2. Gráfico de Distribución de Ingresos
+                const distCtx = document.getElementById('revenueDistChart');
+                if (distCtx) {
+                    const categoryData = <?php echo json_encode($category_data); ?>;
+                    
+                    new Chart(distCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(categoryData),
+                            datasets: [{
+                                data: Object.values(categoryData),
+                                backgroundColor: ['#7c90db', '#8dd7bf', '#f8b195', '#38bdf8'],
+                                borderWidth: 0,
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { 
+                                        color: textColor, 
+                                        padding: 20, 
+                                        font: { size: 11 } 
+                                    }
+                                }
+                            },
+                            cutout: '70%'
+                        }
+                    });
+                }
+            }
+        }
+        
+        // ==========================================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ==========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar componentes
+            const themeManager = new ThemeManager();
+            const animationManager = new AnimationManager();
+            
+            // Exponer APIs necesarias globalmente
+            window.dashboard = {
+                theme: themeManager,
+                animations: animationManager
+            };
+            
+            // Log de inicialización
+            console.log('Módulo de Reportes - CMS v4.0');
+            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+            console.log('Periodo: <?php echo $fecha_inicio; ?> - <?php echo $fecha_fin; ?>');
         });
         
-        // ============ CONSOLA DE DESARROLLO ============
+        // ==========================================================================
+        // POLYFILLS
+        // ==========================================================================
+        if (!NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
         
-        console.log('Módulo de Reportes - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
-        console.log('Periodo: <?php echo $fecha_inicio; ?> - <?php echo $fecha_fin; ?>');
-    });
+    })();
     </script>
 </body>
 </html>

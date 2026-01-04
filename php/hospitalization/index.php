@@ -1,6 +1,5 @@
 <?php
 // hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
 session_start();
 
 // Verificar sesión activa
@@ -768,10 +767,6 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
                         <i class="bi bi-person-plus-fill"></i>
                         Ingresar Paciente
                     </button>
-                    <button class="action-btn secondary" onclick="window.print()">
-                        <i class="bi bi-printer"></i>
-                        Imprimir Reporte
-                    </button>
                 </div>
             </div>
             
@@ -841,63 +836,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
                     </div>
                 </div>
             </div>
-            
-            <!-- Bed Map -->
-            <div class="bed-map-container">
-                <h2 class="section-title">
-                    <i class="bi bi-grid-3x3"></i>
-                    Mapa de Habitaciones y Camas
-                </h2>
-                
-                <div class="rooms-grid">
-                    <?php foreach ($habitaciones as $hab): ?>
-                        <?php
-                            $estado_class = 'available';
-                            $badge_text = 'Disponible';
-                            $badge_class = 'disponible';
-                            
-                            if ($hab['camas_ocupadas'] > 0) {
-                                if ($hab['camas_ocupadas'] >= $hab['total_camas']) {
-                                    $estado_class = 'full';
-                                    $badge_text = 'Llena';
-                                    $badge_class = 'llena';
-                                } else {
-                                    $estado_class = 'occupied';
-                                    $badge_text = 'Ocupada';
-                                    $badge_class = 'ocupada';
-                                }
-                            }
-                        ?>
-                        <div class="room-card <?php echo $estado_class; ?>" onclick="viewRoomDetails(<?php echo $hab['id_habitacion']; ?>)">
-                            <div class="room-header">
-                                <span class="room-number"><?php echo htmlspecialchars($hab['numero_habitacion']); ?></span>
-                                <span class="room-badge <?php echo $badge_class; ?>"><?php echo $badge_text; ?></span>
-                            </div>
-                            <div class="room-type">
-                                <?php echo htmlspecialchars($hab['tipo_habitacion']); ?> - Piso <?php echo htmlspecialchars($hab['piso']); ?>
-                            </div>
-                            <div class="room-type">
-                                Q<?php echo number_format($hab['tarifa_por_noche'], 2); ?> / noche
-                            </div>
-                            <div class="room-beds">
-                                <?php
-                                    $stmt_beds = $conn->prepare("SELECT numero_cama, estado FROM camas WHERE id_habitacion = ? ORDER BY numero_cama");
-                                    $stmt_beds->execute([$hab['id_habitacion']]);
-                                    $beds = $stmt_beds->fetchAll(PDO::FETCH_ASSOC);
-                                    
-                                    foreach ($beds as $bed):
-                                        $bed_estado = strtolower($bed['estado']);
-                                ?>
-                                    <div class="bed-indicator <?php echo $bed_estado; ?>" title="Cama <?php echo $bed['numero_cama']; ?> - <?php echo $bed['estado']; ?>">
-                                        <?php echo htmlspecialchars($bed['numero_cama']); ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            
+
             <!-- Active Patients Table -->
             <div class="patients-container">
                 <h2 class="section-title">
@@ -974,6 +913,62 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
                     <p>Los pacientes ingresados aparecerán aquí</p>
                 </div>
                 <?php endif; ?>
+            </div>
+            
+            <!-- Bed Map -->
+            <div class="bed-map-container">
+                <h2 class="section-title">
+                    <i class="bi bi-grid-3x3"></i>
+                    Mapa de Habitaciones y Camas
+                </h2>
+                
+                <div class="rooms-grid">
+                    <?php foreach ($habitaciones as $hab): ?>
+                        <?php
+                            $estado_class = 'available';
+                            $badge_text = 'Disponible';
+                            $badge_class = 'disponible';
+                            
+                            if ($hab['camas_ocupadas'] > 0) {
+                                if ($hab['camas_ocupadas'] >= $hab['total_camas']) {
+                                    $estado_class = 'full';
+                                    $badge_text = 'Llena';
+                                    $badge_class = 'llena';
+                                } else {
+                                    $estado_class = 'occupied';
+                                    $badge_text = 'Ocupada';
+                                    $badge_class = 'ocupada';
+                                }
+                            }
+                        ?>
+                        <div class="room-card <?php echo $estado_class; ?>" onclick="viewRoomDetails(<?php echo $hab['id_habitacion']; ?>)">
+                            <div class="room-header">
+                                <span class="room-number"><?php echo htmlspecialchars($hab['numero_habitacion']); ?></span>
+                                <span class="room-badge <?php echo $badge_class; ?>"><?php echo $badge_text; ?></span>
+                            </div>
+                            <div class="room-type">
+                                <?php echo htmlspecialchars($hab['tipo_habitacion']); ?> - Piso <?php echo htmlspecialchars($hab['piso']); ?>
+                            </div>
+                            <div class="room-type">
+                                Q<?php echo number_format($hab['tarifa_por_noche'], 2); ?> / noche
+                            </div>
+                            <div class="room-beds">
+                                <?php
+                                    $stmt_beds = $conn->prepare("SELECT numero_cama, estado FROM camas WHERE id_habitacion = ? ORDER BY numero_cama");
+                                    $stmt_beds->execute([$hab['id_habitacion']]);
+                                    $beds = $stmt_beds->fetchAll(PDO::FETCH_ASSOC);
+                                    
+                                    foreach ($beds as $bed):
+                                        $bed_estado = strtolower($bed['estado']);
+                                ?>
+                                    <div class="bed-indicator <?php echo $bed_estado; ?>" title="Cama <?php echo $bed['numero_cama']; ?> - <?php echo $bed['estado']; ?>">
+                                        <?php echo htmlspecialchars($bed['numero_cama']); ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </main>
     </div>

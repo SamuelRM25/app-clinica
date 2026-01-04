@@ -1,6 +1,6 @@
 <?php
 // patients/index.php - Módulo de Gestión de Pacientes
-// Versión: 3.0 - Diseño Minimalista con Modo Noche
+// Versión: 4.0 - Diseño Dashboard con Efecto Mármol y Modo Noche
 session_start();
 
 // Verificar sesión activa
@@ -26,6 +26,7 @@ try {
     $user_id = $_SESSION['user_id'];
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
+    $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
     
     // Título de la página
     $page_title = "Gestión de Pacientes - Centro Médico Herrera Saenz";
@@ -86,9 +87,6 @@ try {
     $stmt_doctors->execute();
     $doctors = $stmt_doctors->fetchAll(PDO::FETCH_ASSOC);
     
-    // Incluir header
-    include_once '../../includes/header.php';
-    
 } catch (Exception $e) {
     // Manejo de errores
     error_log("Error en módulo de pacientes: " . $e->getMessage());
@@ -100,6 +98,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gestión de Pacientes - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
@@ -113,473 +112,446 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- Incluir header -->
-    <?php include_once '../../includes/header.php'; ?>
-    
+    <!-- CSS Crítico (mismo que el dashboard) -->
     <style>
-    /* 
-     * Módulo de Pacientes - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
-    .patients-container {
-        min-height: 100vh;
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
+    .dashboard-container {
         display: flex;
         flex-direction: column;
+        min-height: 100vh;
         position: relative;
+        width: 100%;
+        transition: all var(--transition-base);
     }
     
-    /* ============ HEADER SUPERIOR ============ */
-    .patients-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
+    /* User Avatar (Sidebar replacement) */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
+    .dashboard-header {
         position: sticky;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        background-color: rgba(var(--color-card-rgb), 0.95); 
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
     }
     
-    .brand-text {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .clinic-name {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text);
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-    }
-    
-    .clinic-subname {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--color-primary);
-        letter-spacing: 0.5px;
-    }
-    
-    /* Control de tema y usuario */
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
+    /* Control de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    /* Información usuario en header */
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px;
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    /* Botón de cerrar sesión */
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
-        color: var(--color-text);
-        text-decoration: none;
-        border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
-        font-weight: 500;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .nav-link:hover {
-        background: var(--color-border-light);
-        color: var(--color-primary);
-        transform: translateX(4px);
-    }
-    
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
-    }
-    
-    .nav-link.active {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: var(--shadow-md);
-    }
-    
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
-    }
-    
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
-    
-    /* ============ ENCABEZADO DEL MÓDULO ============ */
-    .module-header {
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         background: var(--color-surface);
+        color: var(--color-text);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out;
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all var(--transition-base);
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+    .logout-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
     }
     
-    .module-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--color-text);
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
+    .main-content {
+        flex: 1;
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
     }
     
-    .module-title-icon {
-        color: var(--color-primary);
-        font-size: 2rem;
-    }
+    /* ==========================================================================
+       COMPONENTES DE DASHBOARD
+       ========================================================================== */
     
-    .module-subtitle {
-        color: var(--color-text-light);
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    /* ============ ESTADÍSTICAS DE PACIENTES ============ */
+    /* Tarjetas de estadísticas */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
     }
     
     .stat-card {
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        transition: all var(--transition-normal);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
         cursor: pointer;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-primary);
     }
     
     .stat-card::before {
@@ -588,178 +560,340 @@ try {
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-        opacity: 0.7;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-info));
     }
     
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--color-primary-light);
-    }
-    
-    .stat-content {
+    .stat-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
     }
     
-    .stat-info {
-        flex: 1;
-    }
-    
-    .stat-label {
-        font-size: 0.875rem;
+    .stat-title {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
         font-weight: 500;
-        color: var(--color-text-light);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-xs);
     }
     
     .stat-value {
-        font-size: 2rem;
+        font-size: var(--font-size-3xl);
         font-weight: 700;
         color: var(--color-text);
         line-height: 1;
     }
     
     .stat-icon {
-        width: 56px;
-        height: 56px;
+        width: 48px;
+        height: 48px;
         border-radius: var(--radius-md);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon.primary {
+        background: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
+    }
+    
+    .stat-icon.success {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+    
+    .stat-icon.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+    
+    .stat-icon.info {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+    }
+    
+    .stat-change {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+    
+    .stat-change.positive {
+        color: var(--color-success);
+    }
+    
+    /* Secciones */
+    .appointments-section {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
+    }
+    
+    .appointments-section:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+    
+    .section-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .section-title-icon {
+        color: var(--color-primary);
+    }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-primary);
         color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        background: var(--color-primary);
+        opacity: 0.9;
+        color: white;
+    }
+    
+    /* Tablas */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .appointments-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .appointments-table thead {
+        background: var(--color-surface);
+    }
+    
+    .appointments-table th {
+        padding: var(--space-md);
+        text-align: left;
+        font-weight: 600;
+        color: var(--color-text);
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
+    }
+    
+    .appointments-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: middle;
+    }
+    
+    .appointments-table tbody tr {
+        transition: all var(--transition-base);
+    }
+    
+    .appointments-table tbody tr:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
+    }
+    
+    /* Celdas personalizadas */
+    .patient-cell {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+    
+    .patient-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-base);
         flex-shrink: 0;
     }
     
-    .stat-icon.primary { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
-    .stat-icon.success { background: linear-gradient(135deg, var(--color-success), #10b981); }
-    .stat-icon.warning { background: linear-gradient(135deg, var(--color-warning), #d97706); }
-    .stat-icon.info { background: linear-gradient(135deg, var(--color-info), #0ea5e9); }
-    
-    /* ============ BARRA DE BÚSQUEDA Y ACCIONES ============ */
-    .actions-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
+    .patient-info {
+        min-width: 0;
     }
     
-    .search-container {
-        flex: 1;
-        min-width: 300px;
-        position: relative;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 0.875rem 1rem 0.875rem 3rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
+    .patient-name {
+        font-weight: 600;
         color: var(--color-text);
-        font-size: 1rem;
-        transition: all var(--transition-normal);
-        outline: none;
+        margin-bottom: 2px;
     }
     
-    .search-input:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.2);
-    }
-    
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--color-text-light);
-        font-size: 1.25rem;
+    .patient-contact {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
     }
     
     /* Botones de acción */
     .action-buttons {
         display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
+        gap: var(--space-xs);
     }
     
-    .btn-primary {
-        background: var(--color-primary);
-        color: white;
-        border: none;
-        border-radius: var(--radius-md);
-        padding: 0.875rem 1.5rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
+        justify-content: center;
         text-decoration: none;
-        white-space: nowrap;
+        transition: all var(--transition-base);
     }
     
-    .btn-primary:hover {
-        background: var(--color-primary-dark);
+    .btn-icon:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-sm);
     }
     
-    .btn-outline {
-        background: transparent;
-        color: var(--color-primary);
-        border: 1px solid var(--color-primary);
+    .btn-icon.history:hover {
+        background: var(--color-success);
+        color: white;
+        border-color: var(--color-success);
+    }
+    
+    .btn-icon.appointment:hover {
+        background: var(--color-info);
+        color: white;
+        border-color: var(--color-info);
+    }
+    
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--color-border);
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+    }
+    
+    /* Formularios */
+    .form-group {
+        margin-bottom: var(--space-md);
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: var(--space-xs);
+        font-weight: 500;
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+    }
+    
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        padding: 0.875rem 1.5rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
+        color: var(--color-text);
+        font-size: var(--font-size-base);
+        transition: all var(--transition-base);
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+        outline: none;
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    /* Grid de formularios */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-md);
+    }
+    
+    /* Input groups */
+    .input-group {
+        position: relative;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
-        text-decoration: none;
-        white-space: nowrap;
     }
     
-    .btn-outline:hover {
-        background: var(--color-primary);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+    .input-group .form-input {
+        padding-left: 40px;
+    }
+    
+    .input-icon {
+        position: absolute;
+        left: var(--space-md);
+        color: var(--color-text-secondary);
     }
     
     /* Filtros */
     .filters-container {
         display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-lg);
         flex-wrap: wrap;
     }
     
     .filter-btn {
+        padding: var(--space-sm) var(--space-md);
         background: var(--color-surface);
         color: var(--color-text);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        padding: 0.625rem 1.25rem;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         cursor: pointer;
-        transition: all var(--transition-normal);
+        transition: all var(--transition-base);
     }
     
     .filter-btn:hover {
-        background: var(--color-border-light);
+        background: var(--color-border);
     }
     
     .filter-btn.active {
@@ -768,154 +902,11 @@ try {
         border-color: var(--color-primary);
     }
     
-    /* ============ TABLA DE PACIENTES ============ */
-    .patients-table-container {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.2s both;
-    }
-    
-    .table-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
-    }
-    
-    .table-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .table-count {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-        font-weight: 500;
-    }
-    
-    .patients-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .patients-table th {
-        text-align: left;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
-        white-space: nowrap;
-    }
-    
-    .patients-table td {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--color-border);
-        color: var(--color-text);
-        transition: background-color var(--transition-normal);
-        vertical-align: middle;
-    }
-    
-    .patients-table tbody tr {
-        transition: all var(--transition-normal);
-    }
-    
-    .patients-table tbody tr:hover {
-        background: var(--color-border-light);
-    }
-    
-    .patients-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-    
-    /* Celdas de paciente */
-    .patient-cell {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .patient-avatar {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: white;
-        font-size: 1.125rem;
-        flex-shrink: 0;
-    }
-    
-    .patient-info {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .patient-name {
-        font-weight: 600;
-        color: var(--color-text);
-        font-size: 1rem;
-    }
-    
-    .patient-id {
-        font-size: 0.75rem;
-        color: var(--color-text-light);
-    }
-    
-    /* Información de contacto */
-    .contact-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-    
-    .contact-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-    }
-    
-    .contact-icon {
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        width: 16px;
-        text-align: center;
-    }
-    
-    /* Información demográfica */
-    .demographic-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-    
-    .demographic-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-    }
-    
+    /* Badges de género */
     .gender-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
     }
@@ -928,27 +919,26 @@ try {
     
     .gender-female {
         background: rgba(248, 113, 113, 0.1);
-        color: var(--color-error);
+        color: var(--color-danger);
         border: 1px solid rgba(248, 113, 113, 0.2);
     }
     
     .gender-other {
         background: rgba(148, 163, 184, 0.1);
-        color: var(--color-text-light);
+        color: var(--color-text-secondary);
         border: 1px solid rgba(148, 163, 184, 0.2);
     }
     
-    /* Estado del paciente */
+    /* Status badges */
     .status-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.875rem;
+        gap: 4px;
+        padding: 4px 12px;
         border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
     
     .status-active {
@@ -959,70 +949,11 @@ try {
     
     .status-inactive {
         background: rgba(239, 68, 68, 0.1);
-        color: var(--color-error);
+        color: var(--color-danger);
         border: 1px solid rgba(239, 68, 68, 0.2);
     }
     
-    /* Botones de acción en tabla */
-    .action-buttons-cell {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-    }
-    
-    .action-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
-        background: transparent;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all var(--transition-normal);
-        text-decoration: none;
-    }
-    
-    .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-    }
-    
-    .action-btn.history:hover {
-        background: var(--color-success);
-        color: white;
-        border-color: var(--color-success);
-    }
-    
-    .action-btn.appointment:hover {
-        background: var(--color-info);
-        color: white;
-        border-color: var(--color-info);
-    }
-    
-    .action-btn.edit:hover {
-        background: var(--color-warning);
-        color: white;
-        border-color: var(--color-warning);
-    }
-    
-    /* Estado vacío */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: var(--color-text-light);
-    }
-    
-    .empty-icon {
-        font-size: 3rem;
-        color: var(--color-border);
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    
-    /* ============ MODALES ============ */
+    /* Modales */
     .custom-modal-overlay {
         position: fixed;
         top: 0;
@@ -1030,33 +961,289 @@ try {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
-        padding: 1rem;
+        z-index: 1100;
+        padding: var(--space-md);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     
     .custom-modal-overlay.active {
         display: flex;
-        animation: fadeIn 0.3s ease-out;
+        opacity: 1;
     }
     
     .custom-modal {
-        background: var(--color-surface);
-        border-radius: var(--radius-lg);
+        background: var(--color-card);
+        border-radius: var(--radius-xl);
         width: 100%;
         max-width: 600px;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: var(--shadow-xl);
-        animation: modalSlideIn 0.3s ease-out;
+        box-shadow: var(--shadow-2xl);
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+        border: 1px solid var(--color-border);
     }
     
-    @keyframes modalSlideIn {
+    .custom-modal-overlay.active .custom-modal {
+        transform: translateY(0);
+    }
+    
+    .custom-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-lg);
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .custom-modal-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .custom-modal-close {
+        background: transparent;
+        border: none;
+        color: var(--color-text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all var(--transition-base);
+    }
+    
+    .custom-modal-close:hover {
+        background: var(--color-surface);
+        color: var(--color-danger);
+    }
+    
+    .custom-modal-body {
+        padding: var(--space-lg);
+    }
+    
+    .custom-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-md);
+        padding: var(--space-lg);
+        border-top: 1px solid var(--color-border);
+        background: var(--color-surface);
+    }
+    
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: transparent;
+        color: var(--color-primary);
+        border: 1px solid var(--color-primary);
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
+    }
+    
+    .btn-outline:hover {
+        background: var(--color-primary);
+        color: white;
+    }
+    
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
+    
+    @media (min-width: 1600px) {
+        
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .main-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+    }
+    
+    /* Escritorio estándar */
+    @media (max-width: 1399px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+    }
+    
+    @media (max-width: 991px) {
+        
+        .dashboard-container {
+            width: 100%;
+        }
+        
+        .main-content {
+            padding: var(--space-md);
+        }
+        
+        .mobile-toggle {
+            display: none;
+        }
+        
+        .header-content {
+            padding: var(--space-md);
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--space-md);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-lg);
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .brand-logo {
+            height: 32px;
+        }
+        
+        .header-content {
+            flex-wrap: wrap;
+        }
+        
+        .header-controls {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            margin-top: var(--space-md);
+        }
+        
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logout-btn span {
+            display: none;
+        }
+        
+        .logout-btn {
+            padding: var(--space-sm);
+        }
+        
+        .appointments-table {
+            font-size: var(--font-size-sm);
+        }
+        
+        .appointments-table th,
+        .appointments-table td {
+            padding: var(--space-sm);
+        }
+        
+        .patient-cell {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-xs);
+        }
+        
+        .patient-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: var(--font-size-sm);
+        }
+        
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+        
+        .filters-container {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: var(--space-sm);
+        }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+        .main-content {
+            padding: var(--space-sm);
+        }
+        
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .appointments-section {
+            padding: var(--space-md);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-base);
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.875rem;
+        }
+    }
+    
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(-20px);
+            transform: translateY(20px);
         }
         to {
             opacity: 1;
@@ -1064,508 +1251,109 @@ try {
         }
     }
     
-    .custom-modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--color-border);
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
     }
     
-    .custom-modal-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
     
-    .custom-modal-close {
-        background: transparent;
-        border: none;
-        color: var(--color-text-light);
-        font-size: 1.5rem;
-        cursor: pointer;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
-    }
+    /* ==========================================================================
+       UTILIDADES
+       ========================================================================== */
+    .text-primary { color: var(--color-primary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .text-info { color: var(--color-info); }
+    .text-muted { color: var(--color-text-secondary); }
     
-    .custom-modal-close:hover {
-        background: var(--color-border-light);
-        color: var(--color-error);
-    }
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: var(--space-xs); }
+    .mb-2 { margin-bottom: var(--space-sm); }
+    .mb-3 { margin-bottom: var(--space-md); }
+    .mb-4 { margin-bottom: var(--space-lg); }
+    .mb-5 { margin-bottom: var(--space-xl); }
     
-    .custom-modal-body {
-        padding: 1.5rem;
-    }
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: var(--space-xs); }
+    .mt-2 { margin-top: var(--space-sm); }
+    .mt-3 { margin-top: var(--space-md); }
+    .mt-4 { margin-top: var(--space-lg); }
+    .mt-5 { margin-top: var(--space-xl); }
     
-    .custom-modal-footer {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 1rem;
-        padding: 1.5rem;
-        border-top: 1px solid var(--color-border);
-    }
+    .d-none { display: none; }
+    .d-block { display: block; }
+    .d-flex { display: flex; }
     
-    /* Formularios en modales */
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-    }
+    .gap-1 { gap: var(--space-xs); }
+    .gap-2 { gap: var(--space-sm); }
+    .gap-3 { gap: var(--space-md); }
+    .gap-4 { gap: var(--space-lg); }
+    .gap-5 { gap: var(--space-xl); }
     
-    .form-group {
-        margin-bottom: 1.25rem;
-    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
     
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--color-text);
-        font-size: 0.875rem;
-    }
+    .fw-bold { font-weight: 700; }
+    .fw-semibold { font-weight: 600; }
+    .fw-medium { font-weight: 500; }
+    .fw-normal { font-weight: 400; }
+    .fw-light { font-weight: 300; }
     
-    .form-input {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: var(--color-background);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text);
-        font-size: 1rem;
-        transition: all var(--transition-normal);
-        outline: none;
-    }
-    
-    .form-input:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.2);
-    }
-    
-    .form-select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: var(--color-background);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text);
-        font-size: 1rem;
-        transition: all var(--transition-normal);
-        outline: none;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 1rem center;
-        background-size: 16px;
-    }
-    
-    .form-select:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.2);
-    }
-    
-    .form-textarea {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: var(--color-background);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text);
-        font-size: 1rem;
-        transition: all var(--transition-normal);
-        outline: none;
-        resize: vertical;
-        min-height: 100px;
-    }
-    
-    .form-textarea:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(124, 144, 219, 0.2);
-    }
-    
-    /* Grupo de entrada con icono */
-    .input-group {
-        position: relative;
-    }
-    
-    .input-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--color-text-light);
-    }
-    
-    .input-group .form-input {
-        padding-left: 3rem;
-    }
-    
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
-        transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
-        color: var(--color-text);
-    }
-    
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
-    }
-    
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
-    }
-    
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
-    }
-    
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-        }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
-        }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
-        }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
-        }
-    }
-    
-    /* ============ NOTIFICACIONES ============ */
-    .notification {
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: 1rem 1.5rem;
-        box-shadow: var(--shadow-lg);
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        z-index: 1000;
-        animation: slideInRight 0.3s ease-out;
-        max-width: 400px;
-    }
-    
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(100%);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .notification.success {
-        border-left: 4px solid var(--color-success);
-    }
-    
-    .notification.error {
-        border-left: 4px solid var(--color-error);
-    }
-    
-    .notification.warning {
-        border-left: 4px solid var(--color-warning);
-    }
-    
-    .notification.info {
-        border-left: 4px solid var(--color-info);
-    }
-    
-    .notification-icon {
-        font-size: 1.5rem;
-    }
-    
-    .notification.success .notification-icon {
-        color: var(--color-success);
-    }
-    
-    .notification.error .notification-icon {
-        color: var(--color-error);
-    }
-    
-    .notification.warning .notification-icon {
-        color: var(--color-warning);
-    }
-    
-    .notification.info .notification-icon {
-        color: var(--color-info);
-    }
-    
-    .notification-content {
-        flex: 1;
-    }
-    
-    .notification-title {
-        font-weight: 600;
-        color: var(--color-text);
-        margin-bottom: 0.25rem;
-    }
-    
-    .notification-message {
-        font-size: 0.875rem;
-        color: var(--color-text-light);
-    }
-    
-    .notification-close {
-        background: transparent;
-        border: none;
-        color: var(--color-text-light);
-        font-size: 1.25rem;
-        cursor: pointer;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-        transition: all var(--transition-normal);
-    }
-    
-    .notification-close:hover {
-        background: var(--color-border-light);
-        color: var(--color-error);
-    }
-    
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
-        .main-content {
-            padding: 1.5rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        }
-    }
-    
-    @media (max-width: 992px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
-        
-        .sidebar.show {
-            transform: translateX(0);
-        }
-        
-        .main-content {
-            margin-left: 0;
-            width: 100%;
-        }
-        
-        .sidebar-toggle {
-            display: none;
-        }
-        
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
-            display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
-            display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .patients-header {
-            padding: 1rem;
-        }
-        
-        .header-content {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-        
-        .header-controls {
-            width: 100%;
-            justify-content: space-between;
-        }
-        
-        .main-content {
-            padding: 1rem;
-        }
-        
-        .module-header {
-            padding: 1.5rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .actions-bar {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 1rem;
-        }
-        
-        .search-container {
-            min-width: 100%;
-        }
-        
-        .action-buttons {
-            justify-content: center;
-        }
-        
-        .patients-table {
-            display: block;
-            overflow-x: auto;
-        }
-        
-        .patients-table th,
-        .patients-table td {
-            padding: 0.75rem;
-        }
-        
-        .patient-cell {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-        
-        .action-buttons-cell {
-            justify-content: center;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .stat-card {
-            padding: 1.25rem;
-        }
-        
-        .module-header {
-            padding: 1.25rem;
-        }
-        
-        .btn-primary,
-        .btn-outline {
-            padding: 0.75rem 1.25rem;
-            font-size: 0.875rem;
-        }
-        
+    /* ==========================================================================
+       PRINT STYLES
+       ========================================================================== */
+    @media print {
+        .dashboard-header,
+        .theme-btn,
+        .logout-btn,
         .action-btn {
-            width: 32px;
-            height: 32px;
+            display: none !important;
         }
         
-        .custom-modal {
-            max-height: 95vh;
-        }
-    }
-    
-    /* ============ PREFERENCIAS DE MOVIMIENTO REDUCIDO ============ */
-    @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
         }
         
         .marble-effect {
             display: none;
         }
+        
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        
+        .stat-card,
+        .appointments-section {
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+        }
     }
-    
-    /* ============ UTILIDADES ============ */
-    .text-primary { color: var(--color-primary) !important; }
-    .text-success { color: var(--color-success) !important; }
-    .text-warning { color: var(--color-warning) !important; }
-    .text-danger { color: var(--color-error) !important; }
-    .text-info { color: var(--color-info) !important; }
-    .text-muted { color: var(--color-text-light) !important; }
-    
-    .bg-primary { background: var(--color-primary) !important; }
-    .bg-success { background: var(--color-success) !important; }
-    .bg-warning { background: var(--color-warning) !important; }
-    .bg-danger { background: var(--color-error) !important; }
-    .bg-info { background: var(--color-info) !important; }
     </style>
+    
 </head>
 <body>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
-    
-    <div class="patients-container">
-        <!-- Header superior -->
-        <header class="patients-header">
+    <!-- Contenedor Principal -->
+    <div class="dashboard-container">
+        <!-- Header Superior -->
+        <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
                 
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -1576,299 +1364,199 @@ try {
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
+                    <div class="header-user">
+                        <div class="header-avatar">
                             <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($_SESSION['especialidad'] ?? 'Profesional Médico'); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                    
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="btn-primary logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $user_type; ?>
-                
-                <!-- Dashboard -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes (activo) -->
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link active">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
-        
-        <!-- Contenido principal -->
+        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Mensajes de sesión -->
-            <?php if (isset($_SESSION['patient_message'])): ?>
-                <div class="notification <?php echo $_SESSION['patient_status'] === 'success' ? 'success' : 'error'; ?>" id="sessionNotification">
-                    <div class="notification-icon">
-                        <i class="bi <?php echo $_SESSION['patient_status'] === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'; ?>"></i>
+            <!-- Bienvenida personalizada -->
+            <div class="stat-card mb-4 animate-in">
+                <div class="stat-header">
+                    <div>
+                        <h2 id="greeting" class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
+                            <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                        </p>
                     </div>
-                    <div class="notification-content">
-                        <div class="notification-title">
-                            <?php echo $_SESSION['patient_status'] === 'success' ? 'Éxito' : 'Error'; ?>
-                        </div>
-                        <div class="notification-message">
-                            <?php echo $_SESSION['patient_message']; ?>
-                        </div>
+                    <div class="d-none d-md-block">
+                        <i class="bi bi-people text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
                     </div>
-                    <button class="notification-close" onclick="closeNotification('sessionNotification')">
-                        <i class="bi bi-x"></i>
-                    </button>
                 </div>
-                <?php 
-                unset($_SESSION['patient_message']);
-                unset($_SESSION['patient_status']);
-                ?>
-            <?php endif; ?>
+            </div>
             
-            <!-- Encabezado del módulo -->
-            <div class="module-header">
-                <h1 class="module-title">
-                    <i class="bi bi-people module-title-icon"></i>
-                    Gestión de Pacientes
-                </h1>
-                <p class="module-subtitle">
-                    Administración completa de historias clínicas digitales y seguimiento médico
-                </p>
-                
-                <!-- Estadísticas rápidas --> 
-                <?php if ($role === 'admin'): ?>
-                <div class="stats-grid">
-                    <div class="stat-card" onclick="filterPatients('all')">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <div class="stat-label">Total Pacientes</div>
-                                <div class="stat-value"><?php echo $total_patients; ?></div>
-                            </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-people-fill"></i>
-                            </div>
+            <!-- Estadísticas principales -->
+            <div class="stats-grid">
+                <!-- Total de pacientes -->
+                <div class="stat-card animate-in delay-1" onclick="filterPatients('all')">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Total Pacientes</div>
+                            <div class="stat-value"><?php echo $total_patients; ?></div>
+                        </div>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-people-fill"></i>
                         </div>
                     </div>
-                    
-                    <div class="stat-card" onclick="filterPatients('with_appointments')">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <div class="stat-label">Con Citas</div>
-                                <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
-                            </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-calendar-check"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card" onclick="filterPatients('without_history')">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <div class="stat-label">Sin Historial</div>
-                                <div class="stat-value"><?php echo $patients_without_history; ?></div>
-                            </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-person-x"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card" onclick="filterPatients('active_today')">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <div class="stat-label">Activos Hoy</div>
-                                <div class="stat-value"><?php echo $active_today; ?></div>
-                            </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-activity"></i>
-                            </div>
-                        </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-arrow-up-right"></i>
+                        <span>Registrados en sistema</span>
                     </div>
                 </div>
-                <?php endif; ?>
+                
+                <!-- Pacientes con citas -->
+                <div class="stat-card animate-in delay-2" onclick="filterPatients('with_appointments')">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Con Citas</div>
+                            <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
+                        </div>
+                        <div class="stat-icon success">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-person-check"></i>
+                        <span>Con historial de citas</span>
+                    </div>
+                </div>
+                
+                <!-- Pacientes sin historial -->
+                <div class="stat-card animate-in delay-3" onclick="filterPatients('without_history')">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Sin Historial</div>
+                            <div class="stat-value"><?php echo $patients_without_history; ?></div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-person-x"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>Requieren primera consulta</span>
+                    </div>
+                </div>
+                
+                <!-- Activos hoy -->
+                <div class="stat-card animate-in delay-4" onclick="filterPatients('active_today')">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Activos Hoy</div>
+                            <div class="stat-value"><?php echo $active_today; ?></div>
+                        </div>
+                        <div class="stat-icon info">
+                            <i class="bi bi-activity"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-calendar-day"></i>
+                        <span>Atendidos hoy</span>
+                    </div>
+                </div>
             </div>
             
             <!-- Barra de búsqueda y acciones -->
-            <div class="actions-bar">
-                <div class="search-container">
-                    <div class="input-group">
-                        <i class="bi bi-search search-icon"></i>
+            <section class="appointments-section animate-in delay-1">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-search section-title-icon"></i>
+                        Buscar Pacientes
+                    </h3>
+                    <button type="button" class="action-btn" id="newPatientButton">
+                        <i class="bi bi-person-plus"></i>
+                        Nuevo Paciente
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="input-group" style="max-width: 500px;">
+                        <span class="input-icon">
+                            <i class="bi bi-search"></i>
+                        </span>
                         <input type="text" 
                                id="searchInput" 
-                               class="search-input" 
+                               class="form-input" 
                                placeholder="Buscar por nombre, apellido, teléfono o correo..."
                                aria-label="Buscar pacientes">
                     </div>
                 </div>
                 
-                <div class="action-buttons">
-                    <button type="button" class="btn-outline" id="filterButton">
-                        <i class="bi bi-funnel"></i>
-                        <span>Filtrar</span>
+                <!-- Filtros rápidos -->
+                <div class="filters-container mb-4" id="filtersContainer">
+                    <button type="button" class="filter-btn active" onclick="filterPatients('all')">
+                        Todos
                     </button>
-                    <button type="button" class="btn-primary" id="newPatientButton">
-                        <i class="bi bi-person-plus"></i>
-                        <span>Nuevo Paciente</span>
+                    <button type="button" class="filter-btn" onclick="filterPatients('with_appointments')">
+                        Con Citas
+                    </button>
+                    <button type="button" class="filter-btn" onclick="filterPatients('without_history')">
+                        Sin Historial
+                    </button>
+                    <button type="button" class="filter-btn" onclick="filterPatients('active_today')">
+                        Activos Hoy
+                    </button>
+                    <button type="button" class="filter-btn" onclick="filterPatients('male')">
+                        Masculino
+                    </button>
+                    <button type="button" class="filter-btn" onclick="filterPatients('female')">
+                        Femenino
                     </button>
                 </div>
-            </div>
-            
-            <!-- Filtros rápidos -->
-            <div class="filters-container" id="filtersContainer" style="display: none;">
-                <button type="button" class="filter-btn active" onclick="filterPatients('all')">
-                    Todos
-                </button>
-                <button type="button" class="filter-btn" onclick="filterPatients('with_appointments')">
-                    Con Citas
-                </button>
-                <button type="button" class="filter-btn" onclick="filterPatients('without_history')">
-                    Sin Historial
-                </button>
-                <button type="button" class="filter-btn" onclick="filterPatients('active_today')">
-                    Activos Hoy
-                </button>
-                <button type="button" class="filter-btn" onclick="filterPatients('male')">
-                    Masculino
-                </button>
-                <button type="button" class="filter-btn" onclick="filterPatients('female')">
-                    Femenino
-                </button>
-            </div>
+            </section>
             
             <!-- Tabla de pacientes -->
-            <div class="patients-table-container">
-                <div class="table-header">
-                    <div>
-                        <h3 class="table-title">
-                            <i class="bi bi-list-ul"></i>
-                            Lista de Pacientes
-                        </h3>
-                        <div class="table-count" id="patientCount">
-                            Mostrando <?php echo $total_patients; ?> pacientes
-                        </div>
+            <section class="appointments-section animate-in delay-2">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-list-ul section-title-icon"></i>
+                        Lista de Pacientes
+                    </h3>
+                    <div class="text-muted" id="patientCount">
+                        Mostrando <?php echo $total_patients; ?> pacientes
                     </div>
-                    <?php if ($role === 'admin'): ?>
-                    <button type="button" class="btn-outline" onclick="exportPatients()">
-                        <i class="bi bi-download"></i>
-                        <span>Exportar</span>
-                    </button>
-                    <?php endif; ?>
                 </div>
                 
-                <div class="table-responsive">
-                    <table class="patients-table" id="patientsTable">
-                        <thead>
-                            <tr>
-                                <th>Paciente</th>
-                                <th>Contacto</th>
-                                <th>Información</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patientsTableBody">
-                            <?php if (!empty($patients)): ?>
+                <?php if (count($patients) > 0): ?>
+                    <div class="table-responsive">
+                        <table class="appointments-table" id="patientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Contacto</th>
+                                    <th>Información</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTableBody">
                                 <?php foreach($patients as $patient): 
                                     $edad = isset($patient['fecha_nacimiento']) ? 
                                         (new DateTime())->diff(new DateTime($patient['fecha_nacimiento']))->y : 0;
@@ -1898,45 +1586,38 @@ try {
                                                 <div class="patient-name">
                                                     <?php echo htmlspecialchars(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? '')); ?>
                                                 </div>
-                                                <div class="patient-id">
+                                                <div class="patient-contact">
                                                     ID: #<?php echo str_pad($patient['id_paciente'], 5, '0', STR_PAD_LEFT); ?>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="contact-info">
-                                            <div class="contact-item">
-                                                <i class="bi bi-telephone contact-icon"></i>
+                                        <div class="d-flex flex-column gap-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
                                                 <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
                                             </div>
-                                            <div class="contact-item">
-                                                <i class="bi bi-envelope contact-icon"></i>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
                                                 <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="demographic-info">
-                                            <div class="demographic-item">
-                                                <i class="bi bi-calendar3 contact-icon"></i>
+                                        <div class="d-flex flex-column gap-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-calendar3 text-muted" style="font-size: 0.875rem;"></i>
                                                 <span><?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? 'N/A'); ?> (<?php echo $edad; ?> años)</span>
                                             </div>
-                                            <div class="demographic-item">
-                                                <?php if (isset($patient['genero'])): ?>
-                                                    <span class="gender-badge <?php 
-                                                        echo strtolower($patient['genero']) === 'masculino' ? 'gender-male' : 
-                                                               (strtolower($patient['genero']) === 'femenino' ? 'gender-female' : 'gender-other');
-                                                    ?>">
-                                                        <?php echo htmlspecialchars($patient['genero']); ?>
-                                                    </span>
-                                                <?php endif; ?>
-                                                <?php if ($has_history): ?>
-                                                    <span class="text-muted">
-                                                        Última visita: <?php echo date('d/m/Y', strtotime($patient['ultima_cita'])); ?>
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
+                                            <?php if (isset($patient['genero'])): ?>
+                                                <span class="gender-badge <?php 
+                                                    echo strtolower($patient['genero']) === 'masculino' ? 'gender-male' : 
+                                                           (strtolower($patient['genero']) === 'femenino' ? 'gender-female' : 'gender-other');
+                                                ?>">
+                                                    <?php echo htmlspecialchars($patient['genero']); ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                     <td>
@@ -1964,14 +1645,14 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <div class="action-buttons-cell">
+                                        <div class="action-buttons">
                                             <a href="medical_history.php?id=<?php echo $patient['id_paciente']; ?>" 
-                                               class="action-btn history" 
+                                               class="btn-icon history" 
                                                title="Historial Clínico">
                                                 <i class="bi bi-clipboard2-pulse"></i>
                                             </a>
                                             <button type="button" 
-                                                    class="action-btn appointment" 
+                                                    class="btn-icon appointment" 
                                                     title="Nueva Cita"
                                                     onclick="quickAppointment(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars($patient['nombre']); ?>', '<?php echo htmlspecialchars($patient['apellido']); ?>')">
                                                 <i class="bi bi-calendar-plus"></i>
@@ -1980,54 +1661,23 @@ try {
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="5">
-                                        <div class="empty-state">
-                                            <div class="empty-icon">
-                                                <i class="bi bi-people"></i>
-                                            </div>
-                                            <h4 class="text-muted mb-2">No se encontraron pacientes</h4>
-                                            <p class="text-muted mb-3">Comienza agregando tu primer paciente</p>
-                                            <button type="button" class="btn-primary" id="emptyNewPatientButton">
-                                                <i class="bi bi-person-plus"></i>
-                                                Agregar Primer Paciente
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Paginación -->
-            <?php if ($total_patients > 0): ?>
-            <div class="pagination-container">
-                <nav aria-label="Paginación de pacientes">
-                    <ul class="pagination">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" aria-label="Anterior">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <?php if ($total_patients > 20): ?>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <?php endif; ?>
-                        <?php if ($total_patients > 40): ?>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <?php endif; ?>
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Siguiente">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h4 class="text-muted mb-2">No se encontraron pacientes</h4>
+                        <p class="text-muted mb-3">Comienza agregando tu primer paciente</p>
+                        <button type="button" class="action-btn" id="emptyNewPatientButton">
+                            <i class="bi bi-person-plus"></i>
+                            Agregar Primer Paciente
+                        </button>
+                    </div>
+                <?php endif; ?>
+            </section>
         </main>
     </div>
     
@@ -2122,7 +1772,7 @@ try {
                     <button type="button" class="btn-outline" onclick="closeModal('newPatientModal')">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn-primary">
+                    <button type="submit" class="action-btn">
                         Guardar Paciente
                     </button>
                 </div>
@@ -2198,7 +1848,7 @@ try {
                     <button type="button" class="btn-outline" onclick="closeModal('quickAppointmentModal')">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn-primary">
+                    <button type="submit" class="action-btn">
                         Programar Cita
                     </button>
                 </div>
@@ -2206,193 +1856,292 @@ try {
         </div>
     </div>
     
-    <!-- JavaScript -->
+    <!-- JavaScript Optimizado -->
     <script>
-    // Módulo de Pacientes - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del módulo
-    
-    // Esperar a que el DOM esté completamente cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const searchInput = document.getElementById('searchInput');
-        const filterButton = document.getElementById('filterButton');
-        const filtersContainer = document.getElementById('filtersContainer');
-        const newPatientButton = document.getElementById('newPatientButton');
-        const emptyNewPatientButton = document.getElementById('emptyNewPatientButton');
-        const patientCount = document.getElementById('patientCount');
-        const patientsTableBody = document.getElementById('patientsTableBody');
-        const patientRows = document.querySelectorAll('.patient-row');
-        const filterButtons = document.querySelectorAll('.filter-btn');
+    // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+    (function() {
+        'use strict';
         
-        // ============ FUNCIONALIDAD DEL TEMA ============
+        // ==========================================================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ==========================================================================
+        const CONFIG = {
+            themeKey: 'dashboard-theme',
+
+            greetingKey: 'last-jornada-summary',
+            transitionDuration: 300,
+            animationDelay: 100
+        };
         
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        }
+        // ==========================================================================
+        // REFERENCIAS A ELEMENTOS DOM
+        // ==========================================================================
+        const DOM = {
+            html: document.documentElement,
+            body: document.body,
+            themeSwitch: document.getElementById('themeSwitch'),
+            greetingElement: document.getElementById('greeting-text'),
+            currentTimeElement: document.getElementById('current-time'),
+            searchInput: document.getElementById('searchInput'),
+            newPatientButton: document.getElementById('newPatientButton'),
+            emptyNewPatientButton: document.getElementById('emptyNewPatientButton'),
+            patientRows: document.querySelectorAll('.patient-row'),
+            patientCount: document.getElementById('patientCount')
+        };
         
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
-            
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
-        }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            }
-        }
-        
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
+        // ==========================================================================
+        // MANEJO DE TEMA (DÍA/NOCHE)
+        // ==========================================================================
+        class ThemeManager {
+            constructor() {
+                this.theme = this.getInitialTheme();
+                this.applyTheme(this.theme);
+                this.setupEventListeners();
             }
             
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-        }
-        
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ BÚSQUEDA DE PACIENTES ============
-        
-        // Filtrar pacientes según texto de búsqueda
-        function searchPatients() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            let visibleCount = 0;
-            
-            patientRows.forEach(row => {
-                const name = row.dataset.name || '';
-                const phone = row.dataset.phone || '';
-                const email = row.dataset.email || '';
+            getInitialTheme() {
+                const savedTheme = localStorage.getItem(CONFIG.themeKey);
+                if (savedTheme) return savedTheme;
                 
-                const matches = name.includes(searchTerm) || 
-                               phone.includes(searchTerm) || 
-                               email.includes(searchTerm);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) return 'dark';
                 
-                if (matches || searchTerm === '') {
-                    row.style.display = '';
-                    row.classList.add('animate__animated', 'animate__fadeIn');
-                    visibleCount++;
+                return 'light';
+            }
+            
+            applyTheme(theme) {
+                DOM.html.setAttribute('data-theme', theme);
+                localStorage.setItem(CONFIG.themeKey, theme);
+                
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+                }
+            }
+            
+            toggleTheme() {
+                const newTheme = this.theme === 'light' ? 'dark' : 'light';
+                this.theme = newTheme;
+                this.applyTheme(newTheme);
+                
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        DOM.themeSwitch.style.transform = 'rotate(0)';
+                    }, CONFIG.transitionDuration);
+                }
+            }
+            
+            setupEventListeners() {
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                }
+                
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(CONFIG.themeKey)) {
+                        this.theme = e.matches ? 'dark' : 'light';
+                        this.applyTheme(this.theme);
+                    }
+                });
+            }
+        }
+        
+        // ==========================================================================
+        // COMPONENTES DINÁMICOS
+        // ==========================================================================
+        class DynamicComponents {
+            constructor() {
+                this.setupGreeting();
+                this.setupClock();
+                this.setupPatientSearch();
+                this.setupModals();
+                this.setupAnimations();
+                this.handleAutoOpen();
+            }
+
+            handleAutoOpen() {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('new') === 'true') {
+                    const nombre = urlParams.get('nombre');
+                    const apellido = urlParams.get('apellido');
+                    
+                    if (nombre) document.getElementById('nombre').value = nombre;
+                    if (apellido) document.getElementById('apellido').value = apellido;
+                    
+                    setTimeout(() => {
+                        this.openModal('newPatientModal');
+                    }, 500);
+                }
+            }
+            
+            setupGreeting() {
+                if (!DOM.greetingElement) return;
+                
+                const hour = new Date().getHours();
+                let greeting = '';
+                
+                if (hour < 12) {
+                    greeting = 'Buenos días';
+                } else if (hour < 19) {
+                    greeting = 'Buenas tardes';
                 } else {
-                    row.style.display = 'none';
+                    greeting = 'Buenas noches';
                 }
-            });
+                
+                DOM.greetingElement.textContent = greeting;
+            }
             
-            // Actualizar contador
-            patientCount.textContent = `Mostrando ${visibleCount} de ${patientRows.length} pacientes`;
+            setupClock() {
+                if (!DOM.currentTimeElement) return;
+                
+                const updateClock = () => {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('es-GT', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    DOM.currentTimeElement.textContent = timeString;
+                };
+                
+                updateClock();
+                setInterval(updateClock, 60000);
+            }
             
-            // Mostrar mensaje si no hay resultados
-            const existingMessage = document.getElementById('noResultsMessage');
-            if (visibleCount === 0 && searchTerm !== '') {
-                if (!existingMessage) {
-                    const messageRow = document.createElement('tr');
-                    messageRow.id = 'noResultsMessage';
-                    messageRow.innerHTML = `
-                        <td colspan="5">
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-search"></i>
-                                </div>
-                                <h4 class="text-muted mb-2">No se encontraron pacientes</h4>
-                                <p class="text-muted mb-3">Intenta con otros términos de búsqueda</p>
-                                <button type="button" class="btn-outline" onclick="clearSearch()">
-                                    <i class="bi bi-x-circle"></i>
-                                    Limpiar búsqueda
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    patientsTableBody.appendChild(messageRow);
+            setupPatientSearch() {
+                if (!DOM.searchInput) return;
+                
+                DOM.searchInput.addEventListener('input', () => this.searchPatients());
+            }
+            
+            searchPatients() {
+                const searchTerm = DOM.searchInput.value.toLowerCase().trim();
+                let visibleCount = 0;
+                
+                DOM.patientRows.forEach(row => {
+                    const name = row.dataset.name || '';
+                    const phone = row.dataset.phone || '';
+                    const email = row.dataset.email || '';
+                    
+                    const matches = name.includes(searchTerm) || 
+                                   phone.includes(searchTerm) || 
+                                   email.includes(searchTerm);
+                    
+                    if (matches || searchTerm === '') {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                if (DOM.patientCount) {
+                    DOM.patientCount.textContent = `Mostrando ${visibleCount} de ${DOM.patientRows.length} pacientes`;
                 }
-            } else if (existingMessage) {
-                existingMessage.remove();
+            }
+            
+            setupModals() {
+                if (DOM.newPatientButton) {
+                    DOM.newPatientButton.addEventListener('click', () => this.openModal('newPatientModal'));
+                }
+                
+                if (DOM.emptyNewPatientButton) {
+                    DOM.emptyNewPatientButton.addEventListener('click', () => this.openModal('newPatientModal'));
+                }
+                
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('custom-modal-overlay')) {
+                        this.closeModal(e.target.id);
+                    }
+                });
+            }
+            
+            setupAnimations() {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-in');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                
+                document.querySelectorAll('.stat-card, .appointments-section').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+            
+            openModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            
+            closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
             }
         }
         
-        // Limpiar búsqueda
-        function clearSearch() {
-            searchInput.value = '';
-            searchPatients();
-        }
+        // ==========================================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ==========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeManager = new ThemeManager();
+            const dynamicComponents = new DynamicComponents();
+            
+            window.dashboard = {
+                theme: themeManager,
+                components: dynamicComponents
+            };
+            
+            console.log('Módulo de Pacientes inicializado correctamente');
+            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+            console.log('Tema: ' + themeManager.theme);
+        });
         
-        // ============ FILTROS DE PACIENTES ============
+        // ==========================================================================
+        // FUNCIONES GLOBALES PARA PACIENTES
+        // ==========================================================================
         
-        // Mostrar/ocultar contenedor de filtros
-        function toggleFilters() {
-            const isVisible = filtersContainer.style.display === 'flex';
-            filtersContainer.style.display = isVisible ? 'none' : 'flex';
-            filterButton.innerHTML = isVisible ? 
-                '<i class="bi bi-funnel"></i><span>Filtrar</span>' : 
-                '<i class="bi bi-funnel-fill"></i><span>Ocultar Filtros</span>';
-        }
+        window.quickAppointment = function(patientId, nombre, apellido) {
+            document.getElementById('quickPatientId').value = patientId;
+            document.getElementById('quickPatientName').value = nombre + ' ' + apellido;
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('quickDate').valueAsDate = tomorrow;
+            document.getElementById('quickTime').value = '09:00';
+            
+            document.getElementById('quickAppointmentModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
         
-        // Aplicar filtro a los pacientes
-        function filterPatients(filterType) {
-            // Actualizar botones de filtro activos
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        };
+        
+        window.filterPatients = function(filterType) {
+            const filterButtons = document.querySelectorAll('.filter-btn');
             filterButtons.forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
             let visibleCount = 0;
             
-            patientRows.forEach(row => {
+            document.querySelectorAll('.patient-row').forEach(row => {
                 const hasAppointments = row.dataset.hasAppointments === 'true';
                 const hasHistory = row.dataset.hasHistory === 'true';
                 const activeToday = row.dataset.activeToday === 'true';
@@ -2425,424 +2174,71 @@ try {
                 
                 if (show) {
                     row.style.display = '';
-                    row.classList.add('animate__animated', 'animate__fadeIn');
                     visibleCount++;
                 } else {
                     row.style.display = 'none';
                 }
             });
             
-            // Actualizar contador
-            patientCount.textContent = `Mostrando ${visibleCount} de ${patientRows.length} pacientes`;
-            
-            // Ocultar filtros después de aplicar (en móvil)
-            if (window.innerWidth < 768) {
-                filtersContainer.style.display = 'none';
-                filterButton.innerHTML = '<i class="bi bi-funnel"></i><span>Filtrar</span>';
-            }
-        }
+            document.getElementById('patientCount').textContent = 
+                `Mostrando ${visibleCount} de ${document.querySelectorAll('.patient-row').length} pacientes`;
+        };
         
-        // ============ MODALES ============
-        
-        // Abrir modal
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                
-                // Configurar fecha por defecto para citas
-                if (modalId === 'quickAppointmentModal') {
-                    const today = new Date();
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    document.getElementById('quickDate').valueAsDate = tomorrow;
-                    document.getElementById('quickTime').value = '09:00';
-                }
-            }
-        }
-        
-        // Cerrar modal
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
-                
-                // Limpiar formulario si es modal de nuevo paciente
-                if (modalId === 'newPatientModal') {
-                    document.getElementById('newPatientForm').reset();
-                }
-            }
-        }
-        
-        // Cerrar modal al hacer clic fuera
-        function closeModalOnClickOutside(event, modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal && event.target === modal) {
-                closeModal(modalId);
-            }
-        }
-        
-        // Cerrar notificación
-        function closeNotification(notificationId) {
-            const notification = document.getElementById(notificationId);
-            if (notification) {
-                notification.style.animation = 'slideInRight 0.3s ease-out reverse';
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DE CITAS RÁPIDAS ============
-        
-        // Abrir modal de cita rápida
-        function quickAppointment(patientId, nombre, apellido) {
-            document.getElementById('quickPatientId').value = patientId;
-            document.getElementById('quickPatientName').value = nombre + ' ' + apellido;
-            openModal('quickAppointmentModal');
-        }
-        
-        // ============ EXPORTACIÓN DE DATOS ============
-        
-        // Exportar lista de pacientes
-        function exportPatients() {
-            // Crear datos CSV
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "ID,Nombre,Apellido,Fecha Nacimiento,Género,Teléfono,Correo,Dirección,Total Citas,Última Cita\n";
-            
-            patientRows.forEach(row => {
-                if (row.style.display !== 'none') {
-                    const cells = row.querySelectorAll('td');
-                    const id = row.dataset.id;
-                    const name = cells[0].querySelector('.patient-name').textContent;
-                    const phone = cells[1].querySelector('.contact-item:nth-child(1) span').textContent;
-                    const email = cells[1].querySelector('.contact-item:nth-child(2) span').textContent;
-                    const birthDate = cells[2].querySelector('.demographic-item:nth-child(1) span').textContent.split('(')[0].trim();
-                    const gender = cells[2].querySelector('.gender-badge')?.textContent || 'N/A';
-                    
-                    // Extraer información adicional del dataset
-                    const hasAppointments = row.dataset.hasAppointments === 'true';
-                    const hasHistory = row.dataset.hasHistory === 'true';
-                    
-                    csvContent += `"${id}","${name}","${birthDate}","${gender}","${phone}","${email}","${hasAppointments ? 'Sí' : 'No'}","${hasHistory ? 'Sí' : 'No'}"\n`;
-                }
-            });
-            
-            // Crear y descargar archivo
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "pacientes_" + new Date().toISOString().slice(0, 10) + ".csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Mostrar notificación
-            showNotification('success', 'Exportación completada', 'Los datos de pacientes han sido exportados correctamente.');
-        }
-        
-        // ============ NOTIFICACIONES ============
-        
-        // Mostrar notificación
-        function showNotification(type, title, message) {
-            const notificationId = 'notification-' + Date.now();
-            const notification = document.createElement('div');
-            notification.id = notificationId;
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-icon">
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : 
-                                      type === 'error' ? 'exclamation-triangle' : 
-                                      type === 'warning' ? 'exclamation-circle' : 'info-circle'}-fill"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${title}</div>
-                    <div class="notification-message">${message}</div>
-                </div>
-                <button class="notification-close" onclick="closeNotification('${notificationId}')">
-                    <i class="bi bi-x"></i>
-                </button>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-eliminar después de 5 segundos
-            setTimeout(() => {
-                if (document.getElementById(notificationId)) {
-                    closeNotification(notificationId);
-                }
-            }, 5000);
-        }
-        
-        // ============ MANEJO DE FORMULARIOS ============
-        
-        // Manejar envío del formulario de nuevo paciente
-        document.getElementById('newPatientForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            // Mostrar estado de carga
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
-            submitBtn.disabled = true;
-            
-            // En un sistema real, aquí se haría una petición AJAX
-            // Por simplicidad, redirigimos directamente
-            setTimeout(() => {
-                this.submit();
-            }, 1000);
+        // ==========================================================================
+        // MANEJO DE ERRORES GLOBALES
+        // ==========================================================================
+        window.addEventListener('error', (event) => {
+            console.error('Error en módulo de pacientes:', event.error);
         });
         
-        // Manejar envío del formulario de cita rápida
-        document.getElementById('quickAppointmentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            // Mostrar estado de carga
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Programando...';
-            submitBtn.disabled = true;
-            
-            // Simular envío AJAX
-            setTimeout(() => {
-                showNotification('success', 'Cita programada', 'La cita ha sido programada exitosamente.');
-                closeModal('quickAppointmentModal');
-                
-                // Restaurar botón
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                this.reset();
-            }, 1500);
-        });
+    })();
+    
+    // Manejar envío del formulario de nuevo paciente
+    document.getElementById('newPatientForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // ============ ANIMACIONES AL CARGAR ============
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Guardando...';
+        submitBtn.disabled = true;
         
-        // Animar elementos al cargar la página
-        function animateOnLoad() {
-            const cards = document.querySelectorAll('.stat-card, .patients-table-container');
-            
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                
-                setTimeout(() => {
-                    card.style.transition = 'all 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
-        }
-        
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        animateOnLoad();
-        
-        // Configurar fecha mínima para citas (mañana)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('quickDate').min = tomorrow.toISOString().split('T')[0];
-        
-        // Configurar fecha de nacimiento máxima (hoy - 1 año)
-        const maxBirthDate = new Date();
-        maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 1);
-        document.getElementById('fecha_nacimiento').max = maxBirthDate.toISOString().split('T')[0];
-        
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
-        }
-        
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
-        }
-        
-        // Búsqueda
-        searchInput.addEventListener('input', searchPatients);
-        
-        // Filtros
-        filterButton.addEventListener('click', toggleFilters);
-        
-        // Modales
-        if (newPatientButton) {
-            newPatientButton.addEventListener('click', () => openModal('newPatientModal'));
-        }
-        
-        if (emptyNewPatientButton) {
-            emptyNewPatientButton.addEventListener('click', () => openModal('newPatientModal'));
-        }
-        
-        // Cerrar modales al hacer clic fuera
-        document.addEventListener('click', (e) => {
-            closeModalOnClickOutside(e, 'newPatientModal');
-            closeModalOnClickOutside(e, 'quickAppointmentModal');
-        });
-        
-        // Cerrar sidebar al cambiar tamaño de ventana (responsive)
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-            
-            // Ocultar filtros en pantallas pequeñas
-            if (window.innerWidth < 768 && filtersContainer.style.display === 'flex') {
-                filtersContainer.style.display = 'none';
-                filterButton.innerHTML = '<i class="bi bi-funnel"></i><span>Filtrar</span>';
-            }
-        });
-        
-        // ============ SALUDO DINÁMICO ============
-        
-        // Actualizar saludo según hora del día
-        function updateGreeting() {
-            const hour = new Date().getHours();
-            const greetingElement = document.getElementById('greeting-text');
-            
-            if (greetingElement) {
-                let greeting = '';
-                if (hour < 12) {
-                    greeting = 'Buenos días';
-                } else if (hour < 19) {
-                    greeting = 'Buenas tardes';
-                } else {
-                    greeting = 'Buenas noches';
-                }
-                
-                greetingElement.textContent = greeting + ', ' + "<?php echo htmlspecialchars($user_name); ?>";
-            }
-        }
-        
-        updateGreeting();
-        
-        // ============ CONSOLA DE DESARROLLO ============
-        
-        console.log('Módulo de Pacientes - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Total de pacientes: <?php echo $total_patients; ?>');
-        console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+        setTimeout(() => {
+            this.submit();
+        }, 1000);
     });
     
-    // Funciones globales
-    window.closeModal = closeModal;
-    window.closeNotification = closeNotification;
-    window.filterPatients = filterPatients;
-    window.quickAppointment = quickAppointment;
-    window.exportPatients = exportPatients;
-    window.clearSearch = clearSearch;
+    // Manejar envío del formulario de cita rápida
+    document.getElementById('quickAppointmentForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Programando...';
+        submitBtn.disabled = true;
+        
+        setTimeout(() => {
+            alert('Cita programada exitosamente (simulación)');
+            closeModal('quickAppointmentModal');
+            
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            this.reset();
+        }, 1500);
+    });
     
-    // Definir funciones globales
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
+    // Estilos para spinner
+    const style = document.createElement('style');
+    style.textContent = `
+        .spin {
+            animation: spin 1s linear infinite;
         }
-    }
-    
-    function closeNotification(notificationId) {
-        const notification = document.getElementById(notificationId);
-        if (notification) {
-            notification.style.animation = 'slideInRight 0.3s ease-out reverse';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-    }
-    
-    function filterPatients(filterType) {
-        const patientRows = document.querySelectorAll('.patient-row');
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        
-        // Actualizar botones de filtro activos
-        filterButtons.forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        let visibleCount = 0;
-        
-        patientRows.forEach(row => {
-            const hasAppointments = row.dataset.hasAppointments === 'true';
-            const hasHistory = row.dataset.hasHistory === 'true';
-            const activeToday = row.dataset.activeToday === 'true';
-            const gender = row.dataset.gender || '';
-            
-            let show = false;
-            
-            switch(filterType) {
-                case 'all':
-                    show = true;
-                    break;
-                case 'with_appointments':
-                    show = hasAppointments;
-                    break;
-                case 'without_history':
-                    show = !hasHistory;
-                    break;
-                case 'active_today':
-                    show = activeToday;
-                    break;
-                case 'male':
-                    show = gender.includes('masculino');
-                    break;
-                case 'female':
-                    show = gender.includes('femenino');
-                    break;
-                default:
-                    show = true;
-            }
-            
-            if (show) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Actualizar contador
-        document.getElementById('patientCount').textContent = `Mostrando ${visibleCount} de ${patientRows.length} pacientes`;
-    }
-    
-    function quickAppointment(patientId, nombre, apellido) {
-        document.getElementById('quickPatientId').value = patientId;
-        document.getElementById('quickPatientName').value = nombre + ' ' + apellido;
-        
-        const modal = document.getElementById('quickAppointmentModal');
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            
-            // Configurar fecha por defecto (mañana)
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            document.getElementById('quickDate').valueAsDate = tomorrow;
-            document.getElementById('quickTime').value = '09:00';
-        }
-    }
-    
-    function exportPatients() {
-        // Implementación simplificada
-        alert('La función de exportación se ejecutará en el sistema completo.\nLos datos se descargarán en formato CSV.');
-    }
-    
-    function clearSearch() {
-        document.getElementById('searchInput').value = '';
-        const event = new Event('input');
-        document.getElementById('searchInput').dispatchEvent(event);
-    }
+    `;
+    document.head.appendChild(style);
     </script>
 </body>
 </html>

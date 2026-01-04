@@ -16,13 +16,23 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
     
-    // Query directly from inventario
-    $stmt = $conn->prepare("SELECT precio_venta FROM inventario WHERE id_inventario = ?");
+    // Query from inventario and join with compras if id_purchase_item exists
+    $stmt = $conn->prepare("
+        SELECT i.precio_venta as inv_price, c.precio_venta as comp_price 
+        FROM inventario i
+        LEFT JOIN compras c ON i.id_purchase_item = c.id_compras
+        WHERE i.id_inventario = ?
+    ");
     $stmt->execute([$_GET['id_inventario']]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($result) {
-        echo json_encode(['status' => 'success', 'precio_venta' => floatval($result['precio_venta'])]);
+        $precio = floatval($result['inv_price']);
+        // Fallback to purchase price if inventory price is 0
+        if ($precio <= 0 && isset($result['comp_price'])) {
+            $precio = floatval($result['comp_price']);
+        }
+        echo json_encode(['status' => 'success', 'precio_venta' => $precio]);
     } else {
         echo json_encode(['status' => 'success', 'precio_venta' => 0.00]);
     }

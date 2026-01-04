@@ -53,11 +53,36 @@ try {
         throw new Exception("La cama seleccionada no está disponible");
     }
     
-    // Verify patient exists
-    $stmt_check_patient = $conn->prepare("SELECT id_paciente FROM pacientes WHERE id_paciente = ?");
-    $stmt_check_patient->execute([$id_paciente]);
-    if (!$stmt_check_patient->fetch()) {
-        throw new Exception("Paciente no encontrado");
+    // Verificar que el paciente existe
+    $stmt_patient = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_paciente = ?");
+    $stmt_patient->execute([$id_paciente]);
+    $patient = $stmt_patient->fetch();
+    
+    if (!$patient) {
+        throw new Exception("El paciente seleccionado no existe");
+    }
+    
+    // Verificar si el paciente tiene un registro en historial_clinico
+    // Si no existe, crear uno mínimo para satisfacer la restricción de clave foránea
+    $stmt_check_historial = $conn->prepare("SELECT id_paciente FROM historial_clinico WHERE id_paciente = ? LIMIT 1");
+    $stmt_check_historial->execute([$id_paciente]);
+    
+    if (!$stmt_check_historial->fetch()) {
+        // Crear registro mínimo en historial_clinico
+        $stmt_create_historial = $conn->prepare("
+            INSERT INTO historial_clinico 
+            (id_paciente, fecha_consulta, motivo_consulta, sintomas, diagnostico, tratamiento, medico_responsable) 
+            VALUES (?, NOW(), ?, '', ?, '', ?)
+        ");
+        // For medico_responsable, we'll use the user ID as a placeholder if a name isn't available.
+        // If 'medico_responsable' is expected to be a name, you might need to fetch the user's name from the 'users' table.
+        // For now, using 'Sistema' as per the instruction's implied fallback.
+        $stmt_create_historial->execute([
+            $id_paciente,
+            $motivo_ingreso,
+            $diagnostico_ingreso ?? 'Ingreso hospitalario',
+            'Sistema' // Using 'Sistema' as created_by_name is not defined and this is a minimal record.
+        ]);
     }
     
     // Check if patient already has an active admission

@@ -1,5 +1,6 @@
 <?php
 // config/database.php
+date_default_timezone_set('America/Guatemala');
 
 class Database {
     private $host = "bzlwnzdfwf8n1tct7ebf-mysql.services.clever-cloud.com";

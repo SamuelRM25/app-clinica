@@ -1,6 +1,6 @@
 <?php
 // historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
+// Versión: 4.0 - Estilo Dashboard Principal
 session_start();
 
 // Verificar sesión activa
@@ -12,20 +12,29 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+
+// Establecer zona horaria
+date_default_timezone_set('America/Guatemala');
 verify_session();
-
-// Título de la página
-$page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
-
-// Configuración de paginación
-$limit = 20; // Registros por página
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$offset = ($page > 1) ? ($page - 1) * $limit : 0;
 
 try {
     // Conectar a la base de datos
     $database = new Database();
     $conn = $database->getConnection();
+    
+    // Obtener información del usuario
+    $user_id = $_SESSION['user_id'];
+    $user_type = $_SESSION['tipoUsuario'];
+    $user_name = $_SESSION['nombre'];
+    $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    
+    // Título de la página
+    $page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
+    
+    // Configuración de paginación
+    $limit = 20; // Registros por página
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $offset = ($page > 1) ? ($page - 1) * $limit : 0;
     
     // Obtener total de registros
     $stmt_count = $conn->query("SELECT COUNT(*) as total FROM examenes_realizados");
@@ -48,7 +57,9 @@ try {
     // Manejo de errores
     $examenes = [];
     $total_paginas = 1;
+    $total_registros = 0;
     $error_message = "Error al cargar el historial: " . $e->getMessage();
+    error_log("Error en historial_examenes: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -56,662 +67,898 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Historial de Exámenes - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     
-    <!-- Google Fonts - Inter para modernidad y legibilidad -->
+    <!-- Google Fonts - Inter (moderno y legible) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- Flatpickr CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
+    <!-- CSS Crítico (incrustado para máxima velocidad) - IDÉNTICO AL DASHBOARD -->
     <style>
-    /* 
-     * Historial de Exámenes - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) - Colores pastel */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;      /* Azul lavanda pastel */
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;    /* Verde menta pastel */
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;       /* Coral pastel */
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
+        
+        /* Ancho Sidebar */
+        --sidebar-width: 280px;
+        --sidebar-collapsed-width: 100px;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
     .dashboard-container {
+        display: flex;
+        flex-direction: column; /* Apilar Header y Main verticalmente */
         min-height: 100vh;
+        position: relative;
+        margin-left: var(--sidebar-width); /* Mover todo el contenido a la derecha del sidebar */
+        transition: margin-left var(--transition-base);
+        width: calc(100% - var(--sidebar-width)); /* Asegurar que no se desborde */
+    }
+    
+    /* ==========================================================================
+       BARRA LATERAL MODERNA
+       ========================================================================== */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background-color: var(--color-card);
+        border-right: 1px solid var(--color-border);
+        z-index: 1000;
         display: flex;
         flex-direction: column;
+        transition: all var(--transition-base);
+        transform: translateX(0);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    /* Estado colapsado */
+    .sidebar.collapsed {
+        width: var(--sidebar-collapsed-width);
+        transform: translateX(0);
+    }
+    
+    .sidebar.collapsed .sidebar-header h2,
+    .sidebar.collapsed .nav-link span:not(.badge),
+    .sidebar.collapsed .user-info .user-details {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Overlay para móvil */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    /* Header sidebar */
+    .sidebar-header {
+        padding: var(--space-lg);
+        border-bottom: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+    
+    .sidebar-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .sidebar-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .sidebar-header h2 {
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        color: var(--color-primary);
+        margin: 0;
+        white-space: nowrap;
+        transition: opacity var(--transition-base);
+    }
+    
+    /* Navegación */
+    .sidebar-nav {
+        flex: 1;
+        padding: var(--space-md);
+        overflow-y: auto;
+    }
+    
+    .nav-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+    
+    .nav-item {
         position: relative;
     }
     
-    /* ============ HEADER SUPERIOR ============ */
-    .dashboard-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
     }
     
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .nav-link:hover {
+        background-color: var(--color-surface);
+        color: var(--color-text);
+        transform: translateX(4px);
+    }
+    
+    .nav-link.active {
+        background-color: var(--color-primary);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .nav-link.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 60%;
+        background-color: currentColor;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+    
+    .nav-icon {
+        font-size: 1.25rem;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .nav-text {
+        font-weight: 500;
+        white-space: nowrap;
+        transition: opacity var(--transition-base);
+    }
+    
+    .badge {
+        margin-left: auto;
+        font-size: var(--font-size-xs);
+        padding: 0.25em 0.5em;
+        min-width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    /* Footer sidebar */
+    .sidebar-footer {
+        padding: var(--space-md);
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
+    .dashboard-header {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
+        backdrop-filter: blur(10px);
+        /* Usar fallback sólido si rgba falla, pero definir rgb variables arriba */
+        background-color: rgba(var(--color-card-rgb), 0.95); 
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--color-text);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: var(--space-xs);
+        border-radius: var(--radius-sm);
     }
     
-    /* Control de tema y usuario */
+    .mobile-toggle:hover {
+        background-color: var(--color-surface);
+    }
+    
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
+    /* Control de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    /* Información usuario en header */
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px; /* Altura del header */
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    /* Botón de cerrar sesión */
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        text-decoration: none;
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
+        text-decoration: none;
         font-weight: 500;
+        transition: all var(--transition-base);
+    }
+    
+    .logout-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
+    }
+    
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
+    .main-content {
+        flex: 1;
+        padding: var(--space-lg);
+        /* Margin-left movido al contenedor padre */
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
+    }
+    
+    .sidebar.collapsed ~ .dashboard-container {
+        margin-left: var(--sidebar-collapsed-width);
+        width: calc(100% - var(--sidebar-collapsed-width));
+    }
+    
+    /* Botón toggle sidebar (escritorio) */
+    .sidebar-toggle {
+        position: fixed;
+        /* Ajustado para estar dentro del container que tiene margen */
+        left: -12px; /* Relativo al dashboard-container */
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 48px;
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-left: none;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        color: var(--color-text);
+        cursor: pointer;
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-base);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .sidebar-toggle:hover {
+        background: var(--color-primary);
+        color: white;
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    /* Cuando el sidebar está colapsado, el dashboard-container reduce su margen,
+       y el botón se mueve con él porque está dentro y es relative o fixed dentro?
+       Espera, el botón tiene position: fixed. Fixed es relativo al VIEWPORT.
+       Entonces `left: -12px` NO SIRVE si es relativo al viewport.
+       Debe ser relativo al container O calculado desde la izquierda.
+    */
+    .sidebar-toggle {
+        left: calc(var(--sidebar-width) - 12px);
+    }
+
+    .sidebar.collapsed + .dashboard-container .sidebar-toggle {
+        left: calc(var(--sidebar-collapsed-width) - 12px);
+    }
+    
+    .sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+    
+    /* ==========================================================================
+       COMPONENTES DE HISTORIAL DE EXÁMENES
+       ========================================================================== */
+    
+    /* Bienvenida personalizada */
+    .welcome-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
-    .nav-link:hover {
-        background: var(--color-border-light);
-        color: var(--color-primary);
-        transform: translateX(4px);
+    .welcome-card:hover {
+        box-shadow: var(--shadow-lg);
     }
     
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
-    }
-    
-    .nav-link.active {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: var(--shadow-md);
-    }
-    
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
-    }
-    
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
-    
-    /* ============ ENCABEZADO DE PÁGINA ============ */
-    .page-header {
+    .welcome-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+    /* Tabla de historial */
+    .history-section {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
     }
     
-    .page-title-section {
+    .history-section:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .section-header {
         display: flex;
-        flex-direction: column;
-    }
-    
-    .page-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--color-text);
-        margin-bottom: 0.25rem;
-    }
-    
-    .page-subtitle {
-        font-size: 0.95rem;
-        color: var(--color-text-light);
-    }
-    
-    .page-actions {
-        display: flex;
-        gap: 1rem;
+        justify-content: space-between;
         align-items: center;
+        margin-bottom: var(--space-lg);
+        flex-wrap: wrap;
+        gap: var(--space-md);
     }
     
-    /* Botones de acción */
+    .section-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .section-title-icon {
+        color: var(--color-primary);
+    }
+    
     .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         background: var(--color-primary);
         color: white;
         border: none;
         border-radius: var(--radius-md);
-        padding: 0.625rem 1.25rem;
         font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
         text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
     }
     
     .action-btn:hover {
-        background: var(--color-primary-dark);
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+        background: var(--color-primary);
+        opacity: 0.9;
+        color: white;
     }
     
-    .action-btn.secondary {
-        background: transparent;
-        color: var(--color-text);
-        border: 1px solid var(--color-border);
-    }
-    
-    .action-btn.secondary:hover {
-        background: var(--color-border-light);
-    }
-    
-    /* ============ TABLA DE HISTORIAL ============ */
-    .table-container {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.2s both;
-        overflow: hidden;
-    }
-    
-    .table-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--color-border);
-    }
-    
-    .table-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .table-title-icon {
-        color: var(--color-primary);
-    }
-    
+    /* Tablas */
     .table-responsive {
-        width: 100%;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .data-table {
+    .history-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
     }
     
-    .data-table th {
+    .history-table thead {
+        background: var(--color-surface);
+    }
+    
+    .history-table th {
+        padding: var(--space-md);
         text-align: left;
-        padding: 1rem;
         font-weight: 600;
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
-    }
-    
-    .data-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--color-border);
         color: var(--color-text);
-        transition: background-color var(--transition-normal);
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
     }
     
-    .data-table tbody tr:hover td {
-        background: var(--color-border-light);
+    .history-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: middle;
     }
     
-    .data-table tbody tr:last-child td {
-        border-bottom: none;
+    .history-table tbody tr {
+        transition: all var(--transition-base);
     }
     
+    .history-table tbody tr:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
+    }
+    
+    /* Celdas personalizadas */
     .patient-cell {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
     }
     
     .patient-avatar {
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 14px;
+        font-size: var(--font-size-base);
         flex-shrink: 0;
     }
     
     .patient-info {
-        display: flex;
-        flex-direction: column;
+        min-width: 0;
     }
     
     .patient-name {
         font-weight: 600;
         color: var(--color-text);
-    }
-    
-    .examen-type {
-        font-weight: 500;
-        color: var(--color-text);
-    }
-    
-    .amount-badge {
-        background: var(--color-border-light);
-        color: var(--color-success);
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        border: 1px solid var(--color-success);
-        opacity: 0.3;
-    }
-    
-    .time-badge {
-        background: var(--color-border-light);
-        color: var(--color-text);
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        border: 1px solid var(--color-border);
+        margin-bottom: 2px;
     }
     
     /* Separador de jornada */
     .jornada-row {
-        background: var(--color-border-light);
+        background: var(--color-surface);
     }
     
     .jornada-cell {
-        padding: 0.75rem 1rem;
+        padding: var(--space-sm) var(--space-md);
         font-weight: 600;
         color: var(--color-primary);
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         border-bottom: 2px solid var(--color-primary);
-        opacity: 0.8;
     }
     
     .jornada-icon {
-        margin-right: 0.5rem;
+        margin-right: var(--space-sm);
+    }
+    
+    /* Badges */
+    .amount-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        border: 1px solid var(--color-success);
+    }
+    
+    .time-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--color-surface);
+        color: var(--color-text);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
     }
     
     /* Estado vacío */
     .empty-state {
         text-align: center;
-        padding: 3rem 1rem;
-        color: var(--color-text-light);
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
     }
     
     .empty-icon {
         font-size: 3rem;
         color: var(--color-border);
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-md);
         opacity: 0.5;
     }
     
-    /* ============ PAGINACIÓN ============ */
+    /* Paginación */
     .pagination-container {
         display: flex;
         justify-content: center;
-        margin-top: 2rem;
+        margin-top: var(--space-xl);
     }
     
     .pagination {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-xs);
         list-style: none;
         padding: 0;
         margin: 0;
@@ -727,14 +974,14 @@ try {
         justify-content: center;
         min-width: 40px;
         height: 40px;
-        padding: 0 0.75rem;
+        padding: 0 var(--space-sm);
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         color: var(--color-text);
         font-weight: 500;
         text-decoration: none;
-        transition: all var(--transition-normal);
+        transition: all var(--transition-base);
     }
     
     .page-link:hover {
@@ -749,9 +996,9 @@ try {
         border-color: var(--color-primary);
     }
     
-    /* ============ MODAL DE REPORTES ============ */
+    /* Modal para reportes */
     .modal-content {
-        background: var(--color-surface);
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-xl);
@@ -759,7 +1006,7 @@ try {
     
     .modal-header {
         border-bottom: 1px solid var(--color-border);
-        padding: 1.5rem;
+        padding: var(--space-lg);
     }
     
     .modal-title {
@@ -767,228 +1014,418 @@ try {
         color: var(--color-text);
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-sm);
     }
     
     .modal-body {
-        padding: 1.5rem;
+        padding: var(--space-lg);
     }
     
     .modal-footer {
         border-top: 1px solid var(--color-border);
-        padding: 1.5rem;
+        padding: var(--space-lg);
     }
     
-    .form-label {
-        font-weight: 500;
-        color: var(--color-text);
-        margin-bottom: 0.5rem;
-        display: block;
-    }
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
     
-    .form-control {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text);
-        font-size: 0.95rem;
-        transition: all var(--transition-normal);
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px var(--color-primary-light);
-        opacity: 0.3;
-    }
-    
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
-        transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
-        color: var(--color-text);
-    }
-    
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
-    }
-    
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
-    }
-    
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
+    /* Pantallas grandes (TV, monitores 4K) */
+    @media (min-width: 1600px) {
+        :root {
+            --sidebar-width: 320px;
+            --sidebar-collapsed-width: 100px;
+        }
+        
         .main-content {
-            padding: 1.5rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: var(--space-xl);
         }
     }
     
-    @media (max-width: 992px) {
+    /* Escritorio estándar */
+    @media (max-width: 1399px) {
+        /* Ajustes generales */
+    }
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 991px) {
+        :root {
+            --sidebar-width: 280px;
+        }
+        
         .sidebar {
             transform: translateX(-100%);
-            width: 280px;
         }
         
         .sidebar.show {
             transform: translateX(0);
         }
         
-        .main-content {
+        .dashboard-container {
             margin-left: 0;
             width: 100%;
+        }
+        
+        .sidebar-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: var(--space-md);
         }
         
         .sidebar-toggle {
             display: none;
         }
         
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
+        .mobile-toggle {
             display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
-            display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1rem;
         }
         
         .header-content {
+            padding: var(--space-md);
+        }
+        
+        .section-header {
             flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
+            align-items: stretch;
+            gap: var(--space-md);
         }
         
-        .header-controls {
-            width: 100%;
-            justify-content: space-between;
-        }
-        
-        .main-content {
-            padding: 1rem;
-        }
-        
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        
-        .page-actions {
-            width: 100%;
-            justify-content: flex-start;
-        }
-        
-        .data-table {
-            display: block;
-            overflow-x: auto;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .table-container {
-            padding: 1.25rem;
+        .section-title {
+            font-size: var(--font-size-lg);
         }
         
         .action-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
+            width: 100%;
+            justify-content: center;
         }
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
+    /* Móviles */
+    @media (max-width: 767px) {
+        :root {
+            --sidebar-width: 100%;
+        }
+        
+        .brand-logo {
+            height: 32px;
+        }
+        
+        .header-content {
+            flex-wrap: wrap;
+        }
+        
+        .header-controls {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            margin-top: var(--space-md);
+        }
+        
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logout-btn span {
+            display: none;
+        }
+        
+        .logout-btn {
+            padding: var(--space-sm);
+        }
+        
+        .history-table {
+            font-size: var(--font-size-sm);
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: var(--space-sm);
+        }
+        
+        .patient-cell {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-xs);
+        }
+        
+        .patient-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: var(--font-size-sm);
+        }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+        .main-content {
+            padding: var(--space-sm);
+        }
+        
+        .history-section {
+            padding: var(--space-md);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-base);
+        }
+    }
+    
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
+    /* ==========================================================================
+       ESTADOS DE CARGA
+       ========================================================================== */
+    .loading {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .loading::after {
+        content: '';
+        position: absolute;
         top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: loading 1.5s infinite;
     }
     
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
+    @keyframes loading {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    /* ==========================================================================
+       UTILIDADES
+       ========================================================================== */
+    .text-primary { color: var(--color-primary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .text-info { color: var(--color-info); }
+    .text-muted { color: var(--color-text-secondary); }
+    
+    .bg-primary { background-color: var(--color-primary); }
+    .bg-success { background-color: var(--color-success); }
+    .bg-warning { background-color: var(--color-warning); }
+    .bg-danger { background-color: var(--color-danger); }
+    .bg-info { background-color: var(--color-info); }
+    
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: var(--space-xs); }
+    .mb-2 { margin-bottom: var(--space-sm); }
+    .mb-3 { margin-bottom: var(--space-md); }
+    .mb-4 { margin-bottom: var(--space-lg); }
+    .mb-5 { margin-bottom: var(--space-xl); }
+    
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: var(--space-xs); }
+    .mt-2 { margin-top: var(--space-sm); }
+    .mt-3 { margin-top: var(--space-md); }
+    .mt-4 { margin-top: var(--space-lg); }
+    .mt-5 { margin-top: var(--space-xl); }
+    
+    .d-none { display: none; }
+    .d-block { display: block; }
+    .d-flex { display: flex; }
+    
+    .gap-1 { gap: var(--space-xs); }
+    .gap-2 { gap: var(--space-sm); }
+    .gap-3 { gap: var(--space-md); }
+    .gap-4 { gap: var(--space-lg); }
+    .gap-5 { gap: var(--space-xl); }
+    
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    
+    .fw-bold { font-weight: 700; }
+    .fw-semibold { font-weight: 600; }
+    .fw-medium { font-weight: 500; }
+    .fw-normal { font-weight: 400; }
+    .fw-light { font-weight: 300; }
+    
+    /* ==========================================================================
+       PRINT STYLES
+       ========================================================================== */
+    @media print {
+        .sidebar,
+        .dashboard-header,
+        .sidebar-toggle,
+        .theme-btn,
+        .logout-btn,
+        .action-btn {
+            display: none !important;
         }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
+        
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
         }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
+        
+        .marble-effect {
+            display: none;
         }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
+        
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        
+        .history-section {
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
         }
     }
     </style>
+    
 </head>
 <body>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
+    <!-- Barra Lateral Moderna -->
+    <aside class="sidebar" id="sidebar">
+        <!-- Navegación -->
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="../dashboard/index.php" class="nav-link">
+                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../appointments/index.php" class="nav-link">
+                        <i class="bi bi-calendar-check nav-icon"></i>
+                        <span class="nav-text">Citas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../patients/index.php" class="nav-link">
+                        <i class="bi bi-people nav-icon"></i>
+                        <span class="nav-text">Pacientes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../hospitalization/index.php" class="nav-link">
+                        <i class="bi bi-hospital nav-icon"></i>
+                        <span class="nav-text">Hospitalización</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../minor_procedures/index.php" class="nav-link">
+                        <i class="bi bi-bandaid nav-icon"></i>
+                        <span class="nav-text">Procedimientos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../examinations/index.php" class="nav-link active">
+                        <i class="bi bi-file-earmark-medical nav-icon"></i>
+                        <span class="nav-text">Exámenes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../laboratory/index.php" class="nav-link">
+                        <i class="bi bi-virus nav-icon"></i>
+                        <span class="nav-text">Laboratorio</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../inventory/index.php" class="nav-link">
+                        <i class="bi bi-box-seam nav-icon"></i>
+                        <span class="nav-text">Inventario</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../purchases/index.php" class="nav-link">
+                        <i class="bi bi-cart nav-icon"></i>
+                        <span class="nav-text">Compras</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../sales/index.php" class="nav-link">
+                        <i class="bi bi-receipt nav-icon"></i>
+                        <span class="nav-text">Ventas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../billing/index.php" class="nav-link">
+                        <i class="bi bi-cash-coin nav-icon"></i>
+                        <span class="nav-text">Cobros</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../dispensary/index.php" class="nav-link">
+                        <i class="bi bi-capsule nav-icon"></i>
+                        <span class="nav-text">Dispensario</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../reports/index.php" class="nav-link">
+                        <i class="bi bi-graph-up nav-icon"></i>
+                        <span class="nav-text">Reportes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../settings/index.php" class="nav-link">
+                        <i class="bi bi-gear nav-icon"></i>
+                        <span class="nav-text">Configuración</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+    
+    <!-- Contenedor Principal -->
     <div class="dashboard-container">
-        <!-- Header superior -->
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
+                <!-- Botón hamburguesa para móvil -->
+                <button class="mobile-toggle" id="mobileSidebarToggle" aria-label="Abrir menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
                 
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -999,188 +1436,100 @@ try {
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            <?php echo strtoupper(substr($_SESSION['nombre'], 0, 1)); ?>
+                    <div class="header-user">
+                        <div class="header-avatar">
+                            <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['nombre']); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($_SESSION['especialidad'] ?? 'Profesional Médico'); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="action-btn logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $_SESSION['tipoUsuario']; ?>
-                
-                <!-- Dashboard (siempre visible) -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes (todos los roles) -->
-                <?php if (in_array($role, ['admin', 'doc', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link active">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
+        <!-- Botón para colapsar/expandir sidebar (solo escritorio) -->
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
             <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
         </button>
         
-        <!-- Contenido principal -->
+        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Encabezado de página -->
-            <div class="page-header">
-                <div class="page-title-section">
-                    <h1 class="page-title">Historial de Exámenes</h1>
-                    <p class="page-subtitle">Visualice actividades y genere reportes</p>
+            <!-- Bienvenida personalizada -->
+            <div class="welcome-card animate-in">
+                <div class="welcome-header">
+                    <div>
+                        <h2 id="greeting" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
+                            <span id="greeting-text">Historial de Exámenes</span>
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                        </p>
+                    </div>
+                    <div class="d-none d-md-block">
+                        <i class="bi bi-clipboard2-data text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
                 </div>
-                <div class="page-actions">
-                    <a href="index.php" class="action-btn secondary">
-                        <i class="bi bi-arrow-left"></i>
-                        <span>Regresar</span>
-                    </a>
-                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#reportModal">
-                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                        <span>Generar Reporte</span>
-                    </button>
+                <div class="mt-3">
+                    <p class="text-muted mb-0">
+                        Visualice y administre el historial completo de exámenes realizados en el centro médico.
+                    </p>
                 </div>
             </div>
             
-            <!-- Mensaje de error -->
-            <?php if (!empty($error_message)): ?>
-                <div class="table-container">
-                    <div class="alert alert-danger border-0" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <?php echo htmlspecialchars($error_message); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            
-            <!-- Tabla de historial -->
-            <div class="table-container">
-                <div class="table-header">
-                    <h3 class="table-title">
-                        <i class="bi bi-clock-history table-title-icon"></i>
+            <!-- Sección de historial -->
+            <section class="history-section animate-in delay-1">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-clock-history section-title-icon"></i>
                         Exámenes Realizados
                     </h3>
-                    <div class="text-muted">
-                        Total: <?php echo $total_registros; ?> registros
+                    <div class="d-flex gap-2">
+                        <a href="index.php" class="action-btn secondary">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Regresar</span>
+                        </a>
+                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#reportModal">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            <span>Reporte</span>
+                        </button>
                     </div>
                 </div>
                 
-                <div class="table-responsive">
-                    <?php if (empty($examenes)): ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-clipboard-x"></i>
-                            </div>
-                            <h4 class="text-muted mb-2">No se encontraron registros</h4>
-                            <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
-                            <a href="index.php" class="action-btn">
-                                <i class="bi bi-plus-lg"></i>
-                                Registrar primer examen
-                            </a>
+                <!-- Mensaje de error -->
+                <?php if (!empty($error_message)): ?>
+                    <div class="alert alert-danger border-0 mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (empty($examenes)): ?>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-clipboard-x"></i>
                         </div>
-                    <?php else: ?>
-                        <table class="data-table">
+                        <h4 class="text-muted mb-2">No se encontraron registros</h4>
+                        <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
+                        <a href="index.php" class="action-btn">
+                            <i class="bi bi-plus-lg"></i>
+                            Registrar primer examen
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="history-table">
                             <thead>
                                 <tr>
                                     <th>Paciente</th>
@@ -1242,7 +1591,7 @@ try {
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="examen-type"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
+                                            <span class="fw-medium"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
                                         </td>
                                         <td>
                                             <span class="amount-badge">
@@ -1259,36 +1608,40 @@ try {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Paginación -->
+                    <?php if ($total_paginas > 1): ?>
+                        <div class="pagination-container">
+                            <ul class="pagination">
+                                <?php if ($page > 1): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+
+                                <li class="page-item active">
+                                    <span class="page-link"><?php echo $page; ?> de <?php echo $total_paginas; ?></span>
+                                </li>
+
+                                <?php if ($page < $total_paginas): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
                     <?php endif; ?>
-                </div>
-                
-                <!-- Paginación -->
-                <?php if ($total_paginas > 1): ?>
-                    <div class="pagination-container">
-                        <ul class="pagination">
-                            <?php if ($page > 1): ?>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                        <i class="bi bi-chevron-left"></i>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-
-                            <li class="page-item active">
-                                <span class="page-link"><?php echo $page; ?></span>
-                            </li>
-
-                            <?php if ($page < $total_paginas): ?>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                        <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Total de registros: <?php echo $total_registros; ?></p>
                     </div>
                 <?php endif; ?>
-            </div>
+            </section>
         </main>
     </div>
     
@@ -1307,29 +1660,24 @@ try {
                     <p class="text-muted small mb-3">
                         La jornada comprende desde las <strong>08:00 AM</strong> hasta las <strong>05:00 PM</strong> (jornada diurna) o desde las <strong>05:00 PM</strong> hasta las <strong>08:00 AM</strong> del día siguiente (jornada nocturna).
                     </p>
-                    <div class="form-group mb-4">
-                        <label class="form-label">Seleccionar Fecha de Jornada</label>
-                        <input type="text" class="form-control" id="reportDate" placeholder="Seleccionar fecha...">
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Seleccionar Fecha de Jornada</label>
+                        <input type="date" class="form-control" id="reportDate">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="action-btn" id="btnGenerateReport">
                         <i class="bi bi-download"></i>
-                        Generar y Descargar
+                        Generar Reporte
                     </button>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- JavaScript -->
     <!-- Bootstrap 5 JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Flatpickr para selector de fechas -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     
     <!-- jsPDF para generación de PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1338,154 +1686,300 @@ try {
     <!-- SweetAlert2 para alertas -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- JavaScript Optimizado -->
     <script>
-    // Historial de Exámenes - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del historial
+    // Dashboard Reingenierizado - Centro Médico Herrera Saenz
     
-    // Esperar a que el DOM esté completamente cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const reportDateInput = document.getElementById('reportDate');
-        const btnGenerateReport = document.getElementById('btnGenerateReport');
+    (function() {
+        'use strict';
         
-        // ============ FUNCIONALIDAD DEL TEMA ============
+        // ==========================================================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ==========================================================================
+        const CONFIG = {
+            themeKey: 'dashboard-theme',
+            sidebarKey: 'sidebar-collapsed',
+            greetingKey: 'last-jornada-summary',
+            transitionDuration: 300,
+            animationDelay: 100
+        };
         
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        }
+        // ==========================================================================
+        // REFERENCIAS A ELEMENTOS DOM
+        // ==========================================================================
+        const DOM = {
+            html: document.documentElement,
+            body: document.body,
+            themeSwitch: document.getElementById('themeSwitch'),
+            sidebar: document.getElementById('sidebar'),
+            sidebarToggle: document.getElementById('sidebarToggle'),
+            sidebarToggleIcon: document.getElementById('sidebarToggleIcon'),
+            sidebarOverlay: document.getElementById('sidebarOverlay'),
+            mobileSidebarToggle: document.getElementById('mobileSidebarToggle'),
+            greetingElement: document.getElementById('greeting-text'),
+            currentTimeElement: document.getElementById('current-time'),
+            reportDate: document.getElementById('reportDate'),
+            btnGenerateReport: document.getElementById('btnGenerateReport')
+        };
         
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
-            
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
-        }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            }
-        }
-        
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
+        // ==========================================================================
+        // MANEJO DE TEMA (DÍA/NOCHE)
+        // ==========================================================================
+        class ThemeManager {
+            constructor() {
+                this.theme = this.getInitialTheme();
+                this.applyTheme(this.theme);
+                this.setupEventListeners();
             }
             
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-        }
-        
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DEL REPORTE ============
-        
-        // Inicializar datepicker
-        function initializeDatepicker() {
-            flatpickr(reportDateInput, {
-                locale: "es",
-                dateFormat: "Y-m-d",
-                defaultDate: "today",
-                allowInput: true
-            });
-        }
-        
-        // Generar reporte PDF
-        function generateReport() {
-            const date = reportDateInput.value;
-            const btn = btnGenerateReport;
-            
-            if (!date) {
-                Swal.fire('Error', 'Por favor seleccione una fecha', 'warning');
-                return;
+            getInitialTheme() {
+                // 1. Verificar preferencia guardada
+                const savedTheme = localStorage.getItem(CONFIG.themeKey);
+                if (savedTheme) return savedTheme;
+                
+                // 2. Verificar preferencia del sistema
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) return 'dark';
+                
+                // 3. Tema por defecto (día)
+                return 'light';
             }
             
-            // Estado de carga
-            btn.disabled = true;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando...';
+            applyTheme(theme) {
+                DOM.html.setAttribute('data-theme', theme);
+                localStorage.setItem(CONFIG.themeKey, theme);
+                
+                // Actualizar meta tag para navegadores móviles
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+                }
+            }
             
-            console.log('Iniciando generacion de reporte para fecha:', date);
+            toggleTheme() {
+                const newTheme = this.theme === 'light' ? 'dark' : 'light';
+                this.theme = newTheme;
+                this.applyTheme(newTheme);
+                
+                // Animación sutil en el botón
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        DOM.themeSwitch.style.transform = 'rotate(0)';
+                    }, CONFIG.transitionDuration);
+                }
+            }
             
-            fetch(`get_report_data.php?date=${date}`)
-                .then(response => {
-                    console.log('Respuesta del servidor recibida', response);
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
+            setupEventListeners() {
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                }
+                
+                // Escuchar cambios en preferencias del sistema
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(CONFIG.themeKey)) {
+                        this.theme = e.matches ? 'dark' : 'light';
+                        this.applyTheme(this.theme);
                     }
-                    return response.text().then(text => {
-                        console.log('Texto crudo de respuesta:', text);
-                        try {
-                            return JSON.parse(text);
-                        } catch (e) {
-                            console.error('Error al parsear JSON:', e);
-                            throw new Error('La respuesta del servidor no es un JSON válido: ' + text.substring(0, 100));
-                        }
+                });
+            }
+        }
+        
+        // ==========================================================================
+        // MANEJO DE BARRA LATERAL
+        // ==========================================================================
+        class SidebarManager {
+            constructor() {
+                this.isCollapsed = this.getInitialState();
+                this.isMobile = window.innerWidth < 992;
+                this.setupEventListeners();
+                this.applyState();
+            }
+            
+            getInitialState() {
+                if (this.isMobile) return false;
+                const savedState = localStorage.getItem(CONFIG.sidebarKey);
+                return savedState === 'true';
+            }
+            
+            applyState() {
+                if (this.isCollapsed && !this.isMobile) {
+                    DOM.sidebar.classList.add('collapsed');
+                    if (DOM.sidebarToggleIcon) {
+                        DOM.sidebarToggleIcon.classList.remove('bi-chevron-left');
+                        DOM.sidebarToggleIcon.classList.add('bi-chevron-right');
+                    }
+                } else {
+                    DOM.sidebar.classList.remove('collapsed');
+                    if (DOM.sidebarToggleIcon) {
+                        DOM.sidebarToggleIcon.classList.remove('bi-chevron-right');
+                        DOM.sidebarToggleIcon.classList.add('bi-chevron-left');
+                    }
+                }
+            }
+            
+            toggle() {
+                if (this.isMobile) {
+                    this.toggleMobile();
+                } else {
+                    this.toggleDesktop();
+                }
+            }
+            
+            toggleDesktop() {
+                this.isCollapsed = !this.isCollapsed;
+                this.applyState();
+                localStorage.setItem(CONFIG.sidebarKey, this.isCollapsed);
+            }
+            
+            toggleMobile() {
+                const isShowing = DOM.sidebar.classList.toggle('show');
+                
+                if (isShowing) {
+                    DOM.sidebarOverlay.classList.add('show');
+                    DOM.body.style.overflow = 'hidden';
+                } else {
+                    DOM.sidebarOverlay.classList.remove('show');
+                    DOM.body.style.overflow = '';
+                }
+            }
+            
+            closeMobile() {
+                DOM.sidebar.classList.remove('show');
+                DOM.sidebarOverlay.classList.remove('show');
+                DOM.body.style.overflow = '';
+            }
+            
+            setupEventListeners() {
+                // Toggle escritorio
+                if (DOM.sidebarToggle) {
+                    DOM.sidebarToggle.addEventListener('click', () => this.toggle());
+                }
+                
+                // Toggle móvil
+                if (DOM.mobileSidebarToggle) {
+                    DOM.mobileSidebarToggle.addEventListener('click', () => this.toggle());
+                }
+                
+                // Overlay móvil
+                if (DOM.sidebarOverlay) {
+                    DOM.sidebarOverlay.addEventListener('click', () => this.closeMobile());
+                }
+                
+                // Cerrar sidebar al hacer clic en enlace (móvil)
+                const navLinks = DOM.sidebar.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (this.isMobile) this.closeMobile();
                     });
-                })
-                .then(res => {
-                    console.log('Datos procesados:', res);
-                    if (res.status === 'success') {
-                        try {
-                            generatePDF(res);
-                            console.log('PDF generado correctamente');
+                });
+                
+                // Escuchar cambios de tamaño
+                window.addEventListener('resize', this.debounce(() => {
+                    const wasMobile = this.isMobile;
+                    this.isMobile = window.innerWidth < 992;
+                    
+                    if (wasMobile !== this.isMobile) {
+                        if (!this.isMobile) this.closeMobile();
+                        this.applyState();
+                    }
+                }, 250));
+            }
+            
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        }
+        
+        // ==========================================================================
+        // COMPONENTES DINÁMICOS
+        // ==========================================================================
+        class DynamicComponents {
+            constructor() {
+                this.setupGreeting();
+                this.setupClock();
+                this.setupReportGeneration();
+                this.setupAnimations();
+            }
+            
+            setupGreeting() {
+                if (!DOM.greetingElement) return;
+                
+                const hour = new Date().getHours();
+                let greeting = '';
+                
+                if (hour < 12) {
+                    greeting = 'Buenos días';
+                } else if (hour < 19) {
+                    greeting = 'Buenas tardes';
+                } else {
+                    greeting = 'Buenas noches';
+                }
+                
+                DOM.greetingElement.textContent = greeting + ', ' + '<?php echo htmlspecialchars($user_name); ?>';
+            }
+            
+            setupClock() {
+                if (!DOM.currentTimeElement) return;
+                
+                const updateClock = () => {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('es-GT', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    DOM.currentTimeElement.textContent = timeString;
+                };
+                
+                updateClock();
+                setInterval(updateClock, 60000);
+            }
+            
+            setupReportGeneration() {
+                if (!DOM.btnGenerateReport || !DOM.reportDate) return;
+                
+                // Configurar fecha por defecto (hoy)
+                const today = new Date().toISOString().split('T')[0];
+                DOM.reportDate.value = today;
+                
+                DOM.btnGenerateReport.addEventListener('click', () => {
+                    this.generateReport();
+                });
+            }
+            
+            generateReport() {
+                const date = DOM.reportDate.value;
+                const btn = DOM.btnGenerateReport;
+                
+                if (!date) {
+                    Swal.fire('Error', 'Por favor seleccione una fecha', 'warning');
+                    return;
+                }
+                
+                // Estado de carga
+                btn.disabled = true;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando...';
+                
+                fetch(`get_report_data.php?date=${date}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(res => {
+                        if (res.status === 'success') {
+                            this.generatePDF(res);
                             
                             // Cerrar modal
                             const modalElement = document.getElementById('reportModal');
@@ -1501,151 +1995,152 @@ try {
                                 icon: 'success',
                                 confirmButtonText: 'Aceptar'
                             });
-                        } catch (pdfError) {
-                            console.error('Error generando PDF:', pdfError);
-                            Swal.fire('Error', 'Error al crear el archivo PDF: ' + pdfError.message, 'error');
+                        } else {
+                            Swal.fire('Error', res.message || 'Error desconocido', 'error');
                         }
-                    } else {
-                        console.error('Error reportado por el backend:', res);
-                        Swal.fire('Error', res.message || 'Error desconocido', 'error');
-                    }
-                })
-                .catch(err => {
-                    console.error('Capturado error en fetch:', err);
-                    Swal.fire('Error', 'Hubo un problema: ' + err.message, 'error');
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                });
-        }
-        
-        // Función auxiliar para obtener el día siguiente
-        function getNextDay(dateString) {
-            const date = new Date(dateString);
-            date.setDate(date.getDate() + 1);
-            return date.toISOString().split('T')[0];
-        }
-        
-        // Generar PDF con jsPDF
-        function generatePDF(res) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Colores
-            const primaryColor = [124, 144, 219]; // Azul lavanda pastel
-            
-            // Encabezado
-            doc.setFillColor(...primaryColor);
-            doc.rect(0, 0, 210, 40, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
-            
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'normal');
-            doc.text("Reporte de Exámenes Clínicos", 105, 28, { align: 'center' });
-            
-            // Información del reporte
-            doc.setTextColor(50, 50, 50);
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Información del Reporte:", 14, 50);
-            
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Jornada Reportada: ${res.metadata.jornada_start} - ${res.metadata.jornada_end}`, 14, 56);
-            doc.text(`Generado por: ${res.metadata.generated_by}`, 14, 62);
-            doc.text(`Fecha de Creación: ${res.metadata.generated_at}`, 14, 68);
-            
-            // Tabla de datos
-            const tableBody = res.data.map(item => [
-                item.nombre_paciente,
-                item.tipo_examen,
-                new Date(item.fecha_examen).toLocaleString('es-GT', {
-                    year: 'numeric',
-                    month: '2-digit', 
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                }),
-                `Q${parseFloat(item.cobro).toFixed(2)}`
-            ]);
-            
-            doc.autoTable({
-                startY: 75,
-                head: [['Paciente', 'Examen', 'Fecha y Hora', 'Cobro']],
-                body: tableBody,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: primaryColor,
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold'
-                },
-                columnStyles: {
-                    0: { cellWidth: 50 },
-                    1: { cellWidth: 50 },
-                    2: { cellWidth: 45 },
-                    3: { cellWidth: 25, halign: 'right' }
-                },
-                foot: [['', '', 'TOTAL ACUMULADO', `Q${res.total.toFixed(2)}`]],
-                footStyles: {
-                    fillColor: [240, 240, 240],
-                    textColor: [0, 0, 0],
-                    fontStyle: 'bold',
-                    halign: 'right'
-                }
-            });
-            
-            // Guardar archivo
-            const fileName = `Reporte_Examenes_${reportDateInput.value}.pdf`;
-            doc.save(fileName);
-        }
-        
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        initializeDatepicker();
-        
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
-        }
-        
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
-        }
-        
-        // Generar reporte
-        if (btnGenerateReport) {
-            btnGenerateReport.addEventListener('click', generateReport);
-        }
-        
-        // Cerrar sidebar al cambiar tamaño de ventana (responsive)
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Hubo un problema: ' + err.message, 'error');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    });
             }
+            
+            generatePDF(res) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Colores
+                const primaryColor = [13, 110, 253]; // Azul primario
+                
+                // Encabezado
+                doc.setFillColor(...primaryColor);
+                doc.rect(0, 0, 210, 40, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
+                
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'normal');
+                doc.text("Reporte de Exámenes Clínicos", 105, 28, { align: 'center' });
+                
+                // Información del reporte
+                doc.setTextColor(50, 50, 50);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Información del Reporte:", 14, 50);
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Jornada Reportada: ${res.metadata.jornada_start} - ${res.metadata.jornada_end}`, 14, 56);
+                doc.text(`Generado por: ${res.metadata.generated_by}`, 14, 62);
+                doc.text(`Fecha de Creación: ${res.metadata.generated_at}`, 14, 68);
+                
+                // Tabla de datos
+                const tableBody = res.data.map(item => [
+                    item.nombre_paciente,
+                    item.tipo_examen,
+                    new Date(item.fecha_examen).toLocaleString('es-GT', {
+                        year: 'numeric',
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }),
+                    `Q${parseFloat(item.cobro).toFixed(2)}`
+                ]);
+                
+                doc.autoTable({
+                    startY: 75,
+                    head: [['Paciente', 'Examen', 'Fecha y Hora', 'Cobro']],
+                    body: tableBody,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: primaryColor,
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold'
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 50 },
+                        1: { cellWidth: 50 },
+                        2: { cellWidth: 45 },
+                        3: { cellWidth: 25, halign: 'right' }
+                    },
+                    foot: [['', '', 'TOTAL ACUMULADO', `Q${res.total.toFixed(2)}`]],
+                    footStyles: {
+                        fillColor: [240, 240, 240],
+                        textColor: [0, 0, 0],
+                        fontStyle: 'bold',
+                        halign: 'right'
+                    }
+                });
+                
+                // Guardar archivo
+                const fileName = `Reporte_Examenes_${DOM.reportDate.value}.pdf`;
+                doc.save(fileName);
+            }
+            
+            setupAnimations() {
+                // Animar elementos al cargar
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-in');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                
+                // Observar elementos con clase de animación
+                document.querySelectorAll('.welcome-card, .history-section').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+        }
+        
+        // ==========================================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ==========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar componentes
+            const themeManager = new ThemeManager();
+            const sidebarManager = new SidebarManager();
+            const dynamicComponents = new DynamicComponents();
+            
+            // Exponer APIs necesarias globalmente
+            window.dashboard = {
+                theme: themeManager,
+                sidebar: sidebarManager,
+                components: dynamicComponents
+            };
+            
+            // Log de inicialización
+            console.log('Historial de Exámenes CMS v4.0 inicializado correctamente');
+            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+            console.log('Tema: ' + themeManager.theme);
+            console.log('Sidebar: ' + (sidebarManager.isCollapsed ? 'colapsado' : 'expandido'));
+            console.log('Total de registros: <?php echo $total_registros; ?>');
         });
         
-        // ============ CONSOLA DE DESARROLLO ============
+        // ==========================================================================
+        // MANEJO DE ERRORES GLOBALES
+        // ==========================================================================
+        window.addEventListener('error', (event) => {
+            console.error('Error en historial de exámenes:', event.error);
+        });
         
-        console.log('Historial de Exámenes - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Usuario: <?php echo htmlspecialchars($_SESSION['nombre']); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($_SESSION['tipoUsuario']); ?>');
-    });
+    })();
     </script>
 </body>
 </html>

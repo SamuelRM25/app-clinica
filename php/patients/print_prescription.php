@@ -73,13 +73,30 @@ try {
     
     <style>
         :root {
-            /* Colores minimalistas */
-            --primary-color: #1e40af;
-            --secondary-color: #3b82f6;
-            --text-color: #333333;
-            --text-muted: #666666;
-            --border-color: #e0e0e0;
+            /* Colores del dashboard */
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+            --text-color: #1a1a1a;
+            --text-muted: #6c757d;
+            --border-color: #e9ecef;
             --background-color: #ffffff;
+        }
+        
+        body.dark-mode {
+            --primary-color: #3b82f6;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #2d3748;
+            --background-color: #0f172a;
         }
         
         * {
@@ -98,6 +115,7 @@ try {
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            transition: all 0.3s ease;
         }
         
         /* Contenedor de receta */
@@ -114,7 +132,7 @@ try {
         /* Cabecera */
         .prescription-header {
             padding: 40px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
             color: white;
             position: relative;
             overflow: hidden;
@@ -296,7 +314,7 @@ try {
         }
         
         .btn-close {
-            background-color: #6b7280;
+            background-color: var(--secondary-color);
             color: white;
         }
         

@@ -15,60 +15,78 @@ if (!isset($_SESSION['user_id'])) {
 date_default_timezone_set('America/Guatemala');
 
 try {
-    $required = ['id_encamamiento', 'tipo_cargo', 'descripcion', 'cantidad', 'precio_unitario'];
-    foreach ($required as $field) {
-        if (!isset($_POST[$field]) || $_POST[$field] === '') {
-            throw new Exception("Campo requerido: $field");
-        }
-    }
-    
-    $id_encamamiento = intval($_POST['id_encamamiento']);
-    $tipo_cargo = $_POST['tipo_cargo'];
-    $descripcion = trim($_POST['descripcion']);
-    $cantidad = floatval($_POST['cantidad']);
-    $precio_unitario = floatval($_POST['precio_unitario']);
-    $registrado_por = $_SESSION['user_id'];
-    $fecha_cargo = date('Y-m-d H:i:s');
-    
     $database = new Database();
     $conn = $database->getConnection();
     
-    // Get id_cuenta
-    $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-    $stmt_cuenta->execute([$id_encamamiento]);
-    $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
+    // Check if we are receiving an array of charges or a single one
+    $cargos_to_process = [];
     
-    if (!$cuenta) {
-        throw new Exception("No se encontró cuenta hospitalaria");
+    if (isset($_POST['cargos']) && is_array($_POST['cargos'])) {
+        $cargos_to_process = $_POST['cargos'];
+    } elseif (isset($_POST['id_encamamiento'])) {
+        // Single charge (classic way)
+        $cargos_to_process[] = [
+            'id_encamamiento' => $_POST['id_encamamiento'],
+            'tipo_cargo' => $_POST['tipo_cargo'],
+            'descripcion' => $_POST['descripcion'],
+            'cantidad' => $_POST['cantidad'],
+            'precio_unitario' => $_POST['precio_unitario']
+        ];
+    } else {
+        throw new Exception("No se recibieron datos de cargos");
     }
     
-    $id_cuenta = $cuenta['id_cuenta'];
+    $registrado_por = $_SESSION['user_id'];
+    $fecha_cargo = date('Y-m-d H:i:s');
     
-    // Insert charge
-    $stmt = $conn->prepare("
-        INSERT INTO cargos_hospitalarios 
-        (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, registrado_por)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
+    $conn->beginTransaction();
     
-    $stmt->execute([
-        $id_cuenta,
-        $tipo_cargo,
-        $descripcion,
-        $cantidad,
-        $precio_unitario,
-        $fecha_cargo,
-        $registrado_por
-    ]);
+    foreach ($cargos_to_process as $index => $cargo_data) {
+        $id_encamamiento = intval($cargo_data['id_encamamiento']);
+        $tipo_cargo = $cargo_data['tipo_cargo'];
+        $descripcion = trim($cargo_data['descripcion']);
+        $cantidad = floatval($cargo_data['cantidad']);
+        $precio_unitario = floatval($cargo_data['precio_unitario']);
+        
+        // Get id_cuenta for this encamamiento
+        $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
+        $stmt_cuenta->execute([$id_encamamiento]);
+        $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$cuenta) {
+            throw new Exception("No se encontró cuenta hospitalaria para el cargo #$index");
+        }
+        
+        $id_cuenta = $cuenta['id_cuenta'];
+        
+        // Insert charge
+        $stmt = $conn->prepare("
+            INSERT INTO cargos_hospitalarios 
+            (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, registrado_por)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        $stmt->execute([
+            $id_cuenta,
+            $tipo_cargo,
+            $descripcion,
+            $cantidad,
+            $precio_unitario,
+            $fecha_cargo,
+            $registrado_por
+        ]);
+    }
     
-    // Trigger will automatically update subtotals
+    $conn->commit();
     
     echo json_encode([
         'status' => 'success',
-        'message' => 'Cargo agregado correctamente',
-        'id_cargo' => $conn->lastInsertId()
+        'message' => count($cargos_to_process) . ' cargo(s) agregado(s) correctamente'
     ]);
     
 } catch (Exception $e) {
+    if (isset($conn) && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

@@ -1,6 +1,6 @@
 <?php
 // index.php - Registro de Exámenes - Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
+// Versión: 4.5 - Estilo Dashboard Principal con Estadísticas
 session_start();
 
 // Verificar sesión activa
@@ -12,948 +12,1212 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
-verify_session();
 
-// Título de la página
-$page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
+// Establecer zona horaria
+date_default_timezone_set('America/Guatemala');
+verify_session();
 
 try {
     // Conectar a la base de datos
     $database = new Database();
     $conn = $database->getConnection();
     
-    // Obtener pacientes para el selector
-    $stmt_patients = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes ORDER BY nombre_completo ASC");
+    // Obtener información del usuario
+    $user_id = $_SESSION['user_id'];
+    $user_type = $_SESSION['tipoUsuario'];
+    $user_name = $_SESSION['nombre'];
+    $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    
+    // ============ CONSULTAS ESTADÍSTICAS PARA EXÁMENES ============
+    
+    // 1. Exámenes de hoy
+    $today = date('Y-m-d');
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) = ?");
+    $stmt->execute([$today]);
+    $today_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 2. Ingresos de hoy
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) = ?");
+    $stmt->execute([$today]);
+    $today_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // 3. Exámenes de esta semana
+    $week_start = date('Y-m-d', strtotime('monday this week'));
+    $week_end = date('Y-m-d', strtotime('sunday this week'));
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
+    $stmt->execute([$week_start, $week_end]);
+    $week_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 4. Ingresos de esta semana
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
+    $stmt->execute([$week_start, $week_end]);
+    $week_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // 5. Exámenes del mes actual
+    $month_start = date('Y-m-01');
+    $month_end = date('Y-m-t');
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
+    $stmt->execute([$month_start, $month_end]);
+    $month_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 6. Total de exámenes en el sistema
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados");
+    $stmt->execute();
+    $total_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 7. Exámenes recientes (últimos 5)
+    $stmt = $conn->prepare("
+        SELECT id_examen_realizado, nombre_paciente, tipo_examen, cobro, fecha_examen 
+        FROM examenes_realizados 
+        ORDER BY fecha_examen DESC 
+        LIMIT 5
+    ");
+    $stmt->execute();
+    $recent_exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 8. Obtener pacientes para el select
+    $stmt_patients = $conn->prepare("
+        SELECT id_paciente, 
+               CONCAT(nombre, ' ', apellido) as nombre_completo,
+               telefono,
+               fecha_nacimiento
+        FROM pacientes 
+        ORDER BY nombre_completo ASC
+    ");
     $stmt_patients->execute();
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
     
+    // Título de la página
+    $page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
+    
 } catch (Exception $e) {
     // Manejo de errores
-    $patients = [];
-    $error_message = "Error al cargar pacientes: " . $e->getMessage();
+    error_log("Error en registro de exámenes: " . $e->getMessage());
+    die("Error al cargar el módulo de exámenes. Por favor, contacte al administrador.");
 }
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
+    <!-- META TAGS IDÉNTICOS AL DASHBOARD -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Registro de Exámenes - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
     
-    <!-- Favicon -->
+    <!-- FAVICON Y FUENTES IDÉNTICAS -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    
-    <!-- Google Fonts - Inter para modernidad y legibilidad -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- Choices.js CSS para select mejorado -->
+    <!-- Choices.js (para búsqueda en selects) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     
+    <!-- CSS COMPLETAMENTE IDÉNTICO AL DASHBOARD (NO CAMBIAR NADA) -->
     <style>
-    /* 
-     * Registro de Exámenes - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) - Colores pastel */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;      /* Azul lavanda pastel */
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;    /* Verde menta pastel */
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;       /* Coral pastel */
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
     .dashboard-container {
-        min-height: 100vh;
         display: flex;
-        flex-direction: column;
+        flex-direction: column; /* Apilar Header y Main verticalmente */
+        min-height: 100vh;
         position: relative;
+        width: 100%;
     }
     
-    /* ============ HEADER SUPERIOR ============ */
+
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
     .dashboard-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
         position: sticky;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        /* Usar fallback sólido si rgba falla, pero definir rgb variables arriba */
+        background-color: rgba(var(--color-card-rgb), 0.95); 
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--color-text);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: var(--space-xs);
+        border-radius: var(--radius-sm);
     }
     
-    /* Control de tema y usuario */
+    .mobile-toggle:hover {
+        background-color: var(--color-surface);
+    }
+    
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
+    /* Control de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    /* Información usuario en header */
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px; /* Altura del header */
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    /* Botón de cerrar sesión */
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        text-decoration: none;
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
+        text-decoration: none;
         font-weight: 500;
+        transition: all var(--transition-base);
+    }
+    
+    .logout-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
+    }
+    
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
+    .main-content {
+        flex: 1;
+        padding: var(--space-lg);
+        /* Margin-left movido al contenedor padre */
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
+    }
+    
+
+    
+    /* ==========================================================================
+       COMPONENTES DE DASHBOARD
+       ========================================================================== */
+    
+    /* Tarjetas de estadísticas */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+    
+    .stat-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
-    .nav-link:hover {
-        background: var(--color-border-light);
-        color: var(--color-primary);
-        transform: translateX(4px);
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-primary);
     }
     
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-info));
     }
     
-    .nav-link.active {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: var(--shadow-md);
-    }
-    
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
-    }
-    
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
-    
-    /* ============ ENCABEZADO DE PÁGINA ============ */
-    .page-header {
+    .stat-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+    .stat-title {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        margin-bottom: var(--space-xs);
     }
     
-    .page-title-section {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .page-title {
-        font-size: 1.75rem;
+    .stat-value {
+        font-size: var(--font-size-3xl);
         font-weight: 700;
         color: var(--color-text);
-        margin-bottom: 0.25rem;
+        line-height: 1;
     }
     
-    .page-subtitle {
-        font-size: 0.95rem;
-        color: var(--color-text-light);
-    }
-    
-    .page-actions {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-    
-    /* Botones de acción */
-    .action-btn {
-        background: var(--color-primary);
-        color: white;
-        border: none;
+    .stat-icon {
+        width: 48px;
+        height: 48px;
         border-radius: var(--radius-md);
-        padding: 0.625rem 1.25rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
-        text-decoration: none;
+        justify-content: center;
+        font-size: 1.5rem;
     }
     
-    .action-btn:hover {
-        background: var(--color-primary-dark);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+    .stat-icon.primary {
+        background: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
     }
     
-    .action-btn.secondary {
-        background: transparent;
-        color: var(--color-text);
-        border: 1px solid var(--color-border);
+    .stat-icon.success {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
     }
     
-    .action-btn.secondary:hover {
-        background: var(--color-border-light);
+    .stat-icon.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
     }
     
-    .action-btn.info {
-        background: var(--color-info);
+    .stat-icon.info {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
     }
     
-    .action-btn.info:hover {
-        background: var(--color-info);
-        opacity: 0.8;
+    .stat-change {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ FORMULARIO DE REGISTRO ============ */
-    .form-container {
-        background: var(--color-surface);
+    .stat-change.positive {
+        color: var(--color-success);
+    }
+    
+    /* Secciones */
+    .appointments-section {
+        background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out 0.2s both;
-        box-shadow: var(--shadow-md);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
     }
     
-    .form-header {
+    .appointments-section:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .section-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid var(--color-border);
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        flex-wrap: wrap;
+        gap: var(--space-md);
     }
     
-    .form-title {
-        font-size: 1.25rem;
+    .section-title {
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text);
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-sm);
+    }
+    
+    .section-title-icon {
+        color: var(--color-primary);
+    }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        background: var(--color-primary);
+        opacity: 0.9;
+        color: white;
+    }
+    
+    /* Tablas */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .appointments-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .appointments-table thead {
+        background: var(--color-surface);
+    }
+    
+    .appointments-table th {
+        padding: var(--space-md);
+        text-align: left;
+        font-weight: 600;
+        color: var(--color-text);
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
+    }
+    
+    .appointments-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: middle;
+    }
+    
+    .appointments-table tbody tr {
+        transition: all var(--transition-base);
+    }
+    
+    .appointments-table tbody tr:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
+    }
+    
+    /* Celdas personalizadas */
+    .patient-cell {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+    
+    .patient-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-base);
+        flex-shrink: 0;
+    }
+    
+    .patient-info {
+        min-width: 0;
+    }
+    
+    .patient-name {
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 2px;
+    }
+    
+    .patient-contact {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+    }
+    
+    .time-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--color-surface);
+        color: var(--color-text);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+    }
+    
+    /* Botones de acción */
+    .action-buttons {
+        display: flex;
+        gap: var(--space-xs);
+    }
+    
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all var(--transition-base);
+    }
+    
+    .btn-icon:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .btn-icon.edit:hover {
+        background: var(--color-warning);
+        color: white;
+        border-color: var(--color-warning);
+    }
+    
+    .btn-icon.history:hover {
+        background: var(--color-info);
+        color: white;
+        border-color: var(--color-info);
+    }
+    
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--color-border);
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+    }
+    
+    /* Grid de alertas */
+    .alerts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+    
+    .alert-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .alert-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+    }
+    
+    .alert-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    
+    .alert-icon.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+    
+    .alert-icon.danger {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+    
+    .alert-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text);
+        margin: 0;
+    }
+    
+    .alert-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+    
+    .alert-item {
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        border-left: 4px solid var(--color-border);
+        transition: all var(--transition-base);
+    }
+    
+    .alert-item:hover {
+        transform: translateX(4px);
+        border-left-color: var(--color-warning);
+    }
+    
+    .alert-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .alert-item-name {
+        font-weight: 500;
+        color: var(--color-text);
+    }
+    
+    .alert-badge {
+        padding: 0.25em 0.5em;
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+    }
+    
+    .alert-badge.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+    
+    .alert-badge.danger {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+    
+    .alert-badge.expired {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+    
+    .alert-item-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+    
+    .no-alerts {
+        text-align: center;
+        padding: var(--space-lg);
+        color: var(--color-text-secondary);
+    }
+    
+    .no-alerts-icon {
+        font-size: 2rem;
+        color: var(--color-success);
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+    }
+    
+    /* ==========================================================================
+       FORMULARIO DE REGISTRO DE EXÁMENES
+       ========================================================================== */
+    .form-container {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
+    }
+    
+    .form-container:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .form-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
     }
     
     .form-title-icon {
         color: var(--color-primary);
     }
     
-    /* Secciones del formulario */
-    .form-section {
-        margin-bottom: 2.5rem;
+    .form-group {
+        margin-bottom: var(--space-lg);
     }
     
-    .section-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-    
-    .section-number {
-        width: 28px;
-        height: 28px;
-        background: var(--color-primary);
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.875rem;
-        margin-right: 1rem;
-        flex-shrink: 0;
-    }
-    
-    .section-title {
-        font-size: 1rem;
-        font-weight: 600;
+    .form-label {
+        font-weight: 500;
         color: var(--color-text);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: var(--space-sm);
+        display: block;
+        font-size: var(--font-size-sm);
     }
     
-    /* Contenedor de campos */
-    .field-container {
-        background: var(--color-border-light);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: 1.5rem;
-        transition: all var(--transition-normal);
-    }
-    
-    .field-container:hover {
-        border-color: var(--color-primary-light);
-    }
-    
-    /* Estilos para Choices.js */
-    .choices {
-        margin-bottom: 0;
-    }
-    
-    .choices__inner {
+    .form-control, .form-select {
+        width: 100%;
+        padding: var(--space-md);
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        padding: 0.75rem 1rem;
-        min-height: 48px;
-        transition: all var(--transition-normal);
+        color: var(--color-text);
+        font-size: var(--font-size-base);
+        transition: all var(--transition-base);
     }
     
-    .choices__inner:hover {
-        border-color: var(--color-primary-light);
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
     }
     
-    .choices__list--dropdown {
-        background: var(--color-surface);
+    .input-group {
+        display: flex;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        box-shadow: var(--shadow-lg);
-        z-index: 1000;
+        overflow: hidden;
     }
     
-    .choices__list--dropdown .choices__item--selectable {
-        padding: 0.75rem 1rem;
+    .input-group-text {
+        background: var(--color-border);
+        color: var(--color-text-secondary);
+        padding: var(--space-md);
+        border: none;
+        font-size: var(--font-size-base);
     }
     
-    .choices__list--dropdown .choices__item--selectable:hover {
-        background: var(--color-border-light);
+    .input-group .form-control {
+        border: none;
+        border-left: 1px solid var(--color-border);
+        border-radius: 0;
     }
     
-    /* Checkboxes personalizados */
     .checkbox-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 0.75rem;
+        gap: var(--space-sm);
+        margin-top: var(--space-sm);
     }
     
     .custom-checkbox {
         display: flex;
         align-items: center;
-        padding: 0.75rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm);
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
-        cursor: pointer;
+        transition: all var(--transition-base);
     }
     
     .custom-checkbox:hover {
-        background: var(--color-border-light);
-        border-color: var(--color-primary-light);
-        transform: translateY(-2px);
+        background: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
     }
     
     .custom-checkbox input[type="checkbox"] {
-        margin-right: 0.75rem;
         width: 18px;
         height: 18px;
         cursor: pointer;
     }
     
-    .custom-checkbox label {
-        cursor: pointer;
+    .patient-info-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin-top: var(--space-sm);
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    .patient-info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .patient-info-label {
         font-weight: 500;
-        color: var(--color-text);
-        flex-grow: 1;
+        color: var(--color-text-light);
     }
     
-    /* Campos de entrada personalizados */
-    .input-group-custom {
-        display: flex;
-        align-items: center;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        transition: all var(--transition-normal);
-    }
-    
-    .input-group-custom:hover {
-        border-color: var(--color-primary-light);
-    }
-    
-    .input-group-custom .input-group-text {
-        background: var(--color-border-light);
-        border: none;
-        color: var(--color-text);
-        padding: 0.75rem 1rem;
-        font-weight: 500;
-    }
-    
-    .input-group-custom .form-control {
-        border: none;
-        background: transparent;
-        color: var(--color-text);
-        padding: 0.75rem 1rem;
-        flex-grow: 1;
-    }
-    
-    .input-group-custom .form-control:focus {
-        outline: none;
-        box-shadow: none;
-    }
-    
-    .input-group-custom .btn-remove {
-        background: transparent;
-        border: none;
-        color: var(--color-error);
-        padding: 0.75rem 1rem;
-        cursor: pointer;
-        transition: all var(--transition-normal);
-    }
-    
-    .input-group-custom .btn-remove:hover {
-        background: var(--color-error);
-        color: white;
-    }
-    
-    /* Campo de costo */
-    .cost-field {
-        max-width: 300px;
-    }
-    
-    .cost-input {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: 1rem 1.5rem;
-        display: flex;
-        align-items: center;
-        transition: all var(--transition-normal);
-    }
-    
-    .cost-input:hover {
-        border-color: var(--color-primary-light);
-    }
-    
-    .cost-input .currency {
-        font-size: 1.5rem;
+    .patient-info-value {
         font-weight: 600;
-        color: var(--color-success);
-        margin-right: 0.75rem;
-    }
-    
-    .cost-input input {
-        border: none;
-        background: transparent;
-        color: var(--color-text);
-        font-size: 1.5rem;
-        font-weight: 700;
-        flex-grow: 1;
-        width: 100%;
-    }
-    
-    .cost-input input:focus {
-        outline: none;
-    }
-    
-    /* Botón de envío */
-    .submit-btn {
-        background: var(--color-primary);
-        color: white;
-        border: none;
-        border-radius: var(--radius-md);
-        padding: 1rem 2rem;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        transition: all var(--transition-normal);
-        width: 100%;
-        margin-top: 2rem;
-    }
-    
-    .submit-btn:hover {
-        background: var(--color-primary-dark);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-    }
-    
-    /* Alertas */
-    .alert {
-        padding: 1rem 1.5rem;
-        border-radius: var(--radius-md);
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        animation: slideInRight 0.4s ease-out;
-    }
-    
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .alert-success {
-        background: var(--color-success);
-        opacity: 0.1;
-        color: var(--color-text);
-        border-left: 4px solid var(--color-success);
-    }
-    
-    .alert-error {
-        background: var(--color-error);
-        opacity: 0.1;
-        color: var(--color-text);
-        border-left: 4px solid var(--color-error);
-    }
-    
-    .alert-icon {
-        font-size: 1.25rem;
-        flex-shrink: 0;
-    }
-    
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
-        transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
         color: var(--color-text);
     }
     
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
-        color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
-    }
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
     
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
-    }
-    
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
-        .main-content {
-            padding: 1.5rem;
-        }
+    /* Pantallas grandes (TV, monitores 4K) */
+    @media (min-width: 1600px) {
         
-        .checkbox-grid {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        }
-    }
-    
-    @media (max-width: 992px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
-        
-        .sidebar.show {
-            transform: translateX(0);
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
         }
         
         .main-content {
-            margin-left: 0;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+    }
+    
+    /* Escritorio estándar */
+    @media (max-width: 1399px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+    }
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 991px) {
+        .dashboard-container {
             width: 100%;
         }
         
-        .sidebar-toggle {
-            display: none;
+        .main-content {
+            padding: var(--space-md);
         }
         
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
-            display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
+        .mobile-toggle {
             display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1rem;
         }
         
         .header-content {
+            padding: var(--space-md);
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+        
+        .alerts-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .section-header {
             flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
+            align-items: stretch;
+            gap: var(--space-md);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-lg);
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .checkbox-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    /* Móviles */
+    @media (max-width: 767px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .brand-logo {
+            height: 32px;
+        }
+        
+        .header-content {
+            flex-wrap: wrap;
         }
         
         .header-controls {
+            order: 3;
             width: 100%;
             justify-content: space-between;
+            margin-top: var(--space-md);
         }
         
-        .main-content {
-            padding: 1rem;
+        .theme-btn {
+            width: 40px;
+            height: 40px;
         }
         
-        .page-header {
+        .logout-btn span {
+            display: none;
+        }
+        
+        .logout-btn {
+            padding: var(--space-sm);
+        }
+        
+        .appointments-table {
+            font-size: var(--font-size-sm);
+        }
+        
+        .appointments-table th,
+        .appointments-table td {
+            padding: var(--space-sm);
+        }
+        
+        .patient-cell {
             flex-direction: column;
             align-items: flex-start;
-            gap: 1rem;
+            gap: var(--space-xs);
         }
         
-        .page-actions {
-            width: 100%;
-            justify-content: flex-start;
+        .patient-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: var(--font-size-sm);
         }
         
-        .form-container {
-            padding: 1.5rem;
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
         }
         
         .checkbox-grid {
@@ -961,54 +1225,167 @@ try {
         }
     }
     
+    /* Móviles pequeños */
     @media (max-width: 480px) {
+        .main-content {
+            padding: var(--space-sm);
+        }
+        
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .alert-card,
+        .appointments-section,
         .form-container {
-            padding: 1.25rem;
+            padding: var(--space-md);
         }
         
-        .action-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
+        .section-title {
+            font-size: var(--font-size-base);
         }
         
-        .cost-input {
-            padding: 0.75rem 1rem;
+        .action-buttons {
+            flex-direction: column;
+            gap: var(--space-xs);
         }
         
-        .cost-input input {
-            font-size: 1.25rem;
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.875rem;
         }
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
+    /* ==========================================================================
+       ESTADOS DE CARGA
+       ========================================================================== */
+    .loading {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .loading::after {
+        content: '';
+        position: absolute;
         top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: loading 1.5s infinite;
     }
     
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
+    @keyframes loading {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    /* ==========================================================================
+       UTILIDADES
+       ========================================================================== */
+    .text-primary { color: var(--color-primary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .text-info { color: var(--color-info); }
+    .text-muted { color: var(--color-text-secondary); }
+    
+    .bg-primary { background-color: var(--color-primary); }
+    .bg-success { background-color: var(--color-success); }
+    .bg-warning { background-color: var(--color-warning); }
+    .bg-danger { background-color: var(--color-danger); }
+    .bg-info { background-color: var(--color-info); }
+    
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: var(--space-xs); }
+    .mb-2 { margin-bottom: var(--space-sm); }
+    .mb-3 { margin-bottom: var(--space-md); }
+    .mb-4 { margin-bottom: var(--space-lg); }
+    .mb-5 { margin-bottom: var(--space-xl); }
+    
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: var(--space-xs); }
+    .mt-2 { margin-top: var(--space-sm); }
+    .mt-3 { margin-top: var(--space-md); }
+    .mt-4 { margin-top: var(--space-lg); }
+    .mt-5 { margin-top: var(--space-xl); }
+    
+    .d-none { display: none; }
+    .d-block { display: block; }
+    .d-flex { display: flex; }
+    
+    .gap-1 { gap: var(--space-xs); }
+    .gap-2 { gap: var(--space-sm); }
+    .gap-3 { gap: var(--space-md); }
+    .gap-4 { gap: var(--space-lg); }
+    .gap-5 { gap: var(--space-xl); }
+    
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    
+    .fw-bold { font-weight: 700; }
+    .fw-semibold { font-weight: 600; }
+    .fw-medium { font-weight: 500; }
+    .fw-normal { font-weight: 400; }
+    .fw-light { font-weight: 300; }
+    
+    /* ==========================================================================
+       PRINT STYLES
+       ========================================================================== */
+    @media print {
+        .dashboard-header,
+        .theme-btn,
+        .logout-btn,
+        .action-btn {
+            display: none !important;
         }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
+        
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
         }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
+        
+        .marble-effect {
+            display: none;
         }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
+        
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        
+        .stat-card,
+        .appointments-section,
+        .alert-card,
+        .form-container {
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
         }
     }
     </style>
@@ -1017,21 +1394,22 @@ try {
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
-    
+    <!-- Contenedor Principal -->
     <div class="dashboard-container">
-        <!-- Header superior -->
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
+                <!-- Botón hamburguesa para móvil -->
+                <button class="mobile-toggle" id="mobileSidebarToggle" aria-label="Abrir menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
                 
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -1042,399 +1420,487 @@ try {
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            <?php echo strtoupper(substr($_SESSION['nombre'], 0, 1)); ?>
+                    <div class="header-user">
+                        <div class="header-avatar">
+                            <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($_SESSION['nombre']); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($_SESSION['especialidad'] ?? 'Profesional Médico'); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                    
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="action-btn logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $_SESSION['tipoUsuario']; ?>
-                
-                <!-- Dashboard (siempre visible) -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes (todos los roles) -->
-                <?php if (in_array($role, ['admin', 'doc', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link active">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
-        
-        <!-- Contenido principal -->
+        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Encabezado de página -->
-            <div class="page-header">
-                <div class="page-title-section">
-                    <h1 class="page-title">Exámenes Clínicos</h1>
-                    <p class="page-subtitle">Registre nuevos exámenes realizados</p>
-                </div>
-                <div class="page-actions">
-                    <?php if ($role === 'admin'): ?>
-                    <a href="historial_examenes.php" class="action-btn info">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Ver Historial</span>
-                    </a>
-                    <?php endif; ?>
+            <!-- Bienvenida personalizada -->
+            <div class="stat-card mb-4 animate-in">
+                <div class="stat-header">
+                    <div>
+                        <h2 id="greeting" class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
+                            <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-clipboard2-pulse me-1"></i> Registro de Exámenes
+                        </p>
+                    </div>
+                    <div class="d-none d-md-block">
+                        <i class="bi bi-clipboard2-pulse-fill text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
                 </div>
             </div>
             
-            <!-- Alertas de estado -->
-            <?php if (isset($_GET['status'])): ?>
-                <?php if ($_GET['status'] == 'success'): ?>
-                    <div class="alert alert-success">
-                        <i class="bi bi-check-circle-fill alert-icon text-success"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">¡Registro Exitoso!</h6>
-                            <p class="mb-0 small"><?php echo htmlspecialchars($_GET['message'] ?? 'Examen registrado correctamente'); ?></p>
-                        </div>
-                    </div>
-                <?php elseif ($_GET['status'] == 'error'): ?>
-                    <div class="alert alert-error">
-                        <i class="bi bi-exclamation-triangle-fill alert-icon text-error"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Error en el Registro</h6>
-                            <p class="mb-0 small"><?php echo htmlspecialchars($_GET['message'] ?? 'Ocurrió un error al registrar el examen'); ?></p>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            <?php endif; ?>
-            
-            <!-- Formulario de registro -->
-            <div class="form-container">
+            <!-- Formulario de nuevo examen -->
+            <section class="form-container animate-in delay-1">
                 <div class="form-header">
                     <h3 class="form-title">
-                        <i class="bi bi-pencil-square form-title-icon"></i>
-                        Nuevo Registro de Examen
+                        <i class="bi bi-clipboard-plus form-title-icon"></i>
+                        Nuevo Examen Clínico
                     </h3>
+                    <a href="historial_examenes.php" class="action-btn secondary">
+                        <i class="bi bi-clock-history"></i>
+                        Ver Historial
+                    </a>
                 </div>
                 
-                <form action="save_exam.php" method="POST" id="examForm">
-                    <!-- Paso 1: Seleccionar paciente -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-number">1</div>
-                            <h4 class="section-title">Seleccionar Paciente</h4>
-                        </div>
-                        <div class="field-container">
-                            <select id="id_paciente" name="id_paciente" required>
-                                <option value="">Buscar paciente...</option>
-                                <?php foreach ($patients as $patient): ?>
-                                    <option value="<?php echo $patient['id_paciente']; ?>">
+                <form id="examForm" action="save_exam.php" method="POST">
+                    <!-- Paciente -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="id_paciente" class="form-label">Paciente *</label>
+                            <select class="form-select" id="id_paciente" name="id_paciente" required>
+                                <option value="">Seleccionar paciente...</option>
+                                <?php foreach ($patients as $patient): 
+                                    $age = $patient['fecha_nacimiento'] ? calculateAge($patient['fecha_nacimiento']) : 'N/A';
+                                ?>
+                                    <option value="<?php echo $patient['id_paciente']; ?>" 
+                                            data-nombre="<?php echo htmlspecialchars($patient['nombre_completo']); ?>"
+                                            data-telefono="<?php echo htmlspecialchars($patient['telefono']); ?>"
+                                            data-edad="<?php echo $age; ?>">
                                         <?php echo htmlspecialchars($patient['nombre_completo']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                             <input type="hidden" name="nombre_paciente" id="nombre_paciente">
                         </div>
-                    </div>
-                    
-                    <!-- Paso 2: Elegir exámenes -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-number">2</div>
-                            <h4 class="section-title">Elegir Exámenes</h4>
-                        </div>
-                        <div class="field-container">
-                            <div class="checkbox-grid">
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Electrocardiograma (ECG)" id="ex1">
-                                    <label for="ex1">Electrocardiograma (ECG)</label>
-                                </div>
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Ultrasonido" id="ex2">
-                                    <label for="ex2">Ultrasonido</label>
-                                </div>
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Radiografía" id="ex3">
-                                    <label for="ex3">Radiografía</label>
-                                </div>
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Examen general de orina" id="ex4">
-                                    <label for="ex4">Examen general de orina</label>
-                                </div>
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Hematología completa" id="ex5">
-                                    <label for="ex5">Hematología completa</label>
-                                </div>
-                                <div class="custom-checkbox">
-                                    <input type="checkbox" name="examenes[]" value="Prueba de Papanicolaou" id="ex6">
-                                    <label for="ex6">Prueba de Papanicolaou</label>
-                                </div>
-                            </div>
-                            
-                            <!-- Exámenes dinámicos -->
-                            <div id="dynamicExams" class="mt-3">
-                                <!-- Se agregarán exámenes dinámicos aquí -->
-                            </div>
-                            
-                            <!-- Botón para agregar examen personalizado -->
-                            <div class="mt-3">
-                                <button type="button" class="action-btn secondary" id="btnAddExam">
-                                    <i class="bi bi-plus-lg"></i>
-                                    <span>Agregar Examen Personalizado</span>
-                                </button>
-                            </div>
-                            
-                            <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-info-circle"></i>
-                                Puede seleccionar varios exámenes o agregar personalizados.
-                            </small>
-                        </div>
-                    </div>
-                    
-                    <!-- Paso 3: Especificar costo -->
-                    <div class="form-section">
-                        <div class="section-header">
-                            <div class="section-number">3</div>
-                            <h4 class="section-title">Finalizar y Cobrar</h4>
-                        </div>
-                        <div class="field-container cost-field">
-                            <div class="cost-input">
-                                <span class="currency">Q</span>
-                                <input type="number" id="cobro" name="cobro" step="0.01" min="0" required placeholder="0.00">
+                        <div class="col-md-6">
+                            <div class="form-label">Información del Paciente</div>
+                            <div id="paciente_info" class="patient-info-card">
+                                <small class="text-muted">Seleccione un paciente para ver su información</small>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Botón de envío -->
-                    <button type="submit" class="submit-btn">
-                        <i class="bi bi-save"></i>
-                        <span>Guardar Registro</span>
-                    </button>
+                    <!-- Detalles del examen -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">Exámenes Realizados *</label>
+                            <div class="field-container">
+                                <div class="checkbox-grid">
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Electrocardiograma (ECG)" id="ex1">
+                                        <label for="ex1">Electrocardiograma (ECG)</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Ultrasonido" id="ex2">
+                                        <label for="ex2">Ultrasonido</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Examen General de Orina" id="ex3">
+                                        <label for="ex3">Examen General de Orina</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Hematología Completa" id="ex4">
+                                        <label for="ex4">Hematología Completa</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Perfil Lipídico" id="ex5">
+                                        <label for="ex5">Perfil Lipídico</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Glucosa en Sangre" id="ex6">
+                                        <label for="ex6">Glucosa en Sangre</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Radiografía" id="ex7">
+                                        <label for="ex7">Radiografía</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Tomografía" id="ex8">
+                                        <label for="ex8">Tomografía</label>
+                                    </div>
+                                    <div class="custom-checkbox">
+                                        <input type="checkbox" name="tipo_examen[]" value="Resonancia Magnética" id="ex9">
+                                        <label for="ex9">Resonancia Magnética</label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Exámenes dinámicos -->
+                                <div id="dynamicExams" class="mt-3">
+                                    <!-- Se agregarán exámenes dinámicos aquí -->
+                                </div>
+                                
+                                <!-- Botón para agregar examen personalizado -->
+                                <div class="mt-3">
+                                    <button type="button" class="action-btn secondary" id="btnAddExam">
+                                        <i class="bi bi-plus-lg"></i>
+                                        <span>Agregar Examen Personalizado</span>
+                                    </button>
+                                </div>
+                                
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-info-circle"></i>
+                                    Puede seleccionar varios exámenes o agregar personalizados.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Costo y fecha -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="cobro" class="form-label">Costo Total del Examen *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="cobro" name="cobro" step="0.01" min="0" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fecha_examen" class="form-label">Fecha y Hora *</label>
+                            <input type="datetime-local" class="form-control" id="fecha_examen" name="fecha_examen" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="reset" class="action-btn secondary">
+                            <i class="bi bi-x-circle"></i>
+                            <span>Limpiar</span>
+                        </button>
+                        <button type="submit" class="action-btn">
+                            <i class="bi bi-check-lg"></i>
+                            <span>Registrar Examen</span>
+                        </button>
+                    </div>
                 </form>
+            </section>
+            
+            <!-- Estadísticas principales -->
+            <div class="stats-grid">
+                <!-- Exámenes de hoy -->
+                <div class="stat-card animate-in delay-1">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Exámenes Hoy</div>
+                            <div class="stat-value"><?php echo $today_exams; ?></div>
+                        </div>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-clipboard2-pulse"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-arrow-up-right"></i>
+                        <span>Realizados hoy</span>
+                    </div>
+                </div>
+                
+                <!-- Ingresos de hoy -->
+                <div class="stat-card animate-in delay-2">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Ingresos Hoy</div>
+                            <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                        </div>
+                        <div class="stat-icon success">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>Total recaudado</span>
+                    </div>
+                </div>
+                
+                <!-- Exámenes de la semana -->
+                <div class="stat-card animate-in delay-3">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Esta Semana</div>
+                            <div class="stat-value"><?php echo $week_exams; ?></div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-calendar-week"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-calendar-range"></i>
+                        <span>Total de la semana</span>
+                    </div>
+                </div>
+                
+                <!-- Ingresos de la semana -->
+                <div class="stat-card animate-in delay-4">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Ingresos Semana</div>
+                            <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                        </div>
+                        <div class="stat-icon info">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-calendar-month"></i>
+                        <span>Acumulado semanal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exámenes recientes -->
+            <section class="appointments-section animate-in delay-2">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-clock-history section-title-icon"></i>
+                        Exámenes Recientes
+                    </h3>
+                    <button type="button" class="action-btn" onclick="refreshExams()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Actualizar
+                    </button>
+                </div>
+                
+                <?php if (count($recent_exams) > 0): ?>
+                    <div class="table-responsive">
+                        <table class="appointments-table">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Tipo de Examen</th>
+                                    <th>Costo</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recent_exams as $exam): ?>
+                                    <?php 
+                                    $patient_name = htmlspecialchars($exam['nombre_paciente']);
+                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="patient-cell">
+                                                <div class="patient-avatar">
+                                                    <?php echo $patient_initials; ?>
+                                                </div>
+                                                <div class="patient-info">
+                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="procedure-type">
+                                                <?php echo htmlspecialchars($exam['tipo_examen']); ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="time-badge bg-success text-white">
+                                                Q<?php echo number_format($exam['cobro'], 2); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="time-badge">
+                                                <i class="bi bi-clock"></i>
+                                                <?php echo date('d/m/Y H:i', strtotime($exam['fecha_examen'])); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a href="#" class="btn-icon edit" title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="#" class="btn-icon history" title="Ver detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="historial_examenes.php" class="text-primary text-decoration-none">
+                            Ver todos los exámenes <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-clipboard2-pulse"></i>
+                        </div>
+                        <h4 class="text-muted mb-2">No hay exámenes registrados</h4>
+                        <p class="text-muted mb-3">Total en sistema: <?php echo $total_exams; ?></p>
+                        <p class="text-muted">Complete el formulario para registrar su primer examen</p>
+                    </div>
+                <?php endif; ?>
+            </section>
+            
+            <!-- Resumen mensual -->
+            <div class="stat-card animate-in delay-3">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Resumen del Mes Actual</div>
+                        <div class="stat-value"><?php echo $month_exams; ?> Exámenes</div>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-month"></i>
+                            <span>Mes de <?php echo date('F'); ?></span>
+                        </div>
+                    </div>
+                    <div class="stat-icon warning">
+                        <i class="bi bi-bar-chart-line"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted mb-2">Total acumulado en sistema: <strong><?php echo $total_exams; ?></strong> exámenes</p>
+                    <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Herrera Saenz</p>
+                </div>
             </div>
         </main>
     </div>
     
-    <!-- Datos para lista de exámenes -->
-    <datalist id="examsList">
-        <option value="Perfil lipídico">
-        <option value="Glucosa en ayunas">
-        <option value="Prueba de embarazo">
-        <option value="Antígeno prostático">
-        <option value="TSH (Tiroides)">
-        <option value="Creatinina">
-        <option value="Ácido úrico">
-        <option value="Hemoglobina glicosilada">
-        <option value="Prueba de función hepática">
-        <option value="Cultivo de orina">
-    </datalist>
-    
-    <!-- JavaScript -->
+    <!-- Choices.js JS -->
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     
+    <!-- JavaScript Optimizado -->
     <script>
-    // Registro de Exámenes - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del formulario
-    
-    // Esperar a que el DOM esté completamente cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const pacienteSelect = document.getElementById('id_paciente');
-        const nombrePacienteInput = document.getElementById('nombre_paciente');
-        const dynamicExamsContainer = document.getElementById('dynamicExams');
-        const btnAddExam = document.getElementById('btnAddExam');
-        const examForm = document.getElementById('examForm');
-        
-        // ============ FUNCIONALIDAD DEL TEMA ============
-        
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
+    /**
+     * Registro de Exámenes v4.5 - Reingenierizado
+     * Centro Médico Herrera Saenz
+     */
+    'use strict';
+
+    // ==========================================================================
+    // CONFIGURACIÓN Y CONSTANTES
+    // ==========================================================================
+    const CONFIG = {
+        themeKey: 'dashboard-theme',
+        transitionDuration: 300,
+        animationDelay: 100
+    };
+
+    // ==========================================================================
+    // REFERENCIAS A ELEMENTOS DOM (Único y Centralizado)
+    // ==========================================================================
+    const DOM = {
+        html: document.documentElement,
+        body: document.body,
+        themeSwitch: document.getElementById('themeSwitch'),
+        greetingElement: document.getElementById('greeting-text'),
+        currentTimeElement: document.getElementById('current-time'),
+        patientSelect: document.getElementById('id_paciente'),
+        patientInfo: document.getElementById('paciente_info'),
+        examForm: document.getElementById('examForm'),
+        dynamicExamsContainer: document.getElementById('dynamicExams'),
+        btnAddExam: document.getElementById('btnAddExam'),
+        dateInput: document.getElementById('fecha_examen'),
+        nombrePacienteInput: document.getElementById('nombre_paciente')
+    };
+
+    // ==========================================================================
+    // MANEJO DE TEMAS
+    // ==========================================================================
+    class ThemeManager {
+        constructor() {
+            this.theme = this.getInitialTheme();
+            this.applyTheme(this.theme);
+            this.setupEventListeners();
+        }
+
+        getInitialTheme() {
+            return localStorage.getItem(CONFIG.themeKey) || 
+                   (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        }
+
+        applyTheme(theme) {
+            DOM.html.setAttribute('data-theme', theme);
+            localStorage.setItem(CONFIG.themeKey, theme);
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+        }
+
+        toggleTheme() {
+            this.theme = this.theme === 'light' ? 'dark' : 'light';
+            this.applyTheme(this.theme);
+            if (DOM.themeSwitch) {
+                DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                setTimeout(() => DOM.themeSwitch.style.transform = 'rotate(0)', CONFIG.transitionDuration);
             }
         }
-        
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
-            
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
+
+        setupEventListeners() {
+            if (DOM.themeSwitch) DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem(CONFIG.themeKey)) this.applyTheme(e.matches ? 'dark' : 'light');
+            });
         }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            }
+    }
+
+    // ==========================================================================
+    // COMPONENTES DINÁMICOS
+    // ==========================================================================
+    class DynamicComponents {
+        constructor() {
+            this.setupClock();
+            this.setupPatientSearch();
+            this.setupExamHandlers();
+            this.setupFormHandlers();
+            this.setupAnimations();
+            this.updateGreeting();
         }
-        
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
-            }
-            
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+        updateGreeting() {
+            if (!DOM.greetingElement) return;
+            const hour = new Date().getHours();
+            let greeting = 'Buenos días';
+            if (hour >= 12 && hour < 19) greeting = 'Buenas tardes';
+            else if (hour >= 19 || hour < 5) greeting = 'Buenas noches';
+            DOM.greetingElement.textContent = greeting;
         }
-        
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
+
+        setupClock() {
+            if (!DOM.currentTimeElement) return;
+            const update = () => {
+                DOM.currentTimeElement.textContent = new Date().toLocaleTimeString('es-GT', { 
+                    hour: '2-digit', minute: '2-digit', hour12: false 
+                });
+            };
+            update();
+            setInterval(update, 60000);
         }
-        
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DEL FORMULARIO ============
-        
-        // Inicializar Choices.js para el selector de pacientes
-        function initializePatientSelector() {
-            const choices = new Choices(pacienteSelect, {
+
+        setupPatientSearch() {
+            if (!DOM.patientSelect || !DOM.patientInfo) return;
+
+            const choices = new Choices(DOM.patientSelect, {
                 searchEnabled: true,
                 itemSelectText: '',
                 removeItemButton: true,
@@ -1443,176 +1909,134 @@ try {
                 noResultsText: 'No se encontraron resultados',
                 shouldSort: false,
             });
-            
-            // Actualizar campo oculto cuando se selecciona un paciente
-            pacienteSelect.addEventListener('addItem', function(event) {
-                nombrePacienteInput.value = event.detail.label;
-            });
-            
-            pacienteSelect.addEventListener('removeItem', function() {
-                nombrePacienteInput.value = '';
-            });
-        }
-        
-        // Agregar examen personalizado
-        function addCustomExam() {
-            const examRow = document.createElement('div');
-            examRow.className = 'input-group-custom mb-2';
-            examRow.innerHTML = `
-                <span class="input-group-text">
-                    <i class="bi bi-file-earmark-medical"></i>
-                </span>
-                <input class="form-control" list="examsList" name="examenes[]" placeholder="Especificar otro examen..." required>
-                <button type="button" class="btn-remove remove-exam-row">
-                    <i class="bi bi-trash"></i>
-                </button>
-            `;
-            
-            dynamicExamsContainer.appendChild(examRow);
-            
-            // Enfocar el nuevo campo
-            const input = examRow.querySelector('input');
-            input.focus();
-            
-            // Animación de entrada
-            examRow.style.opacity = '0';
-            examRow.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                examRow.style.transition = 'all 0.3s ease';
-                examRow.style.opacity = '1';
-                examRow.style.transform = 'translateY(0)';
-            }, 10);
-        }
-        
-        // Eliminar examen personalizado
-        function removeCustomExam(event) {
-            if (event.target.closest('.remove-exam-row')) {
-                const examRow = event.target.closest('.input-group-custom');
-                examRow.style.opacity = '0';
-                examRow.style.transform = 'translateY(-10px)';
-                setTimeout(() => {
-                    examRow.remove();
-                }, 300);
-            }
-        }
-        
-        // Validar formulario antes de enviar
-        function validateForm(event) {
-            // Validar que se haya seleccionado un paciente
-            if (!pacienteSelect.value) {
-                event.preventDefault();
-                showAlert('Por favor seleccione un paciente', 'error');
-                return false;
-            }
-            
-            // Validar que se haya seleccionado al menos un examen
-            const examenes = document.querySelectorAll('input[name="examenes[]"]:checked');
-            const customExams = document.querySelectorAll('input[name="examenes[]"][type="text"]');
-            let hasExams = examenes.length > 0;
-            
-            // Verificar exámenes personalizados
-            customExams.forEach(input => {
-                if (input.value.trim() !== '') {
-                    hasExams = true;
+
+            const updateCard = (value) => {
+                if (!value) {
+                    DOM.patientInfo.innerHTML = '<small class="text-muted">Seleccione un paciente para ver su información</small>';
+                    if (DOM.nombrePacienteInput) DOM.nombrePacienteInput.value = '';
+                    return;
                 }
+
+                const option = Array.from(DOM.patientSelect.options).find(opt => opt.value == value);
+                if (option) {
+                    const nombre = option.dataset.nombre || option.text;
+                    const initials = nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    if (DOM.nombrePacienteInput) DOM.nombrePacienteInput.value = nombre;
+
+                    DOM.patientInfo.innerHTML = `
+                        <div class="d-flex align-items-center gap-3 animate-in">
+                            <div class="patient-avatar-sm" style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="color: var(--color-text);">${nombre}</div>
+                                <div class="text-muted small">
+                                    <i class="bi bi-person me-1"></i> ${option.dataset.edad || 'N/A'} años • 
+                                    <i class="bi bi-telephone me-1"></i> ${option.dataset.telefono || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+
+            DOM.patientSelect.addEventListener('addItem', (e) => updateCard(e.detail.value));
+            DOM.patientSelect.addEventListener('removeItem', () => updateCard(''));
+            DOM.patientSelect.addEventListener('change', function() { updateCard(this.value); });
+        }
+
+        setupExamHandlers() {
+            if (!DOM.btnAddExam || !DOM.dynamicExamsContainer) return;
+            DOM.btnAddExam.addEventListener('click', () => {
+                const row = document.createElement('div');
+                row.className = 'input-group mb-2 animate-in';
+                row.innerHTML = `
+                    <span class="input-group-text"><i class="bi bi-clipboard2-pulse"></i></span>
+                    <input class="form-control" name="tipo_examen[]" placeholder="Especificar otro examen..." required>
+                    <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()"><i class="bi bi-trash"></i></button>
+                `;
+                DOM.dynamicExamsContainer.appendChild(row);
+                row.querySelector('input').focus();
             });
-            
-            if (!hasExams) {
-                event.preventDefault();
-                showAlert('Por favor seleccione o agregue al menos un examen', 'error');
-                return false;
-            }
-            
-            // Validar que se haya especificado un costo
-            const costo = document.getElementById('cobro').value;
-            if (!costo || parseFloat(costo) <= 0) {
-                event.preventDefault();
-                showAlert('Por favor especifique un costo válido', 'error');
-                return false;
-            }
-            
-            return true;
         }
-        
-        // Mostrar alerta temporal
-        function showAlert(message, type) {
-            // Crear elemento de alerta
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                <i class="bi bi-${type === 'error' ? 'exclamation-triangle-fill' : 'info-circle-fill'} alert-icon text-${type}"></i>
-                <div>
-                    <p class="mb-0 small">${message}</p>
-                </div>
-            `;
-            
-            // Insertar antes del formulario
-            const formContainer = document.querySelector('.form-container');
-            formContainer.insertBefore(alert, formContainer.firstChild);
-            
-            // Eliminar alerta después de 5 segundos
-            setTimeout(() => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    alert.remove();
-                }, 300);
-            }, 5000);
+
+        setupFormHandlers() {
+            if (!DOM.dateInput) return;
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            DOM.dateInput.value = localDateTime;
         }
-        
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        initializePatientSelector();
-        
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
+
+        setupAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.stat-card, .form-container, .appointments-section').forEach(el => observer.observe(el));
         }
-        
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
-        }
-        
-        // Agregar examen personalizado
-        if (btnAddExam) {
-            btnAddExam.addEventListener('click', addCustomExam);
-        }
-        
-        // Eliminar examen personalizado (delegación de eventos)
-        if (dynamicExamsContainer) {
-            dynamicExamsContainer.addEventListener('click', removeCustomExam);
-        }
-        
-        // Validar formulario al enviar
-        if (examForm) {
-            examForm.addEventListener('submit', validateForm);
-        }
-        
-        // Cerrar sidebar al cambiar tamaño de ventana (responsive)
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        });
-        
-        // ============ CONSOLA DE DESARROLLO ============
-        
-        console.log('Registro de Exámenes - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Usuario: <?php echo htmlspecialchars($_SESSION['nombre']); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($_SESSION['tipoUsuario']); ?>');
-        console.log('Pacientes cargados: <?php echo count($patients); ?>');
+    }
+
+    // ==========================================================================
+    // INICIALIZACIÓN GLOBAL
+    // ==========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        window.APP = {
+            theme: new ThemeManager(),
+            components: new DynamicComponents()
+        };
     });
+
+    // Helper global para recargar
+    window.refreshExams = () => window.location.reload();
+
+    // Estilos para spinner y animaciones
+    (function() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .spinner-border {
+                display: inline-block;
+                width: 1rem;
+                height: 1rem;
+                vertical-align: text-bottom;
+                border: 0.2em solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+                animation: spinner-border .75s linear infinite;
+            }
+            @keyframes spinner-border {
+                to { transform: rotate(360deg); }
+            }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    })();
     </script>
 </body>
 </html>
+
+<?php
+// Función helper para calcular edad
+function calculateAge($birthDate) {
+    if (!$birthDate) return 'N/A';
+    try {
+        $birth = new DateTime($birthDate);
+        $today = new DateTime();
+        return $today->diff($birth)->y;
+    } catch (Exception $e) {
+        return 'N/A';
+    }
+}
+?>

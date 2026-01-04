@@ -4,7 +4,6 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 verify_session();
-date_default_timezone_set('America/Guatemala');
 
 $user_id = $_SESSION['user_id'];
 $user_type = $_SESSION['tipoUsuario'];
@@ -88,8 +87,67 @@ try {
     $stmt_cuenta->execute([$id_encamamiento]);
     $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
     
-    // Fetch charges
     if ($cuenta) {
+        $id_cuenta = $cuenta['id_cuenta'];
+        
+        // 1. AUTO-CHECK FOR MISSING NIGHTS
+        // Get all existing room charges dates for this account
+        $stmt_existing_nights = $conn->prepare("
+            SELECT fecha_aplicacion FROM cargos_hospitalarios 
+            WHERE id_cuenta = ? AND tipo_cargo = 'Habitación' AND cancelado = FALSE
+        ");
+        $stmt_existing_nights->execute([$id_cuenta]);
+        $existing_nights = $stmt_existing_nights->fetchAll(PDO::FETCH_COLUMN);
+        
+        $fecha_ingreso = new DateTime($encamamiento['fecha_ingreso']);
+        $fecha_hasta = $encamamiento['estado'] == 'Activo' ? new DateTime() : new DateTime($encamamiento['fecha_alta']);
+        
+        // We charge for the first day, and every midnight that passed
+        $interval = new DateInterval('P1D');
+        $date_period = new DatePeriod($fecha_ingreso, $interval, $fecha_hasta);
+        
+        $added_any = false;
+        foreach ($date_period as $date) {
+            $date_str = $date->format('Y-m-d');
+            if (!in_array($date_str, $existing_nights)) {
+                // Charge is missing for this night
+                $stmt_add_night = $conn->prepare("
+                    INSERT INTO cargos_hospitalarios 
+                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por)
+                    VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?)
+                ");
+                $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")";
+                $stmt_add_night->execute([
+                    $id_cuenta,
+                    $desc,
+                    $encamamiento['tarifa_por_noche'],
+                    $date_str,
+                    $user_id
+                ]);
+                $added_any = true;
+            }
+        }
+        
+        // 2. RECALCULATE SUBTOTALS
+        // This ensures cuenta_hospitalaria is ALWAYS in sync with cargos_hospitalarios
+        $stmt_sync = $conn->prepare("
+            UPDATE cuenta_hospitalaria ch
+            SET 
+                subtotal_habitacion = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Habitación' AND cancelado = FALSE),
+                subtotal_medicamentos = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Medicamento' AND cancelado = FALSE),
+                subtotal_procedimientos = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = FALSE),
+                subtotal_laboratorios = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Laboratorio' AND cancelado = FALSE),
+                subtotal_honorarios = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Honorario' AND cancelado = FALSE),
+                subtotal_otros = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Laboratorio','Honorario') AND cancelado = FALSE)
+            WHERE ch.id_cuenta = ?
+        ");
+        $stmt_sync->execute([$id_cuenta]);
+        
+        // Fetch updated account data
+        $stmt_cuenta->execute([$id_encamamiento]);
+        $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
+        
+        // Fetch charges
         $stmt_cargos = $conn->prepare("
             SELECT ch.*, u.nombre as registrado_nombre
             FROM cargos_hospitalarios ch
@@ -97,7 +155,7 @@ try {
             WHERE ch.id_cuenta = ? AND ch.cancelado = FALSE
             ORDER BY ch.fecha_cargo DESC
         ");
-        $stmt_cargos->execute([$cuenta['id_cuenta']]);
+        $stmt_cargos->execute([$id_cuenta]);
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
         
         // Group charges by type
@@ -112,7 +170,9 @@ try {
         ];
         
         foreach ($cargos as $cargo) {
-            $cargos_por_tipo[$cargo['tipo_cargo']][] = $cargo;
+            $tipo = $cargo['tipo_cargo'];
+            if (!isset($cargos_por_tipo[$tipo])) $tipo = 'Otro';
+            $cargos_por_tipo[$tipo][] = $cargo;
         }
     } else {
         $cargos = [];
@@ -600,6 +660,78 @@ try {
             background: var(--color-background);
             color: var(--color-text);
         }
+
+        /* Responsive Improvements */
+        @media (max-width: 992px) {
+            .patient-header {
+                padding: 1.5rem;
+            }
+            .patient-meta {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .account-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            .patient-header {
+                padding: 1rem;
+            }
+            .patient-title {
+                font-size: 1.5rem;
+            }
+            .patient-meta {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .account-summary {
+                grid-template-columns: 1fr;
+            }
+            .header-content {
+                padding: 0.5rem 0;
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            .nav-tabs .nav-link {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+            .tab-content {
+                padding: 1rem;
+            }
+            .tab-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .data-table {
+                font-size: 0.85rem;
+            }
+            .summary-value {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-tabs {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .nav-tabs .nav-item {
+                flex: 0 0 auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -910,6 +1042,14 @@ try {
     
     const id_encamamiento = <?php echo $id_encamamiento; ?>;
     
+    // Helper to get local ISO string (YYYY-MM-DDTHH:mm)
+    function getLocalISOTime() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+        return localISOTime;
+    }
+    
     function openSignosModal() {
         // TODO: Implement modal form for vital signs
         Swal.fire({
@@ -918,7 +1058,7 @@ try {
                 <form id="signosForm" class="text-start">
                     <div class="mb-3">
                         <label class="form-label">Fecha/Hora</label>
-                        <input type="datetime-local" class="form-control" name="fecha_registro" value="${new Date().toISOString().slice(0,16)}" required>
+                        <input type="datetime-local" class="form-control" name="fecha_registro" value="${getLocalISOTime()}" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -1001,7 +1141,7 @@ try {
                 <form id="evolucionForm" class="text-start">
                     <div class="mb-3">
                         <label class="form-label">Fecha/Hora</label>
-                        <input type="datetime-local" class="form-control" name="fecha_evolucion" value="${new Date().toISOString().slice(0,16)}" required>
+                        <input type="datetime-local" class="form-control" name="fecha_evolucion" value="${getLocalISOTime()}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Subjetivo (S)</label>
@@ -1057,45 +1197,116 @@ try {
     
     function openCargoModal() {
         Swal.fire({
-            title: 'Agregar Cargo',
+            title: 'Agregar Cargos a la Cuenta',
             html: `
-                <form id="cargoForm" class="text-start">
-                    <div class="mb-3">
-                        <label class="form-label">Tipo de Cargo</label>
-                        <select class="form-select" name="tipo_cargo" required>
-                            <option value="Medicamento">Medicamento</option>
-                            <option value="Procedimiento">Procedimiento</option>
-                            <option value="Laboratorio">Laboratorio</option>
-                            <option value="Honorario">Honorario Médico</option>
-                            <option value="Insumo">Insumo</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <input type="text" class="form-control" name="descripcion" required placeholder="Descripción del cargo">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Cantidad</label>
-                            <input type="number" step="0.01" class="form-control" name="cantidad" value="1" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Precio Unitario</label>
-                            <input type="number" step="0.01" class="form-control" name="precio_unitario" required>
-                        </div>
-                    </div>
-                </form>
+                <div class="text-start mb-3">
+                    <p class="text-muted small">Agregue uno o más cargos a la cuenta del paciente.</p>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm" id="batchCargoTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">Tipo</th>
+                                <th style="width: 40%">Descripción</th>
+                                <th style="width: 15%">Cant.</th>
+                                <th style="width: 15%">Precio</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cargoRows">
+                            <tr>
+                                <td>
+                                    <select class="form-select form-select-sm" name="tipo_cargo[]" required>
+                                        <option value="Medicamento">Medicamento</option>
+                                        <option value="Procedimiento">Procedimiento</option>
+                                        <option value="Laboratorio">Laboratorio</option>
+                                        <option value="Honorario">Honorario</option>
+                                        <option value="Insumo">Insumo</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="form-control form-control-sm" name="descripcion[]" required placeholder="Ejem: Paracetamol 500mg"></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="cantidad[]" value="1" required></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="precio_unitario[]" required></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-start">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCargoRow()">
+                        <i class="bi bi-plus-lg"></i> Agregar otra fila
+                    </button>
+                </div>
             `,
-            width: 600,
+            width: 900,
             showCancelButton: true,
-            confirmButtonText: 'Guardar',
+            confirmButtonText: 'Guardar Cargos',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#7c90db',
+            didOpen: () => {
+                // Global function accessed by the button inside Swal
+                window.addCargoRow = function() {
+                    const tbody = document.getElementById('cargoRows');
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>
+                            <select class="form-select form-select-sm" name="tipo_cargo[]" required>
+                                <option value="Medicamento">Medicamento</option>
+                                <option value="Procedimiento">Procedimiento</option>
+                                <option value="Laboratorio">Laboratorio</option>
+                                <option value="Honorario">Honorario</option>
+                                <option value="Insumo">Insumo</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control form-control-sm" name="descripcion[]" required></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" name="cantidad[]" value="1" required></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" name="precio_unitario[]" required></td>
+                        <td>
+                            <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(newRow);
+                };
+            },
             preConfirm: () => {
-                const form = document.getElementById('cargoForm');
-                const formData = new FormData(form);
-                formData.append('id_encamamiento', id_encamamiento);
+                const rows = document.querySelectorAll('#cargoRows tr');
+                const cargos = [];
+                
+                rows.forEach(row => {
+                    const tipo = row.querySelector('[name="tipo_cargo[]"]').value;
+                    const desc = row.querySelector('[name="descripcion[]"]').value;
+                    const cant = row.querySelector('[name="cantidad[]"]').value;
+                    const price = row.querySelector('[name="precio_unitario[]"]').value;
+                    
+                    if (desc && cant && price) {
+                        cargos.push({
+                            id_encamamiento: id_encamamiento,
+                            tipo_cargo: tipo,
+                            descripcion: desc,
+                            cantidad: cant,
+                            precio_unitario: price
+                        });
+                    }
+                });
+                
+                if (cargos.length === 0) {
+                    Swal.showValidationMessage('Debe agregar al menos un cargo con descripción y precio');
+                    return false;
+                }
+                
+                // Use the updated batch API format
+                const formData = new FormData();
+                cargos.forEach((cargo, index) => {
+                    formData.append(`cargos[${index}][id_encamamiento]`, cargo.id_encamamiento);
+                    formData.append(`cargos[${index}][tipo_cargo]`, cargo.tipo_cargo);
+                    formData.append(`cargos[${index}][descripcion]`, cargo.descripcion);
+                    formData.append(`cargos[${index}][cantidad]`, cargo.cantidad);
+                    formData.append(`cargos[${index}][precio_unitario]`, cargo.precio_unitario);
+                });
                 
                 return fetch('api/add_cargo.php', {
                     method: 'POST',
@@ -1114,7 +1325,7 @@ try {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire('¡Éxito!', 'Cargo agregado', 'success').then(() => {
+                Swal.fire('¡Éxito!', result.value.message, 'success').then(() => {
                     location.reload();
                 });
             }

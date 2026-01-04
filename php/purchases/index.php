@@ -1,6 +1,6 @@
 <?php
 // purchases/index.php - Módulo de Compras del Centro Médico Herrera Saenz
-// Versión: 3.0 - Diseño Minimalista con Modo Noche y Efecto Mármol
+// Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
 // Verificar sesión activa
@@ -12,13 +12,10 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
-verify_session();
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
-
-// Título de la página
-$page_title = "Compras - Centro Médico Herrera Saenz";
+verify_session();
 
 try {
     // Conectar a la base de datos
@@ -29,13 +26,73 @@ try {
     $user_id = $_SESSION['user_id'];
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
-    $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    $user_specialty = $_SESSION['especialidad'] ?? 'Administrador';
     
     // Verificar permisos (solo admin puede acceder a compras)
     if ($user_type !== 'admin') {
         header("Location: ../dashboard/index.php");
         exit;
     }
+    
+    // ============ ESTADÍSTICAS DE COMPRAS ============
+    $today = date('Y-m-d');
+    $current_month = date('Y-m');
+    
+    // 1. Compras del mes actual
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE_FORMAT(purchase_date, '%Y-%m') = ?");
+    $stmt->execute([$current_month]);
+    $month_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $month_purchases = $month_stats['count'] ?? 0;
+    $month_total = $month_stats['total'] ?? 0;
+    
+    // 2. Compras pendientes de pago
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as balance FROM purchase_headers WHERE (total_amount - COALESCE(paid_amount, 0)) > 0");
+    $stmt->execute();
+    $pending_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $pending_count = $pending_stats['count'] ?? 0;
+    $total_balance = $pending_stats['balance'] ?? 0;
+    
+    // 3. Compras del día
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE(purchase_date) = ?");
+    $stmt->execute([$today]);
+    $today_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $today_purchases = $today_stats['count'] ?? 0;
+    $today_total = $today_stats['total'] ?? 0;
+    
+    // 4. Proveedores con más compras
+    $stmt = $conn->prepare("SELECT provider_name, COUNT(*) as count, SUM(total_amount) as total FROM purchase_headers GROUP BY provider_name ORDER BY total DESC LIMIT 5");
+    $stmt->execute();
+    $top_providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 5. Últimas compras
+    $stmt = $conn->prepare("SELECT ph.*, 
+                           (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance,
+                           (SELECT COUNT(*) FROM purchase_items WHERE purchase_header_id = ph.id) as items_count
+                           FROM purchase_headers ph 
+                           ORDER BY ph.purchase_date DESC, ph.created_at DESC 
+                           LIMIT 10");
+    $stmt->execute();
+    $recent_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 6. Compras por confirmar (en inventario como pendientes)
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
+    $stmt->execute();
+    $pending_inventory = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+    
+    // 7. Compras antiguas (de la tabla anterior)
+    try {
+        $stmt_old = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_compra), 0) as total FROM compras");
+        $stmt_old->execute();
+        $old_stats = $stmt_old->fetch(PDO::FETCH_ASSOC);
+        $old_purchases = $old_stats['count'] ?? 0;
+        $old_total = $old_stats['total'] ?? 0;
+    } catch (Exception $e) {
+        $old_purchases = 0;
+        $old_total = 0;
+    }
+    
+    // Título de la página
+    $page_title = "Compras - Centro Médico Herrera Saenz";
     
 } catch (Exception $e) {
     // Manejo de errores
@@ -48,483 +105,759 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Módulo de Compras - Centro Médico Herrera Saenz - Gestión de compras de medicamentos e insumos">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     
-    <!-- Google Fonts - Inter para modernidad y legibilidad -->
+    <!-- Google Fonts - Inter (moderno y legible) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
-    /* 
-     * Módulo de Compras - Centro Médico Herrera Saenz
-     * Diseño: Fondo blanco, colores pastel, efecto mármol, modo noche
-     * Versión: 3.0
-     */
-    
-    /* Variables CSS para modo claro y oscuro */
+    /* ==========================================================================
+       VARIABLES CSS PARA TEMA DÍA/NOCHE
+       ========================================================================== */
     :root {
-        /* Modo claro (predeterminado) - Colores pastel */
-        --color-background: #f8fafc;
-        --color-surface: #ffffff;
-        --color-primary: #7c90db;      /* Azul lavanda pastel */
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;    /* Verde menta pastel */
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;       /* Coral pastel */
-        --color-text: #1e293b;
-        --color-text-light: #64748b;
-        --color-text-muted: #94a3b8;
-        --color-border: #e2e8f0;
-        --color-border-light: #f1f5f9;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
+        /* Colores Modo Día (Escala Grises + Mármol) */
+        --color-bg-day: #ffffff;
+        --color-surface-day: #f8f9fa;
+        --color-card-day: #ffffff;
+        --color-text-day: #1a1a1a;
+        --color-text-secondary-day: #6c757d;
+        --color-border-day: #e9ecef;
+        --color-primary-day: #0d6efd;
+        --color-secondary-day: #6c757d;
+        --color-success-day: #198754;
+        --color-warning-day: #ffc107;
+        --color-danger-day: #dc3545;
+        --color-info-day: #0dcaf0;
         
-        /* Efecto mármol */
-        --marble-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e2e8f0' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+        /* Colores Modo Noche (Tonalidades Azules) */
+        --color-bg-night: #0f172a;
+        --color-surface-night: #1e293b;
+        --color-card-night: #1e293b;
+        --color-text-night: #e2e8f0;
+        --color-text-secondary-night: #94a3b8;
+        --color-border-night: #2d3748;
+        --color-primary-night: #3b82f6;
+        --color-secondary-night: #64748b;
+        --color-success-night: #10b981;
+        --color-warning-night: #f59e0b;
+        --color-danger-night: #ef4444;
+        --color-info-night: #06b6d4;
         
-        /* Sombras sutiles */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        /* Versiones RGB para opacidad */
+        --color-primary-rgb: 13, 110, 253;
+        --color-success-rgb: 25, 135, 84;
+        --color-warning-rgb: 255, 193, 7;
+        --color-danger-rgb: 220, 53, 69;
+        --color-info-rgb: 13, 202, 240;
+        --color-card-rgb: 255, 255, 255;
         
-        /* Bordes redondeados */
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        /* Efecto Mármol */
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+        --marble-pattern: linear-gradient(135deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(225deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(45deg, var(--marble-color-1) 25%, transparent 25%),
+                          linear-gradient(315deg, var(--marble-color-1) 25%, var(--marble-color-2) 25%);
         
         /* Transiciones */
-        --transition-fast: 150ms ease;
-        --transition-normal: 250ms ease;
-        --transition-slow: 350ms ease;
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sombras */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1);
+        
+        /* Bordes */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        
+        /* Espaciado */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        
+        /* Tipografía */
+        --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-size-xs: 0.75rem;
+        --font-size-sm: 0.875rem;
+        --font-size-base: 1rem;
+        --font-size-lg: 1.125rem;
+        --font-size-xl: 1.25rem;
+        --font-size-2xl: 1.5rem;
+        --font-size-3xl: 1.875rem;
+        --font-size-4xl: 2.25rem;
     }
     
-    /* Variables para modo oscuro */
-    [data-theme="dark"] {
-        --color-background: #0f172a;
-        --color-surface: #1e293b;
-        --color-primary: #7c90db;
-        --color-primary-light: #a3b1e8;
-        --color-primary-dark: #5a6fca;
-        --color-secondary: #8dd7bf;
-        --color-secondary-light: #b2e6d5;
-        --color-accent: #f8b195;
-        --color-text: #f1f5f9;
-        --color-text-light: #cbd5e1;
-        --color-text-muted: #94a3b8;
-        --color-border: #334155;
-        --color-border-light: #1e293b;
-        --color-error: #f87171;
-        --color-warning: #fbbf24;
-        --color-success: #34d399;
-        --color-info: #38bdf8;
-        
-        /* Efecto mármol oscuro */
-        --marble-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        --marble-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23334155' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
-        
-        /* Sombras más sutiles en modo oscuro */
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    
-    /* Reset y estilos base */
+    /* ==========================================================================
+       ESTILOS BASE Y RESET
+       ========================================================================== */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html {
+        font-size: 16px;
+        scroll-behavior: smooth;
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: var(--color-background);
-        color: var(--color-text);
-        min-height: 100vh;
-        transition: background-color var(--transition-normal), color var(--transition-normal);
-        line-height: 1.5;
-        position: relative;
+        font-family: var(--font-family);
+        font-weight: 400;
+        line-height: 1.6;
         overflow-x: hidden;
+        transition: background-color var(--transition-base);
     }
     
-    /* Fondo con efecto mármol sutil */
-    body::before {
-        content: '';
+    /* ==========================================================================
+       TEMA DÍA (POR DEFECTO)
+       ========================================================================== */
+    [data-theme="light"] {
+        --color-bg: var(--color-bg-day);
+        --color-surface: var(--color-surface-day);
+        --color-card: var(--color-card-day);
+        --color-text: var(--color-text-day);
+        --color-text-secondary: var(--color-text-secondary-day);
+        --color-border: var(--color-border-day);
+        --color-primary: var(--color-primary-day);
+        --color-secondary: var(--color-secondary-day);
+        --color-success: var(--color-success-day);
+        --color-warning: var(--color-warning-day);
+        --color-danger: var(--color-danger-day);
+        --color-info: var(--color-info-day);
+        
+        --marble-color-1: rgba(255, 255, 255, 0.95);
+        --marble-color-2: rgba(248, 249, 250, 0.8);
+    }
+    
+    /* ==========================================================================
+       TEMA NOCHE
+       ========================================================================== */
+    [data-theme="dark"] {
+        --color-bg: var(--color-bg-night);
+        --color-surface: var(--color-surface-night);
+        --color-card: var(--color-card-night);
+        --color-text: var(--color-text-night);
+        --color-text-secondary: var(--color-text-secondary-night);
+        --color-border: var(--color-border-night);
+        --color-primary: var(--color-primary-night);
+        --color-secondary: var(--color-secondary-night);
+        --color-success: var(--color-success-night);
+        --color-warning: var(--color-warning-night);
+        --color-danger: var(--color-danger-night);
+        --color-info: var(--color-info-night);
+        
+        --color-primary-rgb: 59, 130, 246;
+        --color-success-rgb: 16, 185, 129;
+        --color-warning-rgb: 245, 158, 11;
+        --color-danger-rgb: 239, 68, 68;
+        --color-info-rgb: 6, 182, 212;
+        --color-card-rgb: 30, 41, 59;
+        
+        --marble-color-1: rgba(15, 23, 42, 0.95);
+        --marble-color-2: rgba(30, 41, 59, 0.8);
+    }
+    
+    /* ==========================================================================
+       APLICACIÓN DE VARIABLES
+       ========================================================================== */
+    body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        position: relative;
+    }
+    
+    /* ==========================================================================
+       EFECTO MÁRMOL (FONDO)
+       ========================================================================== */
+    .marble-effect {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: var(--marble-pattern), var(--marble-bg);
-        background-size: 300px, cover;
-        background-attachment: fixed;
         z-index: -1;
-        opacity: 0.8;
+        background: 
+            radial-gradient(circle at 20% 80%, var(--marble-color-1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
+            var(--color-bg);
+        background-blend-mode: overlay;
+        background-size: 200% 200%;
+        animation: marbleFloat 20s ease-in-out infinite alternate;
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Contenedor principal */
+    @keyframes marbleFloat {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+    }
+    
+    /* ==========================================================================
+       LAYOUT PRINCIPAL
+       ========================================================================== */
     .dashboard-container {
-        min-height: 100vh;
         display: flex;
-        flex-direction: column;
+        flex-direction: column; /* Apilar Header y Main verticalmente */
+        min-height: 100vh;
         position: relative;
+        width: 100%; /* Asegurar que no se desborde */
+        transition: all var(--transition-base);
     }
     
-    /* ============ HEADER SUPERIOR ============ */
+    /* User Avatar (Sidebar replacement) */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        flex: 1;
+        min-width: 0;
+        transition: opacity var(--transition-base);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text);
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: block;
+        line-height: 1.2;
+    }
+    
+    /* ==========================================================================
+       HEADER SUPERIOR
+       ========================================================================== */
     .dashboard-header {
-        background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem;
         position: sticky;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        background-color: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        z-index: 900;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        animation: slideDown 0.4s ease-out;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        /* Usar fallback sólido si rgba falla, pero definir rgb variables arriba */
+        background-color: rgba(var(--color-card-rgb), 0.95); 
+        box-shadow: var(--shadow-sm);
     }
     
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: 1400px;
-        margin: 0 auto;
+        padding: var(--space-md) var(--space-lg);
+        gap: var(--space-lg);
     }
     
-    /* Logo y marca */
     .brand-container {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-md);
+        margin-left: 0;
     }
     
     .brand-logo {
-        height: 48px;
+        height: 40px;
         width: auto;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        transition: transform var(--transition-normal);
+        object-fit: contain;
     }
     
-    .brand-logo:hover {
-        transform: scale(1.05);
+    .mobile-toggle {
+        display: none;
     }
     
-    /* Control de tema y usuario */
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: var(--space-lg);
     }
     
-    /* Botón de cambio de tema */
+    /* Control de tema */
     .theme-toggle {
         position: relative;
     }
     
     .theme-btn {
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-surface);
+        color: var(--color-text);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all var(--transition-normal);
-        color: var(--color-text);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
     .theme-btn:hover {
-        background: var(--color-primary-light);
-        color: white;
-        border-color: var(--color-primary);
-        transform: rotate(15deg);
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .theme-btn:active {
+        transform: scale(0.95);
     }
     
     .theme-icon {
-        width: 20px;
-        height: 20px;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        position: absolute;
+        font-size: 1.25rem;
+        transition: all var(--transition-base);
     }
     
     .sun-icon {
-        color: var(--color-warning);
+        opacity: 1;
+        transform: rotate(0);
     }
     
     .moon-icon {
-        color: var(--color-primary-light);
-    }
-    
-    [data-theme="light"] .moon-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(-90deg);
     }
     
     [data-theme="dark"] .sun-icon {
-        display: none;
+        opacity: 0;
+        transform: rotate(90deg);
     }
     
-    /* Información del usuario */
-    .user-info {
+    [data-theme="dark"] .moon-icon {
+        opacity: 1;
+        transform: rotate(0);
+    }
+    
+    /* Información usuario en header */
+    .header-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: background-color var(--transition-normal);
+        gap: var(--space-md);
     }
     
-    .user-info:hover {
-        background: var(--color-border-light);
-    }
-    
-    .user-avatar {
+    .header-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        color: white;
-        font-size: 16px;
-        flex-shrink: 0;
+        font-size: var(--font-size-lg);
     }
     
-    .user-details {
+    .header-details {
         display: flex;
         flex-direction: column;
     }
     
-    .user-name {
+    .header-name {
         font-weight: 600;
+        font-size: var(--font-size-sm);
         color: var(--color-text);
-        font-size: 0.95rem;
     }
     
-    .user-role {
-        font-size: 0.8rem;
-        color: var(--color-text-light);
+    .header-role {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
     }
     
-    /* ============ BARRA LATERAL ============ */
-    .sidebar {
-        width: 260px;
-        background: var(--color-surface);
-        border-right: 1px solid var(--color-border);
-        position: fixed;
-        top: 81px; /* Altura del header */
-        left: 0;
-        bottom: 0;
-        z-index: 90;
-        padding: 1.5rem;
-        overflow-y: auto;
-        transition: transform var(--transition-normal), width var(--transition-normal);
-        animation: slideInLeft 0.5s ease-out;
-    }
-    
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .sidebar.collapsed {
-        width: 80px;
-    }
-    
-    .sidebar.collapsed .nav-text {
-        display: none;
-    }
-    
-    /* Navegación */
-    .nav-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .nav-item {
-        margin-bottom: 0.5rem;
-    }
-    
-    .nav-link {
+    /* Botón de cerrar sesión */
+    .logout-btn {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-surface);
         color: var(--color-text);
-        text-decoration: none;
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        transition: all var(--transition-normal);
+        text-decoration: none;
         font-weight: 500;
+        transition: all var(--transition-base);
+    }
+    
+    .logout-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+        transform: translateY(-2px);
+    }
+    
+    /* ==========================================================================
+       CONTENIDO PRINCIPAL
+       ========================================================================== */
+    .main-content {
+        flex: 1;
+        padding: var(--space-lg);
+        /* Margin-left movido al contenedor padre */
+        transition: all var(--transition-base);
+        min-height: 100vh;
+        background-color: transparent;
+        width: 100%;
+    }
+    
+    /* ==========================================================================
+       COMPONENTES DE COMPRAS
+       ========================================================================== */
+    
+    /* Tarjetas de estadísticas */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+    
+    .stat-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
         position: relative;
         overflow: hidden;
     }
     
-    .nav-link:hover {
-        background: var(--color-border-light);
-        color: var(--color-primary);
-        transform: translateX(4px);
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--color-primary);
     }
     
-    .sidebar.collapsed .nav-link:hover {
-        transform: scale(1.05);
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-info));
     }
     
-    .nav-link.active {
-        background: var(--color-primary);
-        color: white;
-        box-shadow: var(--shadow-md);
-    }
-    
-    .nav-icon {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-        width: 24px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .sidebar.collapsed .nav-icon {
-        margin-right: 0;
-        font-size: 1.35rem;
-    }
-    
-    .nav-text {
-        font-size: 0.95rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    /* Contenido principal */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        min-height: calc(100vh - 81px);
-        transition: margin-left var(--transition-normal);
-        max-width: 1400px;
-        margin-right: auto;
-        margin-left: auto;
-        width: calc(100% - 260px);
-    }
-    
-    .sidebar.collapsed ~ .main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-    }
-    
-    /* ============ ENCABEZADO DE PÁGINA ============ */
-    .page-header {
+    .stat-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.6s ease-out;
+        align-items: flex-start;
+        margin-bottom: var(--space-md);
     }
     
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+    .stat-title {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        margin-bottom: var(--space-xs);
     }
     
-    .page-title-section {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .page-title {
-        font-size: 1.75rem;
+    .stat-value {
+        font-size: var(--font-size-3xl);
         font-weight: 700;
         color: var(--color-text);
-        margin-bottom: 0.25rem;
+        line-height: 1;
     }
     
-    .page-subtitle {
-        font-size: 0.95rem;
-        color: var(--color-text-light);
-    }
-    
-    .page-actions {
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
         display: flex;
-        gap: 1rem;
         align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
     }
     
-    /* Botones de acción */
+    .stat-icon.primary {
+        background: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
+    }
+    
+    .stat-icon.success {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+    
+    .stat-icon.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+    
+    .stat-icon.info {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+    }
+    
+    .stat-change {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+    
+    .stat-change.positive {
+        color: var(--color-success);
+    }
+    
+    /* Secciones */
+    .appointments-section {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+        transition: all var(--transition-base);
+    }
+    
+    .appointments-section:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+    
+    .section-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .section-title-icon {
+        color: var(--color-primary);
+    }
+    
     .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         background: var(--color-primary);
         color: white;
         border: none;
         border-radius: var(--radius-md);
-        padding: 0.625rem 1.25rem;
         font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-normal);
         text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
     }
     
     .action-btn:hover {
-        background: var(--color-primary-dark);
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+        background: var(--color-primary);
+        opacity: 0.9;
+        color: white;
     }
     
-    /* ============ TAB NAVIGATION ============ */
-    .tab-navigation {
+    /* Tablas */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .appointments-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .appointments-table thead {
+        background: var(--color-surface);
+    }
+    
+    .appointments-table th {
+        padding: var(--space-md);
+        text-align: left;
+        font-weight: 600;
+        color: var(--color-text);
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
+    }
+    
+    .appointments-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        vertical-align: middle;
+    }
+    
+    .appointments-table tbody tr {
+        transition: all var(--transition-base);
+    }
+    
+    .appointments-table tbody tr:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
+    }
+    
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-xl);
+        color: var(--color-text-secondary);
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--color-border);
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+    }
+    
+    /* Grid de proveedores */
+    .providers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+    }
+    
+    .provider-card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        transition: all var(--transition-base);
+    }
+    
+    .provider-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .provider-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+    }
+    
+    .provider-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+    }
+    
+    .provider-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        color: var(--color-text);
+        margin: 0;
+    }
+    
+    .provider-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+    
+    .provider-item {
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        border-left: 4px solid var(--color-info);
+        transition: all var(--transition-base);
+    }
+    
+    .provider-item:hover {
+        transform: translateX(4px);
+        border-left-color: var(--color-primary);
+    }
+    
+    .provider-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-xs);
+    }
+    
+    .provider-item-name {
+        font-weight: 500;
+        color: var(--color-text);
+    }
+    
+    .provider-badge {
+        padding: 0.25em 0.5em;
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+    }
+    
+    .provider-badge.success {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+    
+    .provider-item-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+    
+    /* Tabs de navegación */
+    .tabs-navigation {
         display: flex;
         gap: 0.5rem;
         margin-bottom: 2rem;
         border-bottom: 1px solid var(--color-border);
         padding-bottom: 0.5rem;
+        overflow-x: auto;
     }
     
     .tab-btn {
@@ -538,6 +871,7 @@ try {
         border-radius: var(--radius-md);
         transition: all var(--transition-normal);
         position: relative;
+        white-space: nowrap;
     }
     
     .tab-btn:hover {
@@ -560,7 +894,6 @@ try {
         background: var(--color-primary);
     }
     
-    /* ============ TAB CONTENT ============ */
     .tab-content {
         display: none;
         animation: fadeIn 0.5s ease;
@@ -570,164 +903,7 @@ try {
         display: block;
     }
     
-    /* ============ CARD STYLES ============ */
-    .card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        transition: all var(--transition-normal);
-        animation: fadeIn 0.6s ease-out;
-    }
-    
-    .card:hover {
-        box-shadow: var(--shadow-lg);
-    }
-    
-    .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--color-border);
-    }
-    
-    .card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--color-text);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .card-title-icon {
-        color: var(--color-primary);
-    }
-    
-    /* ============ TABLES ============ */
-    .table-container {
-        overflow-x: auto;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
-    }
-    
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 800px;
-    }
-    
-    .data-table th {
-        text-align: left;
-        padding: 1rem;
-        font-weight: 600;
-        color: var(--color-text-light);
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-border-light);
-    }
-    
-    .data-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--color-border);
-        color: var(--color-text);
-        transition: background-color var(--transition-normal);
-    }
-    
-    .data-table tbody tr:hover td {
-        background: var(--color-border-light);
-    }
-    
-    .data-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-    
-    /* Badges */
-    .badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .badge-success {
-        background: var(--color-success);
-        color: white;
-    }
-    
-    .badge-warning {
-        background: var(--color-warning);
-        color: var(--color-text);
-    }
-    
-    .badge-danger {
-        background: var(--color-error);
-        color: white;
-    }
-    
-    .badge-info {
-        background: var(--color-info);
-        color: white;
-    }
-    
-    .badge-secondary {
-        background: var(--color-text-light);
-        color: white;
-    }
-    
-    /* Amount badges */
-    .amount-badge {
-        background: var(--color-border-light);
-        color: var(--color-success);
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        border: 1px solid var(--color-success);
-    }
-    
-    /* Search box */
-    .search-box {
-        position: relative;
-        width: 300px;
-    }
-    
-    .search-box .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--color-text-light);
-    }
-    
-    .search-box input {
-        width: 100%;
-        padding: 0.75rem 1rem 0.75rem 3rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text);
-        font-size: 0.95rem;
-        transition: all var(--transition-normal);
-    }
-    
-    .search-box input:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px var(--color-primary-light);
-    }
-    
-    /* ============ MODAL STYLES ============ */
+    /* Modal styles */
     .modal-content {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -782,120 +958,136 @@ try {
         box-shadow: 0 0 0 3px var(--color-primary-light);
     }
     
-    /* ============ BOTÓN TOGGLE SIDEBAR ============ */
-    .sidebar-toggle {
-        position: fixed;
-        bottom: 2rem;
-        left: 280px;
-        width: 40px;
-        height: 40px;
+    /* Search box */
+    .search-box {
+        position: relative;
+        width: 300px;
+    }
+    
+    .search-box .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-light);
+    }
+    
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 3rem;
         background: var(--color-surface);
         border: 1px solid var(--color-border);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 95;
+        border-radius: var(--radius-md);
+        color: var(--color-text);
+        font-size: 0.95rem;
         transition: all var(--transition-normal);
-        box-shadow: var(--shadow-md);
+    }
+    
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+    
+    /* Badges */
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-success {
+        background: var(--color-success);
+        color: white;
+    }
+    
+    .badge-warning {
+        background: var(--color-warning);
         color: var(--color-text);
     }
     
-    .sidebar-toggle:hover {
-        background: var(--color-primary);
+    .badge-danger {
+        background: var(--color-error);
         color: white;
-        border-color: var(--color-primary);
-        transform: scale(1.1);
     }
     
-    .sidebar.collapsed ~ .sidebar-toggle {
-        left: 100px;
+    .badge-info {
+        background: var(--color-info);
+        color: white;
     }
     
-    /* ============ RESPONSIVE DESIGN ============ */
-    @media (max-width: 1200px) {
-        .main-content {
-            padding: 1.5rem;
-        }
+    .badge-secondary {
+        background: var(--color-text-light);
+        color: white;
     }
     
-    @media (max-width: 992px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
+    /* ==========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================== */
+    
+    @media (min-width: 1600px) {
         
-        .sidebar.show {
-            transform: translateX(0);
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
         }
         
         .main-content {
-            margin-left: 0;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+    }
+    
+    /* Escritorio estándar */
+    @media (max-width: 1399px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+    }
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 991px) {
+        .dashboard-container {
             width: 100%;
         }
         
-        .sidebar-toggle {
-            display: none;
+        .main-content {
+            padding: var(--space-md);
         }
         
-        /* Botón móvil para mostrar sidebar */
-        .mobile-sidebar-toggle {
-            display: block;
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 101;
-            width: 44px;
-            height: 44px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            color: var(--color-text);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-        }
-    }
-    
-    @media (min-width: 993px) {
-        .mobile-sidebar-toggle {
+        .mobile-toggle {
             display: none;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .dashboard-header {
-            padding: 1rem;
         }
         
         .header-content {
+            padding: var(--space-md);
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+        
+        .providers-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .section-header {
             flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
+            align-items: stretch;
+            gap: var(--space-md);
         }
         
-        .header-controls {
+        .section-title {
+            font-size: var(--font-size-lg);
+        }
+        
+        .action-btn {
             width: 100%;
-            justify-content: space-between;
-        }
-        
-        .main-content {
-            padding: 1rem;
-        }
-        
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        
-        .page-actions {
-            width: 100%;
-            justify-content: flex-start;
+            justify-content: center;
         }
         
         .search-box {
@@ -903,74 +1095,243 @@ try {
         }
     }
     
+    @media (max-width: 767px) {
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .brand-logo {
+            height: 32px;
+        }
+        
+        .header-content {
+            flex-wrap: wrap;
+        }
+        
+        .header-controls {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            margin-top: var(--space-md);
+        }
+        
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logout-btn span {
+            display: none;
+        }
+        
+        .logout-btn {
+            padding: var(--space-sm);
+        }
+        
+        .appointments-table {
+            font-size: var(--font-size-sm);
+        }
+        
+        .appointments-table th,
+        .appointments-table td {
+            padding: var(--space-sm);
+        }
+        
+        .stat-card {
+            padding: var(--space-md);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+    }
+    
+    /* Móviles pequeños */
     @media (max-width: 480px) {
-        .card {
-            padding: 1.25rem;
+        .main-content {
+            padding: var(--space-sm);
         }
         
-        .action-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
+        .stat-card {
+            padding: var(--space-md);
         }
         
-        .tab-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
+        .provider-card,
+        .appointments-section {
+            padding: var(--space-md);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-base);
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.875rem;
         }
     }
     
-    /* ============ EFECTOS DE MÁRMOL ANIMADOS ============ */
-    .marble-effect {
-        position: fixed;
+    /* ==========================================================================
+       ANIMACIONES DE ENTRADA
+       ========================================================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
+    /* ==========================================================================
+       ESTADOS DE CARGA
+       ========================================================================== */
+    .loading {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .loading::after {
+        content: '';
+        position: absolute;
         top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.3;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.05) 0%, transparent 30%),
-            radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.05) 0%, transparent 30%);
-        animation: marbleFloat 20s ease-in-out infinite;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: loading 1.5s infinite;
     }
     
-    @keyframes marbleFloat {
-        0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
+    @keyframes loading {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    /* ==========================================================================
+       UTILIDADES
+       ========================================================================== */
+    .text-primary { color: var(--color-primary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .text-info { color: var(--color-info); }
+    .text-muted { color: var(--color-text-secondary); }
+    
+    .bg-primary { background-color: var(--color-primary); }
+    .bg-success { background-color: var(--color-success); }
+    .bg-warning { background-color: var(--color-warning); }
+    .bg-danger { background-color: var(--color-danger); }
+    .bg-info { background-color: var(--color-info); }
+    
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: var(--space-xs); }
+    .mb-2 { margin-bottom: var(--space-sm); }
+    .mb-3 { margin-bottom: var(--space-md); }
+    .mb-4 { margin-bottom: var(--space-lg); }
+    .mb-5 { margin-bottom: var(--space-xl); }
+    
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: var(--space-xs); }
+    .mt-2 { margin-top: var(--space-sm); }
+    .mt-3 { margin-top: var(--space-md); }
+    .mt-4 { margin-top: var(--space-lg); }
+    .mt-5 { margin-top: var(--space-xl); }
+    
+    .d-none { display: none; }
+    .d-block { display: block; }
+    .d-flex { display: flex; }
+    
+    .gap-1 { gap: var(--space-xs); }
+    .gap-2 { gap: var(--space-sm); }
+    .gap-3 { gap: var(--space-md); }
+    .gap-4 { gap: var(--space-lg); }
+    .gap-5 { gap: var(--space-xl); }
+    
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    
+    .fw-bold { font-weight: 700; }
+    .fw-semibold { font-weight: 600; }
+    .fw-medium { font-weight: 500; }
+    .fw-normal { font-weight: 400; }
+    .fw-light { font-weight: 300; }
+    
+    /* ==========================================================================
+       PRINT STYLES
+       ========================================================================== */
+    @media print {
+        .dashboard-header,
+        .theme-btn,
+        .logout-btn,
+        .action-btn {
+            display: none !important;
         }
-        25% {
-            transform: translate(10px, 5px) rotate(0.5deg);
+        
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
         }
-        50% {
-            transform: translate(5px, 10px) rotate(-0.5deg);
+        
+        .marble-effect {
+            display: none;
         }
-        75% {
-            transform: translate(-5px, 5px) rotate(0.3deg);
+        
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        
+        .stat-card,
+        .appointments-section,
+        .provider-card {
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
         }
     }
     </style>
+    
 </head>
 <body>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
     
-    <!-- Botón móvil para mostrar/ocultar sidebar -->
-    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Mostrar/ocultar menú">
-        <i class="bi bi-list"></i>
-    </button>
-    
+    <!-- Contenedor Principal -->
     <div class="dashboard-container">
-        <!-- Header superior -->
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo y marca -->
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
                 
-                <!-- Controles del header -->
+                <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
                     <div class="theme-toggle">
@@ -981,262 +1342,387 @@ try {
                     </div>
                     
                     <!-- Información del usuario -->
-                    <div class="user-info">
-                        <div class="user-avatar">
+                    <div class="header-user">
+                        <div class="header-avatar">
                             <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
                     
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                    
                     <!-- Botón de cerrar sesión -->
-                    <a href="../auth/logout.php" class="action-btn logout-btn" title="Cerrar sesión">
+                    <a href="../auth/logout.php" class="logout-btn">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline">Salir</span>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
         
-        <!-- Sidebar de navegación -->
-        <nav class="sidebar" id="sidebar">
-            <ul class="nav-menu">
-                <?php $role = $user_type; ?>
-                
-                <!-- Dashboard (siempre visible) -->
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                
-                <!-- Pacientes (todos los roles) -->
-                <?php if (in_array($role, ['admin', 'doc', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link">
-                        <i class="bi bi-person-vcard nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Citas (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-heart nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                
-                <!-- Procedimientos menores -->
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Proc. Menores</span>
-                    </a>
-                </li>
-                
-                <!-- Exámenes -->
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
-                        <i class="bi bi-clipboard2-pulse nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                
-                <!-- Dispensario -->
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                
-                <!-- Inventario -->
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Compras, Ventas, Reportes (solo admin) -->
-                <?php if ($role === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link active">
-                        <i class="bi bi-cart-check nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up-arrow nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <!-- Cobros (admin y user) -->
-                <?php if (in_array($role, ['admin', 'user'])): ?>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-credit-card-2-front nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        
-        <!-- Botón para colapsar/expandir sidebar (escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
-        
-        <!-- Contenido principal -->
+        <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Encabezado de página -->
-            <div class="page-header">
-                <div class="page-title-section">
-                    <h1 class="page-title">Gestión de Compras</h1>
-                    <p class="page-subtitle">Registro y control de compras de medicamentos e insumos</p>
+            <!-- Bienvenida personalizada -->
+            <div class="stat-card mb-4 animate-in">
+                <div class="stat-header">
+                    <div>
+                        <h2 id="greeting" class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
+                            <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-cart-check me-1"></i> Módulo de Compras
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
+                        </p>
+                    </div>
+                    <div class="d-none d-md-block">
+                        <i class="bi bi-cart-check text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
                 </div>
-                <div class="page-actions">
-                    <button type="button" class="action-btn" onclick="showNewPurchaseModal()">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Nueva Compra</span>
-                    </button>
+            </div>
+            
+            <!-- Estadísticas principales -->
+            <div class="stats-grid">
+                <!-- Compras del mes -->
+                <div class="stat-card animate-in delay-1">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Compras del Mes</div>
+                            <div class="stat-value"><?php echo $month_purchases; ?></div>
+                        </div>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-calendar-month"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-currency-exchange"></i>
+                        <span>Total: Q<?php echo number_format($month_total, 2); ?></span>
+                    </div>
+                </div>
+                
+                <!-- Compras pendientes -->
+                <div class="stat-card animate-in delay-2">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Pendientes de Pago</div>
+                            <div class="stat-value"><?php echo $pending_count; ?></div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Saldo: Q<?php echo number_format($total_balance, 2); ?></span>
+                    </div>
+                </div>
+                
+                <!-- Compras de hoy -->
+                <div class="stat-card animate-in delay-3">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Compras Hoy</div>
+                            <div class="stat-value"><?php echo $today_purchases; ?></div>
+                        </div>
+                        <div class="stat-icon success">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class="bi bi-arrow-up-right"></i>
+                        <span>Total: Q<?php echo number_format($today_total, 2); ?></span>
+                    </div>
+                </div>
+                
+                <!-- Compras antiguas -->
+                <div class="stat-card animate-in delay-4">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Registros Antiguos</div>
+                            <div class="stat-value"><?php echo $old_purchases; ?></div>
+                        </div>
+                        <div class="stat-icon info">
+                            <i class="bi bi-archive"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change">
+                        <i class="bi bi-currency-exchange"></i>
+                        <span>Total: Q<?php echo number_format($old_total, 2); ?></span>
+                    </div>
                 </div>
             </div>
             
             <!-- Navegación por pestañas -->
-            <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="new-purchases">
-                    <i class="bi bi-cart-check me-2"></i>Nuevas Compras
+            <div class="tabs-navigation mb-4">
+                <button class="tab-btn active" data-tab="recent-purchases">
+                    <i class="bi bi-cart-check me-2"></i>Compras Recientes
+                </button>
+                <button class="tab-btn" data-tab="pending-payments">
+                    <i class="bi bi-clock-history me-2"></i>Pagos Pendientes
                 </button>
                 <button class="tab-btn" data-tab="old-purchases">
                     <i class="bi bi-archive me-2"></i>Compras Antiguas
                 </button>
+                <button class="tab-btn" data-tab="top-providers">
+                    <i class="bi bi-building me-2"></i>Proveedores
+                </button>
             </div>
             
-            <!-- Contenido de pestaña: Nuevas Compras -->
-            <div class="tab-content active" id="new-purchases-tab">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="bi bi-clock-history card-title-icon"></i>
-                            Historial de Compras Recientes
+            <!-- Pestaña: Compras Recientes -->
+            <div class="tab-content active" id="recent-purchases-tab">
+                <section class="appointments-section animate-in delay-1">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-clock-history section-title-icon"></i>
+                            Compras Recientes
                         </h3>
-                        <div class="search-box">
-                            <i class="bi bi-search search-icon"></i>
-                            <input type="text" id="searchNew" placeholder="Buscar compra...">
+                        <div class="d-flex gap-2">
+                            <div class="search-box">
+                                <i class="bi bi-search search-icon"></i>
+                                <input type="text" id="searchRecent" placeholder="Buscar compra...">
+                            </div>
+                            <button class="action-btn" onclick="showNewPurchaseModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                Nueva Compra
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="table-container">
-                        <table class="data-table" id="tableNew">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Documento</th>
-                                    <th>Proveedor</th>
-                                    <th>Total</th>
-                                    <th>Pagado</th>
-                                    <th>Saldo / Pagar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                try {
-                                    $stmt = $conn->query("SELECT * FROM purchase_headers ORDER BY purchase_date DESC LIMIT 50");
-                                    while ($row = $stmt->fetch()) {
-                                        $paid = $row['paid_amount'] ?? 0;
-                                        $balance = $row['total_amount'] - $paid;
+                    <?php if (count($recent_purchases) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table" id="tableRecent">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Proveedor</th>
+                                        <th>Documento</th>
+                                        <th>Total</th>
+                                        <th>Pagado</th>
+                                        <th>Saldo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recent_purchases as $purchase): ?>
+                                        <?php 
+                                        $balance = $purchase['balance'];
+                                        $paid = $purchase['total_amount'] - $balance;
                                         ?>
                                         <tr>
-                                            <td><?php echo date('d/m/Y', strtotime($row['purchase_date'])); ?></td>
                                             <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="badge badge-secondary">
-                                                        <?php echo htmlspecialchars($row['document_type']); ?>
-                                                        <?php echo $row['document_number'] ? '#'.$row['document_number'] : ''; ?>
-                                                    </span>
-                                                    <button class="btn btn-sm btn-link text-primary p-0" onclick="viewPurchaseDetails(<?php echo $row['id']; ?>)" title="Ver Detalles">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
+                                                <?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?>
+                                                <br>
+                                                <small class="text-muted"><?php echo $purchase['items_count']; ?> items</small>
+                                            </td>
+                                            <td>
+                                                <div class="patient-cell">
+                                                    <div class="patient-avatar" style="background: var(--color-info);">
+                                                        <?php echo strtoupper(substr($purchase['provider_name'], 0, 1)); ?>
+                                                    </div>
+                                                    <div class="patient-info">
+                                                        <div class="patient-name"><?php echo htmlspecialchars($purchase['provider_name']); ?></div>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td><?php echo htmlspecialchars($row['provider_name']); ?></td>
-                                            <td class="fw-bold">Q<?php echo number_format($row['total_amount'], 2); ?></td>
+                                            <td>
+                                                <span class="badge badge-secondary">
+                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                    <?php echo $purchase['document_number'] ? '#'.$purchase['document_number'] : ''; ?>
+                                                </span>
+                                            </td>
+                                            <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
                                             <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
                                             <td>
-                                                <button class="btn btn-sm <?php echo $balance > 0 ? 'btn-outline-danger' : 'btn-outline-success'; ?> fw-bold w-100" onclick="openPaymentModal(<?php echo $row['id']; ?>)" title="Click para abonar">
-                                                    Q<?php echo number_format($balance, 2); ?>
-                                                    <i class="bi bi-cash-coin ms-1"></i>
-                                                </button>
+                                                <?php if ($balance > 0): ?>
+                                                    <span class="badge badge-danger">Q<?php echo number_format($balance, 2); ?></span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-success">Pagado</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="#" class="btn-icon history" title="Ver detalles" onclick="viewPurchaseDetails(<?php echo $purchase['id']; ?>)">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <?php if ($balance > 0): ?>
+                                                    <a href="#" class="btn-icon edit" title="Registrar pago" onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
+                                                        <i class="bi bi-cash-coin"></i>
+                                                    </a>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                         </tr>
-                                        <?php
-                                    }
-                                } catch (PDOException $e) {
-                                    echo "<tr><td colspan='6' class='text-center text-muted'>No hay compras registradas en el nuevo sistema.</td></tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-cart-x"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay compras registradas</h4>
+                            <p class="text-muted mb-3">Comienza registrando tu primera compra</p>
+                            <button class="action-btn" onclick="showNewPurchaseModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                Nueva Compra
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </section>
             </div>
             
-            <!-- Contenido de pestaña: Compras Antiguas -->
-            <div class="tab-content" id="old-purchases-tab">
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title">
-                                <i class="bi bi-archive card-title-icon"></i>
-                                Historial de Compras Antiguas
-                            </h3>
-                            <p class="text-muted small mb-0">Registros anteriores a la actualización del sistema</p>
+            <!-- Pestaña: Pagos Pendientes -->
+            <div class="tab-content" id="pending-payments-tab">
+                <section class="appointments-section animate-in delay-2">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-clock-history text-warning section-title-icon"></i>
+                            Compras con Saldo Pendiente
+                        </h3>
+                        <div class="search-box">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text" id="searchPending" placeholder="Buscar proveedor...">
                         </div>
+                    </div>
+                    
+                    <?php 
+                    // Obtener compras pendientes
+                    try {
+                        $stmt_pending = $conn->prepare("SELECT ph.*, 
+                               (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance
+                               FROM purchase_headers ph 
+                               WHERE (ph.total_amount - COALESCE(ph.paid_amount, 0)) > 0
+                               ORDER BY ph.purchase_date ASC");
+                        $stmt_pending->execute();
+                        $pending_purchases = $stmt_pending->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {
+                        $pending_purchases = [];
+                    }
+                    ?>
+                    
+                    <?php if (count($pending_purchases) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table" id="tablePending">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Proveedor</th>
+                                        <th>Documento</th>
+                                        <th>Total</th>
+                                        <th>Pagado</th>
+                                        <th>Saldo</th>
+                                        <th>Días</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($pending_purchases as $purchase): ?>
+                                        <?php 
+                                        $balance = $purchase['balance'];
+                                        $paid = $purchase['total_amount'] - $balance;
+                                        $purchase_date = new DateTime($purchase['purchase_date']);
+                                        $today = new DateTime();
+                                        $days_diff = $today->diff($purchase_date)->days;
+                                        ?>
+                                        <tr>
+                                            <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
+                                            <td class="fw-bold"><?php echo htmlspecialchars($purchase['provider_name']); ?></td>
+                                            <td>
+                                                <span class="badge badge-secondary">
+                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                    <?php echo $purchase['document_number'] ? '#'.$purchase['document_number'] : ''; ?>
+                                                </span>
+                                            </td>
+                                            <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
+                                            <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
+                                            <td class="fw-bold text-danger">Q<?php echo number_format($balance, 2); ?></td>
+                                            <td>
+                                                <span class="badge <?php echo $days_diff > 30 ? 'badge-danger' : ($days_diff > 15 ? 'badge-warning' : 'badge-info'); ?>">
+                                                    <?php echo $days_diff; ?> días
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="#" class="btn-icon edit" title="Registrar pago" onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
+                                                        <i class="bi bi-cash-coin"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <p class="text-muted mb-2">
+                                Total pendiente: <strong class="text-danger">Q<?php echo number_format($total_balance, 2); ?></strong>
+                                en <strong><?php echo $pending_count; ?></strong> compras
+                            </p>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-check-circle text-success"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">¡Excelente gestión!</h4>
+                            <p class="text-muted mb-3">Todas las compras están completamente pagadas</p>
+                        </div>
+                    <?php endif; ?>
+                </section>
+            </div>
+            
+            <!-- Pestaña: Compras Antiguas -->
+            <div class="tab-content" id="old-purchases-tab">
+                <section class="appointments-section animate-in delay-3">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-archive section-title-icon"></i>
+                            Historial de Compras Antiguas
+                        </h3>
                         <div class="search-box">
                             <i class="bi bi-search search-icon"></i>
                             <input type="text" id="searchOld" placeholder="Buscar por producto...">
                         </div>
                     </div>
                     
-                    <div class="table-container" style="max-height: 600px;">
-                        <table class="data-table" id="tableOld">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Producto</th>
-                                    <th>Presentación</th>
-                                    <th>Casa Farm.</th>
-                                    <th>Cant.</th>
-                                    <th>Precio U.</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                try {
-                                    $stmtOld = $conn->query("SELECT * FROM compras ORDER BY fecha_compra DESC LIMIT 100");
-                                    while ($row = $stmtOld->fetch()) {
+                    <?php
+                    try {
+                        $stmt_old = $conn->prepare("SELECT * FROM compras ORDER BY fecha_compra DESC LIMIT 50");
+                        $stmt_old->execute();
+                        $old_purchases_list = $stmt_old->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {
+                        $old_purchases_list = [];
+                    }
+                    ?>
+                    
+                    <?php if (count($old_purchases_list) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table" id="tableOld">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Producto</th>
+                                        <th>Presentación</th>
+                                        <th>Casa Farm.</th>
+                                        <th>Cant.</th>
+                                        <th>Precio U.</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($old_purchases_list as $row): ?>
+                                        <?php
                                         $statusClass = 'secondary';
                                         if ($row['estado_compra'] == 'Completo') $statusClass = 'success';
                                         if ($row['estado_compra'] == 'Pendiente') $statusClass = 'warning';
@@ -1247,19 +1733,105 @@ try {
                                             <td class="fw-bold"><?php echo htmlspecialchars($row['nombre_compra']); ?></td>
                                             <td><?php echo htmlspecialchars($row['presentacion_compra']); ?></td>
                                             <td><?php echo htmlspecialchars($row['casa_compra']); ?></td>
-                                            <td><?php echo $row['cantidad_compra']; ?></td>
+                                            <td class="text-center"><?php echo $row['cantidad_compra']; ?></td>
                                             <td>Q<?php echo number_format($row['precio_unidad'], 2); ?></td>
                                             <td class="fw-bold text-primary">Q<?php echo number_format($row['total_compra'], 2); ?></td>
                                             <td><span class="badge badge-<?php echo $statusClass; ?>"><?php echo $row['estado_compra']; ?></span></td>
                                         </tr>
-                                        <?php
-                                    }
-                                } catch (PDOException $e) {
-                                    echo "<tr><td colspan='8' class='text-center text-muted'>No se encontraron registros antiguos.</td></tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-archive"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay registros antiguos</h4>
+                            <p class="text-muted mb-3">Todos los registros están en el sistema actual</p>
+                        </div>
+                    <?php endif; ?>
+                </section>
+            </div>
+            
+            <!-- Pestaña: Top Proveedores -->
+            <div class="tab-content" id="top-providers-tab">
+                <div class="providers-grid animate-in delay-4">
+                    <div class="provider-card">
+                        <div class="provider-header">
+                            <div class="provider-icon">
+                                <i class="bi bi-trophy"></i>
+                            </div>
+                            <h3 class="provider-title">Proveedores Principales</h3>
+                        </div>
+                        
+                        <?php if (count($top_providers) > 0): ?>
+                            <ul class="provider-list">
+                                <?php foreach ($top_providers as $provider): ?>
+                                    <li class="provider-item">
+                                        <div class="provider-item-header">
+                                            <span class="provider-item-name"><?php echo htmlspecialchars($provider['provider_name']); ?></span>
+                                            <span class="provider-badge success">
+                                                <?php echo $provider['count']; ?> compras
+                                            </span>
+                                        </div>
+                                        <div class="provider-item-details">
+                                            <span>Total invertido:</span>
+                                            <span class="fw-bold">Q<?php echo number_format($provider['total'], 2); ?></span>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <div class="no-alerts">
+                                <div class="no-alerts-icon">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <p class="text-muted mb-0">No hay datos de proveedores</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- Card de acciones rápidas -->
+                    <div class="provider-card">
+                        <div class="provider-header">
+                            <div class="provider-icon" style="background: rgba(var(--color-primary-rgb), 0.1); color: var(--color-primary);">
+                                <i class="bi bi-lightning"></i>
+                            </div>
+                            <h3 class="provider-title">Acciones Rápidas</h3>
+                        </div>
+                        
+                        <div class="provider-list">
+                            <div class="provider-item" style="cursor: pointer;" onclick="showNewPurchaseModal()">
+                                <div class="provider-item-header">
+                                    <span class="provider-item-name">Nueva Compra</span>
+                                    <i class="bi bi-plus-circle text-primary"></i>
+                                </div>
+                                <div class="provider-item-details">
+                                    <span>Registrar una nueva compra de medicamentos</span>
+                                </div>
+                            </div>
+                            
+                            <div class="provider-item" style="cursor: pointer;" onclick="showPendingPurchases()">
+                                <div class="provider-item-header">
+                                    <span class="provider-item-name">Ver Pendientes</span>
+                                    <i class="bi bi-clock-history text-warning"></i>
+                                </div>
+                                <div class="provider-item-details">
+                                    <span>Compras con saldo pendiente de pago</span>
+                                </div>
+                            </div>
+                            
+                            <div class="provider-item" style="cursor: pointer;" onclick="window.open('../reports/compras_mensual.php', '_blank')">
+                                <div class="provider-item-header">
+                                    <span class="provider-item-name">Reporte Mensual</span>
+                                    <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                </div>
+                                <div class="provider-item-details">
+                                    <span>Generar reporte de compras del mes</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1474,139 +2046,306 @@ try {
         </div>
     </div>
     
-    <!-- JavaScript -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-    // Módulo de Compras - Centro Médico Herrera Saenz
-    // JavaScript para funcionalidades del módulo de compras
     
-    // Esperar a que el DOM esté completamente cargado
-    document.addEventListener('DOMContentLoaded', function() {
-        // ============ REFERENCIAS A ELEMENTOS ============
-        const themeSwitch = document.getElementById('themeSwitch');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
+    <!-- JavaScript Optimizado -->
+    <script>
+    // Módulo de Compras Reingenierizado - Centro Médico Herrera Saenz
+    
+    (function() {
+        'use strict';
         
-        // ============ FUNCIONALIDAD DEL TEMA ============
+        // ==========================================================================
+        // CONFIGURACIÓN Y CONSTANTES
+        // ==========================================================================
+        const CONFIG = {
+            themeKey: 'dashboard-theme',
+
+            transitionDuration: 300,
+            animationDelay: 100
+        };
         
-        // Inicializar tema desde localStorage o preferencias del sistema
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        // ==========================================================================
+        // REFERENCIAS A ELEMENTOS DOM
+        // ==========================================================================
+        const DOM = {
+            html: document.documentElement,
+            body: document.body,
+            themeSwitch: document.getElementById('themeSwitch'),
+            greetingElement: document.getElementById('greeting-text'),
+            currentTimeElement: document.getElementById('current-time'),
+            tabButtons: document.querySelectorAll('.tab-btn'),
+            tabContents: document.querySelectorAll('.tab-content')
+        };
+        
+        // ==========================================================================
+        // MANEJO DE TEMA (DÍA/NOCHE)
+        // ==========================================================================
+        class ThemeManager {
+            constructor() {
+                this.theme = this.getInitialTheme();
+                this.applyTheme(this.theme);
+                this.setupEventListeners();
+            }
             
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
+            getInitialTheme() {
+                // 1. Verificar preferencia guardada
+                const savedTheme = localStorage.getItem(CONFIG.themeKey);
+                if (savedTheme) return savedTheme;
+                
+                // 2. Verificar preferencia del sistema
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) return 'dark';
+                
+                // 3. Tema por defecto (día)
+                return 'light';
+            }
+            
+            applyTheme(theme) {
+                DOM.html.setAttribute('data-theme', theme);
+                localStorage.setItem(CONFIG.themeKey, theme);
+                
+                // Actualizar meta tag para navegadores móviles
+                const metaTheme = document.querySelector('meta[name="theme-color"]');
+                if (metaTheme) {
+                    metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+                }
+            }
+            
+            toggleTheme() {
+                const newTheme = this.theme === 'light' ? 'dark' : 'light';
+                this.theme = newTheme;
+                this.applyTheme(newTheme);
+                
+                // Animación sutil en el botón
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        DOM.themeSwitch.style.transform = 'rotate(0)';
+                    }, CONFIG.transitionDuration);
+                }
+            }
+            
+            setupEventListeners() {
+                if (DOM.themeSwitch) {
+                    DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                }
+                
+                // Escuchar cambios en preferencias del sistema
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem(CONFIG.themeKey)) {
+                        this.theme = e.matches ? 'dark' : 'light';
+                        this.applyTheme(this.theme);
+                    }
+                });
             }
         }
         
-        // Cambiar entre modo claro y oscuro
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        // ==========================================================================
+        // MANEJO DE PESTAÑAS
+        // ==========================================================================
+        class TabManager {
+            constructor() {
+                this.setupEventListeners();
+            }
             
-            // Aplicar nuevo tema
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('dashboard-theme', newTheme);
+            switchTab(tabId) {
+                // Remover clase active de todos los botones y contenidos
+                DOM.tabButtons.forEach(btn => btn.classList.remove('active'));
+                DOM.tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Agregar clase active al botón clickeado
+                const activeButton = document.querySelector(`[data-tab="${tabId}"]`);
+                if (activeButton) {
+                    activeButton.classList.add('active');
+                }
+                
+                // Mostrar el contenido correspondiente
+                const activeContent = document.getElementById(`${tabId}-tab`);
+                if (activeContent) {
+                    activeContent.classList.add('active');
+                }
+                
+                // Guardar pestaña activa
+                localStorage.setItem('purchases-active-tab', tabId);
+            }
             
-            // Animación sutil en el botón
-            themeSwitch.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                themeSwitch.style.transform = 'rotate(0)';
-            }, 300);
-        }
-        
-        // ============ FUNCIONALIDAD DEL SIDEBAR ============
-        
-        // Restaurar estado del sidebar desde localStorage
-        function initializeSidebar() {
-            const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
-            
-            if (sidebarCollapsed === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
+            setupEventListeners() {
+                DOM.tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const tabId = button.getAttribute('data-tab');
+                        this.switchTab(tabId);
+                    });
+                });
+                
+                // Restaurar pestaña activa
+                const savedTab = localStorage.getItem('purchases-active-tab');
+                if (savedTab) {
+                    this.switchTab(savedTab);
+                }
             }
         }
         
-        // Colapsar/expandir sidebar
-        function toggleSidebar() {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            // Cambiar icono
-            if (isCollapsed) {
-                sidebarToggleIcon.classList.remove('bi-chevron-left');
-                sidebarToggleIcon.classList.add('bi-chevron-right');
-            } else {
-                sidebarToggleIcon.classList.remove('bi-chevron-right');
-                sidebarToggleIcon.classList.add('bi-chevron-left');
+        // ==========================================================================
+        // COMPONENTES DINÁMICOS DE COMPRAS
+        // ==========================================================================
+        class PurchasesManager {
+            constructor() {
+                this.purchaseItems = [];
+                this.setupGreeting();
+                this.setupClock();
+                this.setupSearch();
+                this.setupAnimations();
+                this.initializeDate();
             }
             
-            // Guardar estado
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
+            setupGreeting() {
+                if (!DOM.greetingElement) return;
+                
+                const hour = new Date().getHours();
+                let greeting = '';
+                
+                if (hour < 12) {
+                    greeting = 'Buenos días';
+                } else if (hour < 19) {
+                    greeting = 'Buenas tardes';
+                } else {
+                    greeting = 'Buenas noches';
+                }
+                
+                DOM.greetingElement.textContent = greeting;
+            }
+            
+            setupClock() {
+                if (!DOM.currentTimeElement) return;
+                
+                const updateClock = () => {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('es-GT', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    DOM.currentTimeElement.textContent = timeString;
+                };
+                
+                updateClock();
+                setInterval(updateClock, 60000);
+            }
+            
+            setupSearch() {
+                // Búsqueda en tabla de compras recientes
+                const searchRecent = document.getElementById('searchRecent');
+                if (searchRecent) {
+                    searchRecent.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = document.querySelectorAll('#tableRecent tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                }
+                
+                // Búsqueda en tabla de pendientes
+                const searchPending = document.getElementById('searchPending');
+                if (searchPending) {
+                    searchPending.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = document.querySelectorAll('#tablePending tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                }
+                
+                // Búsqueda en tabla de antiguas
+                const searchOld = document.getElementById('searchOld');
+                if (searchOld) {
+                    searchOld.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = document.querySelectorAll('#tableOld tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                }
+            }
+            
+            setupAnimations() {
+                // Animar elementos al cargar
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-in');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                
+                // Observar elementos con clase de animación
+                document.querySelectorAll('.stat-card, .appointments-section, .provider-card').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+            
+            initializeDate() {
+                const purchaseDate = document.getElementById('purchase_date');
+                if (purchaseDate) {
+                    const today = new Date();
+                    const formattedDate = today.toISOString().split('T')[0];
+                    purchaseDate.value = formattedDate;
+                }
+                
+                const payDate = document.getElementById('pay_date');
+                if (payDate) {
+                    const today = new Date();
+                    const formattedDate = today.toISOString().split('T')[0];
+                    payDate.value = formattedDate;
+                }
+            }
+            
+            // Mostrar compras pendientes
+            showPendingPurchases() {
+                const tabManager = new TabManager();
+                tabManager.switchTab('pending-payments');
+            }
         }
         
-        // Mostrar/ocultar sidebar en móvil
-        function toggleMobileSidebar() {
-            sidebar.classList.toggle('show');
-            
-            // Cerrar sidebar al hacer clic fuera en móvil
-            if (sidebar.classList.contains('show')) {
-                document.addEventListener('click', closeSidebarOnClickOutside);
-            } else {
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
+        // ==========================================================================
+        // FUNCIONALIDADES ESPECÍFICAS DE COMPRAS
+        // ==========================================================================
         
-        // Cerrar sidebar al hacer clic fuera (solo móvil)
-        function closeSidebarOnClickOutside(event) {
-            if (!sidebar.contains(event.target) && 
-                !mobileSidebarToggle.contains(event.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DE PESTAÑAS ============
-        
-        // Cambiar entre pestañas
-        function switchTab(tabId) {
-            // Remover clase active de todos los botones y contenidos
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            
-            // Agregar clase active al botón clickeado
-            const activeButton = document.querySelector(`[data-tab="${tabId}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
-            
-            // Mostrar el contenido correspondiente
-            const activeContent = document.getElementById(`${tabId}-tab`);
-            if (activeContent) {
-                activeContent.classList.add('active');
-            }
-        }
-        
-        // ============ FUNCIONALIDAD DE COMPRAS ============
-        
+        // Variables globales para funcionalidad de compras
         let purchaseItems = [];
-        
-        // Inicializar fecha de compra a hoy
-        document.getElementById('purchase_date').valueAsDate = new Date();
         
         // Mostrar modal de nueva compra
         window.showNewPurchaseModal = function() {
             // Resetear formulario
-            document.getElementById('purchaseForm').reset();
-            document.getElementById('purchase_date').valueAsDate = new Date();
+            const form = document.getElementById('purchaseForm');
+            if (form) form.reset();
+            
+            // Establecer fecha actual
+            const purchaseDate = document.getElementById('purchase_date');
+            if (purchaseDate) {
+                const today = new Date();
+                const formattedDate = today.toISOString().split('T')[0];
+                purchaseDate.value = formattedDate;
+            }
+            
+            // Limpiar items
             purchaseItems = [];
             renderItems();
             
@@ -1668,6 +2407,8 @@ try {
         // Renderizar items en la tabla
         function renderItems() {
             const tbody = document.querySelector('#itemsTable tbody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             let total = 0;
@@ -1697,7 +2438,10 @@ try {
             });
             
             // Actualizar total
-            document.getElementById('totalAmount').textContent = total.toFixed(2);
+            const totalAmount = document.getElementById('totalAmount');
+            if (totalAmount) {
+                totalAmount.textContent = total.toFixed(2);
+            }
         }
         
         // Guardar compra
@@ -1757,7 +2501,9 @@ try {
                         icon: 'success',
                         confirmButtonText: 'Aceptar'
                     }).then(() => {
-                        // Recargar página para mostrar los cambios
+                        // Cerrar modal y recargar página
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('newPurchaseModal'));
+                        modal.hide();
                         location.reload();
                     });
                 } else {
@@ -2023,7 +2769,9 @@ try {
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => {
-                        // Recargar página para actualizar datos
+                        // Cerrar modal y recargar página
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                        modal.hide();
                         location.reload();
                     });
                 } else {
@@ -2046,74 +2794,57 @@ try {
             });
         };
         
-        // ============ FUNCIONALIDAD DE BÚSQUEDA ============
-        
-        // Búsqueda en tabla de nuevas compras
-        document.getElementById('searchNew').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#tableNew tbody tr');
+        // ==========================================================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ==========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar componentes
+            const themeManager = new ThemeManager();
+            const tabManager = new TabManager();
+            const purchasesManager = new PurchasesManager();
             
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-        
-        // Búsqueda en tabla de compras antiguas
-        document.getElementById('searchOld').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#tableOld tbody tr');
+            // Exponer APIs necesarias globalmente
+            window.purchasesApp = {
+                theme: themeManager,
+                tabs: tabManager,
+                purchases: purchasesManager
+            };
             
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
+            // Log de inicialización
+            console.log('Módulo de Compras CMS v4.0 inicializado correctamente');
+            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+            console.log('Tema: ' + themeManager.theme);
         });
         
-        // ============ INICIALIZACIÓN ============
-        
-        // Inicializar componentes
-        initializeTheme();
-        initializeSidebar();
-        
-        // Configurar event listeners para pestañas
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                switchTab(tabId);
-            });
+        // ==========================================================================
+        // MANEJO DE ERRORES GLOBALES
+        // ==========================================================================
+        window.addEventListener('error', (event) => {
+            console.error('Error en módulo de compras:', event.error);
         });
         
-        // ============ EVENT LISTENERS ============
-        
-        // Tema
-        themeSwitch.addEventListener('click', toggleTheme);
-        
-        // Sidebar (escritorio)
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebar);
+        // ==========================================================================
+        // POLYFILLS PARA NAVEGADORES ANTIGUOS
+        // ==========================================================================
+        if (!NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
         }
         
-        // Sidebar (móvil)
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('click', toggleMobileSidebar);
+    })();
+    
+    // Estilos para spinner
+    const style = document.createElement('style');
+    style.textContent = `
+        .spin {
+            animation: spin 1s linear infinite;
         }
-        
-        // Cerrar sidebar al cambiar tamaño de ventana (responsive)
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 992 && sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-                document.removeEventListener('click', closeSidebarOnClickOutside);
-            }
-        });
-        
-        // ============ CONSOLA DE DESARROLLO ============
-        
-        console.log('Módulo de Compras - Centro Médico Herrera Saenz');
-        console.log('Versión: 3.0 - Diseño con Efecto Mármol y Modo Noche');
-        console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-        console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
-    });
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
     </script>
 </body>
 </html>

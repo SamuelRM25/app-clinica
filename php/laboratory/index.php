@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Cobros - Centro Médico Herrera Saenz
+// laboratorio/index.php - Dashboard de Laboratorio
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -28,51 +28,98 @@ try {
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
     
-    // Obtener todos los pacientes para el dropdown
-    $stmt = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes ORDER BY nombre");
-    $stmt->execute();
-    $pacientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // ============ ESTADÍSTICAS DEL LABORATORIO ============
     
-    // Obtener cobros con paginación
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $limit = 25;
-    $offset = ($page - 1) * $limit;
+    // 1. Órdenes pendientes
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Pendiente'");
+    $ordenes_pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
     
-    // Obtener total para paginación
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros");
-    $stmt->execute();
-    $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $total_pages = ceil($total_records / $limit);
+    // 2. Muestras recibidas
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Muestra_Recibida'");
+    $muestras_recibidas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
     
-    // Obtener datos de cobros con nombre de paciente
+    // 3. Pendientes de validar (Pruebas en proceso pero no validadas)
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM orden_pruebas WHERE estado = 'En_Proceso'");
+    $pendientes_validar = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // 4. Completadas hoy
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND estado = 'Completada'");
+    $completadas_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+
+    $total_appointments = 0;
+    $active_hospitalizations = 0;
+    $pending_purchases = 0;
+    
+    // 5. Total de órdenes del mes
+    $month_start = date('Y-m-01');
+    $month_end = date('Y-m-t');
     $stmt = $conn->prepare("
-        SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente 
-        FROM cobros c
-        JOIN pacientes p ON c.paciente_cobro = p.id_paciente
-        ORDER BY c.fecha_consulta DESC
-        LIMIT ? OFFSET ?
+        SELECT COUNT(*) as total 
+        FROM ordenes_laboratorio 
+        WHERE fecha_orden BETWEEN ? AND ?
     ");
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+    $stmt->execute([$month_start, $month_end]);
+    $ordenes_mes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // 6. Pruebas más solicitadas (top 5) - Usando fecha de la orden
+    $stmt = $conn->query("
+        SELECT cp.nombre_prueba, COUNT(op.id_orden_prueba) as cantidad
+        FROM orden_pruebas op
+        JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+        WHERE MONTH(ol.fecha_orden) = MONTH(CURDATE())
+        GROUP BY cp.id_prueba
+        ORDER BY cantidad DESC
+        LIMIT 5
+    ");
+    $pruebas_populares = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 7. Órdenes recientes
+    $stmt = $conn->prepare("
+        SELECT ol.*, 
+               p.nombre, p.apellido, p.genero, p.fecha_nacimiento,
+               u.nombre as doctor_nombre, u.apellido as doctor_apellido,
+               COUNT(op.id_orden_prueba) as num_pruebas,
+               TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad
+        FROM ordenes_laboratorio ol
+        JOIN pacientes p ON ol.id_paciente = p.id_paciente
+        LEFT JOIN usuarios u ON ol.id_doctor = u.idUsuario
+        LEFT JOIN orden_pruebas op ON ol.id_orden = op.id_orden
+        WHERE ol.estado IN ('Pendiente', 'Muestra_Recibida', 'En_Proceso', 'Completada')
+        GROUP BY ol.id_orden
+        ORDER BY 
+            CASE 
+                WHEN ol.estado = 'Pendiente' THEN 1
+                WHEN ol.estado = 'Muestra_Recibida' THEN 2
+                WHEN ol.estado = 'En_Proceso' THEN 3
+                WHEN ol.estado = 'Completada' THEN 4
+                ELSE 5
+            END,
+            ol.fecha_orden DESC
+        LIMIT 20
+    ");
     $stmt->execute();
-    $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $ordenes_recientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 8. Órdenes con retraso (más de 2 días en estado Pendiente)
+    $two_days_ago = date('Y-m-d', strtotime('-2 days'));
+    $stmt = $conn->prepare("
+        SELECT COUNT(*) as total
+        FROM ordenes_laboratorio 
+        WHERE estado = 'Pendiente' 
+        AND DATE(fecha_orden) <= ?
+    ");
+    $stmt->execute([$two_days_ago]);
+    $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
     
     // Título de la página
-    $page_title = "Cobros - Centro Médico Herrera Saenz";
-    
-    // Obtener estadísticas rápidas
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE()");
-    $stmt->execute();
-    $hoy_cobros = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
-    
-    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) as total FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE())");
-    $stmt->execute();
-    $mes_total = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    $page_title = "Laboratorio - Centro Médico Herrera Saenz";
     
 } catch (Exception $e) {
     // Manejo de errores
-    error_log("Error en módulo de cobros: " . $e->getMessage());
-    die("Error al cargar el módulo de cobros. Por favor, contacte al administrador.");
+    error_log("Error en dashboard de laboratorio: " . $e->getMessage());
+    die("Error al cargar el dashboard de laboratorio. Por favor, contacte al administrador.");
 }
 ?>
 <!DOCTYPE html>
@@ -80,13 +127,13 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
+    <meta name="description" content="Dashboard de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     
-    <!-- Google Fonts - Inter (moderno y legible) -->
+    <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -94,9 +141,8 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- SweetAlert2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Choices.js (para búsqueda en selects) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
@@ -295,14 +341,14 @@ try {
        ========================================================================== */
     .dashboard-container {
         display: flex;
-        flex-direction: column; /* Apilar Header y Main verticalmente */
+        flex-direction: column;
         min-height: 100vh;
         position: relative;
         width: 100%;
         transition: all var(--transition-base);
     }
     
-    /* User Details (Footer replacement) */
+    /* User Avatar (Sidebar replacement) */
     .user-avatar {
         width: 40px;
         height: 40px;
@@ -350,8 +396,7 @@ try {
         border-bottom: 1px solid var(--color-border);
         z-index: 900;
         backdrop-filter: blur(10px);
-        /* Usar fallback sólido si rgba falla, pero definir rgb variables arriba */
-        background-color: rgba(var(--color-card-rgb), 0.95); 
+        background-color: rgba(var(--color-card-rgb), 0.95);
         box-shadow: var(--shadow-sm);
     }
     
@@ -376,7 +421,9 @@ try {
         object-fit: contain;
     }
     
-
+    .mobile-toggle {
+        display: none;
+    }
     
     .header-controls {
         display: flex;
@@ -504,16 +551,51 @@ try {
     .main-content {
         flex: 1;
         padding: var(--space-lg);
-        /* Margin-left movido al contenedor padre */
         transition: all var(--transition-base);
         min-height: 100vh;
         background-color: transparent;
         width: 100%;
     }
     
+
+    
     /* ==========================================================================
-       COMPONENTES DE DASHBOARD
+       COMPONENTES DE DASHBOARD - ADAPTADOS PARA LABORATORIO
        ========================================================================== */
+    
+    /* Banner de bienvenida específico para laboratorio */
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+        color: white;
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        margin-bottom: var(--space-xl);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .welcome-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(30%, -30%);
+    }
+    
+    .welcome-banner h1 {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        margin-bottom: var(--space-sm);
+    }
+    
+    .welcome-banner p {
+        opacity: 0.9;
+        font-size: var(--font-size-lg);
+    }
     
     /* Tarjetas de estadísticas */
     .stats-grid {
@@ -600,6 +682,11 @@ try {
         color: var(--color-info);
     }
     
+    .stat-icon.danger {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+    
     .stat-change {
         display: flex;
         align-items: center;
@@ -613,7 +700,7 @@ try {
     }
     
     /* Secciones */
-    .billing-section {
+    .appointments-section {
         background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
@@ -622,7 +709,7 @@ try {
         transition: all var(--transition-base);
     }
     
-    .billing-section:hover {
+    .appointments-section:hover {
         box-shadow: var(--shadow-lg);
     }
     
@@ -671,23 +758,30 @@ try {
         color: white;
     }
     
-    /* Tablas */
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    .action-btn.secondary {
+        background: var(--color-surface);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
     }
     
-    .billing-table {
+    .action-btn.secondary:hover {
+        background: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+    }
+    
+    /* Tablas específicas para laboratorio */
+    .orders-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
     }
     
-    .billing-table thead {
+    .orders-table thead {
         background: var(--color-surface);
     }
     
-    .billing-table th {
+    .orders-table th {
         padding: var(--space-md);
         text-align: left;
         font-weight: 600;
@@ -696,19 +790,57 @@ try {
         white-space: nowrap;
     }
     
-    .billing-table td {
+    .orders-table td {
         padding: var(--space-md);
         border-bottom: 1px solid var(--color-border);
         vertical-align: middle;
     }
     
-    .billing-table tbody tr {
+    .orders-table tbody tr {
         transition: all var(--transition-base);
     }
     
-    .billing-table tbody tr:hover {
+    .orders-table tbody tr:hover {
         background: var(--color-surface);
         transform: translateX(4px);
+    }
+    
+    /* Badges de estado específicos para laboratorio */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-badge.pendiente {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+    
+    .status-badge.muestra {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+    }
+    
+    .status-badge.proceso {
+        background: rgba(124, 144, 219, 0.2);
+        color: #4f5b93;
+    }
+    
+    .status-badge.completada {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+    
+    .status-badge.validada {
+        background: rgba(var(--color-success-rgb), 0.2);
+        color: var(--color-success);
     }
     
     /* Celdas personalizadas */
@@ -747,18 +879,6 @@ try {
         font-size: var(--font-size-sm);
     }
     
-    .amount-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-xs);
-        padding: var(--space-xs) var(--space-sm);
-        background: var(--color-surface);
-        color: var(--color-text);
-        border-radius: var(--radius-sm);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-    }
-    
     /* Botones de acción */
     .action-buttons {
         display: flex;
@@ -784,30 +904,22 @@ try {
         box-shadow: var(--shadow-sm);
     }
     
-    .btn-icon.view:hover {
+    .btn-icon.edit:hover {
+        background: var(--color-warning);
+        color: white;
+        border-color: var(--color-warning);
+    }
+    
+    .btn-icon.pdf:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+    }
+    
+    .btn-icon.process:hover {
         background: var(--color-info);
         color: white;
         border-color: var(--color-info);
-    }
-    
-    .btn-icon.print:hover {
-        background: var(--color-success);
-        color: white;
-        border-color: var(--color-success);
-    }
-    
-    /* Estado vacío */
-    .empty-state {
-        text-align: center;
-        padding: var(--space-xl);
-        color: var(--color-text-secondary);
-    }
-    
-    .empty-icon {
-        font-size: 3rem;
-        color: var(--color-border);
-        margin-bottom: var(--space-md);
-        opacity: 0.5;
     }
     
     /* Grid de alertas */
@@ -856,6 +968,11 @@ try {
     .alert-icon.danger {
         background: rgba(var(--color-danger-rgb), 0.1);
         color: var(--color-danger);
+    }
+    
+    .alert-icon.info {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
     }
     
     .alert-title {
@@ -914,11 +1031,6 @@ try {
         color: var(--color-danger);
     }
     
-    .alert-badge.expired {
-        background: rgba(var(--color-danger-rgb), 0.1);
-        color: var(--color-danger);
-    }
-    
     .alert-item-details {
         display: flex;
         justify-content: space-between;
@@ -926,17 +1038,58 @@ try {
         color: var(--color-text-secondary);
     }
     
-    .no-alerts {
+    /* Estado vacío */
+    .empty-state {
         text-align: center;
-        padding: var(--space-lg);
+        padding: var(--space-xl);
         color: var(--color-text-secondary);
     }
     
-    .no-alerts-icon {
-        font-size: 2rem;
-        color: var(--color-success);
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--color-border);
         margin-bottom: var(--space-md);
         opacity: 0.5;
+    }
+    
+    /* Panel de pruebas populares */
+    .popular-tests {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+    }
+    
+    .test-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        transition: all var(--transition-base);
+    }
+    
+    .test-item:last-child {
+        border-bottom: none;
+    }
+    
+    .test-item:hover {
+        background: var(--color-surface);
+        transform: translateX(4px);
+    }
+    
+    .test-name {
+        font-weight: 500;
+        color: var(--color-text);
+    }
+    
+    .test-count {
+        font-weight: 600;
+        color: var(--color-primary);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
     }
     
     /* ==========================================================================
@@ -963,6 +1116,20 @@ try {
         }
     }
     
+    /* Tablets y pantallas medianas */
+    @media (max-width: 991px) {
+        .dashboard-container {
+            width: 100%;
+        }
+        
+        .main-content {
+            padding: var(--space-md);
+        }
+        
+        .mobile-toggle {
+            display: none;
+        }
+        
         .header-content {
             padding: var(--space-md);
         }
@@ -990,11 +1157,18 @@ try {
             width: 100%;
             justify-content: center;
         }
+        
+        .welcome-banner {
+            padding: var(--space-lg);
+        }
+        
+        .welcome-banner h1 {
+            font-size: var(--font-size-2xl);
+        }
     }
     
     /* Móviles */
     @media (max-width: 767px) {
-        
         .stats-grid {
             grid-template-columns: 1fr;
         }
@@ -1027,12 +1201,12 @@ try {
             padding: var(--space-sm);
         }
         
-        .billing-table {
+        .orders-table {
             font-size: var(--font-size-sm);
         }
         
-        .billing-table th,
-        .billing-table td {
+        .orders-table th,
+        .orders-table td {
             padding: var(--space-sm);
         }
         
@@ -1061,6 +1235,15 @@ try {
             height: 40px;
             font-size: 1.25rem;
         }
+        
+        .welcome-banner {
+            text-align: center;
+            padding: var(--space-lg);
+        }
+        
+        .welcome-banner::before {
+            display: none;
+        }
     }
     
     /* Móviles pequeños */
@@ -1074,7 +1257,7 @@ try {
         }
         
         .alert-card,
-        .billing-section {
+        .appointments-section {
             padding: var(--space-md);
         }
         
@@ -1091,6 +1274,11 @@ try {
             width: 28px;
             height: 28px;
             font-size: 0.875rem;
+        }
+        
+        .status-badge {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.5rem;
         }
     }
     
@@ -1217,20 +1405,14 @@ try {
         }
         
         .stat-card,
-        .billing-section,
+        .appointments-section,
         .alert-card {
             break-inside: avoid;
             border: 1px solid #ddd !important;
             box-shadow: none !important;
         }
-        
-        .billing-table th {
-            background: #f0f0f0 !important;
-            color: black !important;
-        }
     }
     </style>
-    
 </head>
 <body>
     <!-- Efecto de mármol animado -->
@@ -1241,6 +1423,16 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
+                <!-- Botón hamburguesa para móvil -->
+                <button class="mobile-toggle" id="mobileSidebarToggle" aria-label="Abrir menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <!-- Logo -->
+                <div class="brand-container">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                </div>
+                
                 <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
@@ -1258,7 +1450,7 @@ try {
                         </div>
                         <div class="header-details">
                             <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                            <span class="header-role">Laboratorio</span>
                         </div>
                     </div>
                     
@@ -1279,309 +1471,356 @@ try {
         
         <!-- Contenido Principal -->
         <main class="main-content">
-            <!-- Bienvenida personalizada -->
-            <div class="stat-card mb-4 animate-in">
-                <div class="stat-header">
-                    <div>
-                        <h2 class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
-                            <span id="greeting-text">Módulo de Cobros</span>
-                        </h2>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-cash-coin me-1"></i> Gestión de recaudación y recibos médicos
-                            <span class="mx-2">•</span>
-                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
-                            <span class="mx-2">•</span>
-                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
-                        </p>
-                    </div>
-                    <div class="d-none d-md-block">
-                        <i class="bi bi-cash-coin text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
-                    </div>
-                </div>
+            <!-- Banner de bienvenida -->
+            <div class="welcome-banner animate-in">
+                <h1>Laboratorio Clínico</h1>
+                <p>Gestión de órdenes y resultados de laboratorio</p>
             </div>
+            
+            <!-- Alertas importantes -->
+            <?php if ($ordenes_retrasadas > 0): ?>
+            <div class="alert-card mb-4 animate-in delay-1">
+                <div class="alert-header">
+                    <div class="alert-icon warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="alert-title">Órdenes con Retraso</h3>
+                </div>
+                <p class="text-muted mb-0">
+                    Hay <strong><?php echo $ordenes_retrasadas; ?></strong> órdenes con más de 2 días en estado "Pendiente".
+                    <a href="?filter=retraso" class="text-primary text-decoration-none ms-1">
+                        Revisar <i class="bi bi-arrow-right"></i>
+                    </a>
+                </p>
+            </div>
+            <?php endif; ?>
             
             <!-- Estadísticas principales -->
             <div class="stats-grid">
-                <!-- Cobros de hoy -->
+                <!-- Órdenes pendientes -->
                 <div class="stat-card animate-in delay-1">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-title">Cobros Hoy</div>
-                            <div class="stat-value"><?php echo $hoy_cobros; ?></div>
+                            <div class="stat-title">Órdenes Pendientes</div>
+                            <div class="stat-value"><?php echo $ordenes_pendientes; ?></div>
                         </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-cash-stack"></i>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-clock-history"></i>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-arrow-up-right"></i>
-                        <span>Registrados hoy</span>
+                    <div class="stat-change">
+                        <i class="bi bi-calendar-week"></i>
+                        <span>Esperando procesamiento</span>
                     </div>
                 </div>
                 
-                <!-- Total del mes -->
+                <!-- Muestras recibidas -->
                 <div class="stat-card animate-in delay-2">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-title">Total Mes</div>
-                            <div class="stat-value">Q<?php echo number_format($mes_total, 2); ?></div>
+                            <div class="stat-title">Muestras Recibidas</div>
+                            <div class="stat-value"><?php echo $muestras_recibidas; ?></div>
                         </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-currency-dollar"></i>
+                        <div class="stat-icon info">
+                            <i class="bi bi-droplet"></i>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-graph-up"></i>
-                        <span>Recaudación mensual</span>
+                    <div class="stat-change">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Listas para análisis</span>
                     </div>
                 </div>
                 
-                <!-- Total cobros -->
+                <!-- Por validar -->
                 <div class="stat-card animate-in delay-3">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-title">Total Cobros</div>
-                            <div class="stat-value"><?php echo $total_records; ?></div>
+                            <div class="stat-title">Por Validar</div>
+                            <div class="stat-value"><?php echo $pendientes_validar; ?></div>
                         </div>
-                        <div class="stat-icon info">
-                            <i class="bi bi-receipt"></i>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-clipboard-check"></i>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-archive"></i>
-                        <span>Registros totales</span>
+                    <div class="stat-change">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Esperando validación</span>
                     </div>
                 </div>
                 
-                <!-- Páginas -->
+                <!-- Completadas hoy -->
                 <div class="stat-card animate-in delay-4">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-title">Página</div>
-                            <div class="stat-value"><?php echo $page; ?>/<?php echo $total_pages; ?></div>
+                            <div class="stat-title">Completadas Hoy</div>
+                            <div class="stat-value"><?php echo $completadas_hoy; ?></div>
                         </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-file-text"></i>
+                        <div class="stat-icon success">
+                            <i class="bi bi-check-circle"></i>
                         </div>
                     </div>
                     <div class="stat-change positive">
-                        <i class="bi bi-collection"></i>
-                        <span>Paginación</span>
+                        <i class="bi bi-calendar-day"></i>
+                        <span><?php echo date('d/m/Y'); ?></span>
                     </div>
                 </div>
             </div>
             
-            <!-- Sección de cobros -->
-            <section class="billing-section animate-in delay-1">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-receipt-cutoff section-title-icon"></i>
-                        Registro de Cobros
-                    </h3>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#newBillingModal">
-                            <i class="bi bi-plus-lg"></i>
-                            Nuevo Cobro
-                        </button>
-                        <a href="export_cobros.php" class="action-btn secondary">
-                            <i class="bi bi-download"></i>
-                            Exportar
-                        </a>
-                    </div>
-                </div>
-                
-                <?php if (count($cobros) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="billing-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Monto</th>
-                                    <th>Fecha</th>
-                                    <th>ID Cobro</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($cobros as $cobro): ?>
-                                    <?php 
-                                    $patient_name = htmlspecialchars($cobro['nombre_paciente']);
-                                    $patient_initials = strtoupper(
-                                        substr(explode(' ', $cobro['nombre_paciente'])[0], 0, 1) . 
-                                        (isset(explode(' ', $cobro['nombre_paciente'])[1]) ? substr(explode(' ', $cobro['nombre_paciente'])[1], 0, 1) : '')
-                                    );
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="amount-badge">
-                                                <i class="bi bi-currency-dollar"></i>
-                                                Q<?php echo number_format($cobro['cantidad_consulta'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">#<?php echo str_pad($cobro['in_cobro'], 5, '0', STR_PAD_LEFT); ?></span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <a href="print_receipt.php?id=<?php echo $cobro['in_cobro']; ?>" 
-                                                   target="_blank" 
-                                                   class="btn-icon print" 
-                                                   title="Imprimir recibo">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                                <button type="button" 
-                                                        class="btn-icon view view-details" 
-                                                        data-id="<?php echo $cobro['in_cobro']; ?>"
-                                                        data-nombre="<?php echo htmlspecialchars($cobro['nombre_paciente']); ?>"
-                                                        data-monto="<?php echo $cobro['cantidad_consulta']; ?>"
-                                                        data-fecha="<?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>"
-                                                        title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Paginación -->
-                    <?php if ($total_pages > 1): ?>
-                    <nav class="mt-4">
-                        <ul class="pagination justify-content-center">
-                            <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                                <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                    <i class="bi bi-chevron-left"></i>
+            <!-- Panel de dos columnas: Órdenes y Pruebas Populares -->
+            <div class="row gap-4 mb-4">
+                <!-- Órdenes Recientes -->
+                <div class="col-lg-8">
+                    <section class="appointments-section animate-in delay-1">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-list-ul section-title-icon"></i>
+                                Órdenes Activas
+                            </h3>
+                            <div class="d-flex gap-2">
+                                <?php if ($user_type === 'admin'): ?>
+                                <a href="catalogo_pruebas.php" class="action-btn secondary">
+                                    <i class="bi bi-gear"></i>
+                                    Catálogo
                                 </a>
-                            </li>
-                            
-                            <?php 
-                            $range = 2;
-                            $start = max(1, $page - $range);
-                            $end = min($total_pages, $page + $range);
-                            
-                            if ($start > 1): ?>
-                                <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
-                                <?php if ($start > 2): ?>
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
                                 <?php endif; ?>
-                            <?php endif; ?>
-                            
-                            <?php for ($i = $start; $i <= $end; $i++): ?>
-                                <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                    <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                </li>
-                            <?php endfor; ?>
-                            
-                            <?php if ($end < $total_pages): ?>
-                                <?php if ($end < $total_pages - 1): ?>
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
-                                <?php endif; ?>
-                                <li class="page-item"><a class="page-link" href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a></li>
-                            <?php endif; ?>
-                            
-                            <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                                <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                    <i class="bi bi-chevron-right"></i>
+                                
+                                <?php if ($user_type === 'doc' || $user_type === 'admin'): ?>
+                                <a href="crear_orden.php" class="action-btn">
+                                    <i class="bi bi-plus-lg"></i>
+                                    Nueva Orden
                                 </a>
-                            </li>
-                        </ul>
-                    </nav>
-                    <?php endif; ?>
-                    
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-cash-coin"></i>
-                        </div>
-                        <h4 class="text-muted mb-2">No hay cobros registrados</h4>
-                        <p class="text-muted mb-3">Comience registrando un nuevo cobro</p>
-                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#newBillingModal">
-                            <i class="bi bi-plus-lg"></i>
-                            Registrar primer cobro
-                        </button>
-                    </div>
-                <?php endif; ?>
-            </section>
-        </main>
-    </div>
-    
-    <!-- Modal para nuevo cobro -->
-    <div class="modal fade" id="newBillingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-plus-circle text-primary"></i>
-                        Nuevo Cobro
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="newBillingForm">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Paciente</label>
-                            <select class="form-control" id="paciente" name="paciente" required>
-                                <option value="">Seleccionar paciente...</option>
-                                <?php foreach ($pacientes as $paciente): ?>
-                                <option value="<?php echo $paciente['id_paciente']; ?>">
-                                    <?php echo htmlspecialchars($paciente['nombre_completo']); ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label class="form-label">Cantidad a Cobrar (Q)</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Q</span>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="cantidad" 
-                                       name="cantidad" 
-                                       min="0.01" 
-                                       step="0.01" 
-                                       placeholder="0.00" 
-                                       required>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
-                        <div class="form-group mb-3">
-                            <label class="form-label">Fecha de Consulta</label>
-                            <input type="date" 
-                                   class="form-control" 
-                                   id="fecha_consulta" 
-                                   name="fecha_consulta" 
-                                   value="<?php echo date('Y-m-d'); ?>" 
-                                   required>
-                        </div>
-                    </form>
+                        <?php if (count($ordenes_recientes) > 0): ?>
+                            <div class="table-responsive">
+                                <table class="orders-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Orden #</th>
+                                            <th>Paciente</th>
+                                            <th>Doctor</th>
+                                            <th>Fecha</th>
+                                            <th>Pruebas</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($ordenes_recientes as $orden): ?>
+                                            <?php 
+                                            $patient_name = htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']);
+                                            $patient_initials = strtoupper(
+                                                substr($orden['nombre'], 0, 1) . 
+                                                substr($orden['apellido'], 0, 1)
+                                            );
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?php echo htmlspecialchars($orden['numero_orden']); ?></strong>
+                                                    <br>
+                                                    <small class="text-muted">ID: <?php echo $orden['id_orden']; ?></small>
+                                                </td>
+                                                <td>
+                                                    <div class="patient-cell">
+                                                        <div class="patient-avatar">
+                                                            <?php echo $patient_initials; ?>
+                                                        </div>
+                                                        <div class="patient-info">
+                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                            <div class="patient-contact">
+                                                                <?php echo $orden['edad']; ?> años - <?php echo htmlspecialchars($orden['genero']); ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <?php if ($orden['doctor_nombre']): ?>
+                                                        <small class="d-block">Dr. <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php echo date('d/m/Y', strtotime($orden['fecha_orden'])); ?>
+                                                    <br>
+                                                    <small class="text-muted"><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $estado_class = '';
+                                                    $estado_text = '';
+                                                    switch ($orden['estado']) {
+                                                        case 'Pendiente':
+                                                            $estado_class = 'pendiente';
+                                                            $estado_text = 'Pendiente';
+                                                            break;
+                                                        case 'Muestra_Recibida':
+                                                            $estado_class = 'muestra';
+                                                            $estado_text = 'Muestra Recibida';
+                                                            break;
+                                                        case 'En_Proceso':
+                                                            $estado_class = 'proceso';
+                                                            $estado_text = 'En Proceso';
+                                                            break;
+                                                        case 'Completada':
+                                                            $estado_class = 'completada';
+                                                            $estado_text = 'Completada';
+                                                            break;
+                                                        case 'Validada':
+                                                            $estado_class = 'validada';
+                                                            $estado_text = 'Validada';
+                                                            break;
+                                                    }
+                                                    ?>
+                                                    <span class="status-badge <?php echo $estado_class; ?>">
+                                                        <?php echo $estado_text; ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <?php if ($orden['estado'] === 'Validada' || $orden['estado'] === 'Completada'): ?>
+                                                            <a href="imprimir_resultados.php?id=<?php echo $orden['id_orden']; ?>" 
+                                                               class="btn-icon pdf" 
+                                                               title="Ver Resultados PDF"
+                                                               target="_blank">
+                                                                <i class="bi bi-file-earmark-pdf"></i>
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <a href="procesar_orden.php?id=<?php echo $orden['id_orden']; ?>" 
+                                                               class="btn-icon process" 
+                                                               title="Procesar orden">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                            </a>
+                                                        <?php endif; ?>
+                                                        <a href="ver_orden.php?id=<?php echo $orden['id_orden']; ?>" 
+                                                           class="btn-icon" 
+                                                           title="Ver detalles">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                                <h4 class="text-muted mb-2">No hay órdenes activas</h4>
+                                <p class="text-muted mb-3">Las órdenes pendientes aparecerán aquí</p>
+                                <a href="crear_orden.php" class="action-btn">
+                                    <i class="bi bi-plus-lg"></i>
+                                    Crear Primera Orden
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </section>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="action-btn" id="saveBillingBtn">Guardar Cobro</button>
+                
+                <!-- Pruebas Populares y Acciones Rápidas -->
+                <div class="col-lg-4">
+                    <!-- Pruebas más solicitadas -->
+                    <section class="popular-tests animate-in delay-2">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-graph-up-arrow section-title-icon"></i>
+                                Pruebas del Mes
+                            </h3>
+                        </div>
+                        
+                        <?php if (count($pruebas_populares) > 0): ?>
+                            <div class="test-list">
+                                <?php foreach ($pruebas_populares as $prueba): ?>
+                                    <div class="test-item">
+                                        <span class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></span>
+                                        <span class="test-count"><?php echo $prueba['cantidad']; ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty-state py-3">
+                                <i class="bi bi-bar-chart text-muted"></i>
+                                <p class="text-muted mb-0 mt-2">No hay datos del mes</p>
+                            </div>
+                        <?php endif; ?>
+                    </section>
+                    
+                    <!-- Acciones rápidas -->
+                    <div class="stat-card mt-4 animate-in delay-3">
+                        <div class="stat-header">
+                            <h3 class="section-title mb-0">
+                                <i class="bi bi-lightning-charge section-title-icon"></i>
+                                Acciones Rápidas
+                            </h3>
+                        </div>
+                        <div class="d-flex flex-column gap-2 mt-3">
+                            <a href="buscar_paciente.php" class="action-btn secondary">
+                                <i class="bi bi-search"></i>
+                                Buscar Paciente
+                            </a>
+                            <a href="registrar_muestra.php" class="action-btn secondary">
+                                <i class="bi bi-droplet"></i>
+                                Registrar Muestra
+                            </a>
+                            <a href="reportes_diarios.php" class="action-btn secondary">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Reporte Diario
+                            </a>
+                            <?php if ($user_type === 'admin'): ?>
+                            <a href="configuracion.php" class="action-btn secondary">
+                                <i class="bi bi-sliders"></i>
+                                Configurar Laboratorio
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+            
+            <!-- Resumen del mes -->
+            <div class="stat-card animate-in delay-4">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-title">Resumen del Mes</div>
+                        <div class="stat-value"><?php echo $ordenes_mes; ?> Órdenes</div>
+                    </div>
+                    <div class="stat-icon primary">
+                        <i class="bi bi-calendar-month"></i>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3 text-center">
+                        <div class="text-primary fw-bold fs-4"><?php echo $ordenes_pendientes; ?></div>
+                        <div class="text-muted">Pendientes</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-info fw-bold fs-4"><?php echo $muestras_recibidas; ?></div>
+                        <div class="text-muted">Muestras</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-warning fw-bold fs-4"><?php echo $pendientes_validar; ?></div>
+                        <div class="text-muted">Por Validar</div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="text-success fw-bold fs-4"><?php echo $completadas_hoy; ?></div>
+                        <div class="text-muted">Hoy</div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
     
     <!-- JavaScript Optimizado -->
     <script>
-    // Módulo de Cobros Reingenierizado - Centro Médico Herrera Saenz
+    // Dashboard de Laboratorio Reingenierizado
     
     (function() {
         'use strict';
@@ -1591,6 +1830,7 @@ try {
         // ==========================================================================
         const CONFIG = {
             themeKey: 'dashboard-theme',
+
             transitionDuration: 300,
             animationDelay: 100
         };
@@ -1601,11 +1841,7 @@ try {
         const DOM = {
             html: document.documentElement,
             body: document.body,
-            themeSwitch: document.getElementById('themeSwitch'),
-            greetingElement: document.getElementById('greeting-text'),
-            currentTimeElement: document.getElementById('current-time'),
-            saveBillingBtn: document.getElementById('saveBillingBtn'),
-            newBillingForm: document.getElementById('newBillingForm')
+            themeSwitch: document.getElementById('themeSwitch')
         };
         
         // ==========================================================================
@@ -1619,15 +1855,12 @@ try {
             }
             
             getInitialTheme() {
-                // 1. Verificar preferencia guardada
                 const savedTheme = localStorage.getItem(CONFIG.themeKey);
                 if (savedTheme) return savedTheme;
                 
-                // 2. Verificar preferencia del sistema
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 if (prefersDark) return 'dark';
                 
-                // 3. Tema por defecto (día)
                 return 'light';
             }
             
@@ -1635,7 +1868,6 @@ try {
                 DOM.html.setAttribute('data-theme', theme);
                 localStorage.setItem(CONFIG.themeKey, theme);
                 
-                // Actualizar meta tag para navegadores móviles
                 const metaTheme = document.querySelector('meta[name="theme-color"]');
                 if (metaTheme) {
                     metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
@@ -1647,7 +1879,6 @@ try {
                 this.theme = newTheme;
                 this.applyTheme(newTheme);
                 
-                // Animación sutil en el botón
                 if (DOM.themeSwitch) {
                     DOM.themeSwitch.style.transform = 'rotate(180deg)';
                     setTimeout(() => {
@@ -1661,7 +1892,6 @@ try {
                     DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
                 }
                 
-                // Escuchar cambios en preferencias del sistema
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
                     if (!localStorage.getItem(CONFIG.themeKey)) {
                         this.theme = e.matches ? 'dark' : 'light';
@@ -1676,154 +1906,12 @@ try {
         // ==========================================================================
         class DynamicComponents {
             constructor() {
-                this.setupGreeting();
-                this.setupClock();
-                this.setupBillingHandlers();
                 this.setupAnimations();
-                this.setupModalDetails();
-            }
-            
-            setupGreeting() {
-                if (!DOM.greetingElement) return;
-                
-                const hour = new Date().getHours();
-                let greeting = '';
-                
-                if (hour < 12) {
-                    greeting = 'Buenos días';
-                } else if (hour < 19) {
-                    greeting = 'Buenas tardes';
-                } else {
-                    greeting = 'Buenas noches';
-                }
-                
-                DOM.greetingElement.textContent = greeting;
-            }
-            
-            setupClock() {
-                if (!DOM.currentTimeElement) return;
-                
-                const updateClock = () => {
-                    const now = new Date();
-                    const timeString = now.toLocaleTimeString('es-GT', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false
-                    });
-                    DOM.currentTimeElement.textContent = timeString;
-                };
-                
-                updateClock();
-                setInterval(updateClock, 60000);
-            }
-            
-            setupBillingHandlers() {
-                // Guardar nuevo cobro
-                if (DOM.saveBillingBtn) {
-                    DOM.saveBillingBtn.addEventListener('click', async () => {
-                        const form = DOM.newBillingForm;
-                        
-                        // Validar formulario
-                        if (!form.checkValidity()) {
-                            form.reportValidity();
-                            return;
-                        }
-                        
-                        const formData = new FormData(form);
-                        const data = Object.fromEntries(formData.entries());
-                        
-                        // Mostrar indicador de carga
-                        const originalText = DOM.saveBillingBtn.innerHTML;
-                        DOM.saveBillingBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Guardando...';
-                        DOM.saveBillingBtn.disabled = true;
-                        
-                        try {
-                            const response = await fetch('save_billing.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: new URLSearchParams(data)
-                            });
-                            
-                            const result = await response.json();
-                            
-                            if (result.status === 'success') {
-                                // Mostrar notificación de éxito
-                                Swal.fire({
-                                    title: '¡Éxito!',
-                                    text: 'Cobro guardado correctamente',
-                                    icon: 'success',
-                                    confirmButtonColor: 'var(--color-primary)',
-                                    background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
-                                    color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#e2e8f0' : '#1a1a1a'
-                                }).then(() => {
-                                    // Cerrar modal y recargar
-                                    const modal = bootstrap.Modal.getInstance(document.getElementById('newBillingModal'));
-                                    modal.hide();
-                                    window.location.reload();
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error',
-                                    text: result.message || 'Error al guardar el cobro',
-                                    icon: 'error',
-                                    confirmButtonColor: 'var(--color-primary)'
-                                });
-                            }
-                        } catch (error) {
-                            console.error('Error:', error);
-                            Swal.fire({
-                                title: 'Error',
-                                text: 'Error de conexión con el servidor',
-                                icon: 'error',
-                                confirmButtonColor: 'var(--color-primary)'
-                            });
-                        } finally {
-                            DOM.saveBillingBtn.innerHTML = originalText;
-                            DOM.saveBillingBtn.disabled = false;
-                        }
-                    });
-                }
-            }
-            
-            setupModalDetails() {
-                // Mostrar detalles en modal
-                document.querySelectorAll('.view-details').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.getAttribute('data-id');
-                        const nombre = this.getAttribute('data-nombre');
-                        const monto = this.getAttribute('data-monto');
-                        const fecha = this.getAttribute('data-fecha');
-                        
-                        Swal.fire({
-                            title: 'Detalles del Cobro',
-                            html: `
-                                <div class="text-start">
-                                    <p><strong>ID:</strong> #${id.toString().padStart(5, '0')}</p>
-                                    <p><strong>Paciente:</strong> ${nombre}</p>
-                                    <p><strong>Monto:</strong> Q${parseFloat(monto).toFixed(2)}</p>
-                                    <p><strong>Fecha:</strong> ${fecha}</p>
-                                </div>
-                            `,
-                            icon: 'info',
-                            showCancelButton: true,
-                            confirmButtonText: 'Imprimir Recibo',
-                            cancelButtonText: 'Cerrar',
-                            confirmButtonColor: 'var(--color-primary)',
-                            background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
-                            color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#e2e8f0' : '#1a1a1a'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.open(`print_receipt.php?id=${id}`, '_blank');
-                            }
-                        });
-                    });
-                });
+                this.setupTableInteractions();
+                this.setupQuickActions();
             }
             
             setupAnimations() {
-                // Animar elementos al cargar
                 const observerOptions = {
                     root: null,
                     rootMargin: '0px',
@@ -1839,25 +1927,37 @@ try {
                     });
                 }, observerOptions);
                 
-                // Observar elementos con clase de animación
-                document.querySelectorAll('.stat-card, .billing-section').forEach(el => {
+                document.querySelectorAll('.stat-card, .appointments-section, .alert-card, .popular-tests').forEach(el => {
                     observer.observe(el);
                 });
             }
-        }
-        
-        // ==========================================================================
-        // OPTIMIZACIONES DE RENDIMIENTO
-        // ==========================================================================
-        class PerformanceOptimizer {
-            constructor() {
-                this.setupAnalytics();
+            
+            setupTableInteractions() {
+                const tableRows = document.querySelectorAll('.orders-table tbody tr');
+                tableRows.forEach(row => {
+                    row.addEventListener('click', (e) => {
+                        // Solo si no se hizo clic en un botón de acción
+                        if (!e.target.closest('.btn-icon') && !e.target.closest('a')) {
+                            const orderId = row.querySelector('td:first-child small')?.textContent?.replace('ID: ', '');
+                            if (orderId) {
+                                window.location.href = `ver_orden.php?id=${orderId}`;
+                            }
+                        }
+                    });
+                });
             }
             
-            setupAnalytics() {
-                console.log('Módulo de Cobros cargado - Usuario: <?php echo htmlspecialchars($user_name); ?>');
-                console.log('Total cobros: <?php echo $total_records; ?>');
-                console.log('Recaudación mensual: Q<?php echo number_format($mes_total, 2); ?>');
+            setupQuickActions() {
+                // Agregar efecto hover a las acciones rápidas
+                const quickActions = document.querySelectorAll('.action-btn.secondary');
+                quickActions.forEach(btn => {
+                    btn.addEventListener('mouseenter', () => {
+                        btn.style.transform = 'translateY(-2px)';
+                    });
+                    btn.addEventListener('mouseleave', () => {
+                        btn.style.transform = 'translateY(0)';
+                    });
+                });
             }
         }
         
@@ -1865,43 +1965,17 @@ try {
         // INICIALIZACIÓN DE LA APLICACIÓN
         // ==========================================================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Inicializar componentes
             const themeManager = new ThemeManager();
             const dynamicComponents = new DynamicComponents();
-            const performanceOptimizer = new PerformanceOptimizer();
             
-            // Exponer APIs necesarias globalmente
-            window.cobrosModule = {
+            window.laboratoryDashboard = {
                 theme: themeManager,
                 components: dynamicComponents
             };
             
-            // Log de inicialización
-            console.log('Módulo de Cobros CMS inicializado correctamente');
+            console.log('Dashboard de Laboratorio inicializado');
             console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
             console.log('Tema: ' + themeManager.theme);
-        });
-        
-        // ==========================================================================
-        // MANEJO DE ERRORES GLOBALES
-        // ==========================================================================
-        window.addEventListener('error', (event) => {
-            console.error('Error en módulo de cobros:', event.error);
-            
-            // En producción, enviar error al servidor
-            if (window.location.hostname !== 'localhost') {
-                const errorData = {
-                    message: event.message,
-                    source: event.filename,
-                    lineno: event.lineno,
-                    colno: event.colno,
-                    user: '<?php echo htmlspecialchars($user_name); ?>',
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('Error reportado:', errorData);
-            }
         });
         
         // ==========================================================================
@@ -1911,22 +1985,24 @@ try {
             NodeList.prototype.forEach = Array.prototype.forEach;
         }
         
-        if (!Element.prototype.matches) {
-            Element.prototype.matches = 
-                Element.prototype.matchesSelector || 
-                Element.prototype.mozMatchesSelector ||
-                Element.prototype.msMatchesSelector || 
-                Element.prototype.oMatchesSelector || 
-                Element.prototype.webkitMatchesSelector ||
-                function(s) {
-                    const matches = (this.document || this.ownerDocument).querySelectorAll(s);
-                    let i = matches.length;
-                    while (--i >= 0 && matches.item(i) !== this) {}
-                    return i > -1;
-                };
-        }
-        
     })();
+    
+    // Efectos de carga para formularios
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Procesando...';
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            }
+        });
+    });
     
     // Estilos para spinner
     const style = document.createElement('style');
@@ -1939,55 +2015,16 @@ try {
             to { transform: rotate(360deg); }
         }
         
-        /* Estilos para modal */
-        .modal-content {
-            background-color: var(--color-card);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+        /* Efectos adicionales para laboratorio */
+        .orders-table tbody tr {
+            cursor: pointer;
         }
         
-        .modal-header {
-            border-bottom: 1px solid var(--color-border);
-        }
-        
-        .modal-footer {
-            border-top: 1px solid var(--color-border);
-        }
-        
-        .btn-close {
-            filter: var(--data-theme) === 'dark' ? 'invert(1)' : 'none';
-        }
-        
-        .form-control {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
-        }
-        
-        .form-control:focus {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25);
-        }
-        
-        .input-group-text {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+        .orders-table tbody tr:hover {
+            background-color: rgba(var(--color-primary-rgb), 0.05);
         }
     `;
     document.head.appendChild(style);
-    
-    // Inicializar Bootstrap modales si están disponibles
-    if (typeof bootstrap !== 'undefined') {
-        // Inicializar todos los modales
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            new bootstrap.Modal(modal);
-        });
-    }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
