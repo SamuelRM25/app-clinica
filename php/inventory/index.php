@@ -99,6 +99,10 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- Bootstrap CSS (Required for Modals) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
     /* ==========================================================================
@@ -2257,12 +2261,7 @@ try {
             defaultDate.setFullYear(defaultDate.getFullYear() + 1);
             document.getElementById('receive_fecha_vencimiento').valueAsDate = defaultDate;
             
-            // Mostrar modal (si se usa Bootstrap)
-            const modalElement = document.getElementById('receiveMedicineModal');
-            if (modalElement && typeof bootstrap !== 'undefined') {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            }
+            // Modales se inicializan automáticamente vía data-attributes
         };
         
         window.submitReceive = function() {
@@ -2438,6 +2437,11 @@ try {
     `;
     document.head.appendChild(style);
     </script>
+    
+    <!-- jQuery (required for Bootstrap modals) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

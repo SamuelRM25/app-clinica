@@ -11,7 +11,7 @@ try {
     $conn = $database->getConnection();
     
     // Fetch all available tests grouped by category for selection
-    $stmt = $conn->query("SELECT * FROM catalogo_pruebas ORDER BY categoria, nombre_prueba");
+    $stmt = $conn->query("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, notas, precio, tiempo_procesamiento_horas, muestra_requerida FROM catalogo_pruebas ORDER BY categoria, nombre_prueba");
     $catalogo = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $pruebas_por_categoria = [];
@@ -1019,7 +1019,7 @@ try {
                                                         </div>
                                                         <div class="test-selection-details">
                                                             <span class="test-selection-price">
-                                                                Q<?php echo number_format($prueba['price'] ?? 0, 2); ?>
+                                                                Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?>
                                                             </span>
                                                             <span class="test-selection-time">
                                                                 <i class="bi bi-clock"></i> <?php echo $prueba['tiempo_procesamiento_horas']; ?>h
@@ -1206,36 +1206,58 @@ try {
             }
             
             setupSelect2() {
-                $('#id_paciente').select2({
-                    theme: 'default',
-                    placeholder: 'Buscar paciente por nombre, apellido o DPI...',
-                    minimumInputLength: 2,
-                    ajax: {
-                        url: '../patients/search_patients.php',
-                        dataType: 'json',
-                        delay: 250,
-                        data: function(params) {
-                            return {
-                                q: params.term,
-                                page: params.page || 1
-                            };
+                // Configurar Select2 para búsqueda de pacientes
+                if ($('#id_paciente').length) {
+                    $('#id_paciente').select2({
+                        placeholder: 'Buscar paciente por nombre, apellido o DPI...',
+                        allowClear: true,
+                        minimumInputLength: 2,
+                        language: {
+                            inputTooShort: function() {
+                                return 'Escriba al menos 2 caracteres para buscar';
+                            },
+                            searching: function() {
+                                return 'Buscando pacientes...';
+                            },
+                            noResults: function() {
+                                return 'No se encontraron pacientes';
+                            }
                         },
-                        processResults: function(data) {
-                            return {
-                                results: data.map(p => ({
-                                    id: p.id_paciente,
-                                    text: `${p.nombre} ${p.apellido} (${p.dpi || 'Sin DPI'}) - ${p.fecha_nacimiento ? calcularEdad(p.fecha_nacimiento) + ' años' : 'Edad no disponible'}`
-                                }))
-                            };
+                        ajax: {
+                            url: 'api/search_patients.php',
+                            dataType: 'json',
+                            delay: 250,
+                            data: function(params) {
+                                return {
+                                    q: params.term
+                                };
+                            },
+                            processResults: function(data) {
+                                if (!data.success) {
+                                    console.error('Error al buscar pacientes:', data.message);
+                                    return { results: [] };
+                                }
+                                
+                                return {
+                                    results: data.results.map(function(p) {
+                                        return {
+                                            id: p.id,
+                                            text: p.label,
+                                            data: p
+                                        };
+                                    })
+                                };
+                            },
+                            cache: true
                         }
-                    }
-                });
-                
-                $('#id_doctor').select2({
-                    theme: 'default',
-                    placeholder: 'Seleccionar doctor...',
-                    allowClear: true
-                });
+                    });
+                    
+                    $('#id_doctor').select2({
+                        theme: 'default',
+                        placeholder: 'Seleccionar doctor...',
+                        allowClear: true
+                    });
+                }
             }
             
             setupFormValidation() {
@@ -1356,7 +1378,7 @@ try {
             // Agregar prueba
             selectedTests.push({
                 ...testData,
-                precio: parseFloat(testData.price)
+                precio: parseFloat(testData.precio || testData.price || 0)
             });
             card.classList.add('selected');
             checkbox.checked = true;

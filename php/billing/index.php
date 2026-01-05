@@ -94,6 +94,9 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- Bootstrap CSS (Required for Modals) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -1979,15 +1982,14 @@ try {
     `;
     document.head.appendChild(style);
     
-    // Inicializar Bootstrap modales si están disponibles
-    if (typeof bootstrap !== 'undefined') {
-        // Inicializar todos los modales
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            new bootstrap.Modal(modal);
-        });
-    }
+    // Modales se inicializan automáticamente vía data-attributes en Bootstrap 5
+    // Eliminamos la inicialización manual para evitar conflictos
     </script>
+    
+    <!-- jQuery (required for Bootstrap modals) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

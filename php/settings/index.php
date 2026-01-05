@@ -226,12 +226,6 @@ try {
         to { opacity: 1; transform: translateY(0); }
     }
     </style>
-</head>
-<body>
-    <?php 
-    $active_page = 'settings';
-    include_once '../../includes/sidebar.php'; 
-    ?>
 
     <div class="settings-container">
         <header class="d-flex justify-content-between align-items-center mb-4">

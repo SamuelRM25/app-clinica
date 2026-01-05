@@ -119,6 +119,9 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- Bootstrap CSS (Required for Modals) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -1010,8 +1013,86 @@ try {
     }
     
     .badge-danger {
-        background: var(--color-error);
+        background: var(--color-danger);
         color: white;
+    }
+
+    /* Patient/Provider Cells in Tables */
+    .patient-cell {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        background: transparent !important;
+        border: none !important;
+    }
+    
+    .patient-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50% !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    
+    .patient-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        background: transparent !important;
+    }
+    
+    .patient-name {
+        font-weight: 500;
+        color: var(--color-text);
+        font-size: var(--font-size-sm);
+    }
+
+    /* Action Buttons in Tables */
+    .action-buttons {
+        display: flex;
+        gap: var(--space-sm);
+    }
+    
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--color-border);
+        background: var(--color-card);
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        transition: all var(--transition-base);
+    }
+    
+    .btn-icon:hover {
+        background: var(--color-surface);
+        color: var(--color-primary);
+        border-color: var(--color-primary);
+        transform: translateY(-2px);
+    }
+    
+    .btn-icon.history:hover {
+        color: var(--color-info);
+        border-color: var(--color-info);
+    }
+    
+    .btn-icon.edit:hover {
+        color: var(--color-success);
+        border-color: var(--color-success);
+    }
+    
+    .btn-icon.delete:hover {
+        color: var(--color-danger);
+        border-color: var(--color-danger);
     }
     
     .badge-info {
@@ -2047,6 +2128,11 @@ try {
     </div>
     
     <!-- Bootstrap JS -->
+    
+    <!-- jQuery (required for Bootstrap modals) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- JavaScript Optimizado -->

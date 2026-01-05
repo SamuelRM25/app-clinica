@@ -84,7 +84,7 @@ try {
         FROM detalle_ventas dv
         JOIN ventas v ON dv.id_venta = v.id_venta
         JOIN inventario i ON dv.id_inventario = i.id_inventario
-        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id_item
+        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
         LEFT JOIN compras c ON i.id_purchase_item = c.id_compras
         WHERE v.fecha_venta BETWEEN ? AND ?
     ");
@@ -174,9 +174,21 @@ try {
     // Título de la página
     $page_title = "Reportes - Centro Médico Herrera Saenz";
     
+} catch (PDOException $e) {
+    // Error específico de base de datos
+    error_log("Error DB en módulo de reportes: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    // Mostrar mensaje amigable al usuario
+    $error_message = "Error al conectar con la base de datos. Por favor, contacte al administrador.";
+    if ($_SESSION['tipoUsuario'] === 'admin') {
+        $error_message .= "<br><small>Detalles técnicos: " . htmlspecialchars($e->getMessage()) . "</small>";
+    }
+    die($error_message);
 } catch (Exception $e) {
-    // Manejo de errores
-    error_log("Error en módulo de reportes: " . $e->getMessage());
+    // Otros errores generales
+    error_log("Error general en módulo de reportes: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     die("Error al cargar los reportes. Por favor, contacte al administrador.");
 }
 ?>
