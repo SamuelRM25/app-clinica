@@ -9,8 +9,8 @@ require_once '../../includes/functions.php';
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
 
-// Establecer header JSON
-header('Content-Type: application/json');
+// Establecer header JSON - REMOVED for redirection handling
+// header('Content-Type: application/json');
 
 try {
     // Verificar sesión
@@ -31,7 +31,7 @@ try {
     $fecha_procedimiento = $_POST['fecha_procedimiento'] ?? null;
 
     // Filtrar procedimientos vacíos
-    $procedimientos_filtrados = array_filter($procedimientos_array, function($value) {
+    $procedimientos_filtrados = array_filter($procedimientos_array, function ($value) {
         return !empty(trim($value));
     });
 
@@ -73,31 +73,24 @@ try {
     $stmt->bindParam(':cobro', $cobro);
     $stmt->bindParam(':fecha_procedimiento', $fecha_procedimiento);
     $stmt->bindParam(':usuario', $_SESSION['nombre']);
-    
+
     $stmt->execute();
 
     // Limpiar buffer y enviar respuesta exitosa
     ob_clean();
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Procedimiento registrado exitosamente',
-        'id' => $conn->lastInsertId()
-    ]);
+    header("Location: index.php?status=success&message=" . urlencode("Procedimiento registrado exitosamente"));
+    exit;
 
 } catch (PDOException $e) {
     // Error de base de datos
     ob_clean();
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Error al guardar en la base de datos: ' . $e->getMessage()
-    ]);
+    header("Location: index.php?status=error&message=" . urlencode("Error al guardar en la base de datos: " . $e->getMessage()));
+    exit;
 } catch (Exception $e) {
     // Otros errores
     ob_clean();
-    echo json_encode([
-        'status' => 'error',
-        'message' => $e->getMessage()
-    ]);
+    header("Location: index.php?status=error&message=" . urlencode($e->getMessage()));
+    exit;
 }
 
 // Finalizar buffer y enviar
