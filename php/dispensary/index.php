@@ -38,7 +38,7 @@ try {
 
     // Obtener items de inventario para venta, restando items reservados
     $stmt = $conn->prepare("
-        SELECT i.id_inventario, i.nom_medicamento, i.mol_medicamento, 
+        SELECT i.id_inventario, i.codigo_barras, i.nom_medicamento, i.mol_medicamento, 
                i.presentacion_med, i.casa_farmaceutica, i.cantidad_med,
                (i.cantidad_med - COALESCE((SELECT SUM(cantidad) FROM reservas_inventario WHERE id_inventario = i.id_inventario), 0)) as disponible,
                ph.document_type
@@ -661,21 +661,48 @@ try {
             margin-bottom: var(--space-lg);
         }
 
-        .search-input {
-            width: 100%;
-            padding: var(--space-md) var(--space-lg) var(--space-md) 3rem;
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
+        /* Enhanced Search Styling */
+        .search-container .input-group {
             background: var(--color-surface);
-            color: var(--color-text);
-            font-size: var(--font-size-base);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
             transition: all var(--transition-base);
+            padding: 4px; /* Space for inner float */
+            box-shadow: var(--shadow-sm);
         }
 
-        .search-input:focus {
-            outline: none;
+        .search-container .input-group:focus-within {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.25);
+            box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.1);
+            transform: translateY(-1px);
+        }
+
+        .search-container .input-group-text {
+            background: transparent;
+            border: none;
+            color: var(--color-primary);
+            font-size: 1.2rem;
+            padding-left: var(--space-md);
+        }
+
+        .search-container .form-control {
+            border: none;
+            background: transparent;
+            padding: var(--space-md);
+            font-size: 1.05rem;
+            color: var(--color-text);
+            flex: 1;
+            width: 100%;
+        }
+
+        .search-container .form-control:focus {
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .search-container .form-control::placeholder {
+            color: var(--color-text-secondary);
+            opacity: 0.7;
         }
 
         .search-results {
@@ -1364,8 +1391,13 @@ try {
 
                     <!-- Búsqueda -->
                     <div class="search-container">
-                        <input type="text" class="search-input" id="searchMedication"
-                            placeholder="Escriba el nombre o molécula del medicamento..." autocomplete="off">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="bi bi-upc-scan text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-2" id="searchMedication"
+                                placeholder="Escanee código o busque por nombre/molécula..." autocomplete="off">
+                        </div>
                         <div class="search-results" id="searchResults"></div>
                     </div>
 
@@ -1671,8 +1703,21 @@ try {
                     const term = searchTerm.toLowerCase();
                     const results = currentInventory.filter(item =>
                         item.nom_medicamento.toLowerCase().includes(term) ||
-                        item.mol_medicamento.toLowerCase().includes(term)
+                        item.mol_medicamento.toLowerCase().includes(term) ||
+                        (item.codigo_barras && item.codigo_barras.toLowerCase().includes(term))
                     ).slice(0, 10);
+
+                    // Check for exact barcode match
+                    const exactBarcodeMatch = currentInventory.find(item =>
+                        item.codigo_barras && item.codigo_barras.toLowerCase() === term
+                    );
+
+                    if (exactBarcodeMatch) {
+                        this.selectProduct(exactBarcodeMatch);
+                        DOM.searchResults.style.display = 'none';
+                        DOM.searchMedication.value = ''; // Clear after scan
+                        return;
+                    }
 
                     if (results.length > 0) {
                         DOM.searchResults.style.display = 'block';
