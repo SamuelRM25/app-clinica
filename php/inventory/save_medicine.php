@@ -14,16 +14,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $database = new Database();
         $conn = $database->getConnection();
 
-        $stmt = $conn->prepare("INSERT INTO inventario (nom_medicamento, mol_medicamento, presentacion_med, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        
+        $stmt = $conn->prepare("INSERT INTO inventario (codigo_barras, nom_medicamento, mol_medicamento, presentacion_med, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento, precio_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
         $result = $stmt->execute([
+            $_POST['codigo_barras'] ?? null,
             $_POST['nom_medicamento'],
             $_POST['mol_medicamento'],
             $_POST['presentacion_med'],
             $_POST['casa_farmaceutica'],
             $_POST['cantidad_med'],
             $_POST['fecha_adquisicion'],
-            $_POST['fecha_vencimiento']
+            $_POST['fecha_vencimiento'],
+            $_POST['precio_venta'] ?? 0.00
         ]);
 
         if ($result) {
@@ -38,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['inventory_message'] = 'Error: ' . $e->getMessage();
         $_SESSION['inventory_status'] = 'error';
     }
-    
+
     // Redirect back to inventory page
     header('Location: index.php');
     exit;
