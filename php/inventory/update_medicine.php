@@ -11,16 +11,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
         $conn = $database->getConnection();
 
         $stmt = $conn->prepare("UPDATE inventario SET 
+                                codigo_barras = ?,
                                 nom_medicamento = ?, 
                                 mol_medicamento = ?, 
                                 presentacion_med = ?, 
                                 casa_farmaceutica = ?, 
                                 cantidad_med = ?, 
                                 fecha_adquisicion = ?, 
-                                fecha_vencimiento = ? 
+                                fecha_vencimiento = ?,
+                                precio_venta = ?
                                 WHERE id_inventario = ?");
-        
+
         $result = $stmt->execute([
+            $_POST['codigo_barras'] ?? null,
             $_POST['nom_medicamento'],
             $_POST['mol_medicamento'],
             $_POST['presentacion_med'],
@@ -28,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
             $_POST['cantidad_med'],
             $_POST['fecha_adquisicion'],
             $_POST['fecha_vencimiento'],
+            $_POST['precio_venta'] ?? 0.00,
             $_POST['id_inventario']
         ]);
 
@@ -43,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
         $_SESSION['inventory_message'] = 'Error: ' . $e->getMessage();
         $_SESSION['inventory_status'] = 'error';
     }
-    
+
     // Redirect back to inventory page
     header('Location: index.php');
     exit;
