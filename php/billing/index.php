@@ -1244,6 +1244,11 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
+                <!-- Logo -->
+                <div class="brand-container">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                </div>
+                
                 <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->

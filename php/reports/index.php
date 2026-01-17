@@ -1239,86 +1239,6 @@ try {
                     <div class="stat-label">Medicamentos en Stock</div>
                 </div>
             </div>
-            
-            <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
-            <div class="content-section animate-in">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-bar-chart-line section-title-icon"></i>
-                        Big Data Analytics - Inteligencia de Negocio
-                    </h3>
-                </div>
-                
-                <div class="row g-4 mb-4">
-                    <!-- Gráfico de Tendencia -->
-                    <div class="col-lg-8">
-                        <div style="height: 300px;">
-                            <canvas id="salesTrendChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- Gráfico de Distribución -->
-                    <div class="col-lg-4">
-                        <div style="height: 300px;">
-                            <canvas id="revenueDistChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row g-4">
-                    <!-- Top Medicamentos -->
-                    <div class="col-md-6">
-                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Medicamentos más vendidos</h4>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Medicamento</th>
-                                        <th class="text-end">Cantidad</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($top_meds_data as $med): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
-                                        <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                    <?php if (empty($top_meds_data)): ?>
-                                    <tr><td colspan="2" class="text-center py-3">Sin datos en el periodo</td></tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Resumen Quick Insights -->
-                    <div class="col-md-6">
-                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Insights de Rendimiento</h4>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block text-truncate">Margen Bruto Promedio</small>
-                                    <span class="h4 mb-0"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block text-truncate">Costo Méd. Vendidos</small>
-                                    <span class="h4 mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
-                                </div>
-                            </div>
-                            <div class="col-12 mt-2">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block">Ganancia Estimada en Ventas</small>
-                                    <span class="h4 mb-0 text-success">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
-                                    <p class="mb-0 text-muted small mt-1">Comparando costo de compra vs precio de venta</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Sección de contabilidad -->
             <div class="content-section animate-in delay-1">
@@ -1610,6 +1530,86 @@ try {
                                     ?>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
+            <div class="content-section animate-in">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-bar-chart-line section-title-icon"></i>
+                        Big Data Analytics - Inteligencia de Negocio
+                    </h3>
+                </div>
+                
+                <div class="row g-4 mb-4">
+                    <!-- Gráfico de Tendencia -->
+                    <div class="col-lg-8">
+                        <div style="height: 300px;">
+                            <canvas id="salesTrendChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Gráfico de Distribución -->
+                    <div class="col-lg-4">
+                        <div style="height: 300px;">
+                            <canvas id="revenueDistChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4">
+                    <!-- Top Medicamentos -->
+                    <div class="col-md-6">
+                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Medicamentos más vendidos</h4>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Medicamento</th>
+                                        <th class="text-end">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($top_meds_data as $med): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
+                                        <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($top_meds_data)): ?>
+                                    <tr><td colspan="2" class="text-center py-3">Sin datos en el periodo</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumen Quick Insights -->
+                    <div class="col-md-6">
+                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Insights de Rendimiento</h4>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
+                                    <small class="text-muted d-block text-truncate">Margen Bruto Promedio</small>
+                                    <span class="h4 mb-0"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
+                                    <small class="text-muted d-block text-truncate">Costo Méd. Vendidos</small>
+                                    <span class="h4 mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <div class="p-3 border rounded" style="background: var(--color-surface);">
+                                    <small class="text-muted d-block">Ganancia Estimada en Ventas</small>
+                                    <span class="h4 mb-0 text-success">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
+                                    <p class="mb-0 text-muted small mt-1">Comparando costo de compra vs precio de venta</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

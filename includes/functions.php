@@ -1,19 +1,22 @@
 <?php
-function sanitize_input($data) {
+function sanitize_input($data)
+{
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
     return $data;
 }
 
-function verify_session() {
+function verify_session()
+{
     if (!isset($_SESSION['user_id'])) {
         header("Location: /appClinica/index.php");
         exit();
     }
 }
 
-function time_ago($datetime, $full = false) {
+function time_ago($datetime, $full = false)
+{
     date_default_timezone_set('America/Guatemala');
     $now = new DateTime;
     $ago = new DateTime($datetime);
@@ -40,7 +43,41 @@ function time_ago($datetime, $full = false) {
         }
     }
 
-    if (!$full) $string = array_slice($string, 0, 1);
+    if (!$full)
+        $string = array_slice($string, 0, 1);
     return $string ? 'hace ' . implode(', ', $string) : 'justo ahora';
+}
+
+// ==========================================
+// MANTENER SESIÓN ACTIVA (GLOBAL)
+// ==========================================
+
+// 1. Detectar solicitud de keep_alive en cualquier página que incluya este archivo
+if (isset($_GET['keep_alive']) && $_GET['keep_alive'] == '1') {
+    // Asegurar que la sesión esté iniciada
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Devolver respuesta JSON y terminar ejecución
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'alive', 'timestamp' => time()]);
+    exit;
+}
+
+// 2. Función helper para inyectar el script JS automáticamente
+function output_keep_alive_script()
+{
+    echo "
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setInterval(function() {
+            fetch('?keep_alive=1')
+                .then(response => response.json())
+                .then(data => console.log('Session refreshed:', data))
+                .catch(e => console.error('Keep-alive error:', e));
+        }, 300000); // 5 minutos
+    });
+    </script>";
 }
 ?>
