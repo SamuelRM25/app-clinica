@@ -1,5 +1,5 @@
 <?php
-// php/dashboard/api/save_ultrasound_charge.php
+// php/dashboard/api/save_xray_charge.php
 session_start();
 header('Content-Type: application/json');
 
@@ -15,22 +15,22 @@ try {
     $conn = $database->getConnection();
 
     // Validate required fields
-    if (empty($_POST['patient_id']) || empty($_POST['amount']) || empty($_POST['ultrasound_type'])) {
+    if (empty($_POST['patient_id']) || empty($_POST['amount']) || empty($_POST['xray_type'])) {
         throw new Exception("Datos incompletos");
     }
 
     $patient_id = $_POST['patient_id'];
     $patient_name = $_POST['patient_name'] ?? 'Desconocido';
-    $ultrasound_type = $_POST['ultrasound_type'];
+    $xray_type = $_POST['xray_type'];
     $amount = $_POST['amount'];
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
 
-    // Insert into ultrasonidos
-    $stmt = $conn->prepare("INSERT INTO ultrasonidos (id_paciente, nombre_paciente, tipo_ultrasonido, cobro, tipo_pago, usuario) VALUES (?, ?, ?, ?, ?, ?)");
+    // Insert into rayos_x
+    $stmt = $conn->prepare("INSERT INTO rayos_x (id_paciente, nombre_paciente, tipo_estudio, cobro, tipo_pago, usuario) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $patient_id,
         $patient_name,
-        $ultrasound_type,
+        $xray_type,
         $amount,
         $tipo_pago,
         $_SESSION['nombre'] ?? 'System'

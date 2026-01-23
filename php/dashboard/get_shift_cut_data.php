@@ -124,6 +124,14 @@ try {
         $consultations_total += $doc_total;
     }
 
+    // Calculate aggregate breakdown for consultations to show in the main table
+    $consultations_aggregate_breakdown = ['Efectivo' => 0, 'Tarjeta' => 0, 'Transferencia' => 0];
+    foreach ($consultations_breakdown as $doc_b) {
+        foreach ($methods as $method) {
+            $consultations_aggregate_breakdown[$method] += $doc_b['breakdown'][$method];
+        }
+    }
+
     // 3. Laboratories (examenes_realizados)
     // Filter out Ultrasound and X-Ray from general laboratory
     $lab_extra = "tipo_examen NOT LIKE '%ultrasonido%' AND tipo_examen NOT LIKE '%rayos x%' AND tipo_examen NOT LIKE '%rx%'";
@@ -132,11 +140,29 @@ try {
     // 4. Minor Procedures (procedimientos_menores)
     $procedures = $getTotals($conn, 'procedimientos_menores', 'cobro', 'fecha_procedimiento', $start_datetime, $end_datetime);
 
-    // 5. Ultrasound
-    $ultrasound = $getTotals($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "tipo_examen LIKE '%ultrasonido%'");
+    // 5. Ultrasound (Combine new dedicated table and legacy examenes_realizados entries)
+    $us_new = $getTotals($conn, 'ultrasonidos', 'cobro', 'fecha_ultrasonido', $start_datetime, $end_datetime);
+    $us_old = $getTotals($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "tipo_examen LIKE '%ultrasonido%'");
+    $ultrasound = [
+        'total' => $us_new['total'] + $us_old['total'],
+        'breakdown' => [
+            'Efectivo' => $us_new['breakdown']['Efectivo'] + $us_old['breakdown']['Efectivo'],
+            'Tarjeta' => $us_new['breakdown']['Tarjeta'] + $us_old['breakdown']['Tarjeta'],
+            'Transferencia' => $us_new['breakdown']['Transferencia'] + $us_old['breakdown']['Transferencia'],
+        ]
+    ];
 
-    // 6. X-Rays
-    $xray = $getTotals($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "(tipo_examen LIKE '%rayos x%' OR tipo_examen LIKE '%rx%')");
+    // 6. X-Rays (Combine new dedicated table and legacy examenes_realizados entries)
+    $rx_new = $getTotals($conn, 'rayos_x', 'cobro', 'fecha_estudio', $start_datetime, $end_datetime);
+    $rx_old = $getTotals($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "(tipo_examen LIKE '%rayos x%' OR tipo_examen LIKE '%rx%')");
+    $xray = [
+        'total' => $rx_new['total'] + $rx_old['total'],
+        'breakdown' => [
+            'Efectivo' => $rx_new['breakdown']['Efectivo'] + $rx_old['breakdown']['Efectivo'],
+            'Tarjeta' => $rx_new['breakdown']['Tarjeta'] + $rx_old['breakdown']['Tarjeta'],
+            'Transferencia' => $rx_new['breakdown']['Transferencia'] + $rx_old['breakdown']['Transferencia'],
+        ]
+    ];
 
     $grand_total = $pharmacy['total'] + $consultations_total + $lab['total'] + $procedures['total'] + $ultrasound['total'] + $xray['total'];
 
@@ -151,6 +177,7 @@ try {
             'pharmacy' => $pharmacy,
             'consultations' => [
                 'by_doctor' => $consultations_breakdown,
+                'breakdown' => $consultations_aggregate_breakdown,
                 'total' => $consultations_total
             ],
             'laboratory' => $lab,

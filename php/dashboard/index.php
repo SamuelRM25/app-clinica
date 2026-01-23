@@ -3749,6 +3749,7 @@ try {
                     this.setupAnimations();
                     this.setupAdminNotifications();
                     this.setupUltrasoundHandlers();
+                    this.setupXrayHandlers();
                 }
 
                 setupGreeting() {
@@ -4167,6 +4168,65 @@ try {
                     }
                 }
 
+                setupXrayHandlers() {
+                    const saveBtn = document.getElementById('saveXrayBtn');
+                    if (saveBtn) {
+                        saveBtn.addEventListener('click', async () => {
+                            const form = document.getElementById('xrayBillingForm');
+                            const patientInput = document.getElementById('xray_patient_input');
+                            const patientHidden = document.getElementById('xray_patient_id');
+                            const datalist = document.getElementById('xrayPatientDatalist');
+
+                            if (!form || !patientInput || !datalist) return;
+
+                            patientHidden.value = '';
+                            const val = patientInput.value;
+                            const options = datalist.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === val) {
+                                    patientHidden.value = options[i].getAttribute('data-id');
+                                    break;
+                                }
+                            }
+
+                            if (!patientHidden.value) {
+                                Swal.fire('Aviso', 'Seleccione un paciente válido', 'warning');
+                                return;
+                            }
+
+                            if (!form.checkValidity()) {
+                                form.reportValidity();
+                                return;
+                            }
+
+                            const originalText = saveBtn.innerHTML;
+                            saveBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Guardando...';
+                            saveBtn.disabled = true;
+
+                            const formData = new FormData(form);
+                            formData.append('patient_name', patientInput.value);
+
+                            try {
+                                const response = await fetch('api/save_xray_charge.php', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                    Swal.fire('Éxito', 'Cobro de Rayos X registrado', 'success').then(() => location.reload());
+                                } else {
+                                    throw new Error(result.error);
+                                }
+                            } catch (e) {
+                                Swal.fire('Error', e.message || 'Error de conexión', 'error');
+                            } finally {
+                                saveBtn.innerHTML = originalText;
+                                saveBtn.disabled = false;
+                            }
+                        });
+                    }
+                }
+
                 setupAnimations() {
                     const observer = new IntersectionObserver((entries) => {
                         entries.forEach(entry => {
@@ -4424,19 +4484,19 @@ try {
                         <div class="mb-3">
                             <label class="form-label fw-bold">Tipo de Pago</label>
                             <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="proc_tipo_pago" id="proc_pago_efectivo"
+                                <input type="radio" class="btn-check" name="tipo_pago" id="proc_pago_efectivo"
                                     value="Efectivo" checked autocomplete="off">
                                 <label class="btn btn-outline-primary" for="proc_pago_efectivo">
                                     <i class="bi bi-cash me-1"></i>Efectivo
                                 </label>
 
-                                <input type="radio" class="btn-check" name="proc_tipo_pago" id="proc_pago_transferencia"
+                                <input type="radio" class="btn-check" name="tipo_pago" id="proc_pago_transferencia"
                                     value="Transferencia" autocomplete="off">
                                 <label class="btn btn-outline-primary" for="proc_pago_transferencia">
                                     <i class="bi bi-bank me-1"></i>Transferencia
                                 </label>
 
-                                <input type="radio" class="btn-check" name="proc_tipo_pago" id="proc_pago_tarjeta"
+                                <input type="radio" class="btn-check" name="tipo_pago" id="proc_pago_tarjeta"
                                     value="Tarjeta" autocomplete="off">
                                 <label class="btn btn-outline-primary" for="proc_pago_tarjeta">
                                     <i class="bi bi-credit-card me-1"></i>Tarjeta
@@ -4564,8 +4624,8 @@ try {
                                 <label class="btn btn-outline-info" for="ultrasound_pago_transferencia">
                                     <i class="bi bi-bank me-1"></i>Transferencia
                                 </label>
-                                <input type="radio" class="btn-check" name="ultrasound_tipo_pago"
-                                    id="ultrasound_pago_tarjeta" value="Tarjeta" autocomplete="off">
+                                <input type="radio" class="btn-check" name="tipo_pago" id="ultrasound_pago_tarjeta"
+                                    value="Tarjeta" autocomplete="off">
                                 <label class="btn btn-outline-info" for="ultrasound_pago_tarjeta">
                                     <i class="bi bi-credit-card me-1"></i>Tarjeta
                                 </label>
@@ -4576,6 +4636,68 @@ try {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-info" id="saveUltrasoundBtn">Guardar Cobro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Rayos X -->
+    <div class="modal fade" id="xrayBillingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-medical me-2"></i>Cobro de Rayos X</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="xrayBillingForm">
+                        <div class="mb-3">
+                            <label class="form-label">Paciente</label>
+                            <input class="form-control" list="xrayPatientDatalist" id="xray_patient_input"
+                                placeholder="Buscar paciente..." required autocomplete="off">
+                            <datalist id="xrayPatientDatalist">
+                                <?php foreach ($pacientes as $paciente): ?>
+                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                    <?php endforeach; ?>
+                            </datalist>
+                            <input type="hidden" id="xray_patient_id" name="patient_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Estudio (Rayos X)</label>
+                            <input type="text" class="form-control" name="xray_type" required
+                                placeholder="Ej: Torax, Mano, etc.">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto a Cobrar (Q)</label>
+                            <input type="number" class="form-control" id="xray_amount" name="amount" required
+                                step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Pago</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="tipo_pago" id="xray_pago_efectivo"
+                                    value="Efectivo" checked autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="xray_pago_efectivo">
+                                    <i class="bi bi-cash me-1"></i>Efectivo
+                                </label>
+                                <input type="radio" class="btn-check" name="tipo_pago" id="xray_pago_transferencia"
+                                    value="Transferencia" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="xray_pago_transferencia">
+                                    <i class="bi bi-bank me-1"></i>Transferencia
+                                </label>
+                                <input type="radio" class="btn-check" name="tipo_pago" id="xray_pago_tarjeta"
+                                    value="Tarjeta" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="xray_pago_tarjeta">
+                                    <i class="bi bi-credit-card me-1"></i>Tarjeta
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" id="saveXrayBtn">Guardar Cobro</button>
                 </div>
             </div>
         </div>
