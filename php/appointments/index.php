@@ -1196,6 +1196,7 @@ try {
         <main class="main-content">
  
             <!-- Estadísticas principales -->
+             <?php if ($user_type === 'admin'): ?>
             <div class="stats-grid">
                 <!-- Citas de hoy -->
                 <div class="stat-card animate-in delay-1">
@@ -1264,7 +1265,8 @@ try {
                         <span>Lunes a Sábado</span>
                     </div>
                 </div>
-            </div>           
+            </div>  
+            <?php endif; ?>         
 
             <!-- Bienvenida personalizada -->
             <div class="stat-card mb-4 animate-in">

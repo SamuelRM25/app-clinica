@@ -59,12 +59,14 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
+
     // Preparar la consulta para insertar
     $stmt = $conn->prepare(
         "INSERT INTO procedimientos_menores 
-        (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, usuario) 
+        (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, tipo_pago, usuario) 
         VALUES 
-        (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :usuario)"
+        (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :tipo_pago, :usuario)"
     );
 
     $stmt->bindParam(':id_paciente', $id_paciente);
@@ -72,6 +74,7 @@ try {
     $stmt->bindParam(':procedimiento', $procedimiento_final);
     $stmt->bindParam(':cobro', $cobro);
     $stmt->bindParam(':fecha_procedimiento', $fecha_procedimiento);
+    $stmt->bindParam(':tipo_pago', $tipo_pago);
     $stmt->bindParam(':usuario', $_SESSION['nombre']);
 
     $stmt->execute();

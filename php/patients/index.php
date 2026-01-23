@@ -31,6 +31,14 @@ try {
     // Título de la página
     $page_title = "Gestión de Pacientes - Centro Médico Herrera Saenz";
 
+    // Obtener parámetros de ordenamiento
+    $sort = $_GET['sort'] ?? 'name';
+    $order_clause = "p.nombre, p.apellido"; // Default
+
+    if ($sort === 'recent') {
+        $order_clause = "p.id_paciente DESC";
+    }
+
     // Consulta optimizada según tipo de usuario
     if ($user_type === 'doc') {
         // Pacientes atendidos por este médico
@@ -45,7 +53,7 @@ try {
                 WHERE medico_responsable LIKE ?
             )
             GROUP BY p.id_paciente
-            ORDER BY p.apellido, p.nombre
+            ORDER BY $order_clause
         ");
         $doctor_name = $_SESSION['nombre'] . ' ' . $_SESSION['apellido'];
         $stmt->execute([$user_id, '%' . $doctor_name . '%']);
@@ -58,7 +66,7 @@ try {
             FROM pacientes p
             LEFT JOIN citas c ON (p.nombre = c.nombre_pac AND p.apellido = c.apellido_pac)
             GROUP BY p.id_paciente
-            ORDER BY p.apellido, p.nombre
+            ORDER BY $order_clause
         ");
         $stmt->execute();
     }
@@ -805,6 +813,54 @@ try {
             border-color: var(--color-info);
         }
 
+        .btn-icon.edit:hover {
+            background: var(--color-warning);
+            color: white;
+            border-color: var(--color-warning);
+        }
+
+        /* Sort buttons */
+        .sort-controls {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .sort-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+            text-decoration: none;
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+
+        .sort-btn:hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sort-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sort-btn i {
+            font-size: 1rem;
+        }
+
         /* Estado vacío */
         .empty-state {
             text-align: center;
@@ -1532,75 +1588,77 @@ try {
             </div>
 
             <!-- Estadísticas principales -->
-            <div class="stats-grid">
-                <!-- Total de pacientes -->
-                <div class="stat-card animate-in delay-1" onclick="filterPatients('all')">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Total Pacientes</div>
-                            <div class="stat-value"><?php echo $total_patients; ?></div>
+            <?php if ($user_type === 'admin'): ?>
+                <div class="stats-grid">
+                    <!-- Total de pacientes -->
+                    <div class="stat-card animate-in delay-1" onclick="filterPatients('all')">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Total Pacientes</div>
+                                <div class="stat-value"><?php echo $total_patients; ?></div>
+                            </div>
+                            <div class="stat-icon primary">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-people-fill"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-arrow-up-right"></i>
+                            <span>Registrados en sistema</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-arrow-up-right"></i>
-                        <span>Registrados en sistema</span>
-                    </div>
-                </div>
 
-                <!-- Pacientes con citas -->
-                <div class="stat-card animate-in delay-2" onclick="filterPatients('with_appointments')">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Con Citas</div>
-                            <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
+                    <!-- Pacientes con citas -->
+                    <div class="stat-card animate-in delay-2" onclick="filterPatients('with_appointments')">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Con Citas</div>
+                                <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
+                            </div>
+                            <div class="stat-icon success">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-calendar-check"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-person-check"></i>
+                            <span>Con historial de citas</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-person-check"></i>
-                        <span>Con historial de citas</span>
-                    </div>
-                </div>
 
-                <!-- Pacientes sin historial -->
-                <div class="stat-card animate-in delay-3" onclick="filterPatients('without_history')">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Sin Historial</div>
-                            <div class="stat-value"><?php echo $patients_without_history; ?></div>
+                    <!-- Pacientes sin historial -->
+                    <div class="stat-card animate-in delay-3" onclick="filterPatients('without_history')">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Sin Historial</div>
+                                <div class="stat-value"><?php echo $patients_without_history; ?></div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-person-x"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-person-x"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>Requieren primera consulta</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Requieren primera consulta</span>
-                    </div>
-                </div>
 
-                <!-- Activos hoy -->
-                <div class="stat-card animate-in delay-4" onclick="filterPatients('active_today')">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Activos Hoy</div>
-                            <div class="stat-value"><?php echo $active_today; ?></div>
+                    <!-- Activos hoy -->
+                    <div class="stat-card animate-in delay-4" onclick="filterPatients('active_today')">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Activos Hoy</div>
+                                <div class="stat-value"><?php echo $active_today; ?></div>
+                            </div>
+                            <div class="stat-icon info">
+                                <i class="bi bi-activity"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon info">
-                            <i class="bi bi-activity"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-day"></i>
+                            <span>Atendidos hoy</span>
                         </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-calendar-day"></i>
-                        <span>Atendidos hoy</span>
                     </div>
                 </div>
-            </div>
+            <?php endif; ?>
 
             <!-- Barra de búsqueda y acciones -->
             <section class="appointments-section animate-in delay-1">
@@ -1609,10 +1667,23 @@ try {
                         <i class="bi bi-search section-title-icon"></i>
                         Buscar Pacientes
                     </h3>
-                    <button type="button" class="action-btn" id="newPatientButton">
-                        <i class="bi bi-person-plus"></i>
-                        Nuevo Paciente
-                    </button>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="sort-controls">
+                            <span class="text-muted" style="font-size: 0.875rem; font-weight: 500;">Ordenar:</span>
+                            <a href="?sort=name" class="sort-btn <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>">
+                                <i class="bi bi-sort-alpha-down"></i>
+                                Alfabético
+                            </a>
+                            <a href="?sort=recent" class="sort-btn <?php echo $sort === 'recent' ? 'active' : ''; ?>">
+                                <i class="bi bi-clock-history"></i>
+                                Recientes
+                            </a>
+                        </div>
+                        <button type="button" class="action-btn" id="newPatientButton">
+                            <i class="bi bi-person-plus"></i>
+                            Nuevo Paciente
+                        </button>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -1687,12 +1758,16 @@ try {
                                     ?>
                                     <tr class="patient-row" data-id="<?php echo $patient['id_paciente']; ?>"
                                         data-name="<?php echo htmlspecialchars(strtolower(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? ''))); ?>"
+                                        data-raw-nombre="<?php echo htmlspecialchars($patient['nombre'] ?? ''); ?>"
+                                        data-raw-apellido="<?php echo htmlspecialchars($patient['apellido'] ?? ''); ?>"
                                         data-phone="<?php echo htmlspecialchars(strtolower($patient['telefono'] ?? '')); ?>"
                                         data-email="<?php echo htmlspecialchars(strtolower($patient['correo'] ?? '')); ?>"
+                                        data-direction="<?php echo htmlspecialchars($patient['direccion'] ?? ''); ?>"
                                         data-has-appointments="<?php echo $has_appointments ? 'true' : 'false'; ?>"
                                         data-has-history="<?php echo $has_history ? 'true' : 'false'; ?>"
                                         data-active-today="<?php echo $active_today ? 'true' : 'false'; ?>"
-                                        data-gender="<?php echo htmlspecialchars(strtolower($patient['genero'] ?? '')); ?>">
+                                        data-gender="<?php echo htmlspecialchars($patient['genero'] ?? ''); ?>"
+                                        data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>">
                                         <td>
                                             <div class="patient-cell">
                                                 <div class="patient-avatar">
@@ -1764,10 +1839,16 @@ try {
                                         </td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a href="medical_history.php?id=<?php echo $patient['id_paciente']; ?>"
-                                                    class="btn-icon history" title="Historial Clínico">
-                                                    <i class="bi bi-clipboard2-pulse"></i>
-                                                </a>
+                                                <button type="button" class="btn-icon edit" title="Editar Información"
+                                                    onclick="editPatient(this)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <?php if ($user_type === 'admin'): ?>
+                                                    <a href="medical_history.php?id=<?php echo $patient['id_paciente']; ?>"
+                                                        class="btn-icon history" title="Historial Clínico">
+                                                        <i class="bi bi-clipboard2-pulse"></i>
+                                                    </a>
+                                                <?php endif; ?>
                                                 <button type="button" class="btn-icon appointment" title="Nueva Cita"
                                                     onclick="quickAppointment(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars($patient['nombre']); ?>', '<?php echo htmlspecialchars($patient['apellido']); ?>')">
                                                     <i class="bi bi-calendar-plus"></i>
@@ -1809,6 +1890,7 @@ try {
                 </button>
             </div>
             <form id="newPatientForm" action="save_patient.php" method="POST">
+                <input type="hidden" id="edit_id_paciente" name="id_paciente">
                 <div class="custom-modal-body">
                     <div class="form-grid">
                         <div class="form-group">
@@ -1825,8 +1907,14 @@ try {
 
                         <div class="form-group">
                             <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento *</label>
-                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input"
-                                required>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input" required
+                                onchange="calculateAge(this.value)">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edad_display" class="form-label">Edad Actual</label>
+                            <input type="text" id="edad_display" class="form-input" readonly
+                                placeholder="Calculada automáticamente...">
                         </div>
 
                         <div class="form-group">
@@ -1867,7 +1955,7 @@ try {
                     <button type="button" class="btn-outline" onclick="closeModal('newPatientModal')">
                         Cancelar
                     </button>
-                    <button type="submit" class="action-btn">
+                    <button type="submit" class="action-btn" id="modalSubmitBtn">
                         Guardar Paciente
                     </button>
                 </div>
@@ -2172,9 +2260,41 @@ try {
                     if (modal) {
                         modal.classList.remove('active');
                         document.body.style.overflow = '';
+                        // Reset form if it was editing
+                        if (modalId === 'newPatientModal') {
+                            document.getElementById('edit_id_paciente').value = '';
+                            document.querySelector('#newPatientModal .custom-modal-title').innerHTML = '<i class="bi bi-person-plus"></i> Nuevo Paciente';
+                            document.getElementById('modalSubmitBtn').textContent = 'Guardar Paciente';
+                            document.getElementById('newPatientForm').reset();
+                            document.getElementById('edad_display').value = '';
+                        }
                     }
                 }
             }
+
+            window.editPatient = function (btn) {
+                const row = btn.closest('tr');
+                const p = row.dataset;
+
+                document.getElementById('edit_id_paciente').value = p.id;
+                document.getElementById('nombre').value = p.rawNombre;
+                document.getElementById('apellido').value = p.rawApellido;
+                document.getElementById('fecha_nacimiento').value = p.birth;
+                document.getElementById('genero').value = p.gender;
+                document.getElementById('telefono').value = p.phone;
+                document.getElementById('correo').value = p.email;
+                document.getElementById('direccion').value = p.direction;
+
+                // Actualizar UI del modal
+                document.querySelector('#newPatientModal .custom-modal-title').innerHTML = '<i class="bi bi-pencil-square"></i> Editar Paciente';
+                document.getElementById('modalSubmitBtn').textContent = 'Actualizar Paciente';
+
+                // Calcular edad
+                if (p.birth) window.calculateAge(p.birth);
+
+                // Abrir modal
+                window.dashboard.components.openModal('newPatientModal');
+            };
 
             // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
@@ -2214,6 +2334,18 @@ try {
             window.closeModal = function (modalId) {
                 document.getElementById(modalId).classList.remove('active');
                 document.body.style.overflow = '';
+            };
+
+            window.calculateAge = function (birthDate) {
+                if (!birthDate) return;
+                const today = new Date();
+                const birth = new Date(birthDate);
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                    age--;
+                }
+                document.getElementById('edad_display').value = age + (age === 1 ? ' año' : ' años');
             };
 
             window.filterPatients = function (filterType) {
@@ -2322,9 +2454,10 @@ try {
     `;
         document.head.appendChild(style);
 
-        // Inyectar script de mantenimiento de sesión activo (Global)
-        <?php output_keep_alive_script(); ?>
     </script>
+
+    <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
+    <?php output_keep_alive_script(); ?>
 </body>
 
 </html>

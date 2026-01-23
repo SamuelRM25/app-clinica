@@ -30,6 +30,10 @@ try {
         $preselected_patient = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Obtener todos los pacientes para el buscador (si no hay preseleccionado)
+    $stmt = $conn->query("SELECT id_paciente, nombre, apellido FROM pacientes ORDER BY nombre, apellido");
+    $all_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     $page_title = "Nueva Orden de Laboratorio";
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
@@ -1064,14 +1068,18 @@ try {
                                 <div class="col-md-7">
                                     <div class="form-group">
                                         <label class="form-label">Paciente *</label>
-                                        <select id="id_paciente" name="id_paciente" class="form-control" required>
-                                            <option value="">Buscar paciente...</option>
-                                            <?php if ($preselected_patient): ?>
-                                                <option value="<?php echo $preselected_patient['id_paciente']; ?>" selected>
-                                                    <?php echo htmlspecialchars($preselected_patient['nombre'] . ' ' . $preselected_patient['apellido']); ?>
-                                                </option>
-                                            <?php endif; ?>
-                                        </select>
+                                        <input class="form-control" list="patientDatalist" id="patient_input"
+                                            placeholder="Buscar paciente (Nombre, Apellido)..." required
+                                            autocomplete="off"
+                                            value="<?php echo $preselected_patient ? htmlspecialchars($preselected_patient['nombre'] . ' ' . $preselected_patient['apellido']) : ''; ?>">
+                                        <datalist id="patientDatalist">
+                                            <?php foreach ($all_patients as $p): ?>
+                                                <option data-id="<?php echo $p['id_paciente']; ?>"
+                                                    value="<?php echo htmlspecialchars($p['nombre'] . ' ' . $p['apellido']); ?>">
+                                                <?php endforeach; ?>
+                                        </datalist>
+                                        <input type="hidden" name="id_paciente" id="id_paciente"
+                                            value="<?php echo $preselected_patient ? $preselected_patient['id_paciente'] : ''; ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-5">
@@ -1333,52 +1341,45 @@ try {
                 }
 
                 setupSelect2() {
-                    // Configurar Select2 para búsqueda de pacientes
-                    if ($('#id_paciente').length) {
-                        $('#id_paciente').select2({
-                            placeholder: 'Buscar paciente por nombre, apellido o DPI...',
-                            allowClear: true,
-                            minimumInputLength: 2,
-                            language: {
-                                inputTooShort: function () {
-                                    return 'Escriba al menos 2 caracteres para buscar';
-                                },
-                                searching: function () {
-                                    return 'Buscando pacientes...';
-                                },
-                                noResults: function () {
-                                    return 'No se encontraron pacientes';
-                                }
-                            },
-                            ajax: {
-                                url: 'api/search_patients.php',
-                                dataType: 'json',
-                                delay: 250,
-                                data: function (params) {
-                                    return {
-                                        q: params.term
-                                    };
-                                },
-                                processResults: function (data) {
-                                    if (!data.success) {
-                                        console.error('Error al buscar pacientes:', data.message);
-                                        return { results: [] };
-                                    }
+                    // Logic for patient search with Datalist
+                    const patientInput = document.getElementById('patient_input');
+                    const patientHidden = document.getElementById('id_paciente');
+                    const datalist = document.getElementById('patientDatalist');
 
-                                    return {
-                                        results: data.results.map(function (p) {
-                                            return {
-                                                id: p.id,
-                                                text: p.label,
-                                                data: p
-                                            };
-                                        })
-                                    };
-                                },
-                                cache: true
+                    if (patientInput && patientHidden && datalist) {
+                        patientInput.addEventListener('input', function () {
+                            const val = this.value;
+                            const options = datalist.options;
+                            let found = false;
+
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === val) {
+                                    patientHidden.value = options[i].getAttribute('data-id');
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                patientHidden.value = '';
                             }
                         });
 
+                        // Si ya hay un valor (precargado), asegurar que el hidden tenga el ID
+                        if (patientInput.value && !patientHidden.value) {
+                            const val = patientInput.value;
+                            const options = datalist.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === val) {
+                                    patientHidden.value = options[i].getAttribute('data-id');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Configurar Select2 solo para doctor
+                    if ($('#id_doctor').length) {
                         $('#id_doctor').select2({
                             theme: 'default',
                             placeholder: 'Seleccionar doctor...',
@@ -1397,12 +1398,6 @@ try {
                             if (!paciente) {
                                 e.preventDefault();
                                 showError('Debe seleccionar un paciente');
-                                return;
-                            }
-
-                            if (selectedTests.length === 0) {
-                                e.preventDefault();
-                                showError('Debe seleccionar al menos una prueba');
                                 return;
                             }
                         });
@@ -1424,6 +1419,42 @@ try {
                 };
 
                 console.log('Crear Orden inicializado');
+
+                // Filtro de búsqueda de pruebas
+                const searchInput = document.getElementById('labTestSearch');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function () {
+                        const term = this.value.toLowerCase();
+                        const cards = document.querySelectorAll('.test-selection-card');
+                        const accordions = document.querySelectorAll('.accordion-item');
+
+                        accordions.forEach(acc => {
+                            let someVisible = false;
+                            const accCards = acc.querySelectorAll('.test-selection-card');
+                            accCards.forEach(card => {
+                                const name = card.querySelector('.test-selection-name').textContent.toLowerCase();
+                                if (name.includes(term)) {
+                                    card.parentElement.classList.remove('d-none');
+                                    someVisible = true;
+                                } else {
+                                    card.parentElement.classList.add('d-none');
+                                }
+                            });
+
+                            if (term === '') {
+                                acc.classList.remove('d-none');
+                                if (!acc.querySelector('.accordion-collapse').classList.contains('show')) {
+                                    // Keep current state
+                                }
+                            } else if (someVisible) {
+                                acc.classList.remove('d-none');
+                                // Optionally auto-expand? Maybe too intrusive.
+                            } else {
+                                acc.classList.add('d-none');
+                            }
+                        });
+                    });
+                }
             });
 
             // ==========================================================================

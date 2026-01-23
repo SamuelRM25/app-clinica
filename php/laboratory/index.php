@@ -1584,7 +1584,7 @@ try {
                                 </a>
                                 <?php endif; ?>
                                 
-                                <?php if ($user_type === 'doc' || $user_type === 'admin'): ?>
+                                <?php if ($user_type === 'user' || $user_type === 'admin'): ?>
                                 <a href="crear_orden.php" class="action-btn">
                                     <i class="bi bi-plus-lg"></i>
                                     Nueva Orden
@@ -1752,36 +1752,6 @@ try {
                             </div>
                         <?php endif; ?>
                     </section>
-                    
-                    <!-- Acciones rápidas -->
-                    <div class="stat-card mt-4 animate-in delay-3">
-                        <div class="stat-header">
-                            <h3 class="section-title mb-0">
-                                <i class="bi bi-lightning-charge section-title-icon"></i>
-                                Acciones Rápidas
-                            </h3>
-                        </div>
-                        <div class="d-flex flex-column gap-2 mt-3">
-                            <a href="buscar_paciente.php" class="action-btn secondary">
-                                <i class="bi bi-search"></i>
-                                Buscar Paciente
-                            </a>
-                            <a href="registrar_muestra.php" class="action-btn secondary">
-                                <i class="bi bi-droplet"></i>
-                                Registrar Muestra
-                            </a>
-                            <a href="reportes_diarios.php" class="action-btn secondary">
-                                <i class="bi bi-file-earmark-text"></i>
-                                Reporte Diario
-                            </a>
-                            <?php if ($user_type === 'admin'): ?>
-                            <a href="configuracion.php" class="action-btn secondary">
-                                <i class="bi bi-sliders"></i>
-                                Configurar Laboratorio
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
                 </div>
             </div>
             

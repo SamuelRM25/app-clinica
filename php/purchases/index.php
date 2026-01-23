@@ -2578,7 +2578,7 @@ try {
                 }
 
             }
-        }
+
 
             // ==========================================================================
             // FUNCIONALIDADES ESPECÍFICAS DE COMPRAS
@@ -2587,94 +2587,111 @@ try {
             // Variables globales para funcionalidad de compras
             let purchaseItems = [];
 
-        // Mostrar modal de nueva compra
-        window.showNewPurchaseModal = function () {
-            // Resetear formulario
-            const form = document.getElementById('purchaseForm');
-            if (form) form.reset();
+            // Mostrar modal de nueva compra
+            window.showNewPurchaseModal = function () {
+                const modal = new bootstrap.Modal(document.getElementById('newPurchaseModal'));
+                const hasDraft = window.purchaseDraftManager && window.purchaseDraftManager.hasDraft();
 
-            // Establecer fecha actual
-            const purchaseDate = document.getElementById('purchase_date');
-            if (purchaseDate) {
-                const today = new Date();
-                const formattedDate = today.toISOString().split('T')[0];
-                purchaseDate.value = formattedDate;
-            }
+                if (hasDraft) {
+                    // Si hay borrador, restaurarlo
+                    window.purchaseDraftManager.restoreDraft();
+                    window.purchaseDraftManager.showDraftNotification();
+                    modal.show();
+                    return;
+                }
 
-            // Limpiar items
-            purchaseItems = [];
-            renderItems();
+                // SI NO HAY BORRADOR: Flujo norma de reset
+                // Resetear formulario
+                const form = document.getElementById('purchaseForm');
+                if (form) form.reset();
 
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('newPurchaseModal'));
-            modal.show();
-        };
+                // Establecer fecha actual
+                const purchaseDate = document.getElementById('purchase_date');
+                if (purchaseDate) {
+                    const today = new Date();
+                    const formattedDate = today.toISOString().split('T')[0];
+                    purchaseDate.value = formattedDate;
+                }
 
-        // Agregar item a la lista de compra
-        window.addItem = function () {
-            const name = document.getElementById('item_name').value.trim();
-            const qty = parseFloat(document.getElementById('item_qty').value);
-            const cost = parseFloat(document.getElementById('item_cost').value);
-            const salePrice = parseFloat(document.getElementById('item_sale_price').value);
+                // Limpiar items
+                purchaseItems = [];
+                renderItems();
 
-            // Validar campos obligatorios
-            if (!name || !qty || isNaN(cost) || isNaN(salePrice)) {
-                Swal.fire({
-                    title: 'Campos incompletos',
-                    text: 'Por favor complete todos los campos del producto',
-                    icon: 'warning',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
-            // Crear objeto item
-            const item = {
-                id: Date.now(), // ID temporal
-                name: name,
-                presentation: document.getElementById('item_presentation').value.trim(),
-                molecule: document.getElementById('item_molecule').value.trim(),
-                qty: qty,
-                cost: cost,
-                sale_price: salePrice,
-                subtotal: qty * cost
+                // Mostrar modal
+                modal.show();
             };
 
-            // Agregar a la lista
-            purchaseItems.push(item);
-            renderItems();
+            // Mostrar compras pendientes
+            window.showPendingPurchases = function () {
+                const tabManager = new TabManager();
+                tabManager.switchTab('pending-payments');
+            };
 
-            // Limpiar campos de entrada
-            document.getElementById('item_name').value = '';
-            document.getElementById('item_presentation').value = '';
-            document.getElementById('item_molecule').value = '';
-            document.getElementById('item_qty').value = '1';
-            document.getElementById('item_cost').value = '';
-            document.getElementById('item_sale_price').value = '';
-            document.getElementById('item_name').focus();
-        };
+            // Agregar item a la lista de compra
+            window.addItem = function () {
+                const name = document.getElementById('item_name').value.trim();
+                const qty = parseFloat(document.getElementById('item_qty').value);
+                const cost = parseFloat(document.getElementById('item_cost').value);
+                const salePrice = parseFloat(document.getElementById('item_sale_price').value);
 
-        // Remover item de la lista
-        window.removeItem = function (id) {
-            purchaseItems = purchaseItems.filter(item => item.id !== id);
-            renderItems();
-        };
+                // Validar campos obligatorios
+                if (!name || !qty || isNaN(cost) || isNaN(salePrice)) {
+                    Swal.fire({
+                        title: 'Campos incompletos',
+                        text: 'Por favor complete todos los campos del producto',
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
 
-        // Renderizar items en la tabla
-        function renderItems() {
-            const tbody = document.querySelector('#itemsTable tbody');
-            if (!tbody) return;
+                // Crear objeto item
+                const item = {
+                    id: Date.now(), // ID temporal
+                    name: name,
+                    presentation: document.getElementById('item_presentation').value.trim(),
+                    molecule: document.getElementById('item_molecule').value.trim(),
+                    qty: qty,
+                    cost: cost,
+                    sale_price: salePrice,
+                    subtotal: qty * cost
+                };
 
-            tbody.innerHTML = '';
+                // Agregar a la lista
+                purchaseItems.push(item);
+                renderItems();
 
-            let total = 0;
+                // Limpiar campos de entrada
+                document.getElementById('item_name').value = '';
+                document.getElementById('item_presentation').value = '';
+                document.getElementById('item_molecule').value = '';
+                document.getElementById('item_qty').value = '1';
+                document.getElementById('item_cost').value = '';
+                document.getElementById('item_sale_price').value = '';
+                document.getElementById('item_name').focus();
+            };
 
-            // Agregar cada item a la tabla
-            purchaseItems.forEach(item => {
-                total += item.subtotal;
+            // Remover item de la lista
+            window.removeItem = function (id) {
+                purchaseItems = purchaseItems.filter(item => item.id !== id);
+                renderItems();
+            };
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
+            // Renderizar items en la tabla
+            window.renderItems = function () {
+                const tbody = document.querySelector('#itemsTable tbody');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                let total = 0;
+
+                // Agregar cada item a la tabla
+                purchaseItems.forEach(item => {
+                    total += item.subtotal;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
                     <td>
                         <div class="fw-bold">${item.name}</div>
                         <small class="text-muted">${item.molecule || 'Sin molécula especificada'}</small>
@@ -2690,123 +2707,133 @@ try {
                         </button>
                     </td>
                 `;
-                tbody.appendChild(row);
-            });
-
-            // Actualizar total
-            const totalAmount = document.getElementById('totalAmount');
-            if (totalAmount) {
-                totalAmount.textContent = total.toFixed(2);
-            }
-        }
-
-        // Guardar compra
-        window.savePurchase = function () {
-            // Validar que haya items
-            if (purchaseItems.length === 0) {
-                Swal.fire({
-                    title: 'Compra vacía',
-                    text: 'Debe agregar al menos un producto a la compra',
-                    icon: 'warning',
-                    confirmButtonText: 'Entendido'
+                    tbody.appendChild(row);
                 });
-                return;
+
+                // Actualizar total
+                const totalAmount = document.getElementById('totalAmount');
+                if (totalAmount) {
+                    totalAmount.textContent = total.toFixed(2);
+                }
+
+                // Guardar borrador automáticamente al cambiar la lista
+                // (Solo si el draftManager ya está inicializado)
+                if (window.purchaseDraftManager) {
+                    window.purchaseDraftManager.saveDraft();
+                }
             }
 
-            // Validar proveedor
-            const providerName = document.getElementById('provider_name').value.trim();
-            if (!providerName) {
-                Swal.fire({
-                    title: 'Proveedor requerido',
-                    text: 'Debe especificar un proveedor o casa farmacéutica',
-                    icon: 'warning',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
+            // Guardar compra
+            window.savePurchase = function () {
+                // Validar que haya items
+                if (purchaseItems.length === 0) {
+                    Swal.fire({
+                        title: 'Compra vacía',
+                        text: 'Debe agregar al menos un producto a la compra',
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
 
-            // Preparar datos del encabezado
-            const header = {
-                purchase_date: document.getElementById('purchase_date').value,
-                document_type: document.getElementById('document_type').value,
-                document_number: document.getElementById('document_number').value,
-                provider_name: providerName,
-                total_amount: parseFloat(document.getElementById('totalAmount').textContent)
-            };
+                // Validar proveedor
+                const providerName = document.getElementById('provider_name').value.trim();
+                if (!providerName) {
+                    Swal.fire({
+                        title: 'Proveedor requerido',
+                        text: 'Debe especificar un proveedor o casa farmacéutica',
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
 
-            // Preparar payload completo
-            const payload = {
-                header: header,
-                items: purchaseItems
-            };
+                // Preparar datos del encabezado
+                const header = {
+                    purchase_date: document.getElementById('purchase_date').value,
+                    document_type: document.getElementById('document_type').value,
+                    document_number: document.getElementById('document_number').value,
+                    provider_name: providerName,
+                    total_amount: parseFloat(document.getElementById('totalAmount').textContent)
+                };
 
-            // Enviar datos al servidor
-            fetch('save_purchase.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
+                // Preparar payload completo
+                const payload = {
+                    header: header,
+                    items: purchaseItems
+                };
+
+                // Enviar datos al servidor
+                fetch('save_purchase.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (window.purchaseDraftManager) {
+                                window.purchaseDraftManager.clearDraft();
+                            }
+
+                            Swal.fire({
+                                title: '¡Compra Registrada!',
+                                text: 'La compra se ha registrado correctamente. Los productos se han agregado al inventario como pendientes.',
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            }).then(() => {
+                                // Cerrar modal y recargar página
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('newPurchaseModal'));
+                                modal.hide();
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message || 'Error al guardar la compra',
+                                icon: 'error',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         Swal.fire({
-                            title: '¡Compra Registrada!',
-                            text: 'La compra se ha registrado correctamente. Los productos se han agregado al inventario como pendientes.',
-                            icon: 'success',
-                            confirmButtonText: 'Aceptar'
-                        }).then(() => {
-                            // Cerrar modal y recargar página
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('newPurchaseModal'));
-                            modal.hide();
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error',
-                            text: data.message || 'Error al guardar la compra',
+                            title: 'Error de conexión',
+                            text: 'Ocurrió un error al procesar la solicitud',
                             icon: 'error',
                             confirmButtonText: 'Entendido'
                         });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error de conexión',
-                        text: 'Ocurrió un error al procesar la solicitud',
-                        icon: 'error',
-                        confirmButtonText: 'Entendido'
                     });
-                });
-        };
+            };
 
-        // Ver detalles de compra
-        window.viewPurchaseDetails = function (id) {
-            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
-            modal.show();
+            // Ver detalles de compra
+            window.viewPurchaseDetails = function (id) {
+                const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+                modal.show();
 
-            // Mostrar spinner mientras carga
-            document.getElementById('detailsModalBody').innerHTML = `
+                // Mostrar spinner mientras carga
+                document.getElementById('detailsModalBody').innerHTML = `
                 <div class="text-center py-4">
                     <div class="spinner-border text-primary"></div>
                     <p class="mt-2 text-muted">Cargando detalles...</p>
                 </div>
             `;
 
-            // Obtener datos del servidor
-            fetch('get_purchase_details.php?id=' + id)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        const h = data.header;
-                        let html = `
+                // Obtener datos del servidor
+                fetch('get_purchase_details.php?id=' + id)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            const h = data.header;
+                            let html = `
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <p class="mb-2"><strong>Proveedor:</strong> ${h.provider_name}</p>
@@ -2835,8 +2862,8 @@ try {
                                 <tbody>
                     `;
 
-                        data.items.forEach(item => {
-                            html += `
+                            data.items.forEach(item => {
+                                html += `
                             <tr>
                                 <td>${item.product_name}</td>
                                 <td>${item.presentation || 'N/A'}</td>
@@ -2847,66 +2874,66 @@ try {
                                 <td class="text-end">Q${parseFloat(item.subtotal).toFixed(2)}</td>
                             </tr>
                         `;
-                        });
+                            });
 
-                        html += `
+                            html += `
                                 </tbody>
                             </table>
                         </div>
                     `;
 
-                        document.getElementById('detailsModalBody').innerHTML = html;
-                    } else {
-                        document.getElementById('detailsModalBody').innerHTML = `
+                            document.getElementById('detailsModalBody').innerHTML = html;
+                        } else {
+                            document.getElementById('detailsModalBody').innerHTML = `
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle me-2"></i>
                             ${data.message || 'Error al cargar los detalles de la compra'}
                         </div>
                     `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('detailsModalBody').innerHTML = `
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('detailsModalBody').innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Error de conexión al cargar los detalles
                     </div>
                 `;
-                });
-        };
+                    });
+            };
 
-        // Abrir modal de pagos
-        window.openPaymentModal = function (id) {
-            // Establecer ID de compra
-            document.getElementById('pay_purchase_id').value = id;
+            // Abrir modal de pagos
+            window.openPaymentModal = function (id) {
+                // Establecer ID de compra
+                document.getElementById('pay_purchase_id').value = id;
 
-            // Establecer fecha actual
-            document.getElementById('pay_date').valueAsDate = new Date();
+                // Establecer fecha actual
+                document.getElementById('pay_date').valueAsDate = new Date();
 
-            // Limpiar campos
-            document.getElementById('pay_amount').value = '';
-            document.getElementById('pay_notes').value = '';
+                // Limpiar campos
+                document.getElementById('pay_amount').value = '';
+                document.getElementById('pay_notes').value = '';
+
+                // Cargar información de pagos
+                loadPayments(id);
+
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                modal.show();
+            };
 
             // Cargar información de pagos
-            loadPayments(id);
-
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-            modal.show();
-        };
-
-        // Cargar información de pagos
-        function loadPayments(id) {
-            // Mostrar estado de carga
-            document.getElementById('paymentHeaderInfo').innerHTML = `
+            function loadPayments(id) {
+                // Mostrar estado de carga
+                document.getElementById('paymentHeaderInfo').innerHTML = `
                 <div class="text-center w-100">
                     <div class="spinner-border spinner-border-sm text-primary"></div>
                     <span class="ms-2">Cargando información...</span>
                 </div>
             `;
 
-            document.querySelector('#paymentsHistoryTable tbody').innerHTML = `
+                document.querySelector('#paymentsHistoryTable tbody').innerHTML = `
                 <tr>
                     <td colspan="4" class="text-center text-muted">
                         <div class="spinner-border spinner-border-sm"></div>
@@ -2915,23 +2942,23 @@ try {
                 </tr>
             `;
 
-            // Obtener datos del servidor
-            fetch('get_payments.php?id=' + id)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        const h = data.header;
-                        const total = parseFloat(h.total_amount);
-                        const paid = parseFloat(h.paid_amount || 0);
-                        const balance = total - paid;
+                // Obtener datos del servidor
+                fetch('get_payments.php?id=' + id)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            const h = data.header;
+                            const total = parseFloat(h.total_amount);
+                            const paid = parseFloat(h.paid_amount || 0);
+                            const balance = total - paid;
 
-                        // Actualizar información del encabezado
-                        const infoHtml = `
+                            // Actualizar información del encabezado
+                            const infoHtml = `
                         <div>
                             <strong>${h.document_type} ${h.document_number || ''}</strong><br>
                             <small class="text-muted">${h.provider_name}</small>
@@ -2941,153 +2968,290 @@ try {
                             <div class="badge ${balance > 0 ? 'bg-danger' : 'bg-success'}">Saldo: Q${balance.toFixed(2)}</div>
                         </div>
                     `;
-                        document.getElementById('paymentHeaderInfo').innerHTML = infoHtml;
+                            document.getElementById('paymentHeaderInfo').innerHTML = infoHtml;
 
-                        // Establecer monto sugerido (saldo pendiente)
-                        if (!document.getElementById('pay_amount').value && balance > 0) {
-                            document.getElementById('pay_amount').value = balance.toFixed(2);
-                        }
+                            // Establecer monto sugerido (saldo pendiente)
+                            if (!document.getElementById('pay_amount').value && balance > 0) {
+                                document.getElementById('pay_amount').value = balance.toFixed(2);
+                            }
 
-                        // Actualizar historial de pagos
-                        const tbody = document.querySelector('#paymentsHistoryTable tbody');
-                        tbody.innerHTML = '';
+                            // Actualizar historial de pagos
+                            const tbody = document.querySelector('#paymentsHistoryTable tbody');
+                            tbody.innerHTML = '';
 
-                        if (data.payments.length === 0) {
-                            tbody.innerHTML = `
+                            if (data.payments.length === 0) {
+                                tbody.innerHTML = `
                             <tr>
                                 <td colspan="4" class="text-center text-muted py-3">
                                     No hay pagos registrados
                                 </td>
                             </tr>
                         `;
-                        } else {
-                            data.payments.forEach(p => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
+                            } else {
+                                data.payments.forEach(p => {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
                                 <td>${p.payment_date}</td>
                                 <td>${p.payment_method}</td>
                                 <td class="fw-bold text-success">Q${parseFloat(p.amount).toFixed(2)}</td>
                                 <td><small>${p.notes || '-'}</small></td>
                             `;
-                                tbody.appendChild(row);
-                            });
-                        }
-                    } else {
-                        document.getElementById('paymentHeaderInfo').innerHTML = `
+                                    tbody.appendChild(row);
+                                });
+                            }
+                        } else {
+                            document.getElementById('paymentHeaderInfo').innerHTML = `
                         <div class="alert alert-danger w-100 mb-0">
                             <i class="bi bi-exclamation-triangle me-2"></i>
                             ${data.message}
                         </div>
                     `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('paymentHeaderInfo').innerHTML = `
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('paymentHeaderInfo').innerHTML = `
                     <div class="alert alert-danger w-100 mb-0">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Error de conexión al cargar la información
                     </div>
                 `;
-                });
-        };
+                    });
+            };
 
-        // Enviar pago
-        window.submitPayment = function () {
-            const form = document.getElementById('paymentForm');
-            const formData = new FormData(form);
+            // Enviar pago
+            window.submitPayment = function () {
+                const form = document.getElementById('paymentForm');
+                const formData = new FormData(form);
 
-            // Validar monto
-            const amount = parseFloat(formData.get('amount'));
-            if (amount <= 0) {
-                Swal.fire({
-                    title: 'Monto inválido',
-                    text: 'El monto debe ser mayor a cero',
-                    icon: 'warning',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
+                // Validar monto
+                const amount = parseFloat(formData.get('amount'));
+                if (amount <= 0) {
+                    Swal.fire({
+                        title: 'Monto inválido',
+                        text: 'El monto debe ser mayor a cero',
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
 
-            // Enviar pago al servidor
-            fetch('save_payment.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
+                // Enviar pago al servidor
+                fetch('save_payment.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: '¡Pago Registrado!',
+                                text: 'El abono se ha registrado correctamente',
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Cerrar modal y recargar página
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                                modal.hide();
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message || 'Error al registrar el pago',
+                                icon: 'error',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         Swal.fire({
-                            title: '¡Pago Registrado!',
-                            text: 'El abono se ha registrado correctamente',
-                            icon: 'success',
-                            confirmButtonText: 'Aceptar',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            // Cerrar modal y recargar página
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
-                            modal.hide();
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error',
-                            text: data.message || 'Error al registrar el pago',
+                            title: 'Error de conexión',
+                            text: 'Ocurrió un error al procesar el pago',
                             icon: 'error',
                             confirmButtonText: 'Entendido'
                         });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error de conexión',
-                        text: 'Ocurrió un error al procesar el pago',
-                        icon: 'error',
-                        confirmButtonText: 'Entendido'
                     });
-                });
-        };
-
-        // ==========================================================================
-        // INICIALIZACIÓN DE LA APLICACIÓN
-        // ==========================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inicializar componentes
-            const themeManager = new ThemeManager();
-            const tabManager = new TabManager();
-            const purchasesManager = new PurchasesManager();
-
-            // Exponer APIs necesarias globalmente
-            window.purchasesApp = {
-                theme: themeManager,
-                tabs: tabManager,
-                purchases: purchasesManager
             };
 
-            // Log de inicialización
-            console.log('Módulo de Compras CMS v4.0 inicializado correctamente');
-            console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
-            console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
-            console.log('Tema: ' + themeManager.theme);
-        });
+            // ==========================================================================
+            // GESTOR DE BORRADORES (AUTO-SAVE) PARA COMPRAS
+            // ==========================================================================
+            class PurchaseDraftManager {
+                constructor(formId, storageKey) {
+                    this.form = document.getElementById(formId);
+                    this.storageKey = storageKey;
+                    this.ignoreFields = ['password', 'file', 'hidden'];
 
-        // ==========================================================================
-        // MANEJO DE ERRORES GLOBALES
-        // ==========================================================================
-        window.addEventListener('error', (event) => {
-            console.error('Error en módulo de compras:', event.error);
-        });
+                    if (this.form) {
+                        this.setupEventListeners();
+                    }
+                }
 
-        // ==========================================================================
-        // POLYFILLS PARA NAVEGADORES ANTIGUOS
-        // ==========================================================================
-        if (!NodeList.prototype.forEach) {
-            NodeList.prototype.forEach = Array.prototype.forEach;
-        }
+                setupEventListeners() {
+                    // Escuchar cambios en inputs del formulario
+                    this.form.addEventListener('input', (e) => {
+                        this.saveDraft();
+                    });
 
-        }) ();
+                    this.form.addEventListener('change', (e) => {
+                        this.saveDraft();
+                    });
+                }
+
+                saveDraft() {
+                    // 1. Guardar campos del formulario
+                    const formData = {};
+                    const elements = this.form.elements;
+
+                    for (let i = 0; i < elements.length; i++) {
+                        const el = elements[i];
+                        // Ignorar campos de "Agregar item" para no ensuciar el draft con valores temporales
+                        if (!el.name ||
+                            this.ignoreFields.includes(el.type) ||
+                            el.id.startsWith('item_')) continue;
+
+                        if (el.type === 'checkbox' || el.type === 'radio') {
+                            if (el.checked) {
+                                formData[el.name] = el.value;
+                            }
+                        } else {
+                            formData[el.name] = el.value;
+                        }
+                    }
+
+                    // 2. Guardar lista de items (global purchaseItems)
+                    // Nota: purchaseItems es una variable global definida en este script
+
+                    const draftData = {
+                        form: formData,
+                        items: window.purchaseItems || []
+                    };
+
+                    localStorage.setItem(this.storageKey, JSON.stringify(draftData));
+                }
+
+                hasDraft() {
+                    return localStorage.getItem(this.storageKey) !== null;
+                }
+
+                restoreDraft() {
+                    const savedData = localStorage.getItem(this.storageKey);
+                    if (!savedData) return false;
+
+                    try {
+                        const data = JSON.parse(savedData);
+
+                        // 1. Restaurar formulario
+                        const formData = data.form;
+                        for (const name in formData) {
+                            if (this.form.elements[name]) {
+                                const el = this.form.elements[name];
+                                if (el instanceof RadioNodeList) {
+                                    for (let i = 0; i < el.length; i++) {
+                                        if (el[i].value === formData[name]) el[i].checked = true;
+                                    }
+                                } else if (el.type === 'checkbox') {
+                                    el.checked = true;
+                                } else {
+                                    el.value = formData[name];
+                                }
+                            }
+                        }
+
+                        // 2. Restaurar items
+                        if (data.items && Array.isArray(data.items)) {
+                            window.purchaseItems = data.items;
+                            // Llamar renderItems global
+                            if (typeof window.renderItems === 'function') {
+                                window.renderItems();
+                            } else {
+                                // Fallback si renderItems no está expuesto (aunque debería estarlo por ser función global o de clase)
+                                // En este script, renderItems es una función interna, necesitamos exponerla o moverla.
+                                // La modificaremos más abajo para asegurar acceso.
+                            }
+                        }
+
+                        return true;
+
+                    } catch (e) {
+                        console.error('Error al restaurar borrador de compra:', e);
+                        return false;
+                    }
+                }
+
+                clearDraft() {
+                    localStorage.removeItem(this.storageKey);
+                }
+
+                showDraftNotification() {
+                    if (!document.getElementById('draftToast')) {
+                        const toastContainer = document.createElement('div');
+                        toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+                        toastContainer.style.zIndex = '1100';
+                        toastContainer.innerHTML = `
+                            <div id="draftToast" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        <i class="bi bi-save me-2"></i>
+                                        Borrador de compra recuperado
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(toastContainer);
+                    }
+
+                    const toast = new bootstrap.Toast(document.getElementById('draftToast'));
+                    toast.show();
+                }
+            }
+
+            // ==========================================================================
+            // INICIALIZACIÓN DE LA APLICACIÓN
+            // ==========================================================================
+            document.addEventListener('DOMContentLoaded', () => {
+                // Inicializar componentes
+                const themeManager = new ThemeManager();
+                const tabManager = new TabManager();
+                const purchasesManager = new PurchasesManager();
+
+                // Inicializar gestor de borradores (hacerlo accesible globalmente)
+                window.purchaseDraftManager = new PurchaseDraftManager('purchaseForm', 'purchases_new_draft');
+
+                // Exponer APIs necesarias globalmente
+                window.purchasesApp = {
+                    theme: themeManager,
+                    tabs: tabManager,
+                    purchases: purchasesManager
+                };
+
+                // Log de inicialización
+                console.log('Módulo de Compras CMS v4.0 inicializado correctamente');
+                console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
+                console.log('Rol: <?php echo htmlspecialchars($user_type); ?>');
+                console.log('Tema: ' + themeManager.theme);
+            });
+
+            // ==========================================================================
+            // MANEJO DE ERRORES GLOBALES
+            // ==========================================================================
+            window.addEventListener('error', (event) => {
+                console.error('Error en módulo de compras:', event.error);
+            });
+
+            // ==========================================================================
+            // POLYFILLS PARA NAVEGADORES ANTIGUOS
+            // ==========================================================================
+            if (!NodeList.prototype.forEach) {
+                NodeList.prototype.forEach = Array.prototype.forEach;
+            }
+
+        })();
 
         // Estilos para spinner
         const style = document.createElement('style');
@@ -3102,9 +3266,10 @@ try {
     `;
         document.head.appendChild(style);
 
-        // Inyectar script de mantenimiento de sesión activo (Global)
-        <?php output_keep_alive_script(); ?>
     </script>
+
+    <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
+    <?php output_keep_alive_script(); ?>
 </body>
 
 </html>

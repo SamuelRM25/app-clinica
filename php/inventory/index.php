@@ -30,6 +30,10 @@ try {
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
+    // Permiso de gestión: Usuario jrivas_farmacia (ID 6) y administradores
+    // Los demás usuarios solo tienen permiso de lectura
+    $can_manage_inventory = ($user_id == 6 || $user_type === 'admin');
+
     // ============ ESTADÍSTICAS DEL INVENTARIO ============
 
     // 1. Total de items en inventario
@@ -1566,7 +1570,7 @@ try {
         <!-- Contenido Principal -->
         <main class="main-content">
             <!-- Notificación de compras pendientes -->
-            <?php if ($pending_receipt > 0): ?>
+            <?php if ($pending_purchases > 0 && $_SESSION['user_id'] == 6): ?>
                 <div class="alert-card mb-4 animate-in delay-1">
                     <div class="alert-header">
                         <div class="alert-icon warning">
@@ -1604,6 +1608,7 @@ try {
             </div>
 
             <!-- Estadísticas principales -->
+            <?php if ($user_type === 'admin'): ?>
             <div class="stats-grid">
                 <!-- Total de items -->
                 <div class="stat-card animate-in delay-1">
@@ -1673,6 +1678,7 @@ try {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
             <!-- Barra de búsqueda y acciones -->
             <div class="appointments-section animate-in delay-1">
@@ -1686,11 +1692,13 @@ try {
                             <i class="bi bi-file-earmark-spreadsheet"></i>
                             Exportar CSV
                         </a>
-                        <button type="button" class="action-btn" data-bs-toggle="modal"
-                            data-bs-target="#addMedicineModal">
-                            <i class="bi bi-plus-circle"></i>
-                            Nuevo Medicamento
-                        </button>
+                        <?php if ($can_manage_inventory): ?>
+                            <button type="button" class="action-btn" data-bs-toggle="modal"
+                                data-bs-target="#addMedicineModal">
+                                <i class="bi bi-plus-circle"></i>
+                                Nuevo Medicamento
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -1735,6 +1743,7 @@ try {
             </div>
 
             <!-- Verificador de Precios -->
+            <?php if ($user_type === 'user'): ?>
             <div class="appointments-section animate-in delay-1 mb-4">
                 <div class="section-header mb-0">
                     <h3 class="section-title">
@@ -1784,6 +1793,7 @@ try {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
             <!-- Tabla de inventario -->
             <section class="appointments-section animate-in delay-2">
@@ -1923,15 +1933,17 @@ try {
                                                         <i class="bi bi-box-arrow-in-down"></i>
                                                     </button>
                                                 <?php else: ?>
-                                                    <button type="button" class="btn-icon edit"
-                                                        data-id="<?php echo $item['id_inventario']; ?>" data-bs-toggle="modal"
-                                                        data-bs-target="#editMedicineModal" title="Editar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button type="button" class="btn-icon delete"
-                                                        data-id="<?php echo $item['id_inventario']; ?>" title="Eliminar">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
+                                                    <?php if ($can_manage_inventory): ?>
+                                                        <button type="button" class="btn-icon edit"
+                                                            data-id="<?php echo $item['id_inventario']; ?>" data-bs-toggle="modal"
+                                                            data-bs-target="#editMedicineModal" title="Editar">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button type="button" class="btn-icon delete"
+                                                            data-id="<?php echo $item['id_inventario']; ?>" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -1947,10 +1959,12 @@ try {
                         </div>
                         <h4 class="text-muted mb-2">No hay medicamentos en el inventario</h4>
                         <p class="text-muted mb-3">Comience agregando nuevos medicamentos al sistema</p>
-                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
-                            <i class="bi bi-plus-circle"></i>
-                            Agregar primer medicamento
-                        </button>
+                        <?php if ($can_manage_inventory): ?>
+                            <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
+                                <i class="bi bi-plus-circle"></i>
+                                Agregar primer medicamento
+                            </button>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </section>
@@ -2642,6 +2656,8 @@ try {
                 const expiryDate = document.getElementById('receive_fecha_vencimiento').value;
                 const referenceDoc = document.getElementById('receive_documento_referencia')?.value || '';
 
+                const barcode = document.getElementById('receive_codigo_barras').value;
+
                 if (!expiryDate) {
                     alert('Por favor ingrese la fecha de vencimiento');
                     return;
@@ -2661,7 +2677,8 @@ try {
                     body: JSON.stringify({
                         id_inventario: id,
                         fecha_vencimiento: expiryDate,
-                        documento_referencia: referenceDoc
+                        documento_referencia: referenceDoc,
+                        codigo_barras: barcode
                     })
                 })
                     .then(response => response.json())
@@ -2776,6 +2793,127 @@ try {
             }
 
             // ==========================================================================
+            // GESTOR DE BORRADORES (AUTO-SAVE)
+            // ==========================================================================
+            class FormDraftManager {
+                constructor(formId, storageKey) {
+                    this.form = document.getElementById(formId);
+                    this.storageKey = storageKey;
+                    this.ignoreFields = ['password', 'file', 'hidden'];
+
+                    if (this.form) {
+                        this.setupEventListeners();
+                        this.restoreDraft();
+                    }
+                }
+
+                setupEventListeners() {
+                    // Escuchar cambios en inputs
+                    this.form.addEventListener('input', (e) => {
+                        this.saveDraft();
+                    });
+
+                    this.form.addEventListener('change', (e) => {
+                        this.saveDraft();
+                    });
+
+                    // Limpiar al enviar exitosamente
+                    this.form.addEventListener('submit', () => {
+                        // Esperar un momento para asegurar que no hubo error de validación
+                        // En un caso real, esto debería llamarse solo si el submit es exitoso
+                        // Pero como es un form POST normal, se recargará la página
+                        this.clearDraft();
+                    });
+                }
+
+                saveDraft() {
+                    const formData = {};
+                    const elements = this.form.elements;
+
+                    for (let i = 0; i < elements.length; i++) {
+                        const el = elements[i];
+
+                        if (!el.name || this.ignoreFields.includes(el.type)) continue;
+
+                        if (el.type === 'checkbox' || el.type === 'radio') {
+                            if (el.checked) {
+                                formData[el.name] = el.value;
+                            }
+                        } else {
+                            formData[el.name] = el.value;
+                        }
+                    }
+
+                    localStorage.setItem(this.storageKey, JSON.stringify(formData));
+                }
+
+                restoreDraft() {
+                    const savedData = localStorage.getItem(this.storageKey);
+                    if (!savedData) return;
+
+                    try {
+                        const formData = JSON.parse(savedData);
+                        const elements = this.form.elements;
+                        let hasData = false;
+
+                        for (const name in formData) {
+                            if (this.form.elements[name]) {
+                                const el = this.form.elements[name];
+
+                                // Manejar diferentes tipos de inputs
+                                if (el instanceof RadioNodeList) {
+                                    for (let i = 0; i < el.length; i++) {
+                                        if (el[i].value === formData[name]) {
+                                            el[i].checked = true;
+                                        }
+                                    }
+                                } else if (el.type === 'checkbox') {
+                                    el.checked = true;
+                                } else {
+                                    el.value = formData[name];
+                                }
+                                hasData = true;
+                            }
+                        }
+
+                        if (hasData) {
+                            this.showDraftNotification();
+                        }
+                    } catch (e) {
+                        console.error('Error al restaurar borrador:', e);
+                    }
+                }
+
+                clearDraft() {
+                    localStorage.removeItem(this.storageKey);
+                }
+
+                showDraftNotification() {
+                    // Crear notificación toast si no existe
+                    if (!document.getElementById('draftToast')) {
+                        const toastContainer = document.createElement('div');
+                        toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+                        toastContainer.style.zIndex = '1100';
+                        toastContainer.innerHTML = `
+                            <div id="draftToast" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        <i class="bi bi-save me-2"></i>
+                                        Borrador recuperado automáticamente
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(toastContainer);
+                    }
+
+                    const toast = new bootstrap.Toast(document.getElementById('draftToast'));
+                    toast.show();
+                }
+            }
+
+            // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
             // ==========================================================================
             document.addEventListener('DOMContentLoaded', () => {
@@ -2785,6 +2923,9 @@ try {
                 const animationManager = new AnimationManager();
                 const formValidator = new FormValidator();
                 const verifierManager = new VerifierManager();
+
+                // Inicializar gestor de borradores para nuevo medicamento
+                const draftManager = new FormDraftManager('addMedicineForm', 'inventory_new_medicine_draft');
 
                 // Exponer APIs necesarias globalmente
                 window.inventory = {

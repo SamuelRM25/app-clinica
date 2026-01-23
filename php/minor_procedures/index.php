@@ -1686,232 +1686,6 @@ try {
                 </div>
             </div>
 
-            <!-- Formulario de nuevo procedimiento -->
-            <section class="form-container animate-in delay-1">
-                <div class="form-header">
-                    <h3 class="form-title">
-                        <i class="bi bi-clipboard-plus form-title-icon"></i>
-                        Nuevo Procedimiento Menor
-                    </h3>
-                    <a href="historial_procedimientos.php" class="action-btn secondary">
-                        <i class="bi bi-clock-history"></i>
-                        Ver Historial
-                    </a>
-                </div>
-
-                <form id="procedureForm" action="save_procedure.php" method="POST">
-                    <!-- Paciente -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label for="id_paciente" class="form-label">Paciente *</label>
-                            <select class="form-select" id="id_paciente" name="id_paciente" required>
-                                <option value="">Seleccionar paciente...</option>
-                                <?php foreach ($patients as $patient):
-                                    $age = $patient['fecha_nacimiento'] ? calculateAge($patient['fecha_nacimiento']) : 'N/A';
-                                    ?>
-                                    <option value="<?php echo $patient['id_paciente']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($patient['nombre_completo']); ?>"
-                                        data-telefono="<?php echo htmlspecialchars($patient['telefono']); ?>"
-                                        data-edad="<?php echo $age; ?>">
-                                        <?php echo htmlspecialchars($patient['nombre_completo']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="hidden" name="nombre_paciente" id="nombre_paciente">
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-label">Información del Paciente</div>
-                            <div id="paciente_info" class="patient-info-card">
-                                <small class="text-muted">Seleccione un paciente para ver su información</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Detalles del procedimiento -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <label class="form-label">Procedimientos Realizados *</label>
-                            <div class="field-container">
-                                <div class="checkbox-grid">
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Sutura de herida"
-                                            id="proc1">
-                                        <label for="proc1">Sutura de herida</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Curación de herida"
-                                            id="proc2">
-                                        <label for="proc2">Curación de herida</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]"
-                                            value="Extracción de uña encarnada" id="proc3">
-                                        <label for="proc3">Extracción de uña encarnada</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Drenaje de absceso"
-                                            id="proc4">
-                                        <label for="proc4">Drenaje de absceso</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Retiro de puntos"
-                                            id="proc5">
-                                        <label for="proc5">Retiro de puntos</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Infiltración" id="proc6">
-                                        <label for="proc6">Infiltración</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Nebulización" id="proc7">
-                                        <label for="proc7">Nebulización</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Lavado de oídos"
-                                            id="proc8">
-                                        <label for="proc8">Lavado de oídos</label>
-                                    </div>
-                                    <div class="custom-checkbox">
-                                        <input type="checkbox" name="procedimientos[]" value="Cauterización" id="proc9">
-                                        <label for="proc9">Cauterización</label>
-                                    </div>
-                                </div>
-
-                                <!-- Procedimientos dinámicos -->
-                                <div id="dynamicProcedures" class="mt-3">
-                                    <!-- Se agregarán procedimientos dinámicos aquí -->
-                                </div>
-
-                                <!-- Botón para agregar procedimiento personalizado -->
-                                <div class="mt-3">
-                                    <button type="button" class="action-btn secondary" id="btnAddProcedure">
-                                        <i class="bi bi-plus-lg"></i>
-                                        <span>Agregar Procedimiento Personalizado</span>
-                                    </button>
-                                </div>
-
-                                <small class="text-muted mt-2 d-block">
-                                    <i class="bi bi-info-circle"></i>
-                                    Puede seleccionar varios procedimientos o agregar personalizados.
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Costo y fecha -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label for="cobro" class="form-label">Costo Total del Procedimiento *</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="cobro" name="cobro" step="0.01" min="0"
-                                    placeholder="0.00" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="fecha_procedimiento" class="form-label">Fecha y Hora *</label>
-                            <input type="datetime-local" class="form-control" id="fecha_procedimiento"
-                                name="fecha_procedimiento" required>
-                        </div>
-                    </div>
-
-                    <!-- Procedimientos adicionales -->
-                    <div class="form-group" id="additionalProceduresSection" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <label class="form-label">Procedimientos Adicionales</label>
-                            <button type="button" class="action-btn secondary" onclick="addAdditionalProcedure()">
-                                <i class="bi bi-plus-circle"></i>
-                                <span>Agregar</span>
-                            </button>
-                        </div>
-                        <div id="additionalProceduresContainer"></div>
-                    </div>
-
-                    <!-- Botones de acción -->
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="reset" class="action-btn secondary">
-                            <i class="bi bi-x-circle"></i>
-                            <span>Limpiar</span>
-                        </button>
-                        <button type="submit" class="action-btn">
-                            <i class="bi bi-check-lg"></i>
-                            <span>Registrar Procedimiento</span>
-                        </button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Estadísticas principales -->
-            <div class="stats-grid">
-                <!-- Procedimientos de hoy -->
-                <div class="stat-card animate-in delay-1">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Procedimientos Hoy</div>
-                            <div class="stat-value"><?php echo $today_procedures; ?></div>
-                        </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-bandaid"></i>
-                        </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-arrow-up-right"></i>
-                        <span>Realizados hoy</span>
-                    </div>
-                </div>
-
-                <!-- Ingresos de hoy -->
-                <div class="stat-card animate-in delay-2">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ingresos Hoy</div>
-                            <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
-                        </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-currency-dollar"></i>
-                        </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-cash-stack"></i>
-                        <span>Total recaudado</span>
-                    </div>
-                </div>
-
-                <!-- Procedimientos de la semana -->
-                <div class="stat-card animate-in delay-3">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Esta Semana</div>
-                            <div class="stat-value"><?php echo $week_procedures; ?></div>
-                        </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-calendar-week"></i>
-                        </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-calendar-range"></i>
-                        <span>Total de la semana</span>
-                    </div>
-                </div>
-
-                <!-- Ingresos de la semana -->
-                <div class="stat-card animate-in delay-4">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ingresos Semana</div>
-                            <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
-                        </div>
-                        <div class="stat-icon info">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-calendar-month"></i>
-                        <span>Acumulado semanal</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Procedimientos recientes -->
             <section class="appointments-section animate-in delay-2">
                 <div class="section-header">
@@ -1919,10 +1693,16 @@ try {
                         <i class="bi bi-clock-history section-title-icon"></i>
                         Procedimientos Recientes
                     </h3>
-                    <button type="button" class="action-btn" onclick="refreshProcedures()">
-                        <i class="bi bi-arrow-clockwise"></i>
-                        Actualizar
-                    </button>
+                    <div class="d-flex gap-2">
+                        <a href="historial_procedimientos.php" class="action-btn secondary">
+                            <i class="bi bi-clock-history"></i>
+                            Ver Historial
+                        </a>
+                        <button type="button" class="action-btn" onclick="refreshProcedures()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Actualizar
+                        </button>
+                    </div>
                 </div>
 
                 <?php if (count($recent_procedures) > 0): ?>
@@ -2002,28 +1782,191 @@ try {
                 <?php endif; ?>
             </section>
 
-            <!-- Resumen mensual -->
-            <div class="stat-card animate-in delay-3">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-title">Resumen del Mes Actual</div>
-                        <div class="stat-value"><?php echo $month_procedures; ?> Procedimientos</div>
+            <!-- Estadísticas principales -->
+            <?php if ($user_type === 'admin'): ?>
+                <div class="stats-grid">
+                    <!-- Procedimientos de hoy -->
+                    <div class="stat-card animate-in delay-1">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Procedimientos Hoy</div>
+                                <div class="stat-value"><?php echo $today_procedures; ?></div>
+                            </div>
+                            <div class="stat-icon primary">
+                                <i class="bi bi-bandaid"></i>
+                            </div>
+                        </div>
                         <div class="stat-change positive">
-                            <i class="bi bi-calendar-month"></i>
-                            <span>Mes de <?php echo date('F'); ?></span>
+                            <i class="bi bi-arrow-up-right"></i>
+                            <span>Realizados hoy</span>
                         </div>
                     </div>
-                    <div class="stat-icon warning">
-                        <i class="bi bi-bar-chart-line"></i>
+
+                    <!-- Ingresos de hoy -->
+                    <div class="stat-card animate-in delay-2">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Ingresos Hoy</div>
+                                <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                            </div>
+                            <div class="stat-icon success">
+                                <i class="bi bi-currency-dollar"></i>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">
+                            <i class="bi bi-cash-stack"></i>
+                            <span>Total recaudado</span>
+                        </div>
+                    </div>
+
+                    <!-- Procedimientos de la semana -->
+                    <div class="stat-card animate-in delay-3">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Esta Semana</div>
+                                <div class="stat-value"><?php echo $week_procedures; ?></div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-calendar-week"></i>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-range"></i>
+                            <span>Total de la semana</span>
+                        </div>
+                    </div>
+
+                    <!-- Ingresos de la semana -->
+                    <div class="stat-card animate-in delay-4">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Ingresos Semana</div>
+                                <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                            </div>
+                            <div class="stat-icon info">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-month"></i>
+                            <span>Acumulado semanal</span>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-muted mb-2">Total acumulado en sistema:
-                        <strong><?php echo $total_procedures; ?></strong> procedimientos
-                    </p>
-                    <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico Herrera Saenz</p>
+
+                <!-- Procedimientos recientes -->
+                <section class="appointments-section animate-in delay-2">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-clock-history section-title-icon"></i>
+                            Procedimientos Recientes
+                        </h3>
+                        <button type="button" class="action-btn" onclick="refreshProcedures()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Actualizar
+                        </button>
+                    </div>
+
+                    <?php if (count($recent_procedures) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Procedimiento</th>
+                                        <th>Costo</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recent_procedures as $procedure): ?>
+                                        <?php
+                                        $patient_name = htmlspecialchars($procedure['nombre_paciente']);
+                                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <div class="patient-cell">
+                                                    <div class="patient-avatar">
+                                                        <?php echo $patient_initials; ?>
+                                                    </div>
+                                                    <div class="patient-info">
+                                                        <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="procedure-type">
+                                                    <?php echo htmlspecialchars($procedure['procedimiento']); ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="time-badge bg-success text-white">
+                                                    Q<?php echo number_format($procedure['cobro'], 2); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="time-badge">
+                                                    <i class="bi bi-clock"></i>
+                                                    <?php echo date('d/m/Y H:i', strtotime($procedure['fecha_procedimiento'])); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="#" class="btn-icon edit" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="#" class="btn-icon history" title="Ver detalles">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <a href="historial_procedimientos.php" class="text-primary text-decoration-none">
+                                Ver todos los procedimientos <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-bandaid"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay procedimientos registrados</h4>
+                            <p class="text-muted mb-3">Total en sistema: <?php echo $total_procedures; ?></p>
+                            <p class="text-muted">Complete el formulario para registrar su primer procedimiento</p>
+                        </div>
+                    <?php endif; ?>
+                </section>
+
+                <!-- Resumen mensual -->
+                <div class="stat-card animate-in delay-3">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Resumen del Mes Actual</div>
+                            <div class="stat-value"><?php echo $month_procedures; ?> Procedimientos</div>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-month"></i>
+                                <span>Mes de <?php echo date('F'); ?></span>
+                            </div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-bar-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-muted mb-2">Total acumulado en sistema:
+                            <strong><?php echo $total_procedures; ?></strong> procedimientos
+                        </p>
+                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico Herrera Saenz</p>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </main>
     </div>
 

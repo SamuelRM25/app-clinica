@@ -8,6 +8,12 @@ date_default_timezone_set('America/Guatemala');
 
 verify_session();
 
+// Only admins can manage the catalog
+if ($_SESSION['tipoUsuario'] !== 'admin') {
+    header("Location: index.php");
+    exit;
+}
+
 try {
     if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
         $_SESSION['patient_message'] = "ID de paciente inválido";
@@ -58,6 +64,19 @@ try {
     $stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido, especialidad FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre, apellido");
     $stmtDocs->execute();
     $doctors = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener resultados de laboratorio con archivos adjuntos
+    // Buscamos tanto en ordenes_laboratorio como en los tests individuales (orden_pruebas)
+    $stmtLab = $conn->prepare("
+        SELECT ol.numero_orden, ol.fecha_orden, op.archivo_resultados, cp.nombre_prueba
+        FROM ordenes_laboratorio ol
+        JOIN orden_pruebas op ON ol.id_orden = op.id_orden
+        JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
+        WHERE ol.id_paciente = ? AND op.archivo_resultados IS NOT NULL
+        ORDER BY ol.fecha_orden DESC
+    ");
+    $stmtLab->execute([$patient_id]);
+    $lab_results = $stmtLab->fetchAll(PDO::FETCH_ASSOC);
 
     // Calcular edad del paciente
     $edad = isset($patient['fecha_nacimiento']) ?
@@ -321,9 +340,8 @@ try {
             flex-direction: column;
             min-height: 100vh;
             position: relative;
-            margin-left: var(--sidebar-width);
-            transition: margin-left var(--transition-base);
-            width: calc(100% - var(--sidebar-width));
+            margin-left: 0;
+            width: 100%;
         }
 
         /* ==========================================================================
@@ -1475,101 +1493,7 @@ try {
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
 
-    <!-- Overlay para sidebar móvil -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Barra Lateral Moderna -->
-    <aside class="sidebar" id="sidebar">
-        <!-- Navegación -->
-        <nav class="sidebar-nav">
-            <ul class="nav-list">
-                <li class="nav-item">
-                    <a href="../dashboard/index.php" class="nav-link">
-                        <i class="bi bi-speedometer2 nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../appointments/index.php" class="nav-link">
-                        <i class="bi bi-calendar-check nav-icon"></i>
-                        <span class="nav-text">Citas</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../patients/index.php" class="nav-link active">
-                        <i class="bi bi-people nav-icon"></i>
-                        <span class="nav-text">Pacientes</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../hospitalization/index.php" class="nav-link">
-                        <i class="bi bi-hospital nav-icon"></i>
-                        <span class="nav-text">Hospitalización</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../minor_procedures/index.php" class="nav-link">
-                        <i class="bi bi-bandaid nav-icon"></i>
-                        <span class="nav-text">Procedimientos</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../examinations/index.php" class="nav-link">
-                        <i class="bi bi-file-earmark-medical nav-icon"></i>
-                        <span class="nav-text">Exámenes</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../laboratory/index.php" class="nav-link">
-                        <i class="bi bi-virus nav-icon"></i>
-                        <span class="nav-text">Laboratorio</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../inventory/index.php" class="nav-link">
-                        <i class="bi bi-box-seam nav-icon"></i>
-                        <span class="nav-text">Inventario</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../purchases/index.php" class="nav-link">
-                        <i class="bi bi-cart nav-icon"></i>
-                        <span class="nav-text">Compras</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../sales/index.php" class="nav-link">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        <span class="nav-text">Ventas</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../billing/index.php" class="nav-link">
-                        <i class="bi bi-cash-coin nav-icon"></i>
-                        <span class="nav-text">Cobros</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../dispensary/index.php" class="nav-link">
-                        <i class="bi bi-capsule nav-icon"></i>
-                        <span class="nav-text">Dispensario</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../reports/index.php" class="nav-link">
-                        <i class="bi bi-graph-up nav-icon"></i>
-                        <span class="nav-text">Reportes</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../settings/index.php" class="nav-link">
-                        <i class="bi bi-gear nav-icon"></i>
-                        <span class="nav-text">Configuración</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </aside>
 
     <!-- Contenedor Principal -->
     <div class="dashboard-container">
@@ -1616,13 +1540,16 @@ try {
             </div>
         </header>
 
-        <!-- Botón para colapsar/expandir sidebar (solo escritorio) -->
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Colapsar/expandir menú">
-            <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-        </button>
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <!-- Botón Volver -->
+            <div class="mb-4 animate-in">
+                <a href="index.php" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Volver a Pacientes</span>
+                </a>
+            </div>
             <!-- Bienvenida personalizada -->
             <div class="stat-card mb-4 animate-in">
                 <div class="stat-header">
@@ -1711,6 +1638,48 @@ try {
 
                 <?php if (count($medical_records) > 0): ?>
                     <div class="medical-timeline">
+                        <!-- Sección de Resultados de Laboratorio -->
+                        <?php if (!empty($lab_results)): ?>
+                            <div class="card mb-4 border-0 shadow-sm" style="border-radius: var(--radius-lg);">
+                                <div class="card-header bg-white py-3 border-0">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="icon-shape bg-info-subtle text-info rounded-3 p-2">
+                                            <i class="bi bi-file-earmark-medical fs-5"></i>
+                                        </div>
+                                        <h5 class="mb-0 fw-bold text-dark">Resultados de Laboratorio</h5>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <?php foreach ($lab_results as $lab): ?>
+                                            <div class="col-md-6 col-lg-4">
+                                                <div
+                                                    class="p-3 border rounded-3 position-relative hover-shadow transition-all bg-light">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <span class="badge bg-primary bg-opacity-10 text-primary">Lab
+                                                            #<?php echo htmlspecialchars($lab['numero_orden']); ?></span>
+                                                        <span
+                                                            class="text-muted small"><?php echo date('d/M/Y', strtotime($lab['fecha_orden'])); ?></span>
+                                                    </div>
+                                                    <h6 class="mb-1 text-dark fw-semibold">
+                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?></h6>
+                                                    <p class="text-muted small mb-2">Resultado Adjunto</p>
+
+                                                    <div class="mt-2">
+                                                        <a href="<?php echo htmlspecialchars($lab['archivo_resultados']); ?>"
+                                                            target="_blank"
+                                                            class="btn btn-sm btn-outline-primary w-100 stretched-link">
+                                                            <i class="bi bi-eye me-1"></i> Ver Resultados
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
                         <?php foreach ($medical_records as $index => $record): ?>
                             <div class="timeline-item">
                                 <div class="consultation-card">
@@ -1997,7 +1966,8 @@ try {
                                     <label for="resultados_examenes" class="form-label fw-semibold">Resultados
                                         Importantes</label>
                                     <textarea id="resultados_examenes" name="resultados_examenes" class="form-control"
-                                        rows="2" placeholder="Valores críticos o hallazgos relevantes..."></textarea>
+                                        rows="2"
+                                        placeholder="Valores críticos o hallazgos relevantes...">pendiente de recibir</textarea>
                                 </div>
                             </div>
 

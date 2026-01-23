@@ -16,15 +16,15 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
     $conn->beginTransaction();
-    
+
     // 1. Mark all tests in this order as Validada
     $stmt = $conn->prepare("
         UPDATE orden_pruebas 
-        SET estado = 'Validada', fecha_resultado_validado = NOW() 
+        SET estado = 'Validada', fecha_validada = NOW(), validado_por = ?
         WHERE id_orden = ?
     ");
-    $stmt->execute([$id_orden]);
-    
+    $stmt->execute([$_SESSION['user_id'], $id_orden]);
+
     // 2. Mark all results for these tests as valid
     $stmt = $conn->prepare("
         UPDATE resultados_laboratorio rl
@@ -33,17 +33,18 @@ try {
         WHERE op.id_orden = ?
     ");
     $stmt->execute([$_SESSION['user_id'], $id_orden]);
-    
+
     // 3. Update overall order status to Completada (or Validada based on schema)
     $stmt = $conn->prepare("UPDATE ordenes_laboratorio SET estado = 'Completada' WHERE id_orden = ?");
     $stmt->execute([$id_orden]);
-    
+
     $conn->commit();
-    
+
     // Redirect to index with success
     header("Location: ../index.php?success=validated&id=" . $id_orden);
-    
+
 } catch (Exception $e) {
-    if (isset($conn)) $conn->rollBack();
+    if (isset($conn))
+        $conn->rollBack();
     die("Error: " . $e->getMessage());
 }
