@@ -1577,12 +1577,10 @@ try {
                                 Órdenes Activas
                             </h3>
                             <div class="d-flex gap-2">
-                                <?php if ($user_type === 'admin'): ?>
                                 <a href="catalogo_pruebas.php" class="action-btn secondary">
                                     <i class="bi bi-gear"></i>
                                     Catálogo
                                 </a>
-                                <?php endif; ?>
                                 
                                 <?php if ($user_type === 'user' || $user_type === 'admin'): ?>
                                 <a href="crear_orden.php" class="action-btn">

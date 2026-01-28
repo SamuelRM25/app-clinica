@@ -12,7 +12,12 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         $database = new Database();
         $conn = $database->getConnection();
 
-        $stmt = $conn->prepare("SELECT * FROM inventario WHERE id_inventario = ?");
+        $stmt = $conn->prepare("
+            SELECT i.*, pi.unit_cost as precio_compra_original
+            FROM inventario i
+            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+            WHERE i.id_inventario = ?
+        ");
         $stmt->execute([$_GET['id']]);
         $medicine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -20,6 +25,12 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             // Format date for HTML date input
             $medicine['fecha_adquisicion'] = date('Y-m-d', strtotime($medicine['fecha_adquisicion']));
             $medicine['fecha_vencimiento'] = date('Y-m-d', strtotime($medicine['fecha_vencimiento']));
+
+            // Use purchase price if not set in inventario
+            if (!isset($medicine['precio_compra']) || $medicine['precio_compra'] == 0) {
+                $medicine['precio_compra'] = $medicine['precio_compra_original'] ?? 0;
+            }
+
             echo json_encode($medicine);
         } else {
             echo json_encode(['error' => 'Medicamento no encontrado']);

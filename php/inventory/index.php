@@ -32,7 +32,7 @@ try {
 
     // Permiso de gestión: Usuario jrivas_farmacia (ID 6) y administradores
     // Los demás usuarios solo tienen permiso de lectura
-    $can_manage_inventory = ($user_id == 6 || $user_type === 'admin');
+    $can_manage_inventory = ($user_type === 'admin' || in_array($user_id, [1, 6])); // Admin or specific users
 
     // ============ ESTADÍSTICAS DEL INVENTARIO ============
 
@@ -1609,75 +1609,77 @@ try {
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
-            <div class="stats-grid">
-                <!-- Total de items -->
-                <div class="stat-card animate-in delay-1">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Total de Items</div>
-                            <div class="stat-value"><?php echo $total_items; ?></div>
+                <div class="stats-grid">
+                    <!-- Total de items -->
+                    <div class="stat-card animate-in delay-1">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Total de Items</div>
+                                <div class="stat-value"><?php echo $total_items; ?></div>
+                            </div>
+                            <div class="stat-icon primary">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-box-seam"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-arrow-up-right"></i>
+                            <span>En inventario</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-arrow-up-right"></i>
-                        <span>En inventario</span>
-                    </div>
-                </div>
 
-                <!-- Agotados -->
-                <div class="stat-card animate-in delay-2">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Agotados</div>
-                            <div class="stat-value"><?php echo $out_of_stock; ?></div>
+                    <!-- Agotados -->
+                    <div class="stat-card animate-in delay-2"
+                        onclick="document.querySelector('[data-filter=\'out\']').click(); document.getElementById('searchInput').scrollIntoView({behavior: 'smooth'})"
+                        style="cursor: pointer;">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Agotados</div>
+                                <div class="stat-value"><?php echo $out_of_stock; ?></div>
+                            </div>
+                            <div class="stat-icon danger">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon danger">
+                        <div class="stat-change positive">
                             <i class="bi bi-exclamation-triangle"></i>
+                            <span>Sin stock disponible</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Sin stock disponible</span>
-                    </div>
-                </div>
 
-                <!-- Stock bajo -->
-                <div class="stat-card animate-in delay-3">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Stock Bajo</div>
-                            <div class="stat-value"><?php echo $low_stock; ?></div>
+                    <!-- Stock bajo -->
+                    <div class="stat-card animate-in delay-3">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Stock Bajo</div>
+                                <div class="stat-value"><?php echo $low_stock; ?></div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-exclamation-circle"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon warning">
+                        <div class="stat-change positive">
                             <i class="bi bi-exclamation-circle"></i>
+                            <span>Menos de 10 unidades</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-exclamation-circle"></i>
-                        <span>Menos de 10 unidades</span>
-                    </div>
-                </div>
 
-                <!-- Por vencer -->
-                <div class="stat-card animate-in delay-4">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Por Vencer</div>
-                            <div class="stat-value"><?php echo $expiring_soon; ?></div>
+                    <!-- Por vencer -->
+                    <div class="stat-card animate-in delay-4">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Por Vencer</div>
+                                <div class="stat-value"><?php echo $expiring_soon; ?></div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon warning">
+                        <div class="stat-change positive">
                             <i class="bi bi-clock-history"></i>
+                            <span>Próximos 30 días</span>
                         </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Próximos 30 días</span>
                     </div>
                 </div>
-            </div>
             <?php endif; ?>
 
             <!-- Barra de búsqueda y acciones -->
@@ -1688,9 +1690,19 @@ try {
                         Buscar y Filtrar
                     </h3>
                     <div class="action-buttons">
+                        <a href="export_full_inventory.php" class="action-btn"
+                            style="background: var(--color-success);">
+                            <i class="bi bi-file-earmark-excel"></i>
+                            Excel
+                        </a>
+                        <a href="export_inventory_pdf.php" target="_blank" class="action-btn"
+                            style="background: var(--color-danger);">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            PDF
+                        </a>
                         <a href="generate_report.php" class="action-btn" style="background: var(--color-secondary);">
-                            <i class="bi bi-file-earmark-spreadsheet"></i>
-                            Exportar CSV
+                            <i class="bi bi-file-earmark-text"></i>
+                            Resumen CSV
                         </a>
                         <?php if ($can_manage_inventory): ?>
                             <button type="button" class="action-btn" data-bs-toggle="modal"
@@ -1744,55 +1756,55 @@ try {
 
             <!-- Verificador de Precios -->
             <?php if ($user_type === 'user'): ?>
-            <div class="appointments-section animate-in delay-1 mb-4">
-                <div class="section-header mb-0">
-                    <h3 class="section-title">
-                        <i class="bi bi-upc-scan section-title-icon"></i>
-                        Verificador de Precios
-                    </h3>
-                </div>
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0">
-                                <i class="bi bi-upc"></i>
-                            </span>
-                            <input type="text" class="form-control border-start-0 ps-0" id="barcodeVerifier"
-                                placeholder="Escanee el código de barras aquí..." autocomplete="off">
-                            <button class="btn btn-outline-primary" type="button" id="clearVerifier">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                        <small class="text-muted mt-1 d-block">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Haga clic en el campo y escanee el producto
-                        </small>
+                <div class="appointments-section animate-in delay-1 mb-4">
+                    <div class="section-header mb-0">
+                        <h3 class="section-title">
+                            <i class="bi bi-upc-scan section-title-icon"></i>
+                            Verificador de Precios
+                        </h3>
                     </div>
-                    <div class="col-md-6">
-                        <div id="verifierResult" class="d-none">
-                            <div class="alert alert-success d-flex align-items-center mb-0" role="alert">
-                                <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-                                <div>
-                                    <h5 class="alert-heading mb-1" id="verifierName">Nombre del Producto</h5>
-                                    <div class="d-flex gap-3">
-                                        <span class="badge bg-primary fs-6" id="verifierPrice">Q0.00</span>
-                                        <span class="badge bg-info text-dark" id="verifierStock">Stock: 0</span>
-                                        <span class="text-muted small" id="verifierMeta">Detalles...</span>
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-upc"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0 ps-0" id="barcodeVerifier"
+                                    placeholder="Escanee el código de barras aquí..." autocomplete="off">
+                                <button class="btn btn-outline-primary" type="button" id="clearVerifier">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Haga clic en el campo y escanee el producto
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="verifierResult" class="d-none">
+                                <div class="alert alert-success d-flex align-items-center mb-0" role="alert">
+                                    <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                                    <div>
+                                        <h5 class="alert-heading mb-1" id="verifierName">Nombre del Producto</h5>
+                                        <div class="d-flex gap-3">
+                                            <span class="badge bg-primary fs-6" id="verifierPrice">Q0.00</span>
+                                            <span class="badge bg-info text-dark" id="verifierStock">Stock: 0</span>
+                                            <span class="text-muted small" id="verifierMeta">Detalles...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="verifierError" class="d-none">
+                                <div class="alert alert-danger d-flex align-items-center mb-0" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                                    <div>
+                                        Producto no encontrado
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div id="verifierError" class="d-none">
-                            <div class="alert alert-danger d-flex align-items-center mb-0" role="alert">
-                                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-                                <div>
-                                    Producto no encontrado
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
-            </div>
             <?php endif; ?>
 
             <!-- Tabla de inventario -->
@@ -1818,8 +1830,8 @@ try {
                                     <th>Medicamento</th>
                                     <th>Molécula</th>
                                     <th>Presentación</th>
-                                    <th>Precio</th>
-                                    <th>Stock</th>
+                                    <th>Precios (Q)</th>
+                                    <th>Stock (Unds)</th>
                                     <th>Vencimiento</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1895,14 +1907,25 @@ try {
                                             <?php echo htmlspecialchars($item['presentacion_med']); ?>
                                         </td>
                                         <td>
-                                            <span
-                                                class="fw-bold text-primary">Q<?php echo number_format($item['precio_venta'] ?? 0, 2); ?></span>
+                                            <div class="d-flex flex-column gap-1" style="font-size: 0.85rem;">
+                                                <span class="text-primary fw-bold">V:
+                                                    Q<?php echo number_format($item['precio_venta'] ?? 0, 2); ?></span>
+                                                <span class="text-info">H:
+                                                    Q<?php echo number_format($item['precio_hospital'] ?? 0, 2); ?></span>
+                                                <span class="text-success">M:
+                                                    Q<?php echo number_format($item['precio_medico'] ?? 0, 2); ?></span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <i class="bi <?php echo $status_icon; ?>"></i>
-                                                <?php echo $item['cantidad_med']; ?> unidades
-                                            </span>
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="status-badge <?php echo $status_class; ?>">
+                                                    <i class="bi bi-shop me-1"></i>Farm: <?php echo $item['cantidad_med']; ?>
+                                                </span>
+                                                <span class="status-badge status-info">
+                                                    <i class="bi bi-hospital me-1"></i>Hosp:
+                                                    <?php echo $item['stock_hospital'] ?? 0; ?>
+                                                </span>
+                                            </div>
                                             <?php if ($estado === 'Pendiente'): ?>
                                                 <div class="mt-1">
                                                     <span class="status-badge status-info" style="font-size: 0.75rem;">
@@ -2116,16 +2139,45 @@ try {
                                 <input type="text" class="form-control" id="casa_farmaceutica" name="casa_farmaceutica"
                                     required>
                             </div>
-                            <div class="col-md-4">
-                                <label for="cantidad_med" class="form-label">Cantidad</label>
+                            <div class="col-md-3">
+                                <label for="cantidad_med" class="form-label">Stock Farmacia</label>
                                 <input type="number" class="form-control" id="cantidad_med" name="cantidad_med" min="0"
                                     required>
                             </div>
-                            <div class="col-md-4">
-                                <label for="precio_venta" class="form-label">Precio de Venta (Q)</label>
+                            <div class="col-md-3">
+                                <label for="stock_hospital" class="form-label">Stock Hospital</label>
+                                <input type="number" class="form-control" id="stock_hospital" name="stock_hospital"
+                                    min="0" value="0" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="precio_compra" class="form-label">Precio Compra</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="precio_compra" name="precio_compra"
+                                        min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="precio_venta" class="form-label">Precio Venta</label>
                                 <div class="input-group">
                                     <span class="input-group-text">Q</span>
                                     <input type="number" class="form-control" id="precio_venta" name="precio_venta"
+                                        min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="precio_hospital" class="form-label">Precio Hosp.</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="precio_hospital"
+                                        name="precio_hospital" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="precio_medico" class="form-label">Precio Méd.</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="precio_medico" name="precio_medico"
                                         min="0" step="0.01" required>
                                 </div>
                             </div>
@@ -2197,27 +2249,60 @@ try {
                                     name="casa_farmaceutica" required>
                             </div>
                             <div class="col-md-4">
-                                <label for="edit_cantidad_med" class="form-label">Cantidad</label>
+                                <label class="form-label fw-bold">Stock Total</label>
+                                <input type="number" class="form-control bg-light" id="edit_total_stock" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="edit_cantidad_med" class="form-label">Stock Farmacia</label>
                                 <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med"
-                                    min="0" required>
+                                    min="0" required oninput="updateStockDistribution('pharmacy')">
                             </div>
                             <div class="col-md-4">
-                                <label for="edit_fecha_adquisicion" class="form-label">Fecha de Adquisición</label>
-                                <input type="date" class="form-control" id="edit_fecha_adquisicion"
-                                    name="fecha_adquisicion" required>
+                                <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
+                                <input type="number" class="form-control" id="edit_stock_hospital" name="stock_hospital"
+                                    min="0" required oninput="updateStockDistribution('hospital')">
                             </div>
-                            <div class="col-md-4">
-                                <label for="edit_fecha_vencimiento" class="form-label">Fecha de Vencimiento</label>
-                                <input type="date" class="form-control" id="edit_fecha_vencimiento"
-                                    name="fecha_vencimiento" required>
+                            <div class="col-md-3">
+                                <label for="edit_precio_compra" class="form-label">Precio Compra</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="edit_precio_compra"
+                                        name="precio_compra" min="0" step="0.01" required>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label for="edit_precio_venta" class="form-label">Precio de Venta (Q)</label>
+                            <div class="col-md-3">
+                                <label for="edit_precio_venta" class="form-label">Precio Venta</label>
                                 <div class="input-group">
                                     <span class="input-group-text">Q</span>
                                     <input type="number" class="form-control" id="edit_precio_venta" name="precio_venta"
                                         min="0" step="0.01" required>
                                 </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="edit_precio_hospital" class="form-label">Precio Hosp.</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="edit_precio_hospital"
+                                        name="precio_hospital" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="edit_precio_medico"
+                                        name="precio_medico" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_fecha_adquisicion" class="form-label">Fecha Adquisición</label>
+                                <input type="date" class="form-control" id="edit_fecha_adquisicion"
+                                    name="fecha_adquisicion" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_fecha_vencimiento" class="form-label">Fecha Vencimiento</label>
+                                <input type="date" class="form-control" id="edit_fecha_vencimiento"
+                                    name="fecha_vencimiento" required>
                             </div>
                         </div>
                     </div>
@@ -2285,6 +2370,37 @@ try {
 
         (function () {
             'use strict';
+
+            // Función Global para distribución de stock
+            window.updateStockDistribution = function (source) {
+                const totalEl = document.getElementById('edit_total_stock');
+                const pharmacyEl = document.getElementById('edit_cantidad_med');
+                const hospitalEl = document.getElementById('edit_stock_hospital');
+
+                if (!totalEl || !pharmacyEl || !hospitalEl) return;
+
+                const total = parseInt(totalEl.value) || 0;
+                let pharmacy = parseInt(pharmacyEl.value) || 0;
+                let hospital = parseInt(hospitalEl.value) || 0;
+
+                if (source === 'pharmacy') {
+                    // Si cambio farmacia, el resto va a hospital
+                    if (pharmacy > total) {
+                        pharmacy = total;
+                        pharmacyEl.value = total;
+                    }
+                    hospital = total - pharmacy;
+                    hospitalEl.value = hospital;
+                } else if (source === 'hospital') {
+                    // Si cambio hospital, el resto va a farmacia
+                    if (hospital > total) {
+                        hospital = total;
+                        hospitalEl.value = total;
+                    }
+                    pharmacy = total - hospital;
+                    pharmacyEl.value = pharmacy;
+                }
+            };
 
             // ==========================================================================
             // CONFIGURACIÓN Y CONSTANTES
@@ -2473,18 +2589,33 @@ try {
                 }
 
                 loadMedicineData(id) {
-                    // En un sistema real, aquí se haría una petición AJAX
                     fetch(`get_medicine.php?id=${id}`)
                         .then(response => response.json())
                         .then(data => {
+                            if (data.error) {
+                                console.error(data.error);
+                                return;
+                            }
+
+                            const pharmacyStock = parseInt(data.cantidad_med || 0);
+                            const hospitalStock = parseInt(data.stock_hospital || 0);
+                            const total = pharmacyStock + hospitalStock;
+
                             document.getElementById('edit_id_inventario').value = data.id_inventario;
                             document.getElementById('edit_codigo_barras').value = data.codigo_barras || '';
                             document.getElementById('edit_nom_medicamento').value = data.nom_medicamento;
                             document.getElementById('edit_mol_medicamento').value = data.mol_medicamento;
                             document.getElementById('edit_presentacion_med').value = data.presentacion_med;
                             document.getElementById('edit_casa_farmaceutica').value = data.casa_farmaceutica;
-                            document.getElementById('edit_cantidad_med').value = data.cantidad_med;
+
+                            document.getElementById('edit_total_stock').value = total;
+                            document.getElementById('edit_cantidad_med').value = pharmacyStock;
+                            document.getElementById('edit_stock_hospital').value = hospitalStock;
+
+                            document.getElementById('edit_precio_compra').value = data.precio_compra || 0;
                             document.getElementById('edit_precio_venta').value = data.precio_venta || 0;
+                            document.getElementById('edit_precio_hospital').value = data.precio_hospital || 0;
+                            document.getElementById('edit_precio_medico').value = data.precio_medico || 0;
                             document.getElementById('edit_fecha_adquisicion').value = data.fecha_adquisicion;
                             document.getElementById('edit_fecha_vencimiento').value = data.fecha_vencimiento;
                         })

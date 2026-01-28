@@ -138,7 +138,9 @@ try {
                 subtotal_procedimientos = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = FALSE),
                 subtotal_laboratorios = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Laboratorio' AND cancelado = FALSE),
                 subtotal_honorarios = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Honorario' AND cancelado = FALSE),
-                subtotal_otros = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Laboratorio','Honorario') AND cancelado = FALSE)
+                subtotal_otros = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Laboratorio','Honorario') AND cancelado = FALSE),
+                total_pagado = (SELECT COALESCE(SUM(monto), 0) FROM abonos_hospitalarios WHERE id_cuenta = ch.id_cuenta),
+                monto_pagado = (SELECT COALESCE(SUM(monto), 0) FROM abonos_hospitalarios WHERE id_cuenta = ch.id_cuenta)
             WHERE ch.id_cuenta = ?
         ");
         $stmt_sync->execute([$id_cuenta]);
@@ -175,9 +177,22 @@ try {
                 $tipo = 'Otro';
             $cargos_por_tipo[$tipo][] = $cargo;
         }
+
+        // Fetch Payments (Abonos)
+        $stmt_abonos = $conn->prepare("
+            SELECT a.*, u.nombre as u_nombre, u.apellido as u_apellido
+            FROM abonos_hospitalarios a
+            LEFT JOIN usuarios u ON a.registrado_por = u.idUsuario
+            WHERE a.id_cuenta = ?
+            ORDER BY a.fecha_abono DESC
+        ");
+        $stmt_abonos->execute([$id_cuenta]);
+        $abonos = $stmt_abonos->fetchAll(PDO::FETCH_ASSOC);
+
     } else {
         $cargos = [];
         $cargos_por_tipo = [];
+        $abonos = [];
     }
 
 } catch (Exception $e) {
@@ -760,7 +775,8 @@ try {
         }
 
         /* Reset for print */
-        html, body {
+        html,
+        body {
             background: white !important;
             color: black !important;
             margin: 0 !important;
@@ -862,14 +878,32 @@ try {
             font-size: 8pt;
             color: #666;
         }
-        
+
         /* Ensure table content doesn't break poorly */
-        tr { page-break-inside: avoid; }
-        .receipt-table td, .receipt-table th { display: table-cell !important; }
-        .receipt-table { display: table !important; }
-        .receipt-table thead { display: table-header-group !important; }
-        .receipt-table tbody { display: table-row-group !important; }
-        .receipt-table tr { display: table-row !important; }
+        tr {
+            page-break-inside: avoid;
+        }
+
+        .receipt-table td,
+        .receipt-table th {
+            display: table-cell !important;
+        }
+
+        .receipt-table {
+            display: table !important;
+        }
+
+        .receipt-table thead {
+            display: table-header-group !important;
+        }
+
+        .receipt-table tbody {
+            display: table-row-group !important;
+        }
+
+        .receipt-table tr {
+            display: table-row !important;
+        }
     </style>
 </head>
 
@@ -1042,7 +1076,8 @@ try {
                                     <div class="timeline-header">
                                         <div>
                                             <div class="timeline-date">
-                                                <?php echo date('d/m/Y H:i', strtotime($evol['fecha_evolucion'])); ?></div>
+                                                <?php echo date('d/m/Y H:i', strtotime($evol['fecha_evolucion'])); ?>
+                                            </div>
                                             <div class="timeline-doctor">Dr(a).
                                                 <?php echo htmlspecialchars($evol['doctor_nombre'] . ' ' . $evol['doctor_apellido']); ?>
                                             </div>
@@ -1073,7 +1108,8 @@ try {
                                         <div class="evolution-section">
                                             <div class="evolution-label">Plan de Tratamiento:</div>
                                             <div class="evolution-text">
-                                                <?php echo nl2br(htmlspecialchars($evol['plan_tratamiento'])); ?></div>
+                                                <?php echo nl2br(htmlspecialchars($evol['plan_tratamiento'])); ?>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -1135,64 +1171,118 @@ try {
                                 <div class="summary-label">Otros</div>
                                 <div class="summary-value">Q<?php echo number_format($cuenta['subtotal_otros'], 2); ?></div>
                             </div>
-                            <div class="summary-card total">
-                                <div class="summary-label">Total General</div>
-                                <div class="summary-value">Q<?php echo number_format($cuenta['total_general'], 2); ?></div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Saldo Pendiente</div>
-                                <div class="summary-value">Q<?php echo number_format($cuenta['saldo_pendiente'], 2); ?>
-                                </div>
+                        </div>
+                        <div class="summary-card total">
+                            <div class="summary-label">Total General</div>
+                            <div class="summary-value">Q<?php echo number_format($cuenta['total_general'], 2); ?></div>
+                        </div>
+                        <div class="summary-card" style="border-color: var(--color-success)">
+                            <div class="summary-label">Total Pagado</div>
+                            <div class="summary-value text-success">
+                                Q<?php echo number_format($cuenta['total_pagado'] ?? 0, 2); ?></div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Saldo Pendiente</div>
+                            <div class="summary-value">
+                                Q<?php echo number_format($cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0), 2); ?>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Detailed Charges -->
-                        <div class="charges-section">
-                            <h4 class="mb-3">Cargos Detallados</h4>
+                    <!-- Abonos Section -->
+                    <div class="charges-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4>Pagos Realizados (Abonos)</h4>
+                            <button class="btn btn-sm btn-success" onclick="openAbonoModal()">
+                                <i class="bi bi-cash-coin"></i> Agregar Abono
+                            </button>
+                        </div>
+                        <?php if (count($abonos) > 0): ?>
+                            <div class="table-responsive mb-4">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Método</th>
+                                            <th>Notas</th>
+                                            <th>Registrado Por</th>
+                                            <th>Monto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($abonos as $abono): ?>
+                                            <tr>
+                                                <td><?php echo date('d/m/Y H:i', strtotime($abono['fecha_abono'])); ?></td>
+                                                <td><?php echo htmlspecialchars($abono['metodo_pago']); ?></td>
+                                                <td><?php echo htmlspecialchars($abono['notas']); ?></td>
+                                                <td><small><?php echo htmlspecialchars($abono['u_nombre'] . ' ' . $abono['u_apellido']); ?></small>
+                                                </td>
+                                                <td class="fw-bold text-success">Q<?php echo number_format($abono['monto'], 2); ?>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-secondary"
+                                                        onclick="printAbono(<?php echo $abono['id_abono']; ?>)">
+                                                        <i class="bi bi-printer"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-info mb-4">No se han registrado abonos.</div>
+                        <?php endif; ?>
+                    </div>
 
-                            <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
-                                <?php if (count($cargos_tipo) > 0): ?>
-                                    <?php
-                                    $subtotal_tipo = array_sum(array_column($cargos_tipo, 'subtotal'));
-                                    ?>
-                                    <div class="charges-category">
-                                        <div class="category-title">
-                                            <span><?php echo $tipo; ?></span>
-                                            <span class="category-total">Q<?php echo number_format($subtotal_tipo, 2); ?></span>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <table class="data-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Descripción</th>
-                                                        <th>Cantidad</th>
-                                                        <th>Precio Unit.</th>
-                                                        <th>Subtotal</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($cargos_tipo as $cargo): ?>
-                                                        <tr>
-                                                            <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
-                                                            <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
-                                                            <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
-                                                            <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
-                                                            <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                    <!-- Detailed Charges -->
+                    <div class="charges-section">
+                        <h4 class="mb-3">Cargos Detallados</h4>
+
+                        <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
+                            <?php if (count($cargos_tipo) > 0): ?>
+                                <?php
+                                $subtotal_tipo = array_sum(array_column($cargos_tipo, 'subtotal'));
+                                ?>
+                                <div class="charges-category">
+                                    <div class="category-title">
+                                        <span><?php echo $tipo; ?></span>
+                                        <span class="category-total">Q<?php echo number_format($subtotal_tipo, 2); ?></span>
                                     </div>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-warning">No se encontró cuenta hospitalaria.</div>
-                    <?php endif; ?>
-                </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Descripción</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Precio Unit.</th>
+                                                    <th>Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($cargos_tipo as $cargo): ?>
+                                                    <tr>
+                                                        <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
+                                                        <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
+                                                        <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
+                                                        <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
+                                                        <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-warning">No se encontró cuenta hospitalaria.</div>
+                <?php endif; ?>
             </div>
+        </div>
         </div>
     </main>
 
@@ -1206,14 +1296,18 @@ try {
 
         <div class="receipt-info">
             <div>
-                <strong>Paciente:</strong> <?php echo htmlspecialchars($encamamiento['nombre_paciente'] . ' ' . $encamamiento['apellido_paciente']); ?><br>
-                <strong>Edad/Sexo:</strong> <?php echo $edad; ?> años / <?php echo htmlspecialchars($encamamiento['genero']); ?><br>
-                <strong>Habitación:</strong> <?php echo htmlspecialchars($encamamiento['numero_habitacion'] . ' - ' . $encamamiento['numero_cama']); ?>
+                <strong>Paciente:</strong>
+                <?php echo htmlspecialchars($encamamiento['nombre_paciente'] . ' ' . $encamamiento['apellido_paciente']); ?><br>
+                <strong>Edad/Sexo:</strong> <?php echo $edad; ?> años /
+                <?php echo htmlspecialchars($encamamiento['genero']); ?><br>
+                <strong>Habitación:</strong>
+                <?php echo htmlspecialchars($encamamiento['numero_habitacion'] . ' - ' . $encamamiento['numero_cama']); ?>
             </div>
             <div style="text-align: right;">
                 <strong>Fecha Emisión:</strong> <?php echo date('d/m/Y H:i'); ?><br>
                 <strong>Ingreso:</strong> <?php echo date('d/m/Y', strtotime($encamamiento['fecha_ingreso'])); ?><br>
-                <strong>Médico:</strong> Dr(a). <?php echo htmlspecialchars($encamamiento['doctor_nombre'] . ' ' . $encamamiento['doctor_apellido']); ?>
+                <strong>Médico:</strong> Dr(a).
+                <?php echo htmlspecialchars($encamamiento['doctor_nombre'] . ' ' . $encamamiento['doctor_apellido']); ?>
             </div>
         </div>
 
@@ -1251,10 +1345,12 @@ try {
                     <span style="margin-right: 20px;">TOTAL GENERAL:</span>
                     <span>Q<?php echo number_format($cuenta['total_general'], 2); ?></span>
                 </div>
-                <?php if ($cuenta['saldo_pendiente'] > 0): ?>
+                <?php
+                $saldo_pendiente_calc = $cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0);
+                if ($saldo_pendiente_calc > 0): ?>
                     <div class="receipt-total-row" style="color: #d9534f; font-size: 10pt; margin-top: 5px;">
                         <span style="margin-right: 20px;">SALDO PENDIENTE:</span>
-                        <span>Q<?php echo number_format($cuenta['saldo_pendiente'], 2); ?></span>
+                        <span>Q<?php echo number_format($saldo_pendiente_calc, 2); ?></span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -1444,17 +1540,17 @@ try {
                     <table class="table table-sm" id="batchCargoTable">
                         <thead>
                             <tr>
-                                <th style="width: 30%">Tipo</th>
-                                <th style="width: 40%">Descripción</th>
-                                <th style="width: 15%">Cant.</th>
-                                <th style="width: 15%">Precio</th>
-                                <th></th>
+                                <th style="width: 25%">Tipo</th>
+                                <th style="width: 45%">Descripción</th>
+                                <th style="width: 12%">Cant.</th>
+                                <th style="width: 13%">Precio</th>
+                                <th style="width: 5%"></th>
                             </tr>
                         </thead>
                         <tbody id="cargoRows">
                             <tr>
                                 <td>
-                                    <select class="form-select form-select-sm" name="tipo_cargo[]" required>
+                                    <select class="form-select form-select-sm cargo-tipo" name="tipo_cargo[]" required>
                                         <option value="Medicamento">Medicamento</option>
                                         <option value="Procedimiento">Procedimiento</option>
                                         <option value="Laboratorio">Laboratorio</option>
@@ -1463,16 +1559,21 @@ try {
                                         <option value="Otro">Otro</option>
                                     </select>
                                 </td>
-                                <td><input type="text" class="form-control form-control-sm" name="descripcion[]" required placeholder="Ejem: Paracetamol 500mg"></td>
-                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="cantidad[]" value="1" required></td>
-                                <td><input type="number" step="0.01" class="form-control form-control-sm" name="precio_unitario[]" required></td>
+                                <td>
+                                    <div class="desc-container">
+                                        <input type="text" class="form-control form-control-sm cargo-desc" name="descripcion[]" required placeholder="Buscar medicamento...">
+                                        <div class="search-results-inline" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ddd; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
+                                    </div>
+                                </td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" required></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" required></td>
                                 <td></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="text-start">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCargoRow()">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="addCargoRowBtn">
                         <i class="bi bi-plus-lg"></i> Agregar otra fila
                     </button>
                 </div>
@@ -1483,32 +1584,10 @@ try {
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#7c90db',
                 didOpen: () => {
-                    // Global function accessed by the button inside Swal
-                    window.addCargoRow = function () {
-                        const tbody = document.getElementById('cargoRows');
-                        const newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                        <td>
-                            <select class="form-select form-select-sm" name="tipo_cargo[]" required>
-                                <option value="Medicamento">Medicamento</option>
-                                <option value="Procedimiento">Procedimiento</option>
-                                <option value="Laboratorio">Laboratorio</option>
-                                <option value="Honorario">Honorario</option>
-                                <option value="Insumo">Insumo</option>
-                                <option value="Otro">Otro</option>
-                            </select>
-                        </td>
-                        <td><input type="text" class="form-control form-control-sm" name="descripcion[]" required></td>
-                        <td><input type="number" step="0.01" class="form-control form-control-sm" name="cantidad[]" value="1" required></td>
-                        <td><input type="number" step="0.01" class="form-control form-control-sm" name="precio_unitario[]" required></td>
-                        <td>
-                            <button type="button" class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                        tbody.appendChild(newRow);
-                    };
+                    setupCargoRows();
+
+                    // Add row button
+                    document.getElementById('addCargoRowBtn').addEventListener('click', addCargoRow);
                 },
                 preConfirm: () => {
                     const rows = document.querySelectorAll('#cargoRows tr');
@@ -1536,7 +1615,6 @@ try {
                         return false;
                     }
 
-                    // Use the updated batch API format
                     const formData = new FormData();
                     cargos.forEach((cargo, index) => {
                         formData.append(`cargos[${index}][id_encamamiento]`, cargo.id_encamamiento);
@@ -1570,8 +1648,151 @@ try {
             });
         }
 
+        function setupCargoRows() {
+            document.querySelectorAll('#cargoRows tr').forEach(row => {
+                setupCargoRow(row);
+            });
+        }
+
+        function setupCargoRow(row) {
+            const tipoSelect = row.querySelector('.cargo-tipo');
+            const descInput = row.querySelector('.cargo-desc');
+            const precioInput = row.querySelector('.cargo-precio');
+            const cantidadInput = row.querySelector('.cargo-cantidad');
+            const resultsDiv = row.querySelector('.search-results-inline');
+
+            // Handle tipo change
+            tipoSelect.addEventListener('change', function () {
+                if (this.value === 'Medicamento') {
+                    descInput.placeholder = 'Buscar medicamento...';
+                    descInput.value = '';
+                    precioInput.value = '';
+                } else {
+                    descInput.placeholder = 'Descripción del cargo';
+                    resultsDiv.style.display = 'none';
+                }
+            });
+
+            // Handle description input for medication search
+            descInput.addEventListener('input', function () {
+                const tipo = tipoSelect.value;
+                const term = this.value;
+
+                if (tipo !== 'Medicamento') {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                if (term.length < 3) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                // Search medications
+                fetch(`api/search_medications.php?q=${encodeURIComponent(term)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.length === 0) {
+                            resultsDiv.innerHTML = '<div class="p-2 text-muted small">No se encontraron medicamentos</div>';
+                            resultsDiv.style.display = 'block';
+                            return;
+                        }
+
+                        let html = '';
+                        data.forEach(med => {
+                            html += `
+                                <div class="search-result-item p-2" style="cursor:pointer; border-bottom:1px solid #eee;" 
+                                     data-name="${med.nom_medicamento}" 
+                                     data-presentacion="${med.presentacion_med}"
+                                     data-precio="${med.precio_hospital || 0}">
+                                    <div class="fw-bold small">${med.nom_medicamento}</div>
+                                    <div class="text-muted" style="font-size:0.75rem;">${med.mol_medicamento} - ${med.presentacion_med}</div>
+                                    <div class="d-flex justify-content-between" style="font-size:0.75rem;">
+                                        <span class="text-info">Hosp: ${med.stock_hospital || 0}</span>
+                                        <span class="text-success">Farm: ${med.stock_farmacia || 0}</span>
+                                        <span class="fw-bold">Q${parseFloat(med.precio_hospital || 0).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        resultsDiv.innerHTML = html;
+                        resultsDiv.style.display = 'block';
+
+                        // Add click handlers to results
+                        resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+                            item.addEventListener('click', function () {
+                                const name = this.getAttribute('data-name');
+                                const presentacion = this.getAttribute('data-presentacion');
+                                const precio = this.getAttribute('data-precio');
+
+                                descInput.value = `${name} (${presentacion})`;
+                                precioInput.value = precio;
+                                resultsDiv.style.display = 'none';
+                            });
+
+                            // Hover effect
+                            item.addEventListener('mouseenter', function () {
+                                this.style.backgroundColor = '#f8f9fa';
+                            });
+                            item.addEventListener('mouseleave', function () {
+                                this.style.backgroundColor = 'white';
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Error searching medications:', err);
+                    });
+            });
+
+            // Close results when clicking outside
+            descInput.addEventListener('blur', function () {
+                setTimeout(() => {
+                    resultsDiv.style.display = 'none';
+                }, 200);
+            });
+        }
+
+        function addCargoRow() {
+            const tbody = document.getElementById('cargoRows');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>
+                    <select class="form-select form-select-sm cargo-tipo" name="tipo_cargo[]" required>
+                        <option value="Medicamento">Medicamento</option>
+                        <option value="Procedimiento">Procedimiento</option>
+                        <option value="Laboratorio">Laboratorio</option>
+                        <option value="Honorario">Honorario</option>
+                        <option value="Insumo">Insumo</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="desc-container" style="position:relative;">
+                        <input type="text" class="form-control form-control-sm cargo-desc" name="descripcion[]" required placeholder="Descripción del cargo">
+                        <div class="search-results-inline" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ddd; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
+                    </div>
+                </td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" required></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" required></td>
+                <td>
+                    <button type="button" class="btn btn-link text-danger p-0 btn-remove-row">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            setupCargoRow(newRow);
+
+            // Add remove handler
+            newRow.querySelector('.btn-remove-row').addEventListener('click', function () {
+                newRow.remove();
+            });
+        }
+
         function procesarAlta() {
-            const saldoPendiente = <?php echo $cuenta ? $cuenta['saldo_pendiente'] : 0; ?>;
+            const totalGeneral = <?php echo $cuenta ? $cuenta['total_general'] : 0; ?>;
+            const totalPagado = <?php echo $cuenta ? ($cuenta['total_pagado'] ?? 0) : 0; ?>;
+            const saldoPendiente = totalGeneral - totalPagado;
 
             if (saldoPendiente > 0) {
                 Swal.fire({
@@ -1634,11 +1855,92 @@ try {
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire('Alta Procesada', 'El paciente ha sido dado de alta', 'success').then(() => {
-                        window.location.href = 'index.php';
+                    Swal.fire({
+                        title: 'Alta Procesada',
+                        text: 'El paciente ha sido dado de alta. ¿Desea imprimir el estado de cuenta final?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Imprimir y Salir',
+                        cancelButtonText: 'Solo Salir'
+                    }).then((printResult) => {
+                        if (printResult.isConfirmed) {
+                            printAccount();
+                            // Wait for print dialog to likely close or just delay redirect
+                            setTimeout(() => {
+                                window.location.href = 'index.php';
+                            }, 3000);
+                        } else {
+                            window.location.href = 'index.php';
+                        }
                     });
                 }
             });
+        }
+
+        function openAbonoModal() {
+            Swal.fire({
+                title: 'Registrar Abono',
+                html: `
+                <form id="abonoForm" class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label">Monto (Q)</label>
+                        <input type="number" step="0.01" class="form-control" name="monto" required min="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Método de Pago</label>
+                        <select class="form-select" name="metodo_pago">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas</label>
+                        <textarea class="form-control" name="notas" rows="2" placeholder="Opcional"></textarea>
+                    </div>
+                </form>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Registrar Pago',
+                confirmButtonColor: '#34d399',
+                preConfirm: () => {
+                    const form = document.getElementById('abonoForm');
+                    const formData = new FormData(form);
+                    formData.append('id_encamamiento', id_encamamiento);
+
+                    return fetch('api/save_abono.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status !== 'success') throw new Error(data.message);
+                            return data;
+                        })
+                        .catch(error => Swal.showValidationMessage(error));
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Abono Registrado',
+                        text: '¿Desea imprimir el recibo?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Imprimir',
+                        cancelButtonText: 'Cerrar'
+                    }).then((printResult) => {
+                        if (printResult.isConfirmed) {
+                            printAbono(result.value.id_abono);
+                        }
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function printAbono(id) {
+            window.open('print_abono.php?id=' + id, '_blank');
         }
 
         function printAccount() {

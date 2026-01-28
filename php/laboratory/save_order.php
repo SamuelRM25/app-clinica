@@ -111,13 +111,45 @@ try {
         }
     }
 
+    // 6. Integration with Payments (if NOT hospitalized)
+    if (!$id_encamamiento) {
+        $tipo_pago = $data['tipo_pago'] ?? 'Efectivo';
+        $total_order = 0;
+        $pruebas_nombres = [];
+        foreach ($items_for_billing as $item) {
+            $total_order += $item['precio'];
+            $pruebas_nombres[] = $item['nombre'];
+        }
+
+        // Get patient name
+        $stmt_p = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ?");
+        $stmt_p->execute([$data['id_paciente']]);
+        $paciente_data = $stmt_p->fetch(PDO::FETCH_ASSOC);
+        $nombre_paciente_full = $paciente_data['nombre'] ?? 'Paciente Desconocido';
+
+        $stmt_bill = $conn->prepare("
+            INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        $descripcion_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres);
+        $stmt_bill->execute([
+            $data['id_paciente'],
+            $nombre_paciente_full,
+            $descripcion_bill,
+            $total_order,
+            $tipo_pago
+        ]);
+        $id_pago = $conn->lastInsertId();
+    }
+
     $conn->commit();
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'Orden creada correctamente',
+        'message' => 'Orden y cobro generados',
         'id_orden' => $id_orden,
-        'numero_orden' => $numero_orden
+        'numero_orden' => $numero_orden,
+        'id_pago' => $id_pago ?? null
     ]);
 
 } catch (Exception $e) {

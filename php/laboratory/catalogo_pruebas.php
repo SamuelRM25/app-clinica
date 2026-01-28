@@ -7,7 +7,7 @@ require_once '../../includes/functions.php';
 verify_session();
 
 // Only admins can manage the catalog
-if ($_SESSION['tipoUsuario'] !== 'admin') {
+if ($_SESSION['tipoUsuario'] !== 'admin' && $_SESSION['user_id'] != 7) {
     header("Location: index.php");
     exit;
 }

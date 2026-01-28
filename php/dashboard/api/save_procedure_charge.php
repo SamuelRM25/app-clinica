@@ -6,12 +6,12 @@ header('Content-Type: application/json');
 require_once '../../../config/database.php';
 
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Sesión no válida']);
+    echo json_encode(['status' => 'error', 'message' => 'Sesión no válida']);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+    echo json_encode(['status' => 'error', 'message' => 'Método no permitido']);
     exit;
 }
 
@@ -55,11 +55,16 @@ try {
     ]);
 
     if ($result) {
-        echo json_encode(['success' => true, 'message' => 'Cobro registrado correctamente']);
+        $id_procedimiento = $conn->lastInsertId();
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Cobro registrado correctamente',
+            'id' => $id_procedimiento
+        ]);
     } else {
         throw new Exception('Error al guardar en la base de datos');
     }
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

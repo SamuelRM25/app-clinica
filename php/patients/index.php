@@ -1670,7 +1670,8 @@ try {
                     <div class="d-flex gap-2 align-items-center flex-wrap">
                         <div class="sort-controls">
                             <span class="text-muted" style="font-size: 0.875rem; font-weight: 500;">Ordenar:</span>
-                            <a href="?sort=name" class="sort-btn <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>">
+                            <a href="?sort=name"
+                                class="sort-btn <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>">
                                 <i class="bi bi-sort-alpha-down"></i>
                                 Alfabético
                             </a>
@@ -1766,8 +1767,9 @@ try {
                                         data-has-appointments="<?php echo $has_appointments ? 'true' : 'false'; ?>"
                                         data-has-history="<?php echo $has_history ? 'true' : 'false'; ?>"
                                         data-active-today="<?php echo $active_today ? 'true' : 'false'; ?>"
-                                        data-gender="<?php echo htmlspecialchars($patient['genero'] ?? ''); ?>"
-                                        data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>">
+                                        data-gender="<?php echo htmlspecialchars($patient['gender'] ?? ''); ?>"
+                                        data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>"
+                                        data-notes="<?php echo htmlspecialchars($patient['notas'] ?? ''); ?>">
                                         <td>
                                             <div class="patient-cell">
                                                 <div class="patient-avatar">
@@ -1825,9 +1827,11 @@ try {
                                                     Activo
                                                 </span>
                                             <?php else: ?>
-                                                <span class="status-badge status-inactive">
-                                                    <i class="bi bi-clock-history"></i>
-                                                    Sin Visitas
+                                                <span class="status-badge status-inactive"
+                                                    onclick="openNoteModal(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? '')); ?>', this.closest('tr').dataset.notes)"
+                                                    style="cursor: pointer;" title="Registrar Nota">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                    Externo
                                                 </span>
                                             <?php endif; ?>
                                             <?php if ($has_appointments): ?>
@@ -2020,6 +2024,48 @@ try {
                     </button>
                     <button type="submit" class="action-btn">
                         Programar Cita
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para registro de nota rápida -->
+    <div class="custom-modal-overlay" id="noteModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <h3 class="custom-modal-title">
+                    <i class="bi bi-journal-text"></i>
+                    Registrar Nota de Paciente
+                </h3>
+                <button type="button" class="custom-modal-close" onclick="closeModal('noteModal')">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <form id="noteForm" action="save_quick_note.php" method="POST">
+                <div class="custom-modal-body">
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label class="form-label">Paciente</label>
+                            <input type="text" id="notePatientName" class="form-input" readonly>
+                            <input type="hidden" id="notePatientId" name="id_paciente">
+                        </div>
+
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label for="nota" class="form-label">Nota / Observaciones *</label>
+                            <textarea id="nota" name="nota" class="form-textarea"
+                                placeholder="Escriba aquí la nota o registro sobre el paciente..." rows="5"
+                                required></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="custom-modal-footer">
+                    <button type="button" class="btn-outline" onclick="closeModal('noteModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="action-btn">
+                        <i class="bi bi-save"></i>
+                        Guardar Nota
                     </button>
                 </div>
             </form>
@@ -2336,6 +2382,19 @@ try {
                 document.body.style.overflow = '';
             };
 
+            window.openNoteModal = function (patientId, patientName, existingNote = '') {
+                document.getElementById('notePatientId').value = patientId;
+                document.getElementById('notePatientName').value = patientName;
+                document.getElementById('nota').value = existingNote || '';
+
+                document.getElementById('noteModal').classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                setTimeout(() => {
+                    document.getElementById('nota').focus();
+                }, 300);
+            };
+
             window.calculateAge = function (birthDate) {
                 if (!birthDate) return;
                 const today = new Date();
@@ -2439,6 +2498,13 @@ try {
                 submitBtn.disabled = false;
                 this.reset();
             }, 1500);
+        });
+
+        // Manejar envío del formulario de nota rápida
+        document.getElementById('noteForm')?.addEventListener('submit', function (e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Guardando...';
+            submitBtn.disabled = true;
         });
 
         // Estilos para spinner

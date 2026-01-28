@@ -9,17 +9,27 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $stmt = $conn->query("SELECT * FROM citas");
-    
+    $stmt = $conn->query("
+        SELECT c.*, 
+               u.nombre as doc_nombre, u.apellido as doc_apellido,
+               p.id_paciente
+        FROM citas c
+        LEFT JOIN usuarios u ON c.id_doctor = u.idUsuario
+        LEFT JOIN pacientes p ON (c.nombre_pac = p.nombre AND c.apellido_pac = p.apellido)
+    ");
+
     $events = [];
     while ($row = $stmt->fetch()) {
-        // Update the events array creation to include the ID
+        $doctorName = $row['doc_nombre'] ? "Dr. " . $row['doc_nombre'] . " " . $row['doc_apellido'] : "Sin Asignar";
         $events[] = [
-            'id' => $row['id_cita'],  // Make sure to include this
-            'title' => $row['nombre_pac'] . ' ' . $row['apellido_pac'],
+            'id' => $row['id_cita'],
+            'title' => $row['nombre_pac'] . ' ' . $row['apellido_pac'] . ' - ' . $doctorName,
             'start' => $row['fecha_cita'] . 'T' . $row['hora_cita'],
-            'backgroundColor' => '#007bff',
-            'borderColor' => '#0056b3'
+            'extendedProps' => [
+                'doctor' => $doctorName,
+                'id_paciente' => $row['id_paciente'] ?? null,
+                'tipo' => 'primary'
+            ]
         ];
     }
 
