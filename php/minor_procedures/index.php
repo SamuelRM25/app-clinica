@@ -1,5 +1,5 @@
 <?php
-// index.php - Procedimientos Menores - Centro Médico Herrera Saenz
+// index.php - Procedimientos Menores - Centro Médico RS
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -88,7 +88,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Procedimientos Menores - Centro Médico Herrera Saenz";
+    $page_title = "Procedimientos Menores - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -102,7 +102,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico Herrera Saenz">
+    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1600,7 +1600,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1963,7 +1963,7 @@ try {
                         <p class="text-muted mb-2">Total acumulado en sistema:
                             <strong><?php echo $total_procedures; ?></strong> procedimientos
                         </p>
-                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico Herrera Saenz</p>
+                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico RS</p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -1977,7 +1977,7 @@ try {
     <script>
         /**
          * Procedimientos Menores v4.5 - Reingenierizado
-         * Centro Médico Herrera Saenz
+         * Centro Médico RS
          */
         'use strict';
 

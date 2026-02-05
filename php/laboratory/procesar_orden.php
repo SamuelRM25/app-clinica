@@ -64,7 +64,7 @@ try {
     $edad = date_diff(date_create($orden['fecha_nacimiento']), date_create('today'))->y;
     $genero = $orden['genero'];
 
-    $page_title = "Procesar Orden #" . $orden['numero_orden'] . " - Centro Médico Herrera Saenz";
+    $page_title = "Procesar Orden #" . $orden['numero_orden'] . " - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -78,7 +78,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Procesar Orden de Laboratorio - Centro Médico Herrera Saenz">
+    <meta name="description" content="Procesar Orden de Laboratorio - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -847,7 +847,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->

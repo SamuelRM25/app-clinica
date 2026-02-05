@@ -1,5 +1,5 @@
 <?php
-// purchases/index.php - Módulo de Compras del Centro Médico Herrera Saenz
+// purchases/index.php - Módulo de Compras del Centro Médico RS
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -92,7 +92,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Compras - Centro Médico Herrera Saenz";
+    $page_title = "Compras - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -107,7 +107,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Compras - Centro Médico Herrera Saenz - Gestión de compras de medicamentos e insumos">
+        content="Módulo de Compras - Centro Médico RS - Gestión de compras de medicamentos e insumos">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1548,7 +1548,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2315,7 +2315,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Compras Reingenierizado - Centro Médico Herrera Saenz
+        // Módulo de Compras Reingenierizado - Centro Médico RS
 
         (function () {
             'use strict';

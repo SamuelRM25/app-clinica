@@ -441,7 +441,7 @@ try {
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="CMHS" class="brand-logo">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">

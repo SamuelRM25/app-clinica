@@ -74,7 +74,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="brand-logo">
+                <img src="../../assets/img/cmrs.png" alt="CMHS" class="brand-logo">
                 <div class="header-controls">
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn">

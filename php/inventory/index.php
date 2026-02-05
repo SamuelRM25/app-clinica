@@ -1,6 +1,6 @@
 <?php
 // inventory/index.php - Módulo de Inventario Reingenierizado
-// Centro Médico Herrera Saenz - Sistema de Gestión Médica
+// Centro Médico RS - Sistema de Gestión Médica
 // Versión: 4.0 - Mismo diseño que Dashboard Principal
 
 session_start();
@@ -76,7 +76,7 @@ try {
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Inventario - Centro Médico Herrera Saenz";
+    $page_title = "Inventario - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -90,7 +90,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Inventario - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Inventario - Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1528,7 +1528,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2366,7 +2366,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Inventario Reingenierizado - Centro Médico Herrera Saenz
+        // Módulo de Inventario Reingenierizado - Centro Médico RS
 
         (function () {
             'use strict';

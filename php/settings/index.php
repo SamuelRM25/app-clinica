@@ -1,5 +1,5 @@
 <?php
-// settings/index.php - Configuración del Sistema - Centro Médico Herrera Saenz
+// settings/index.php - Configuración del Sistema - Centro Médico RS
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -20,20 +20,20 @@ try {
     // Si no existe la tabla, se podría crear o usar valores por defecto
     $stmt = $conn->query("SELECT * FROM configuracion_sistema LIMIT 1");
     $config = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-        'nombre_clinica' => 'Centro Médico Herrera Saenz',
+        'nombre_clinica' => 'Centro Médico RS',
         'direccion' => 'Ciudad de Guatemala',
         'telefono' => '5214-8836',
-        'email' => 'info@herrerasaenz.com',
+        'email' => 'info@cmrs.com',
         'logo_path' => '../../assets/img/Logo.png'
     ];
 
     $page_title = "Configuración del Sistema";
 } catch (Exception $e) {
     $config = [
-        'nombre_clinica' => 'Centro Médico Herrera Saenz',
+        'nombre_clinica' => 'Centro Médico RS',
         'direccion' => 'Ciudad de Guatemala',
         'telefono' => '5214-8836',
-        'email' => 'info@herrerasaenz.com',
+        'email' => 'info@cmrs.com',
         'logo_path' => '../../assets/img/Logo.png'
     ];
 }

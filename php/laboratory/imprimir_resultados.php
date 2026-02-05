@@ -197,11 +197,11 @@ try {
 
     <header class="report-header">
         <div class="hospital-info">
-            <h1>CENTRO MÉDICO HERRERA SAENZ</h1>
+            <h1>Centro Médico RS</h1>
             <p>Laboratorio Clínico Especializado</p>
-            <p>Amatitlán, Guatemala | Tel: 6633-XXXX</p>
+            <p>Amatitlán, Guatemala | Tel: 0000-0000</p>
         </div>
-        <img src="../../assets/img/herrerasaenz.png" alt="Logo" class="logo">
+        <img src="../../assets/img/cmrs.png" alt="Logo" class="logo">
     </header>
 
     <div class="patient-info">

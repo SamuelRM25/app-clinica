@@ -1,5 +1,5 @@
 <?php
-// inventory/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
+// inventory/index.php - Módulo de Ventas - Centro Médico RS
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -82,7 +82,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico Herrera Saenz";
+    $page_title = "Ventas - Centro Médico RS";
 
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
@@ -94,7 +94,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas del Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas del Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1421,7 +1421,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1774,7 +1774,7 @@ try {
 
     <!-- JavaScript Optimizado (mismo que dashboard con funcionalidad POS) -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico RS
         // Módulo de Ventas - Punto de Venta
 
         (function () {
@@ -2515,7 +2515,7 @@ try {
                 };
 
                 // Log de inicialización
-                console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
+                console.log('Módulo de Ventas - Centro Médico RS');
                 console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
                 console.log('Productos disponibles: <?php echo count($inventario); ?>');
                 console.log('Ventas hoy: <?php echo $today_sales['count'] ?? 0; ?>');

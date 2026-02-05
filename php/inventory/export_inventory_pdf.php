@@ -124,7 +124,7 @@ try {
 
     <div class="header">
         <img src="../../assets/img/Logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
-        <h1>Centro Médico Herrera Saenz</h1>
+        <h1>Centro Médico RS</h1>
         <p>Reporte Completo de Inventario</p>
         <div class="meta">Fecha de generación:
             <?php echo date('d/m/Y H:i'); ?> | Usuario:
@@ -182,7 +182,7 @@ try {
     </table>
 
     <div class="footer">
-        Sistema de Gestión Médica - Centro Médico Herrera Saenz | Página 1 de 1
+        Sistema de Gestión Médica - Centro Médico RS | Página 1 de 1
     </div>
 
     <script>

@@ -51,7 +51,7 @@ try {
     $clinica_nombre = "Centro Médico Herrera Sáenz";
     $clinica_direccion = "7ma Av 7-25 Zona 1, Atrás del parqueo Hospital Antiguo. Huehuetenango";
     $clinica_telefono = "(+502) 4195-8112";
-    $clinica_email = "contacto@herrerasaenz.com";
+    $clinica_email = "contacto@cmrs.com";
     
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());

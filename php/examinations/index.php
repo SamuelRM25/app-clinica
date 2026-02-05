@@ -1,5 +1,5 @@
 <?php
-// index.php - Registro de Exámenes - Centro Médico Herrera Saenz
+// index.php - Registro de Exámenes - Centro Médico RS
 // Versión: 4.5 - Estilo Dashboard Principal con Estadísticas
 session_start();
 
@@ -88,7 +88,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Registro de Exámenes - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -103,7 +103,7 @@ try {
     <!-- META TAGS IDÉNTICOS AL DASHBOARD -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Registro de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Registro de Exámenes - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- FAVICON Y FUENTES IDÉNTICAS -->
@@ -1543,7 +1543,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1607,75 +1607,75 @@ try {
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
-            <div class="stats-grid">
-                <!-- Exámenes de hoy -->
-                <div class="stat-card animate-in delay-1">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Exámenes Hoy</div>
-                            <div class="stat-value"><?php echo $today_exams; ?></div>
+                <div class="stats-grid">
+                    <!-- Exámenes de hoy -->
+                    <div class="stat-card animate-in delay-1">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Exámenes Hoy</div>
+                                <div class="stat-value"><?php echo $today_exams; ?></div>
+                            </div>
+                            <div class="stat-icon primary">
+                                <i class="bi bi-clipboard2-pulse"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon primary">
-                            <i class="bi bi-clipboard2-pulse"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-arrow-up-right"></i>
+                            <span>Realizados hoy</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-arrow-up-right"></i>
-                        <span>Realizados hoy</span>
-                    </div>
-                </div>
 
-                <!-- Ingresos de hoy -->
-                <div class="stat-card animate-in delay-2">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ingresos Hoy</div>
-                            <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                    <!-- Ingresos de hoy -->
+                    <div class="stat-card animate-in delay-2">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Ingresos Hoy</div>
+                                <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                            </div>
+                            <div class="stat-icon success">
+                                <i class="bi bi-currency-dollar"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-currency-dollar"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-cash-stack"></i>
+                            <span>Total recaudado</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-cash-stack"></i>
-                        <span>Total recaudado</span>
-                    </div>
-                </div>
 
-                <!-- Exámenes de la semana -->
-                <div class="stat-card animate-in delay-3">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Esta Semana</div>
-                            <div class="stat-value"><?php echo $week_exams; ?></div>
+                    <!-- Exámenes de la semana -->
+                    <div class="stat-card animate-in delay-3">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Esta Semana</div>
+                                <div class="stat-value"><?php echo $week_exams; ?></div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-calendar-week"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-calendar-week"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-range"></i>
+                            <span>Total de la semana</span>
                         </div>
                     </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-calendar-range"></i>
-                        <span>Total de la semana</span>
-                    </div>
-                </div>
 
-                <!-- Ingresos de la semana -->
-                <div class="stat-card animate-in delay-4">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Ingresos Semana</div>
-                            <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                    <!-- Ingresos de la semana -->
+                    <div class="stat-card animate-in delay-4">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Ingresos Semana</div>
+                                <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                            </div>
+                            <div class="stat-icon info">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
                         </div>
-                        <div class="stat-icon info">
-                            <i class="bi bi-graph-up-arrow"></i>
+                        <div class="stat-change positive">
+                            <i class="bi bi-calendar-month"></i>
+                            <span>Acumulado semanal</span>
                         </div>
-                    </div>
-                    <div class="stat-change positive">
-                        <i class="bi bi-calendar-month"></i>
-                        <span>Acumulado semanal</span>
                     </div>
                 </div>
-            </div>
             <?php endif; ?>
 
             <!-- Exámenes recientes -->
@@ -1698,84 +1698,84 @@ try {
                 </div>
                 Actualizar
                 </button>
-            </div>
+    </div>
 
-            <?php if (count($recent_exams) > 0): ?>
-                <div class="table-responsive">
-                    <table class="appointments-table">
-                        <thead>
-                            <tr>
-                                <th>Paciente</th>
-                                <th>Tipo de Examen</th>
-                                <th>Costo</th>
-                                <th>Fecha</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recent_exams as $exam): ?>
-                                <?php
-                                $patient_name = htmlspecialchars($exam['nombre_paciente']);
-                                $patient_initials = strtoupper(substr($patient_name, 0, 2));
-                                ?>
-                                <tr>
-                                    <td>
-                                        <div class="patient-cell">
-                                            <div class="patient-avatar">
-                                                <?php echo $patient_initials; ?>
-                                            </div>
-                                            <div class="patient-info">
-                                                <div class="patient-name"><?php echo $patient_name; ?></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="procedure-type">
-                                            <?php echo htmlspecialchars($exam['tipo_examen']); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="time-badge bg-success text-white">
-                                            Q<?php echo number_format($exam['cobro'], 2); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="time-badge">
-                                            <i class="bi bi-clock"></i>
-                                            <?php echo date('d/m/Y H:i', strtotime($exam['fecha_examen'])); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="#" class="btn-icon edit" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <a href="#" class="btn-icon history" title="Ver detalles">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-3 text-center">
-                    <a href="historial_examenes.php" class="text-primary text-decoration-none">
-                        Ver todos los exámenes <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-clipboard2-pulse"></i>
-                        </div>
-                        <h4 class="text-muted mb-2">No hay exámenes registrados</h4>
-                        <p class="text-muted mb-3">Total en sistema: <?php echo $total_exams; ?></p>
-                        <p class="text-muted">Complete el formulario para registrar su primer examen</p>
-                    </div>
-                <?php endif; ?>
-            </section>
+    <?php if (count($recent_exams) > 0): ?>
+        <div class="table-responsive">
+            <table class="appointments-table">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Tipo de Examen</th>
+                        <th>Costo</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_exams as $exam): ?>
+                        <?php
+                        $patient_name = htmlspecialchars($exam['nombre_paciente']);
+                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                        ?>
+                        <tr>
+                            <td>
+                                <div class="patient-cell">
+                                    <div class="patient-avatar">
+                                        <?php echo $patient_initials; ?>
+                                    </div>
+                                    <div class="patient-info">
+                                        <div class="patient-name"><?php echo $patient_name; ?></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="procedure-type">
+                                    <?php echo htmlspecialchars($exam['tipo_examen']); ?>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="time-badge bg-success text-white">
+                                    Q<?php echo number_format($exam['cobro'], 2); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="time-badge">
+                                    <i class="bi bi-clock"></i>
+                                    <?php echo date('d/m/Y H:i', strtotime($exam['fecha_examen'])); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="#" class="btn-icon edit" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="#" class="btn-icon history" title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3 text-center">
+            <a href="historial_examenes.php" class="text-primary text-decoration-none">
+                Ver todos los exámenes <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    <?php else: ?>
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-clipboard2-pulse"></i>
+            </div>
+            <h4 class="text-muted mb-2">No hay exámenes registrados</h4>
+            <p class="text-muted mb-3">Total en sistema: <?php echo $total_exams; ?></p>
+            <p class="text-muted">Complete el formulario para registrar su primer examen</p>
+        </div>
+    <?php endif; ?>
+    </section>
 
     <!-- Resumen mensual -->
     <div class="stat-card animate-in delay-3">
@@ -1795,7 +1795,7 @@ try {
         <div class="mt-3">
             <p class="text-muted mb-2">Total acumulado en sistema: <strong><?php echo $total_exams; ?></strong> exámenes
             </p>
-            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Herrera Saenz</p>
+            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico RS</p>
         </div>
     </div>
     </main>
@@ -1808,7 +1808,7 @@ try {
     <script>
         /**
          * Registro de Exámenes v4.5 - Reingenierizado
-         * Centro Médico Herrera Saenz
+         * Centro Médico RS
          */
         'use strict';
 

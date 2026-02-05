@@ -1507,7 +1507,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1562,7 +1562,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico RS
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1662,7 +1662,8 @@ try {
                                                             class="text-muted small"><?php echo date('d/M/Y', strtotime($lab['fecha_orden'])); ?></span>
                                                     </div>
                                                     <h6 class="mb-1 text-dark fw-semibold">
-                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?></h6>
+                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
+                                                    </h6>
                                                     <p class="text-muted small mb-2">Resultado Adjunto</p>
 
                                                     <div class="mt-2">
@@ -2042,7 +2043,7 @@ try {
     </div>
 
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico RS
         (function () {
             'use strict';
 

@@ -170,10 +170,10 @@ try {
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">CENTRO MÉDICO HERRERA SAENZ</h2>
+            <h2 class="fw-bold">Centro Médico RS</h2>
             <div class="clinic-info">
-                <p>7a Av 7-25 Zona 1 HH</p>
-                <p>Tel: (502) 5214-8836</p>
+                <p>Dirección del cliente</p>
+                <p>Tel: (502) 0000-0000</p>
             </div>
         </div>
         <div class="divider"></div>
@@ -206,14 +206,14 @@ try {
             </thead>
             <tbody>
                 <?php foreach ($detalles as $d): ?>
-                        <tr>
-                            <td>
-                                <?php echo htmlspecialchars($d['nombre_prueba']); ?>
-                            </td>
-                            <td class="text-right">Q
-                                <?php echo number_format($d['precio'], 2); ?>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td>
+                            <?php echo htmlspecialchars($d['nombre_prueba']); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($d['precio'], 2); ?>
+                        </td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>

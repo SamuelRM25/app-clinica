@@ -1,5 +1,5 @@
 <?php
-// historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
+// historial_examenes.php - Historial de Exámenes - Centro Médico RS
 // Versión: 4.0 - Estilo Dashboard Principal
 session_start();
 
@@ -29,7 +29,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Historial de Exámenes - Centro Médico RS";
 
     // Configuración de paginación
     $limit = 20; // Registros por página
@@ -68,7 +68,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Historial de Exámenes - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1464,7 +1464,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1513,7 +1513,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico RS
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1548,137 +1548,137 @@ try {
 
                 <!-- Mensaje de error -->
                 <?php if (!empty($error_message)): ?>
-                        <div class="alert alert-danger border-0 mb-4" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <?php echo htmlspecialchars($error_message); ?>
-                        </div>
+                    <div class="alert alert-danger border-0 mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
                 <?php endif; ?>
 
                 <?php if (empty($examenes)): ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-clipboard-x"></i>
-                            </div>
-                            <h4 class="text-muted mb-2">No se encontraron registros</h4>
-                            <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
-                            <a href="index.php" class="action-btn">
-                                <i class="bi bi-plus-lg"></i>
-                                Registrar primer examen
-                            </a>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-clipboard-x"></i>
                         </div>
+                        <h4 class="text-muted mb-2">No se encontraron registros</h4>
+                        <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
+                        <a href="index.php" class="action-btn">
+                            <i class="bi bi-plus-lg"></i>
+                            Registrar primer examen
+                        </a>
+                    </div>
                 <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="history-table">
-                                <thead>
-                                    <tr>
-                                        <th>Paciente</th>
-                                        <th>Tipo de Examen</th>
-                                        <th>Cobro</th>
-                                        <th>Fecha y Hora</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $prev_jornada = null;
-                                    foreach ($examenes as $exam):
-                                        // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
-                                        $timestamp = strtotime($exam['fecha_examen']);
-                                        $hora = (int) date('H', $timestamp);
-                                        $fecha_base = date('Y-m-d', $timestamp);
+                    <div class="table-responsive">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Tipo de Examen</th>
+                                    <th>Cobro</th>
+                                    <th>Fecha y Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $prev_jornada = null;
+                                foreach ($examenes as $exam):
+                                    // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
+                                    $timestamp = strtotime($exam['fecha_examen']);
+                                    $hora = (int) date('H', $timestamp);
+                                    $fecha_base = date('Y-m-d', $timestamp);
 
-                                        if ($hora < 8) {
-                                            $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
+                                    if ($hora < 8) {
+                                        $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
+                                    } else {
+                                        $jornada_date = $fecha_base;
+                                    }
+
+                                    // Mostrar divisor si cambia la jornada
+                                    if ($jornada_date !== $prev_jornada):
+                                        $display_date = date('d/m/Y', strtotime($jornada_date));
+                                        // Formato amigable: Hoy, Ayer, o fecha
+                                        if ($jornada_date == date('Y-m-d')) {
+                                            $display_text = "Jornada de Hoy ($display_date)";
+                                        } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
+                                            $display_text = "Jornada de Ayer ($display_date)";
                                         } else {
-                                            $jornada_date = $fecha_base;
+                                            $display_text = "Jornada del " . $display_date;
                                         }
-
-                                        // Mostrar divisor si cambia la jornada
-                                        if ($jornada_date !== $prev_jornada):
-                                            $display_date = date('d/m/Y', strtotime($jornada_date));
-                                            // Formato amigable: Hoy, Ayer, o fecha
-                                            if ($jornada_date == date('Y-m-d')) {
-                                                $display_text = "Jornada de Hoy ($display_date)";
-                                            } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
-                                                $display_text = "Jornada de Ayer ($display_date)";
-                                            } else {
-                                                $display_text = "Jornada del " . $display_date;
-                                            }
-                                            ?>
-                                                    <tr class="jornada-row">
-                                                        <td colspan="4" class="jornada-cell">
-                                                            <i class="bi bi-calendar-range jornada-icon"></i>
-                                                            <?php echo $display_text; ?>
-                                                        </td>
-                                                    </tr>
-                                                    <?php
-                                                    $prev_jornada = $jornada_date;
-                                        endif;
-
-                                        // Obtener iniciales del paciente
-                                        $patient_name = htmlspecialchars($exam['nombre_paciente']);
-                                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
                                         ?>
-                                            <tr>
-                                                <td>
-                                                    <div class="patient-cell">
-                                                        <div class="patient-avatar">
-                                                            <?php echo $patient_initials; ?>
-                                                        </div>
-                                                        <div class="patient-info">
-                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="fw-medium"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
-                                                </td>
-                                                <td>
-                                                    <span class="amount-badge">
-                                                        Q<?php echo number_format($exam['cobro'], 2); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="time-badge">
-                                                        <i class="bi bi-clock"></i>
-                                                        <?php echo date('h:i A', strtotime($exam['fecha_examen'])); ?>
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                        <tr class="jornada-row">
+                                            <td colspan="4" class="jornada-cell">
+                                                <i class="bi bi-calendar-range jornada-icon"></i>
+                                                <?php echo $display_text; ?>
+                                            </td>
+                                        </tr>
+                                        <?php
+                                        $prev_jornada = $jornada_date;
+                                    endif;
+
+                                    // Obtener iniciales del paciente
+                                    $patient_name = htmlspecialchars($exam['nombre_paciente']);
+                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <div class="patient-cell">
+                                                <div class="patient-avatar">
+                                                    <?php echo $patient_initials; ?>
+                                                </div>
+                                                <div class="patient-info">
+                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
+                                        </td>
+                                        <td>
+                                            <span class="amount-badge">
+                                                Q<?php echo number_format($exam['cobro'], 2); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="time-badge">
+                                                <i class="bi bi-clock"></i>
+                                                <?php echo date('h:i A', strtotime($exam['fecha_examen'])); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <?php if ($total_paginas > 1): ?>
+                        <div class="pagination-container">
+                            <ul class="pagination">
+                                <?php if ($page > 1): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+
+                                <li class="page-item active">
+                                    <span class="page-link"><?php echo $page; ?> de <?php echo $total_paginas; ?></span>
+                                </li>
+
+                                <?php if ($page < $total_paginas): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
                         </div>
+                    <?php endif; ?>
 
-                        <!-- Paginación -->
-                        <?php if ($total_paginas > 1): ?>
-                                <div class="pagination-container">
-                                    <ul class="pagination">
-                                        <?php if ($page > 1): ?>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                                        <i class="bi bi-chevron-left"></i>
-                                                    </a>
-                                                </li>
-                                        <?php endif; ?>
-
-                                        <li class="page-item active">
-                                            <span class="page-link"><?php echo $page; ?> de <?php echo $total_paginas; ?></span>
-                                        </li>
-
-                                        <?php if ($page < $total_paginas): ?>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                                        <i class="bi bi-chevron-right"></i>
-                                                    </a>
-                                                </li>
-                                        <?php endif; ?>
-                                    </ul>
-                                </div>
-                        <?php endif; ?>
-
-                        <div class="text-center mt-4">
-                            <p class="text-muted">Total de registros: <?php echo $total_registros; ?></p>
-                        </div>
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Total de registros: <?php echo $total_registros; ?></p>
+                    </div>
                 <?php endif; ?>
             </section>
         </main>
@@ -1729,7 +1729,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico RS
 
         (function () {
             'use strict';
@@ -2063,7 +2063,7 @@ try {
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(22);
                     doc.setFont('helvetica', 'bold');
-                    doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
+                    doc.text("Centro Médico RS", 105, 18, { align: 'center' });
 
                     doc.setFontSize(14);
                     doc.setFont('helvetica', 'normal');
