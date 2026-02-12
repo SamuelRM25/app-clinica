@@ -2594,7 +2594,7 @@ try {
             </div>
 
             <!-- Acciones Rápidas -->
-            <?php if ($_SESSION['user_id'] == 7): ?>
+            <?php if ($_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 1): ?>
                 <div class="stats-grid mb-4 animate-in delay-1">
                     <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
                         style="text-decoration: none; border-left: 4px solid var(--color-success);">
@@ -3065,7 +3065,8 @@ try {
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Tipo de Consulta</label>
+                            <label class="form-label fw-bold">Tipo de Consulta <span id="consultationHistoryBadge"
+                                    class="badge bg-info ms-2 d-none"></span></label>
                             <div class="btn-group w-100" role="group">
                                 <input type="radio" class="btn-check" name="tipo_consulta" id="btn_consulta"
                                     value="Consulta" checked autocomplete="off">
@@ -3281,7 +3282,13 @@ try {
                                     <span class="fw-bold text-dark" id="orderSubtotal">Q0.00</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <span class="fw-bold text-uppercase">Total a Pagar:</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-uppercase">Total a Pagar:</span>
+                                        <button type="button" class="btn btn-sm btn-outline-warning" id="toggleEPSBtn"
+                                            title="Activar modo EPS (Editar precios)">
+                                            <i class="bi bi-pencil-square"></i> EPS
+                                        </button>
+                                    </div>
                                     <span class="fs-3 fw-bold text-primary" id="orderTotal">Q0.00</span>
                                 </div>
 
@@ -3713,6 +3720,53 @@ try {
                     tipoRadios.forEach(r => r.addEventListener('change', calculatePrice));
                     calculatePrice();
 
+                    // Listener para historial de paciente
+                    const billingPatientInput = document.getElementById('billing_paciente_input');
+                    const billingDatalist = document.getElementById('billingDatalistOptions');
+
+                    if (billingPatientInput && billingDatalist) {
+                        billingPatientInput.addEventListener('input', () => {
+                            const val = billingPatientInput.value;
+                            let patientId = null;
+                            const options = billingDatalist.options;
+                            for (let i = 0; i < options.length; i++) {
+                                if (options[i].value === val) {
+                                    patientId = options[i].getAttribute('data-id');
+                                    break;
+                                }
+                            }
+
+                            if (patientId) {
+                                fetch(`api/check_consultation_history.php?id_paciente=${patientId}`)
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        const badge = document.getElementById('consultationHistoryBadge');
+                                        const btnReconsulta = document.getElementById('btn_reconsulta'); // Si se desea auto-seleccionar
+
+                                        if (badge) {
+                                            if (data.status === 'success' && data.has_prior) {
+                                                badge.textContent = `${data.count} Citas Previas`;
+                                                badge.classList.remove('d-none');
+
+                                                Swal.fire({
+                                                    toast: true,
+                                                    position: 'top-end',
+                                                    icon: 'info',
+                                                    title: 'Paciente Recurrente',
+                                                    text: `Tiene ${data.count} citas previas. Verifique si aplica Re-consulta.`,
+                                                    showConfirmButton: false,
+                                                    timer: 4000
+                                                });
+                                            } else {
+                                                badge.classList.add('d-none');
+                                            }
+                                        }
+                                    })
+                                    .catch(e => console.error("Error checking history", e));
+                            }
+                        });
+                    }
+
                     const saveBtn = document.getElementById('saveBillingBtn');
                     if (saveBtn) {
                         saveBtn.addEventListener('click', async () => {
@@ -3807,6 +3861,7 @@ try {
                                     break;
                                 }
                             }
+
                             patientHidden.value = patientId;
 
                             if (!form.checkValidity()) {
@@ -3860,6 +3915,9 @@ try {
                     const saveBtn = document.getElementById('saveLabOrderBtn');
                     const searchInput = document.getElementById('labTestSearch');
 
+                    const epsBtn = document.getElementById('toggleEPSBtn');
+                    let isEPSMode = false;
+
                     if (!selectedList) return;
 
                     const updateSummary = () => {
@@ -3878,11 +3936,14 @@ try {
                                 const item = document.createElement('div');
                                 item.className = 'd-flex justify-content-between align-items-center p-2 mb-2 bg-white border rounded shadow-sm animate-in';
                                 item.innerHTML = `
-                                    <div class="small">
+                                    <div class="small w-100">
                                         <div class="fw-bold text-dark">${cb.getAttribute('data-name')}</div>
-                                        <div class="text-primary fw-bold">Q${price.toFixed(2)}</div>
+                                        ${isEPSMode
+                                        ? `<input type="number" class="form-control form-control-sm mt-1 eps-price-input" value="${price.toFixed(2)}" step="0.01" min="0" data-id="${cb.value}">`
+                                        : `<div class="text-primary fw-bold">Q${price.toFixed(2)}</div>`
+                                    }
                                     </div>
-                                    <button type="button" class="btn btn-link text-danger p-0" onclick="document.getElementById('${cb.id}').click()">
+                                    <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="document.getElementById('${cb.id}').click()">
                                         <i class="bi bi-trash"></i>
                                     </button>`;
                                 fragment.appendChild(item);
@@ -3908,6 +3969,33 @@ try {
                         countElements.forEach(el => el.textContent = count);
                         if (saveBtn) saveBtn.disabled = (count === 0);
                     };
+
+                    const toggleEPS = () => {
+                        isEPSMode = !isEPSMode;
+                        epsBtn.classList.toggle('active', isEPSMode);
+                        epsBtn.classList.toggle('btn-warning', isEPSMode);
+                        epsBtn.classList.toggle('btn-outline-warning', !isEPSMode);
+                        updateSummary();
+                    };
+
+                    if (epsBtn) {
+                        epsBtn.addEventListener('click', toggleEPS);
+                    }
+
+                    // Delegación de eventos para inputs de precio en modo EPS
+                    if (selectedList) {
+                        selectedList.addEventListener('input', (e) => {
+                            if (e.target.classList.contains('eps-price-input')) {
+                                let total = 0;
+                                document.querySelectorAll('.eps-price-input').forEach(input => {
+                                    total += parseFloat(input.value) || 0;
+                                });
+                                const totalStr = `Q${total.toFixed(2)}`;
+                                if (subtotalElement) subtotalElement.textContent = totalStr;
+                                if (totalElement) totalElement.textContent = totalStr;
+                            }
+                        });
+                    }
 
                     checkboxes.forEach(cb => {
                         cb.addEventListener('change', updateSummary);
@@ -3943,8 +4031,18 @@ try {
                                 id_doctor: document.getElementById('lab_id_doctor').value,
                                 observaciones: form.observaciones.value,
                                 pruebas: pruebas,
-                                tipo_pago: document.querySelector('input[name="order_tipo_pago"]:checked')?.value || 'Efectivo'
+                                tipo_pago: document.querySelector('input[name="order_tipo_pago"]:checked')?.value || 'Efectivo',
+                                is_eps: isEPSMode,
+                                custom_prices: {}
                             };
+
+                            if (isEPSMode) {
+                                document.querySelectorAll('.eps-price-input').forEach(input => {
+                                    const id = input.getAttribute('data-id');
+                                    const val = parseFloat(input.value) || 0; // Si está vacío o es 0, se guarda como 0
+                                    data.custom_prices[id] = val;
+                                });
+                            }
 
                             const originalText = saveBtn.innerHTML;
                             saveBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Procesando...';
@@ -4029,19 +4127,48 @@ try {
                     if (!select || !amountInput) return;
 
                     // Update price on select
-                    select.addEventListener('change', () => {
+                    // Update price on select or radio change
+                    const updatePrice = () => {
                         const option = select.options[select.selectedIndex];
-                        const price = option.getAttribute('data-price');
+                        const rateType = document.querySelector('input[name="us_rate_type"]:checked').value;
+
+                        let price = 0;
+                        if (option.value) {
+                            if (option.getAttribute('data-price') === 'Manual' || option.getAttribute('data-p-normal') === 'Manual') {
+                                price = 'Manual';
+                            } else {
+                                switch (rateType) {
+                                    case 'inhabil':
+                                        price = parseFloat(option.getAttribute('data-p-inhabil')) || 0;
+                                        break;
+                                    case 'radio':
+                                        price = parseFloat(option.getAttribute('data-p-radio')) || 0;
+                                        break;
+                                    case 'iradio':
+                                        price = parseFloat(option.getAttribute('data-p-iradio')) || 0;
+                                        break;
+                                    default: // normal
+                                        price = parseFloat(option.getAttribute('data-p-normal')) || 0;
+                                }
+                            }
+                        }
+
                         if (price === 'Manual') {
                             amountInput.value = '';
                             amountInput.readOnly = false;
                             amountInput.placeholder = 'Ingrese monto...';
-                        } else if (price) {
-                            amountInput.value = parseFloat(price).toFixed(2);
+                        } else if (price > 0) {
+                            amountInput.value = price.toFixed(2);
                             amountInput.readOnly = true;
                         } else {
                             amountInput.value = '';
+                            amountInput.readOnly = true;
                         }
+                    };
+
+                    select.addEventListener('change', updatePrice);
+                    document.querySelectorAll('.us-rate-type').forEach(radio => {
+                        radio.addEventListener('change', updatePrice);
                     });
 
                     if (saveBtn) {
@@ -4466,77 +4593,118 @@ try {
                             <label class="form-label">Tipo de Ultrasonido</label>
                             <select class="form-select" id="ultrasoundSelect" name="ultrasound_type" required>
                                 <option value="">Seleccione...</option>
-                                <option value="ABDOMINAL SUPERIOR" data-price="300.00">ABDOMINAL SUPERIOR
-                                </option>
-                                <option value="CADERA" data-price="500.00">CADERA</option>
-                                <option value="CUELLO O TIROIDEO" data-price="500.00">CUELLO O TIROIDEO
-                                </option>
-                                <option value="HOMBRO" data-price="500.00">HOMBRO</option>
-                                <option value="MUÑECA" data-price="500.00">MUÑECA</option>
-                                <option value="INGUINAL" data-price="500.00">INGUINAL</option>
-                                <option value="OBSTETRICO" data-price="300.00">OBSTETRICO</option>
-                                <option value="ABDOMINAL SUPERIOR (PELVICO)" data-price="300.00">ABDOMINAL SUPERIOR
-                                    (PELVICO)</option>
-                                <option value="ABDOMEN INFERIOR + FID" data-price="300.00">ABDOMEN INFERIOR + FID
-                                </option>
-                                <option value="ABDOMINAL COMPLETO" data-price="300.00">ABDOMINAL COMPLETO
-                                </option>
-                                <option value="ABDOMINAL PEDIATRICO MENORES A 2" data-price="600.00">ABDOMINAL
-                                    PEDIATRICO MENORES A 2</option>
-                                <option value="ABDOMINAL PEDIATRICO" data-price="450.00">ABDOMINAL PEDIATRICO
-                                </option>
-                                <option value="ABDOMINAL SUPERIOR + FID" data-price="350.00">ABDOMINAL SUPERIOR + FID
-                                </option>
-                                <option value="AMBAS RODILLAS" data-price="1000.00">AMBAS RODILLAS</option>
-                                <option value="RODILLA" data-price="500.00">RODILLA</option>
-                                <option value="DOPPLER ARTERIAL UNA EXTREMIDAD" data-price="700.00">DOPPLER ARTERIAL UNA
-                                    EXTREMIDAD</option>
-                                <option value="DOPPLER CAROTIDEO" data-price="700.00">DOPPLER CAROTIDEO</option>
-                                <option value="DOPPLER VENOSO UNA EXTREMIDAD" data-price="700.00">DOPPLER VENOSO UNA
-                                    EXTREMIDAD</option>
-                                <option value="ENDOVAGINAL" data-price="350.00">ENDOVAGINAL</option>
-                                <option value="GUIA ECOGRAFICA PARA BIOPSIA" data-price="590.00">GUIA ECOGRAFICA PARA
-                                    BIOPSIA</option>
-                                <option value="GUIA ECOGRAFICA PARA DRENAJE DE A" data-price="500.00">GUIA ECOGRAFICA
-                                    PARA DRENAJE DE A</option>
-                                <option value="GUIA PARA PARACENTESIS" data-price="400.00">GUIA PARA PARACENTESIS
-                                </option>
-                                <option value="HEPATICO Y VIAS BILIARES" data-price="380.00">HEPATICO Y VIAS BILIARES
-                                </option>
-                                <option value="HEPATICO Y VIAS BILIARES PEDIATRICO" data-price="350.00">HEPATICO Y VIAS
-                                    BILIARES PEDIATRICO</option>
-                                <option value="RIÑON- ESCROTAL" data-price="350.00">RIÑON- ESCROTAL</option>
-                                <option value="MAMARIO" data-price="500.00">MAMARIO</option>
-                                <option value="MUSCULAR PARTES BLANDAS" data-price="500.00">MUSCULAR PARTES BLANDAS
-                                </option>
-                                + <option value="obstetrico" data-price="250.00">obstetrico</option>
-                                <option value="OBSTETRICO GEMELAR" data-price="400.00">OBSTETRICO GEMELAR</option>
-                                <option value="PARED ABDOMINAL E INGUINAL" data-price="500.00">PARED ABDOMINAL E
-                                    INGUINAL</option>
-                                <option value="PERICARDIO" data-price="350.00">PERICARDIO</option>
-                                <option value="PILORO" data-price="250.00">PILORO</option>
-                                <option value="PROSTATICO" data-price="250.00">PROSTATICO</option>
-                                <option value="PROSTATICO ENDORECTAL" data-price="350.00">PROSTATICO ENDORECTAL
-                                </option>
-                                <option value="RENAL PEDIATRICO MENORA 2 AÑOS" data-price="300.00">RENAL PEDIATRICO
-                                    MENORA 2 AÑOS</option>
-                                <option value="RENAL" data-price="250.00">RENAL</option>
-                                <option value="renal y vias urinarias" data-price="450.00">renal y vias urinarias
-                                </option>
-                                <option value="TEJIDOS BLANDOS - MUSCULAR" data-price="Manual">TEJIDOS BLANDOS -
-                                    MUSCULAR</option>
-                                <option value="TENDON DE AQUILES" data-price="500.00">TENDON DE AQUILES</option>
-                                <option value="TESTICULAR O ESCROTAL" data-price="500.00">TESTICULAR O ESCROTAL
-                                </option>
-                                <option value="TRANSFONELAR" data-price="Manual">TRANSFONELAR</option>
-                                <option value="6D" data-price="Manual">6D</option>
+                                <option value="ABDOMINAL SUPERIOR" data-p-normal="300" data-p-inhabil="350"
+                                    data-p-radio="150" data-p-iradio="200">ABDOMINAL SUPERIOR</option>
+                                <option value="CADERA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="450">CADERA</option>
+                                <option value="CUELLO O TIROIDEO" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="250" data-p-iradio="450">CUELLO O TIROIDEO</option>
+                                <option value="HOMBRO" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="450">HOMBRO</option>
+                                <option value="MUÑECA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="450">MUÑECA</option>
+                                <option value="INGUINAL" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="400">INGUINAL</option>
+                                <option value="OBSTETRICO" data-p-normal="300" data-p-inhabil="350" data-p-radio="150"
+                                    data-p-iradio="200">OBSTETRICO</option>
+                                <option value="ABDOMINAL INFERIOR (PELVICO)" data-p-normal="300" data-p-inhabil="350"
+                                    data-p-radio="150" data-p-iradio="200">ABDOMINAL INFERIOR (PELVICO)</option>
+                                <option value="ABDOMEN INFERIOR + FID" data-p-normal="300" data-p-inhabil="400"
+                                    data-p-radio="150" data-p-iradio="250">ABDOMEN INFERIOR + FID</option>
+                                <option value="ABDOMINAL COMPLETO" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="250" data-p-iradio="400">ABDOMINAL COMPLETO</option>
+                                <option value="ABDOMINAL PEDIATRICO MENORES A 2 AÑOS" data-p-normal="600"
+                                    data-p-inhabil="750" data-p-radio="400" data-p-iradio="500">ABDOMINAL PEDIATRICO
+                                    MENORES A 2 AÑOS</option>
+                                <option value="ABDOMINAL PEDIATRICO" data-p-normal="450" data-p-inhabil="700"
+                                    data-p-radio="300" data-p-iradio="500">ABDOMINAL PEDIATRICO</option>
+                                <option value="ABDOMINAL SUPERIOR + FID" data-p-normal="350" data-p-inhabil="450"
+                                    data-p-radio="150" data-p-iradio="250">ABDOMINAL SUPERIOR + FID</option>
+                                <option value="AMBAS RODILLAS" data-p-normal="1000" data-p-inhabil="1400"
+                                    data-p-radio="400" data-p-iradio="600">AMBAS RODILLAS</option>
+                                <option value="RODILLA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="450">RODILLA</option>
+                                <option value="DOPLER ARTERIAL UNA EXTREMIDAD" data-p-normal="700" data-p-inhabil="900"
+                                    data-p-radio="600" data-p-iradio="1000">DOPLER ARTERIAL UNA EXTREMIDAD</option>
+                                <option value="DOPPLER CAROTIDEO" data-p-normal="700" data-p-inhabil="900"
+                                    data-p-radio="500" data-p-iradio="900">DOPPLER CAROTIDEO</option>
+                                <option value="DOPPLER VENOSO UNA EXTREMIDAD" data-p-normal="700" data-p-inhabil="900"
+                                    data-p-radio="600" data-p-iradio="1000">DOPPLER VENOSO UNA EXTREMIDAD</option>
+                                <option value="ENDOVAGINAL" data-p-normal="350" data-p-inhabil="450" data-p-radio="150"
+                                    data-p-iradio="250">ENDOVAGINAL</option>
+                                <option value="GUIA ECOGAFRICA PARA BIOPSIA" data-p-normal="550" data-p-inhabil="700"
+                                    data-p-radio="350" data-p-iradio="450">GUIA ECOGAFRICA PARA BIOPSIA</option>
+                                <option value="GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO" data-p-normal="500"
+                                    data-p-inhabil="700" data-p-radio="300" data-p-iradio="400">GUIA ECOGRAFICA PARA
+                                    DRENAJE DE ABSCESO</option>
+                                <option value="GUIA PARA PARACENTESIS" data-p-normal="400" data-p-inhabil="550"
+                                    data-p-radio="250" data-p-iradio="350">GUIA PARA PARACENTESIS</option>
+                                <option value="HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS" data-p-normal="380"
+                                    data-p-inhabil="580" data-p-radio="200" data-p-iradio="400">HEPATICO Y VIAS BILIARES
+                                    PEDIATRICO MENORES A 2 AÑOS</option>
+                                <option value="HEPATICO Y VIAS BILIARES" data-p-normal="350" data-p-inhabil="500"
+                                    data-p-radio="150" data-p-iradio="250">HEPATICO Y VIAS BILIARES</option>
+                                <option value="INGUINO- ESCROTAL" data-p-normal="350" data-p-inhabil="550"
+                                    data-p-radio="200" data-p-iradio="400">INGUINO- ESCROTAL</option>
+                                <option value="MAMARIO" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
+                                    data-p-iradio="450">MAMARIO</option>
+                                <option value="MUSCULAR PARTES BLANDAS" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="250" data-p-iradio="450">MUSCULAR PARTES BLANDAS</option>
+                                <option value="OBSTETRICO GEMELAR" data-p-normal="400" data-p-inhabil="450"
+                                    data-p-radio="200" data-p-iradio="250">OBSTETRICO GEMELAR</option>
+                                <option value="PARED ABDMINAL E INGUINAL" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="200" data-p-iradio="400">PARED ABDMINAL E INGUINAL</option>
+                                <option value="PILORO" data-p-normal="250" data-p-inhabil="350" data-p-radio="250"
+                                    data-p-iradio="450">PILORO</option>
+                                <option value="PROSTATICO" data-p-normal="250" data-p-inhabil="350" data-p-radio="150"
+                                    data-p-iradio="250">PROSTATICO</option>
+                                <option value="PROSTATICO ENDORECTAL" data-p-normal="350" data-p-inhabil="600"
+                                    data-p-radio="200" data-p-iradio="400">PROSTATICO ENDORECTAL</option>
+                                <option value="RENAL PEDIATRICO MENOR A 2 AÑOS" data-p-normal="300" data-p-inhabil="600"
+                                    data-p-radio="250" data-p-iradio="400">RENAL PEDIATRICO MENOR A 2 AÑOS</option>
+                                <option value="RENAL" data-p-normal="250" data-p-inhabil="350" data-p-radio="150"
+                                    data-p-iradio="200">RENAL</option>
+                                <option value="renal y vias urinarias" data-p-normal="450" data-p-inhabil="350"
+                                    data-p-radio="150" data-p-iradio="200">renal y vias urinarias</option>
+                                <option value="TEJIDOS BLANDOS - MUSCULAR" data-p-normal="350" data-p-inhabil="600"
+                                    data-p-radio="250" data-p-iradio="450">TEJIDOS BLANDOS - MUSCULAR</option>
+                                <option value="TENDON DE AQUILES" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="200" data-p-iradio="400">TENDON DE AQUILES</option>
+                                <option value="TESTICULAR O ESCROTAL" data-p-normal="500" data-p-inhabil="700"
+                                    data-p-radio="200" data-p-iradio="400">TESTICULAR O ESCROTAL</option>
+                                <option value="4D" data-p-normal="500" data-p-inhabil="650" data-p-radio="500"
+                                    data-p-iradio="650">4D</option>
+                                <option value="5D" data-p-normal="600" data-p-inhabil="700" data-p-radio="600"
+                                    data-p-iradio="700">5D</option>
                             </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Horario / Tarifa</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check us-rate-type" name="us_rate_type"
+                                    id="us_rate_normal" value="normal" checked>
+                                <label class="btn btn-outline-secondary" for="us_rate_normal">Normal</label>
+
+                                <input type="radio" class="btn-check us-rate-type" name="us_rate_type"
+                                    id="us_rate_inhabil" value="inhabil">
+                                <label class="btn btn-outline-secondary" for="us_rate_inhabil">Inhabil</label>
+
+                                <input type="radio" class="btn-check us-rate-type" name="us_rate_type"
+                                    id="us_rate_radio" value="radio">
+                                <label class="btn btn-outline-secondary" for="us_rate_radio">Radiólogo</label>
+
+                                <input type="radio" class="btn-check us-rate-type" name="us_rate_type"
+                                    id="us_rate_iradio" value="iradio">
+                                <label class="btn btn-outline-secondary" for="us_rate_iradio">Inh. Rad.</label>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">Monto a Cobrar (Q)</label>
                             <input type="number" class="form-control" id="ultrasound_amount" name="amount" readonly
                                 step="0.01" placeholder="0.00">
-                            <small class="text-muted">El monto se actualiza al seleccionar el tipo</small>
+                            <small class="text-muted">El monto se actualiza al seleccionar el tipo y tarifa</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tipo de Pago</label>
