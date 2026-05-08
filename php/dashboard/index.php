@@ -18,17 +18,19 @@ require_once '../../includes/multitenant.php';
 date_default_timezone_set('America/Guatemala');
 verify_session();
 
-// Verificar suscripción
-if (!check_subscription_status()) {
-    // Si la suscripción no está activa, podrías redirigir a una página de pago
-    // O mostrar un modal persistente. Por ahora, permitiremos entrar pero con aviso.
-    $subscription_warning = true;
-}
-
 try {
     // Conectar a la base de datos
     $database = new Database();
     $conn = $database->getConnection();
+
+    // Sincronizar módulos desde BD (actualiza $_SESSION['hospital_modulos'] siempre)
+    get_hospital_config($conn, $_SESSION['id_hospital'] ?? 1);
+
+    // Verificar suscripción (usa datos ya refrescados)
+    if (!check_subscription_status()) {
+        $subscription_warning = true;
+    }
+
 
     // Obtener información del usuario
     $user_id = $_SESSION['user_id'];
@@ -652,7 +654,7 @@ try {
             position: relative;
             background-color: rgba(0, 0, 0, 0.05);
         }
-        
+
         .nav-link.locked:hover {
             transform: none !important;
             background-color: rgba(0, 0, 0, 0.05) !important;
@@ -660,7 +662,8 @@ try {
         }
 
         .nav-link.locked::after {
-            content: '\F470'; /* Bootstrap icon bi-lock-fill */
+            content: '\F470';
+            /* Bootstrap icon bi-lock-fill */
             font-family: 'Bootstrap Icons' !important;
             position: absolute;
             right: 15px;
@@ -2248,7 +2251,8 @@ try {
                             <span class="nav-text">Punto de Venta</span>
                         </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Punto de Venta / Farmacia')">
+                        <a href="javascript:void(0)" class="nav-link locked"
+                            onclick="lockedModule('Punto de Venta / Farmacia')">
                             <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
                             <span class="nav-text">Punto de Venta</span>
                         </a>
@@ -2327,7 +2331,8 @@ try {
                             <span class="nav-text">Procedimientos</span>
                         </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Procedimientos Menores')">
+                        <a href="javascript:void(0)" class="nav-link locked"
+                            onclick="lockedModule('Procedimientos Menores')">
                             <i class="bi bi-bandaid nav-icon"></i>
                             <span class="nav-text">Procedimientos</span>
                         </a>
@@ -2341,7 +2346,8 @@ try {
                             <span class="nav-text">Exámenes</span>
                         </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Exámenes Especializados')">
+                        <a href="javascript:void(0)" class="nav-link locked"
+                            onclick="lockedModule('Exámenes Especializados')">
                             <i class="bi bi-file-earmark-medical nav-icon"></i>
                             <span class="nav-text">Exámenes</span>
                         </a>
@@ -2397,7 +2403,8 @@ try {
                             <span class="nav-text">Reportes</span>
                         </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Reportes Estadísticos')">
+                        <a href="javascript:void(0)" class="nav-link locked"
+                            onclick="lockedModule('Reportes Estadísticos')">
                             <i class="bi bi-graph-up nav-icon"></i>
                             <span class="nav-text">Reportes</span>
                         </a>
@@ -3918,7 +3925,6 @@ try {
                     this.setupXrayHandlers();
                     this.setupUltrasoundHandlers();
                     this.setupAnimations();
-                    this.setupAdminNotifications();
                 }
 
                 setupGreeting() {
@@ -4641,34 +4647,6 @@ try {
 
                     document.querySelectorAll('.stat-card, .appointments-section, .alert-card').forEach(el => observer.observe(el));
                 }
-
-                setupAdminNotifications() {
-                    <?php if ($user_type === 'admin'): ?>
-                        const lastDate = localStorage.getItem('dailyReportDate');
-                        const today = new Date().toISOString().split('T')[0];
-                        if (new Date().getHours() >= 8 && lastDate !== today) {
-                            setTimeout(() => this.showDailyReportNotification(today), 2000);
-                        }
-                    <?php endif; ?>
-                }
-
-                showDailyReportNotification(date) {
-                    Swal.fire({
-                        title: 'Resumen Diario Disponible',
-                        text: 'El reporte de ayer ya está listo para revisar.',
-                        icon: 'info',
-                        showCancelButton: true,
-                        confirmButtonText: 'Ver Reporte',
-                        cancelButtonText: 'Más tarde',
-                        confirmButtonColor: 'var(--color-primary)'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            localStorage.setItem('dailyReportDate', date);
-                            // Redireccionar al reporte si existe una URL específica, por ahora solo marcamos como visto
-                            // window.location.href = 'reports/daily.php'; 
-                        }
-                    });
-                }
             }
 
             // ==========================================================================
@@ -5295,21 +5273,21 @@ try {
                     console.error('Error:', error);
                     Swal.fire('Error', 'Error al procesar el cobro', 'error');
                 });
-        function lockedModule(moduleName) {
-            Swal.fire({
-                title: 'Módulo Bloqueado',
-                text: 'El módulo "' + moduleName + '" no está incluido en su suscripción actual o no ha sido adquirido.',
-                icon: 'lock',
-                showCancelButton: true,
-                confirmButtonText: 'Contactar Ventas',
-                cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#0d6efd'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.open('https://wa.me/tu_numero_whatsapp', '_blank');
-                }
-            });
-        }
+            function lockedModule(moduleName) {
+                Swal.fire({
+                    title: 'Módulo Bloqueado',
+                    text: 'El módulo "' + moduleName + '" no está incluido en su suscripción actual o no ha sido adquirido.',
+                    icon: 'lock',
+                    showCancelButton: true,
+                    confirmButtonText: 'Contactar Ventas',
+                    cancelButtonText: 'Cerrar',
+                    confirmButtonColor: '#0d6efd'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.open('https://wa.me/tu_numero_whatsapp', '_blank');
+                    }
+                });
+            }
     </script>
 </body>
 

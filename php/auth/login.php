@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['hospital_nombre'] = $h_config['nombre'];
             $_SESSION['hospital_modulos'] = $h_config['modulos_activos'];
             $_SESSION['hospital_status'] = $h_config['estado_suscripcion'];
+            $_SESSION['hospital_type'] = $h_config['tipo_suscripcion'];
             $_SESSION['hospital_expiry'] = $h_config['fecha_vencimiento'];
         }
 
