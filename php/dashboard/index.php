@@ -2227,7 +2227,7 @@ try {
                         </a>
                     </li>
                 <?php endif; ?>
-                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 29): ?> 
+                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 29): ?>
                     <li class="nav-item">
                         <a href="../laboratory/index.php" class="nav-link">
                             <i class="bi bi-virus nav-icon"></i>
@@ -2235,7 +2235,7 @@ try {
                         </a>
                     </li>
                 <?php endif; ?>
-                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 6): ?> 
+                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 6): ?>
                     <li class="nav-item">
                         <a href="../inventory/index.php" class="nav-link">
                             <i class="bi bi-box-seam nav-icon"></i>
@@ -2310,7 +2310,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -3006,106 +3006,106 @@ try {
             </section>
 
             <?php if ($user_type === 'admin'): ?>
-            <!-- Sección de Hospitalización -->
-            <section class="appointments-section animate-in delay-2">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-hospital text-primary section-title-icon"></i>
-                        Pacientes Hospitalizados
-                    </h3>
-                    <div class="d-flex gap-2">
-                        <div class="badge bg-primary d-flex align-items-center p-2">
-                            <i class="bi bi-people-fill me-2"></i>
-                            <?php echo $active_hospitalizations; ?> Activos
-                        </div>
-                        <div class="badge bg-success d-flex align-items-center p-2">
-                            <i class="bi bi-hospital-fill me-2"></i>
-                            <?php echo $available_beds_count; ?> Camas Disp.
+                <!-- Sección de Hospitalización -->
+                <section class="appointments-section animate-in delay-2">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-hospital text-primary section-title-icon"></i>
+                            Pacientes Hospitalizados
+                        </h3>
+                        <div class="d-flex gap-2">
+                            <div class="badge bg-primary d-flex align-items-center p-2">
+                                <i class="bi bi-people-fill me-2"></i>
+                                <?php echo $active_hospitalizations; ?> Activos
+                            </div>
+                            <div class="badge bg-success d-flex align-items-center p-2">
+                                <i class="bi bi-hospital-fill me-2"></i>
+                                <?php echo $available_beds_count; ?> Camas Disp.
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <?php if (count($hospitalized_patients) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Habitación</th>
-                                    <th>Ingreso</th>
-                                    <th>Diagnóstico</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($hospitalized_patients as $hosp): ?>
-                                    <?php
-                                    $patient_name = htmlspecialchars($hosp['nombre'] . ' ' . $hosp['apellido']);
-                                    $patient_initials = strtoupper(
-                                        substr($hosp['nombre'], 0, 1) .
-                                        substr($hosp['apellido'], 0, 1)
-                                    );
-                                    ?>
+                    <?php if (count($hospitalized_patients) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar" style="background: var(--color-secondary);">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                    <small class="text-muted">ID:
-                                                        #<?php echo $hosp['id_encamamiento']; ?></small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info text-white">
-                                                Hab. <?php echo htmlspecialchars($hosp['numero_habitacion']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php echo date('d/m/Y', strtotime($hosp['fecha_ingreso'])); ?>
-                                            <br>
-                                            <small
-                                                class="text-muted"><?php echo date('H:i', strtotime($hosp['fecha_ingreso'])); ?></small>
-                                        </td>
-                                        <td>
-                                            <small class="d-block text-truncate" style="max-width: 150px;">
-                                                <?php echo htmlspecialchars($hosp['diagnostico_ingreso']); ?>
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <a href="../hospitalization/detalle_encamamiento.php?id=<?php echo $hosp['id_encamamiento']; ?>"
-                                                class="btn-icon" title="Ver detalles"
-                                                style="color: var(--color-primary); border-color: var(--color-primary);">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
+                                        <th>Paciente</th>
+                                        <th>Habitación</th>
+                                        <th>Ingreso</th>
+                                        <th>Diagnóstico</th>
+                                        <th>Acciones</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-3 text-center">
-                        <a href="../hospitalization/index.php" class="text-primary text-decoration-none">
-                            Ver todos los pacientes hospitalizados <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-hospital"></i>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($hospitalized_patients as $hosp): ?>
+                                        <?php
+                                        $patient_name = htmlspecialchars($hosp['nombre'] . ' ' . $hosp['apellido']);
+                                        $patient_initials = strtoupper(
+                                            substr($hosp['nombre'], 0, 1) .
+                                            substr($hosp['apellido'], 0, 1)
+                                        );
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <div class="patient-cell">
+                                                    <div class="patient-avatar" style="background: var(--color-secondary);">
+                                                        <?php echo $patient_initials; ?>
+                                                    </div>
+                                                    <div class="patient-info">
+                                                        <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                        <small class="text-muted">ID:
+                                                            #<?php echo $hosp['id_encamamiento']; ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info text-white">
+                                                    Hab. <?php echo htmlspecialchars($hosp['numero_habitacion']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php echo date('d/m/Y', strtotime($hosp['fecha_ingreso'])); ?>
+                                                <br>
+                                                <small
+                                                    class="text-muted"><?php echo date('H:i', strtotime($hosp['fecha_ingreso'])); ?></small>
+                                            </td>
+                                            <td>
+                                                <small class="d-block text-truncate" style="max-width: 150px;">
+                                                    <?php echo htmlspecialchars($hosp['diagnostico_ingreso']); ?>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <a href="../hospitalization/detalle_encamamiento.php?id=<?php echo $hosp['id_encamamiento']; ?>"
+                                                    class="btn-icon" title="Ver detalles"
+                                                    style="color: var(--color-primary); border-color: var(--color-primary);">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                        <h4 class="text-muted mb-2">No hay hospitalizaciones activas</h4>
-                        <p class="text-muted mb-3">Todas las camas están disponibles</p>
-                        <a href="../hospitalization/ingresar_paciente.php" class="action-btn">
-                            <i class="bi bi-plus-lg"></i>
-                            Ingresar Paciente
-                        </a>
-                    </div>
-                <?php endif; ?>
-            </section>
+                        <div class="mt-3 text-center">
+                            <a href="../hospitalization/index.php" class="text-primary text-decoration-none">
+                                Ver todos los pacientes hospitalizados <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-hospital"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay hospitalizaciones activas</h4>
+                            <p class="text-muted mb-3">Todas las camas están disponibles</p>
+                            <a href="../hospitalization/ingresar_paciente.php" class="action-btn">
+                                <i class="bi bi-plus-lg"></i>
+                                Ingresar Paciente
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                </section>
             <?php endif; ?>
 
             <!-- Panel de alertas -->
@@ -3412,7 +3412,8 @@ try {
                                                         <?php foreach ($pruebas as $prueba): ?>
                                                             <div class="col-md-6 test-item"
                                                                 data-name="<?php echo strtolower(htmlspecialchars($prueba['nombre_prueba'])); ?>">
-                                                                <div class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer">
+                                                                <div
+                                                                    class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer">
                                                                     <div class="check-indicator">
                                                                         <input
                                                                             class="form-check-input test-checkbox stretched-link"

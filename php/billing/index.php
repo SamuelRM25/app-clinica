@@ -86,8 +86,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Módulo de Cobros - Centro Médico RS - Sistema de gestión de cobros médicos">
+    <meta name="description" content="Módulo de Cobros - Centro Médico RS - Sistema de gestión de cobros médicos">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1386,7 +1385,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1931,14 +1930,14 @@ try {
                         if (selectedOption) {
                             const nombre = (selectedOption.getAttribute('data-nombre') || '').toLowerCase();
                             const apellido = (selectedOption.getAttribute('data-apellido') || '').toLowerCase();
-                            
+
                             // Dr. Estuardo Rivas - Q400 off-hours/weekends
                             if (nombre.includes('estuardo') && apellido.includes('rivas')) {
                                 if (day === 0 || day === 6 || hour >= 16) {
                                     price = 400;
                                 }
                             }
-                            
+
                             // Dra. Libny - Q300 off-hours/weekends
                             if (nombre.includes('libny')) {
                                 if (day === 0 || day === 6 || hour >= 16) {

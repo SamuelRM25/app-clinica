@@ -68,9 +68,11 @@ try {
     $stmt_archivos = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? ORDER BY id_archivo ASC");
     $stmt_archivos->execute([$id_orden]);
     $todos_archivos = $stmt_archivos->fetchAll(PDO::FETCH_ASSOC);
-    
-    $archivos_resultados = array_filter($todos_archivos, function($a) { return $a['categoria'] === 'RESULTADO' || empty($a['categoria']); });
-    $archivos_muestras = array_filter($todos_archivos, function($a) { return $a['categoria'] === 'ORDEN_FISICA'; });
+
+    $archivos_resultados = array_filter($todos_archivos, function ($a) {
+        return $a['categoria'] === 'RESULTADO' || empty($a['categoria']); });
+    $archivos_muestras = array_filter($todos_archivos, function ($a) {
+        return $a['categoria'] === 'ORDEN_FISICA'; });
 
     // Legacy support for single physical order if it exists but isn't in the new table
     $tiene_archivo_legacy = !empty($orden['archivo_resultados']);
@@ -857,7 +859,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -918,24 +920,24 @@ try {
                         onclick="openResultsUploadModal(<?php echo $id_orden; ?>)">
                         <i class="bi bi-upload"></i> Subir Resultados
                     </button>
-                    
+
                     <!-- Display Physical Order Files -->
                     <?php if ($tiene_archivo_legacy || count($archivos_muestras) > 0): ?>
                         <div class="mt-2 d-flex flex-wrap gap-1 justify-content-end">
-                        <?php if ($tiene_archivo_legacy): ?>
-                            <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank"
-                                class="btn btn-xs btn-info text-white">
-                                <i class="bi bi-eye"></i> Ver Orden (Principal)
-                            </a>
-                        <?php endif; ?>
-                        <?php foreach ($archivos_muestras as $idx => $am): 
-                            $am_url = "api/get_result_file.php?id=" . $am['id_archivo'];
-                        ?>
-                            <a href="<?php echo htmlspecialchars($am_url); ?>" target="_blank"
-                                class="btn btn-xs btn-outline-info">
-                                <i class="bi bi-paperclip"></i> Orden #<?php echo $idx + 1; ?>
-                            </a>
-                        <?php endforeach; ?>
+                            <?php if ($tiene_archivo_legacy): ?>
+                                <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank"
+                                    class="btn btn-xs btn-info text-white">
+                                    <i class="bi bi-eye"></i> Ver Orden (Principal)
+                                </a>
+                            <?php endif; ?>
+                            <?php foreach ($archivos_muestras as $idx => $am):
+                                $am_url = "api/get_result_file.php?id=" . $am['id_archivo'];
+                                ?>
+                                <a href="<?php echo htmlspecialchars($am_url); ?>" target="_blank"
+                                    class="btn btn-xs btn-outline-info">
+                                    <i class="bi bi-paperclip"></i> Orden #<?php echo $idx + 1; ?>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -956,36 +958,48 @@ try {
                     <div class="result-display-area p-4 text-center">
                         <?php if (count($archivos_resultados) > 0): ?>
                             <div class="row g-4 justify-content-center">
-                            <?php foreach ($archivos_resultados as $archivo):
-                                $file_url = "api/get_result_file.php?id=" . $archivo['id_archivo'];
-                                $mime_type = $archivo['tipo_contenido'];
-                            ?>
-                                <div class="col-md-6 col-lg-4" id="archivo-card-<?php echo $archivo['id_archivo']; ?>">
-                                    <div class="card h-100 shadow-sm border position-relative">
-                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle shadow" onclick="deleteResultFile(<?php echo $archivo['id_archivo']; ?>)" title="Eliminar archivo" style="z-index: 10;">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                        <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center bg-light" style="min-height: 200px; overflow: hidden;">
-                                            <?php if (strpos($mime_type, 'image') !== false): ?>
-                                                <img src="<?php echo htmlspecialchars($file_url); ?>" class="img-fluid" style="width: 100%; height: 200px; object-fit: cover;" alt="Resultado">
-                                            <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
-                                                <div class="text-danger py-4"><i class="bi bi-file-earmark-pdf-fill" style="font-size: 3rem;"></i></div>
-                                                <p class="small text-truncate px-3 w-100 mb-2" title="<?php echo htmlspecialchars($archivo['nombre_archivo']); ?>"><?php echo htmlspecialchars($archivo['nombre_archivo']); ?></p>
-                                            <?php else: ?>
-                                                <div class="text-secondary py-4"><i class="bi bi-file-earmark-text-fill" style="font-size: 3rem;"></i></div>
-                                                <p class="small text-truncate px-3 w-100 mb-2" title="<?php echo htmlspecialchars($archivo['nombre_archivo']); ?>"><?php echo htmlspecialchars($archivo['nombre_archivo']); ?></p>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="card-footer bg-white border-top p-2">
-                                            <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank" class="btn btn-outline-primary btn-sm w-100">
-                                                <i class="bi bi-arrows-fullscreen me-1"></i> Abrir
-                                            </a>
+                                <?php foreach ($archivos_resultados as $archivo):
+                                    $file_url = "api/get_result_file.php?id=" . $archivo['id_archivo'];
+                                    $mime_type = $archivo['tipo_contenido'];
+                                    ?>
+                                    <div class="col-md-6 col-lg-4" id="archivo-card-<?php echo $archivo['id_archivo']; ?>">
+                                        <div class="card h-100 shadow-sm border position-relative">
+                                            <button type="button"
+                                                class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle shadow"
+                                                onclick="deleteResultFile(<?php echo $archivo['id_archivo']; ?>)"
+                                                title="Eliminar archivo" style="z-index: 10;">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center bg-light"
+                                                style="min-height: 200px; overflow: hidden;">
+                                                <?php if (strpos($mime_type, 'image') !== false): ?>
+                                                    <img src="<?php echo htmlspecialchars($file_url); ?>" class="img-fluid"
+                                                        style="width: 100%; height: 200px; object-fit: cover;" alt="Resultado">
+                                                <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
+                                                    <div class="text-danger py-4"><i class="bi bi-file-earmark-pdf-fill"
+                                                            style="font-size: 3rem;"></i></div>
+                                                    <p class="small text-truncate px-3 w-100 mb-2"
+                                                        title="<?php echo htmlspecialchars($archivo['nombre_archivo']); ?>">
+                                                        <?php echo htmlspecialchars($archivo['nombre_archivo']); ?></p>
+                                                <?php else: ?>
+                                                    <div class="text-secondary py-4"><i class="bi bi-file-earmark-text-fill"
+                                                            style="font-size: 3rem;"></i></div>
+                                                    <p class="small text-truncate px-3 w-100 mb-2"
+                                                        title="<?php echo htmlspecialchars($archivo['nombre_archivo']); ?>">
+                                                        <?php echo htmlspecialchars($archivo['nombre_archivo']); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="card-footer bg-white border-top p-2">
+                                                <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank"
+                                                    class="btn btn-outline-primary btn-sm w-100">
+                                                    <i class="bi bi-arrows-fullscreen me-1"></i> Abrir
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
                             </div>
-                            
+
                             <div class="mt-4 border-top pt-3">
                                 <button type="button" class="btn btn-outline-primary"
                                     onclick="openResultsUploadModal(<?php echo $id_orden; ?>)">
@@ -998,7 +1012,8 @@ try {
                                     <i class="bi bi-droplet"></i>
                                 </div>
                                 <h4 class="text-muted mb-2">Esperando resultados</h4>
-                                <p class="text-muted mb-3">Debe cargar el archivo de resultados (PDF o Imagen) para continuar</p>
+                                <p class="text-muted mb-3">Debe cargar el archivo de resultados (PDF o Imagen) para
+                                    continuar</p>
                                 <button type="button" class="btn btn-outline-primary"
                                     onclick="openResultsUploadModal(<?php echo $id_orden; ?>)">
                                     <i class="bi bi-upload me-1"></i> Subir Resultados Ahora
@@ -1018,7 +1033,7 @@ try {
                                 <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
                             </h4>
                         </div>
-                        
+
                         <!-- Parámetros de la Prueba -->
                         <div class="test-parameters mt-2">
                             <table class="table table-hover align-middle">
@@ -1046,7 +1061,8 @@ try {
 
                                     foreach ($parametros as $param):
                                         // Determinar valores de referencia según paciente
-                                        $min = null; $max = null;
+                                        $min = null;
+                                        $max = null;
                                         if ($edad <= 12) {
                                             $min = $param['valor_ref_pediatrico_min'];
                                             $max = $param['valor_ref_pediatrico_max'];
@@ -1058,22 +1074,23 @@ try {
                                             $max = $param['valor_ref_mujer_max'];
                                         }
                                         $val_ref = ($min !== null && $max !== null) ? "$min - $max" : "N/D";
-                                    ?>
-                                    <tr>
-                                        <td class="fw-medium text-dark"><?php echo htmlspecialchars($param['nombre_parametro']); ?></td>
-                                        <td>
-                                            <input type="text" 
-                                                   name="results[<?php echo $prueba['id_orden_prueba']; ?>][<?php echo $param['id_parametro']; ?>]" 
-                                                   class="form-control form-control-sm result-input"
-                                                   value="<?php echo htmlspecialchars($param['valor_actual'] ?? ''); ?>"
-                                                   data-min="<?php echo $min; ?>" 
-                                                   data-max="<?php echo $max; ?>"
-                                                   onchange="validateRange(this)">
-                                        </td>
-                                        <td class="text-muted small"><?php echo htmlspecialchars($param['unidad_medida']); ?></td>
-                                        <td class="text-muted small"><?php echo $val_ref; ?></td>
-                                        <td class="flag-container"></td>
-                                    </tr>
+                                        ?>
+                                        <tr>
+                                            <td class="fw-medium text-dark">
+                                                <?php echo htmlspecialchars($param['nombre_parametro']); ?></td>
+                                            <td>
+                                                <input type="text"
+                                                    name="results[<?php echo $prueba['id_orden_prueba']; ?>][<?php echo $param['id_parametro']; ?>]"
+                                                    class="form-control form-control-sm result-input"
+                                                    value="<?php echo htmlspecialchars($param['valor_actual'] ?? ''); ?>"
+                                                    data-min="<?php echo $min; ?>" data-max="<?php echo $max; ?>"
+                                                    onchange="validateRange(this)">
+                                            </td>
+                                            <td class="text-muted small">
+                                                <?php echo htmlspecialchars($param['unidad_medida']); ?></td>
+                                            <td class="text-muted small"><?php echo $val_ref; ?></td>
+                                            <td class="flag-container"></td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -1108,9 +1125,10 @@ try {
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Seleccione archivo(s) (PDF o Imagen)</label>
-                                    <input type="file" class="form-control" name="archivo_muestra[]" id="archivo_muestra"
-                                        accept=".pdf,.jpg,.jpeg,.png" required multiple>
-                                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG. Puede seleccionar varios archivos.</small>
+                                    <input type="file" class="form-control" name="archivo_muestra[]"
+                                        id="archivo_muestra" accept=".pdf,.jpg,.jpeg,.png" required multiple>
+                                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG. Puede seleccionar
+                                        varios archivos.</small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Notas (Opcional)</label>
@@ -1141,7 +1159,8 @@ try {
                             <form id="resultsUploadForm" enctype="multipart/form-data">
                                 <input type="hidden" name="id_orden" id="resultUploadOrderId">
                                 <div class="mb-3">
-                                    <label for="archivo_resultado" class="form-label">Archivo(s) de Resultados (PDF, JPG,
+                                    <label for="archivo_resultado" class="form-label">Archivo(s) de Resultados (PDF,
+                                        JPG,
                                         PNG)</label>
                                     <input class="form-control" type="file" id="archivo_resultado"
                                         name="archivo_resultado[]" accept=".pdf,.jpg,.jpeg,.png" required multiple>
@@ -1477,27 +1496,27 @@ try {
                         },
                         body: JSON.stringify({ id_archivo: id_archivo })
                     })
-                    .then(r => r.json())
-                    .then(data => {
-                        if(data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Eliminado',
-                                text: 'El archivo se ha eliminado correctamente',
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                document.getElementById('archivo-card-' + id_archivo).remove();
-                                // Optional: if no cards left, reload to show empty state
-                                if (document.querySelectorAll('[id^=archivo-card-]').length === 0) {
-                                    location.reload();
-                                }
-                            });
-                        } else {
-                            Swal.fire('Error', data.message || 'Error al eliminar', 'error');
-                        }
-                    })
-                    .catch(err => Swal.fire('Error', 'Error de conexión', 'error'));
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Eliminado',
+                                    text: 'El archivo se ha eliminado correctamente',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    document.getElementById('archivo-card-' + id_archivo).remove();
+                                    // Optional: if no cards left, reload to show empty state
+                                    if (document.querySelectorAll('[id^=archivo-card-]').length === 0) {
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Error', data.message || 'Error al eliminar', 'error');
+                            }
+                        })
+                        .catch(err => Swal.fire('Error', 'Error de conexión', 'error'));
                 }
             });
         }

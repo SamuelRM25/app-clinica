@@ -281,31 +281,31 @@ try {
         $timestamp = strtotime($lab['fecha']);
         // Formatear mes en español
         $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        $mes_num = (int)date('m', $timestamp) - 1;
+        $mes_num = (int) date('m', $timestamp) - 1;
         $anio = date('Y', $timestamp);
         $mes_nombre = $meses[$mes_num] . ' ' . $anio;
-        
+
         $dia_str = date('d/m/Y', $timestamp);
         $paciente_nombre = $lab['paciente_nombre'] . ' ' . $lab['paciente_apellido'];
-        
+
         if (!isset($grouped_labs[$mes_nombre])) {
             $grouped_labs[$mes_nombre] = ['total' => 0, 'count' => 0, 'dias' => []];
         }
         $grouped_labs[$mes_nombre]['total'] += $lab['precio'];
         $grouped_labs[$mes_nombre]['count'] += 1;
-        
+
         if (!isset($grouped_labs[$mes_nombre]['dias'][$dia_str])) {
             $grouped_labs[$mes_nombre]['dias'][$dia_str] = ['total' => 0, 'count' => 0, 'pacientes' => []];
         }
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['total'] += $lab['precio'];
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['count'] += 1;
-        
+
         if (!isset($grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre])) {
             $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre] = ['total' => 0, 'count' => 0, 'labs' => []];
         }
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['total'] += $lab['precio'];
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['count'] += 1;
-        
+
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['labs'][] = $lab;
     }
 
@@ -1303,7 +1303,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1653,7 +1653,8 @@ try {
                         background: var(--color-card);
                         overflow: hidden;
                     }
-                    .report-details > summary {
+
+                    .report-details>summary {
                         padding: var(--space-md);
                         background: var(--color-surface);
                         cursor: pointer;
@@ -1661,39 +1662,49 @@ try {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
-                        list-style: none; /* Hide default arrow */
+                        list-style: none;
+                        /* Hide default arrow */
                         user-select: none;
                         transition: background var(--transition-base);
                     }
-                    .report-details > summary::-webkit-details-marker {
+
+                    .report-details>summary::-webkit-details-marker {
                         display: none;
                     }
-                    .report-details > summary:hover {
+
+                    .report-details>summary:hover {
                         background: var(--color-border);
                     }
+
                     .report-details-body {
                         padding: var(--space-md);
                         border-top: 1px solid var(--color-border);
                     }
+
                     .report-details.level-2 {
-                        border-color: rgba(0,0,0,0.05);
+                        border-color: rgba(0, 0, 0, 0.05);
                     }
-                    .report-details.level-2 > summary {
+
+                    .report-details.level-2>summary {
                         background: rgba(var(--color-info-rgb), 0.05);
                         padding: var(--space-sm) var(--space-md);
                     }
-                    .report-details.level-3 > summary {
+
+                    .report-details.level-3>summary {
                         background: rgba(var(--color-primary-rgb), 0.05);
                         padding: var(--space-sm) var(--space-md);
                     }
-                    details > summary::before {
-                        content: '\F282'; /* bi-chevron-down */
+
+                    details>summary::before {
+                        content: '\F282';
+                        /* bi-chevron-down */
                         font-family: 'bootstrap-icons';
                         margin-right: 10px;
                         display: inline-block;
                         transition: transform 0.2s ease-in-out;
                     }
-                    details[open] > summary::before {
+
+                    details[open]>summary::before {
                         transform: rotate(180deg);
                     }
                 </style>
@@ -1705,48 +1716,63 @@ try {
                             No se encontraron laboratorios realizados en este período.
                         </div>
                     <?php else: ?>
-                        <?php 
+                        <?php
                         // Obtener el nombre del mes actual para expandirlo por defecto
                         $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                        $mes_actual_nombre = $meses[(int)date('n') - 1] . ' ' . date('Y');
-                        
-                        $mes_id = 0; foreach ($grouped_labs as $mes_nombre => $mes_data): $mes_id++; 
+                        $mes_actual_nombre = $meses[(int) date('n') - 1] . ' ' . date('Y');
+
+                        $mes_id = 0;
+                        foreach ($grouped_labs as $mes_nombre => $mes_data):
+                            $mes_id++;
                             $is_current_month = ($mes_nombre === $mes_actual_nombre);
-                        ?>
+                            ?>
                             <details class="report-details level-1" name="mes_accordion" <?php echo $is_current_month ? 'open' : ''; ?>>
                                 <summary class="custom-summary">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-calendar3 me-2 text-primary"></i> 
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
                                         <span><?php echo $mes_nombre; ?></span>
-                                        <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?> labs</span>
+                                        <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?>
+                                            labs</span>
                                     </div>
                                     <span class="text-success">Q <?php echo number_format($mes_data['total'], 2); ?></span>
                                 </summary>
                                 <div class="report-details-body">
-                                    <?php $dia_id = 0; foreach ($mes_data['dias'] as $dia_str => $dia_data): $dia_id++; ?>
+                                    <?php $dia_id = 0;
+                                    foreach ($mes_data['dias'] as $dia_str => $dia_data):
+                                        $dia_id++; ?>
                                         <details class="report-details level-2" name="dia_accordion_<?php echo $mes_id; ?>">
                                             <summary class="custom-summary">
                                                 <div class="d-flex align-items-center">
-                                                    <i class="bi bi-calendar-day me-2 text-info"></i> 
+                                                    <i class="bi bi-calendar-day me-2 text-info"></i>
                                                     <span>Día: <?php echo $dia_str; ?></span>
-                                                    <span class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?> labs</span>
+                                                    <span
+                                                        class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?>
+                                                        labs</span>
                                                 </div>
-                                                <span class="text-success fw-semibold">Q <?php echo number_format($dia_data['total'], 2); ?></span>
+                                                <span class="text-success fw-semibold">Q
+                                                    <?php echo number_format($dia_data['total'], 2); ?></span>
                                             </summary>
                                             <div class="report-details-body">
-                                                <?php $pac_id = 0; foreach ($dia_data['pacientes'] as $paciente_nombre => $pac_data): $pac_id++; ?>
-                                                    <details class="report-details level-3" name="paciente_accordion_<?php echo $mes_id . '_' . $dia_id; ?>">
+                                                <?php $pac_id = 0;
+                                                foreach ($dia_data['pacientes'] as $paciente_nombre => $pac_data):
+                                                    $pac_id++; ?>
+                                                    <details class="report-details level-3"
+                                                        name="paciente_accordion_<?php echo $mes_id . '_' . $dia_id; ?>">
                                                         <summary class="custom-summary">
                                                             <div class="d-flex align-items-center">
-                                                                <i class="bi bi-person me-2 text-secondary"></i> 
+                                                                <i class="bi bi-person me-2 text-secondary"></i>
                                                                 <span><?php echo htmlspecialchars($paciente_nombre); ?></span>
-                                                                <span class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?> labs</span>
+                                                                <span
+                                                                    class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?>
+                                                                    labs</span>
                                                             </div>
-                                                            <span class="text-success fw-medium">Q <?php echo number_format($pac_data['total'], 2); ?></span>
+                                                            <span class="text-success fw-medium">Q
+                                                                <?php echo number_format($pac_data['total'], 2); ?></span>
                                                         </summary>
                                                         <div class="report-details-body p-0">
                                                             <div class="table-responsive">
-                                                                <table class="table table-sm table-hover mb-0" style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
+                                                                <table class="table table-sm table-hover mb-0"
+                                                                    style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
                                                                     <thead style="background: var(--color-surface);">
                                                                         <tr>
                                                                             <th class="ps-3 border-0">Examen (Prueba)</th>
@@ -1757,15 +1783,20 @@ try {
                                                                     <tbody>
                                                                         <?php foreach ($pac_data['labs'] as $lab): ?>
                                                                             <tr>
-                                                                                <td class="ps-3 border-bottom" style="border-color: var(--color-border);">
-                                                                                    <span class="badge" style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
+                                                                                <td class="ps-3 border-bottom"
+                                                                                    style="border-color: var(--color-border);">
+                                                                                    <span class="badge"
+                                                                                        style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
                                                                                         <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
                                                                                     </span>
                                                                                 </td>
-                                                                                <td class="border-bottom" style="border-color: var(--color-border);">
-                                                                                    <small style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
+                                                                                <td class="border-bottom"
+                                                                                    style="border-color: var(--color-border);">
+                                                                                    <small
+                                                                                        style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
                                                                                 </td>
-                                                                                <td class="text-end pe-3 fw-bold text-success border-bottom" style="border-color: var(--color-border);">
+                                                                                <td class="text-end pe-3 fw-bold text-success border-bottom"
+                                                                                    style="border-color: var(--color-border);">
                                                                                     Q <?php echo number_format($lab['precio'], 2); ?>
                                                                                 </td>
                                                                             </tr>
@@ -1786,108 +1817,108 @@ try {
                 </div>
             </div>
 
+    </div>
+
+    <!-- Nuevo Reporte de Traslados (Restringido) -->
+    <?php if ($can_view_transfers): ?>
+        <div class="content-section animate-in delay-4 mt-5">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
+                    Reporte de Traslados (Dispensario)
+                </h3>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <span class="amount-badge expense">
+                        Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
+                    </span>
+                    <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                        target="_blank" class="action-btn" style="background: var(--color-success)">
+                        <i class="bi bi-file-earmark-excel me-2"></i>
+                        Exportar Traslados
+                    </a>
+                </div>
             </div>
 
-            <!-- Nuevo Reporte de Traslados (Restringido) -->
-            <?php if ($can_view_transfers): ?>
-                <div class="content-section animate-in delay-4 mt-5">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
-                            Reporte de Traslados (Dispensario)
-                        </h3>
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <span class="amount-badge expense">
-                                Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
-                            </span>
-                            <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
-                                target="_blank" class="action-btn" style="background: var(--color-success)">
-                                <i class="bi bi-file-earmark-excel me-2"></i>
-                                Exportar Traslados
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Medicamento</th>
-                                    <th class="text-center">Cant.</th>
-                                    <th>Destino / Paciente</th>
-                                    <th>Realizado por</th>
-                                    <th>Fecha y Hora</th>
-                                    <th class="text-end">Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($transfers_data as $transfer): ?>
-                                    <tr>
-                                        <td class="fw-semibold"><?php echo htmlspecialchars($transfer['nom_medicamento']); ?></td>
-                                        <td class="text-center">
-                                            <span class="badge bg-light text-dark border">
-                                                <?php echo $transfer['cantidad_vendida']; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($transfer['destino']); ?></td>
-                                        <td><?php echo htmlspecialchars($transfer['realizado_por']); ?></td>
-                                        <td>
-                                            <?php echo date('d/m/Y h:i A', strtotime($transfer['fecha_venta'])); ?>
-                                        </td>
-                                        <td class="text-end fw-bold text-danger">
-                                            Q<?php echo number_format($transfer['valor_traslado'], 2); ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php if (empty($transfers_data)): ?>
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">
-                                            <i class="bi bi-info-circle me-2"></i>
-                                            No se encontraron traslados en este período.
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Medicamento</th>
+                            <th class="text-center">Cant.</th>
+                            <th>Destino / Paciente</th>
+                            <th>Realizado por</th>
+                            <th>Fecha y Hora</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($transfers_data as $transfer): ?>
+                            <tr>
+                                <td class="fw-semibold"><?php echo htmlspecialchars($transfer['nom_medicamento']); ?></td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">
+                                        <?php echo $transfer['cantidad_vendida']; ?>
+                                    </span>
+                                </td>
+                                <td><?php echo htmlspecialchars($transfer['destino']); ?></td>
+                                <td><?php echo htmlspecialchars($transfer['realizado_por']); ?></td>
+                                <td>
+                                    <?php echo date('d/m/Y h:i A', strtotime($transfer['fecha_venta'])); ?>
+                                </td>
+                                <td class="text-end fw-bold text-danger">
+                                    Q<?php echo number_format($transfer['valor_traslado'], 2); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <?php if (empty($transfers_data)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    No se encontraron traslados en este período.
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
+    <div class="row g-4 animate-in delay-2">
+        <!-- Procedimientos menores -->
+        <div class="col-lg-6">
+            <div class="content-section" style="height: 100%;">
+                <div class="section-header">
+                    <h4 class="section-title">
+                        <i class="bi bi-bandaid section-title-icon"></i>
+                        Procedimientos Menores Recientes
+                    </h4>
+                    <span class="amount-badge income">
+                        Total: Q<?php echo number_format($total_procedures, 2); ?>
+                    </span>
                 </div>
-            <?php endif; ?>
-            <div class="row g-4 animate-in delay-2">
-                <!-- Procedimientos menores -->
-                <div class="col-lg-6">
-                    <div class="content-section" style="height: 100%;">
-                        <div class="section-header">
-                            <h4 class="section-title">
-                                <i class="bi bi-bandaid section-title-icon"></i>
-                                Procedimientos Menores Recientes
-                            </h4>
-                            <span class="amount-badge income">
-                                Total: Q<?php echo number_format($total_procedures, 2); ?>
-                            </span>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Paciente</th>
-                                        <th class="text-end">Cobro</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $stmt = $conn->prepare("
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th class="text-end">Cobro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $stmt = $conn->prepare("
                                         SELECT fecha_procedimiento, nombre_paciente, cobro 
                                         FROM procedimientos_menores 
                                         WHERE fecha_procedimiento BETWEEN ? AND ? 
                                         ORDER BY fecha_procedimiento DESC 
                                         LIMIT 5
                                     ");
-                                    $stmt->execute([$start_datetime, $end_datetime]);
-                                    $hasProc = false;
-                                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                        $hasProc = true;
-                                        echo "<tr>
+                            $stmt->execute([$start_datetime, $end_datetime]);
+                            $hasProc = false;
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                $hasProc = true;
+                                echo "<tr>
                                             <td>" . date('d/m/y', strtotime($row['fecha_procedimiento'])) . "</td>
                                             <td>" . htmlspecialchars($row['nombre_paciente']) . "</td>
                                             <td class='text-end'>
@@ -1896,52 +1927,52 @@ try {
                                                 </span>
                                             </td>
                                         </tr>";
-                                    }
-                                    if (!$hasProc) {
-                                        echo "<tr><td colspan='3' class='text-center text-muted py-4'>No hay procedimientos en este período</td></tr>";
-                                    }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                            }
+                            if (!$hasProc) {
+                                echo "<tr><td colspan='3' class='text-center text-muted py-4'>No hay procedimientos en este período</td></tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
 
-                <!-- Exámenes realizados -->
-                <div class="col-lg-6">
-                    <div class="content-section" style="height: 100%;">
-                        <div class="section-header">
-                            <h4 class="section-title">
-                                <i class="bi bi-clipboard2-pulse section-title-icon"></i>
-                                Exámenes Recientes
-                            </h4>
-                            <span class="amount-badge income">
-                                Total: Q<?php echo number_format($total_exams_revenue, 2); ?>
-                            </span>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Paciente</th>
-                                        <th class="text-end">Cobro</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $stmt = $conn->prepare("
+        <!-- Exámenes realizados -->
+        <div class="col-lg-6">
+            <div class="content-section" style="height: 100%;">
+                <div class="section-header">
+                    <h4 class="section-title">
+                        <i class="bi bi-clipboard2-pulse section-title-icon"></i>
+                        Exámenes Recientes
+                    </h4>
+                    <span class="amount-badge income">
+                        Total: Q<?php echo number_format($total_exams_revenue, 2); ?>
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th class="text-end">Cobro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $stmt = $conn->prepare("
                                         SELECT fecha_examen, nombre_paciente, cobro 
                                         FROM examenes_realizados 
                                         WHERE fecha_examen BETWEEN ? AND ? 
                                         ORDER BY fecha_examen DESC 
                                         LIMIT 5
                                     ");
-                                    $stmt->execute([$start_datetime, $end_datetime]);
-                                    $hasExam = false;
-                                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                        $hasExam = true;
-                                        echo "<tr>
+                            $stmt->execute([$start_datetime, $end_datetime]);
+                            $hasExam = false;
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                $hasExam = true;
+                                echo "<tr>
                                             <td>" . date('d/m/y', strtotime($row['fecha_examen'])) . "</td>
                                             <td>" . htmlspecialchars($row['nombre_paciente']) . "</td>
                                             <td class='text-end'>
@@ -1950,247 +1981,244 @@ try {
                                                 </span>
                                             </td>
                                         </tr>";
-                                    }
-                                    if (!$hasExam) {
-                                        echo "<tr><td colspan='3' class='text-center text-muted py-4'>No hay exámenes en este período</td></tr>";
-                                    }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                            }
+                            if (!$hasExam) {
+                                echo "<tr><td colspan='3' class='text-center text-muted py-4'>No hay exámenes en este período</td></tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
+    <div class="content-section animate-in">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="bi bi-bar-chart-line section-title-icon"></i>
+                Big Data Analytics - Inteligencia de Negocio
+            </h3>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Gráfico de Tendencia -->
+            <div class="col-lg-8">
+                <div style="height: 300px;">
+                    <canvas id="salesTrendChart"></canvas>
                 </div>
             </div>
 
-            <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
-            <div class="content-section animate-in">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-bar-chart-line section-title-icon"></i>
-                        Big Data Analytics - Inteligencia de Negocio
-                    </h3>
-                </div>
-
-                <div class="row g-4 mb-4">
-                    <!-- Gráfico de Tendencia -->
-                    <div class="col-lg-8">
-                        <div style="height: 300px;">
-                            <canvas id="salesTrendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Gráfico de Distribución -->
-                    <div class="col-lg-4">
-                        <div style="height: 300px;">
-                            <canvas id="revenueDistChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4">
-                    <!-- Top Medicamentos -->
-                    <div class="col-md-6">
-                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Medicamentos más vendidos</h4>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Medicamento</th>
-                                        <th class="text-end">Cantidad</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($top_meds_data as $med): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
-                                            <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    <?php if (empty($top_meds_data)): ?>
-                                        <tr>
-                                            <td colspan="2" class="text-center py-3">Sin datos en el periodo</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Resumen Quick Insights -->
-                    <div class="col-md-6">
-                        <h4 class="mb-3" style="color: var(--color-text-secondary);">Insights de Rendimiento</h4>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block text-truncate">Margen Bruto Promedio</small>
-                                    <span
-                                        class="h4 mb-0"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block text-truncate">Costo Méd. Vendidos</small>
-                                    <span
-                                        class="h4 mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
-                                </div>
-                            </div>
-                            <div class="col-12 mt-2">
-                                <div class="p-3 border rounded" style="background: var(--color-surface);">
-                                    <small class="text-muted d-block">Ganancia Estimada en Ventas</small>
-                                    <span
-                                        class="h4 mb-0 text-success">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
-                                    <p class="mb-0 text-muted small mt-1">Comparando costo de compra vs precio de venta
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Gráfico de Distribución -->
+            <div class="col-lg-4">
+                <div style="height: 300px;">
+                    <canvas id="revenueDistChart"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- SECCIÓN RENTABILIDAD DE FARMACIA -->
-            <div class="content-section animate-in" style="margin-top: 2rem;">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-cash-stack section-title-icon"></i>
-                        Rentabilidad Farmacia
-                    </h3>
-                    <div class="page-actions">
-                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=csv"
-                            target="_blank" class="action-btn secondary">
-                            <i class="bi bi-filetype-csv"></i> CSV
-                        </a>
-                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=excel"
-                            target="_blank" class="action-btn secondary">
-                            <i class="bi bi-file-earmark-spreadsheet"></i> Excel
-                        </a>
-                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=print"
-                            target="_blank" class="action-btn secondary">
-                            <i class="bi bi-printer"></i> PDF
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Filtros -->
-                <div class="filter-panel">
-                    <form method="GET" class="filter-form">
-                        <div class="form-group">
-                            <label class="form-label">Fecha Inicio</label>
-                            <input type="date" name="profit_start" class="form-control"
-                                value="<?php echo $profit_start; ?>">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Fecha Fin</label>
-                            <input type="date" name="profit_end" class="form-control"
-                                value="<?php echo $profit_end; ?>">
-                        </div>
-                        <div class="form-group" style="flex: 0; min-width: 150px;">
-                            <input type="hidden" name="fecha_filtro" value="<?php echo $fecha_filtro ?? ''; ?>">
-                            <button type="submit" class="action-btn primary w-100">
-                                <i class="bi bi-search"></i> Filtrar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Resumen de Estadísticas -->
-                <div class="stats-grid" style="margin-top: 2rem;">
-                    <div class="stat-card">
-                        <div class="stat-icon info">
-                            <i class="bi bi-currency-dollar"></i>
-                        </div>
-                        <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?></div>
-                        <div class="stat-label">Ventas Totales</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon danger">
-                            <i class="bi bi-cart-x"></i>
-                        </div>
-                        <div class="stat-value">Q<?php echo number_format($total_profit_cost, 2); ?></div>
-                        <div class="stat-label">Costos Totales</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon success">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                        <div class="stat-value">Q<?php echo number_format($total_profit_amount, 2); ?></div>
-                        <div class="stat-label">Ganancia Neta (<?php echo number_format($total_profit_margin, 1); ?>%)
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabla de Detalles -->
-                <div class="table-responsive" style="margin-top: 2rem;">
+        <div class="row g-4">
+            <!-- Top Medicamentos -->
+            <div class="col-md-6">
+                <h4 class="mb-3" style="color: var(--color-text-secondary);">Medicamentos más vendidos</h4>
+                <div class="table-responsive">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Medicamento</th>
-                                <th class="text-center">Cant.</th>
-                                <th class="text-end">P. Venta</th>
-                                <th class="text-end">Costo</th>
-                                <th class="text-end">Total Venta</th>
-                                <th class="text-end">Total Costo</th>
-                                <th class="text-end">Ganancia</th>
-                                <th class="text-end">%</th>
+                                <th class="text-end">Cantidad</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($profitability_data as $row):
-                                $ganancia = $row['total_venta'] - $row['total_costo'];
-                                $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
-
-                                $p_venta_unit = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
-                                $p_costo_unit = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
-                                ?>
+                            <?php foreach ($top_meds_data as $med): ?>
                                 <tr>
-                                    <td>
-                                        <div style="font-weight: 600;">
-                                            <?php echo htmlspecialchars($row['nom_medicamento']); ?>
-                                        </div>
-                                        <?php if (!empty($row['codigo_barras'])): ?>
-                                            <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
-                                                <i class="bi bi-upc"></i> <?php echo htmlspecialchars($row['codigo_barras']); ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="amount-badge"><?php echo $row['cantidad_total']; ?></span>
-                                    </td>
-                                    <td class="text-end text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
-                                    <td class="text-end text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
-                                    <td class="text-end" style="font-weight: 600;">
-                                        Q<?php echo number_format($row['total_venta'], 2); ?></td>
-                                    <td class="text-end text-muted">Q<?php echo number_format($row['total_costo'], 2); ?>
-                                    </td>
-                                    <td class="text-end">
-                                        <span class="amount-badge <?php echo $ganancia >= 0 ? 'income' : 'expense'; ?>">
-                                            Q<?php echo number_format($ganancia, 2); ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <span
-                                            style="font-weight: 700; color: <?php echo $margen > 30 ? 'var(--color-success)' : ($margen > 15 ? 'var(--color-warning)' : 'var(--color-danger)'); ?>;">
-                                            <?php echo number_format($margen, 0); ?>%
-                                        </span>
-                                    </td>
+                                    <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
+                                    <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
                                 </tr>
                             <?php endforeach; ?>
-                            <?php if (empty($profitability_data)): ?>
+                            <?php if (empty($top_meds_data)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
-                                        <div style="opacity: 0.5; margin-bottom: 1rem;">
-                                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                        </div>
-                                        <div style="color: var(--color-text-secondary);">No se encontraron ventas en el
-                                            rango seleccionado</div>
-                                    </td>
+                                    <td colspan="2" class="text-center py-3">Sin datos en el periodo</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </main>
+
+            <!-- Resumen Quick Insights -->
+            <div class="col-md-6">
+                <h4 class="mb-3" style="color: var(--color-text-secondary);">Insights de Rendimiento</h4>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="p-3 border rounded" style="background: var(--color-surface);">
+                            <small class="text-muted d-block text-truncate">Margen Bruto Promedio</small>
+                            <span
+                                class="h4 mb-0"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded" style="background: var(--color-surface);">
+                            <small class="text-muted d-block text-truncate">Costo Méd. Vendidos</small>
+                            <span class="h4 mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
+                        </div>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <div class="p-3 border rounded" style="background: var(--color-surface);">
+                            <small class="text-muted d-block">Ganancia Estimada en Ventas</small>
+                            <span
+                                class="h4 mb-0 text-success">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
+                            <p class="mb-0 text-muted small mt-1">Comparando costo de compra vs precio de venta
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN RENTABILIDAD DE FARMACIA -->
+    <div class="content-section animate-in" style="margin-top: 2rem;">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="bi bi-cash-stack section-title-icon"></i>
+                Rentabilidad Farmacia
+            </h3>
+            <div class="page-actions">
+                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=csv"
+                    target="_blank" class="action-btn secondary">
+                    <i class="bi bi-filetype-csv"></i> CSV
+                </a>
+                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=excel"
+                    target="_blank" class="action-btn secondary">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+                </a>
+                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=print"
+                    target="_blank" class="action-btn secondary">
+                    <i class="bi bi-printer"></i> PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-panel">
+            <form method="GET" class="filter-form">
+                <div class="form-group">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" name="profit_start" class="form-control" value="<?php echo $profit_start; ?>">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" name="profit_end" class="form-control" value="<?php echo $profit_end; ?>">
+                </div>
+                <div class="form-group" style="flex: 0; min-width: 150px;">
+                    <input type="hidden" name="fecha_filtro" value="<?php echo $fecha_filtro ?? ''; ?>">
+                    <button type="submit" class="action-btn primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Resumen de Estadísticas -->
+        <div class="stats-grid" style="margin-top: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?></div>
+                <div class="stat-label">Ventas Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">
+                    <i class="bi bi-cart-x"></i>
+                </div>
+                <div class="stat-value">Q<?php echo number_format($total_profit_cost, 2); ?></div>
+                <div class="stat-label">Costos Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="stat-value">Q<?php echo number_format($total_profit_amount, 2); ?></div>
+                <div class="stat-label">Ganancia Neta (<?php echo number_format($total_profit_margin, 1); ?>%)
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Detalles -->
+        <div class="table-responsive" style="margin-top: 2rem;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Medicamento</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-end">P. Venta</th>
+                        <th class="text-end">Costo</th>
+                        <th class="text-end">Total Venta</th>
+                        <th class="text-end">Total Costo</th>
+                        <th class="text-end">Ganancia</th>
+                        <th class="text-end">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($profitability_data as $row):
+                        $ganancia = $row['total_venta'] - $row['total_costo'];
+                        $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+
+                        $p_venta_unit = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
+                        $p_costo_unit = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
+                        ?>
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600;">
+                                    <?php echo htmlspecialchars($row['nom_medicamento']); ?>
+                                </div>
+                                <?php if (!empty($row['codigo_barras'])): ?>
+                                    <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
+                                        <i class="bi bi-upc"></i> <?php echo htmlspecialchars($row['codigo_barras']); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <span class="amount-badge"><?php echo $row['cantidad_total']; ?></span>
+                            </td>
+                            <td class="text-end text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
+                            <td class="text-end text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
+                            <td class="text-end" style="font-weight: 600;">
+                                Q<?php echo number_format($row['total_venta'], 2); ?></td>
+                            <td class="text-end text-muted">Q<?php echo number_format($row['total_costo'], 2); ?>
+                            </td>
+                            <td class="text-end">
+                                <span class="amount-badge <?php echo $ganancia >= 0 ? 'income' : 'expense'; ?>">
+                                    Q<?php echo number_format($ganancia, 2); ?>
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <span
+                                    style="font-weight: 700; color: <?php echo $margen > 30 ? 'var(--color-success)' : ($margen > 15 ? 'var(--color-warning)' : 'var(--color-danger)'); ?>;">
+                                    <?php echo number_format($margen, 0); ?>%
+                                </span>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($profitability_data)): ?>
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div style="opacity: 0.5; margin-bottom: 1rem;">
+                                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                </div>
+                                <div style="color: var(--color-text-secondary);">No se encontraron ventas en el
+                                    rango seleccionado</div>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </main>
     </div>
 
     <!-- JavaScript Optimizado -->

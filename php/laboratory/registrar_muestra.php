@@ -84,7 +84,7 @@ try {
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="brand-logo">
+                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
                 <div class="header-controls">
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn">
@@ -116,7 +116,8 @@ try {
                             <div>
                                 <div class="order-number"><?php echo htmlspecialchars($orden['numero_orden']); ?></div>
                                 <div class="patient-name">
-                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></div>
+                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                </div>
                             </div>
                             <div>
                                 <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?> pruebas</span>

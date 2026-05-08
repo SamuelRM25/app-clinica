@@ -1524,7 +1524,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1803,15 +1803,15 @@ try {
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column gap-1">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
-                                                <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
+                                                    <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
+                                                    <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
+                                                </div>
                                             </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
-                                                <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
-                                            </div>
-                                        </div>
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column gap-1">
@@ -2426,7 +2426,7 @@ try {
                 if (!birthDate) return;
                 const today = new Date();
                 const birth = new Date(birthDate);
-                
+
                 let years = today.getFullYear() - birth.getFullYear();
                 let months = today.getMonth() - birth.getMonth();
                 let days = today.getDate() - birth.getDate();
@@ -2436,7 +2436,7 @@ try {
                     const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
                     days += prevMonth.getDate();
                 }
-                
+
                 if (months < 0) {
                     years--;
                     months += 12;
@@ -2450,7 +2450,7 @@ try {
                 } else {
                     display = days + (days === 1 ? ' día' : ' días');
                 }
-                
+
                 document.getElementById('edad_display').value = display;
             };
 

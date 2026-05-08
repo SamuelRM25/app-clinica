@@ -1506,7 +1506,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1661,7 +1661,8 @@ try {
                                                             class="text-muted small"><?php echo date('d/M/Y', strtotime($lab['fecha_orden'])); ?></span>
                                                     </div>
                                                     <h6 class="mb-1 text-dark fw-semibold">
-                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?></h6>
+                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
+                                                    </h6>
                                                     <p class="text-muted small mb-2">Resultado Adjunto</p>
 
                                                     <div class="mt-2">

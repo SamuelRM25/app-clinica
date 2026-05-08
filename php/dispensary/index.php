@@ -1423,7 +1423,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1778,9 +1778,8 @@ try {
                             </button>
                         </li>
                         <li class="nav-item d-none" id="detail-tab-container" role="presentation">
-                            <button class="nav-link" id="detail-tab" data-bs-toggle="tab"
-                                data-bs-target="#detail-pane" type="button" role="tab"
-                                onclick="window.dashboard.pos.loadTransferDetails()">
+                            <button class="nav-link" id="detail-tab" data-bs-toggle="tab" data-bs-target="#detail-pane"
+                                type="button" role="tab" onclick="window.dashboard.pos.loadTransferDetails()">
                                 <i class="bi bi-box-seam me-2"></i>Detalle por Insumo
                             </button>
                         </li>
@@ -1819,15 +1818,21 @@ try {
                                 <div class="row g-2">
                                     <div class="col-md-4">
                                         <label class="form-label small text-muted mb-1">Fecha Inicio</label>
-                                        <input type="date" class="form-control form-control-sm" id="transferStartDate" value="<?php echo date('Y-m-d'); ?>" onchange="window.dashboard.pos.loadTransferDetails()">
+                                        <input type="date" class="form-control form-control-sm" id="transferStartDate"
+                                            value="<?php echo date('Y-m-d'); ?>"
+                                            onchange="window.dashboard.pos.loadTransferDetails()">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small text-muted mb-1">Fecha Fin</label>
-                                        <input type="date" class="form-control form-control-sm" id="transferEndDate" value="<?php echo date('Y-m-d'); ?>" onchange="window.dashboard.pos.loadTransferDetails()">
+                                        <input type="date" class="form-control form-control-sm" id="transferEndDate"
+                                            value="<?php echo date('Y-m-d'); ?>"
+                                            onchange="window.dashboard.pos.loadTransferDetails()">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small text-muted mb-1">Buscar Producto</label>
-                                        <input type="text" class="form-control form-control-sm" id="transferSearch" placeholder="Nombre de insumo..." oninput="window.dashboard.pos.loadTransferDetails()">
+                                        <input type="text" class="form-control form-control-sm" id="transferSearch"
+                                            placeholder="Nombre de insumo..."
+                                            oninput="window.dashboard.pos.loadTransferDetails()">
                                     </div>
                                 </div>
                             </div>
@@ -1843,7 +1848,10 @@ try {
                                         </tr>
                                     </thead>
                                     <tbody id="transferDetailsBody">
-                                        <tr><td colspan="5" class="text-center text-muted py-3">Seleccione un rango de fechas</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">Seleccione un rango de
+                                                fechas</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>

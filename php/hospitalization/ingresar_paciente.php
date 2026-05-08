@@ -456,7 +456,7 @@ try {
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">
@@ -497,14 +497,13 @@ try {
                                 <option value="">Seleccionar paciente...</option>
                                 <?php foreach ($patients as $pac): ?>
                                     <option value="<?php echo $pac['id_paciente']; ?>"
-                                            data-nombre="<?php echo htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido']); ?>"
-                                            data-nacimiento="<?php echo $pac['fecha_nacimiento']; ?>"
-                                            data-genero="<?php echo $pac['genero']; ?>"
-                                            <?php echo (isset($_GET['id_paciente']) && $_GET['id_paciente'] == $pac['id_paciente']) ? 'selected' : ''; ?>>
+                                        data-nombre="<?php echo htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido']); ?>"
+                                        data-nacimiento="<?php echo $pac['fecha_nacimiento']; ?>"
+                                        data-genero="<?php echo $pac['genero']; ?>" <?php echo (isset($_GET['id_paciente']) && $_GET['id_paciente'] == $pac['id_paciente']) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido']); ?> -
                                         <?php
-                                            $edad_p = date_diff(date_create($pac['fecha_nacimiento']),date_create('today'))->y;
-                                            echo $edad_p . ' años';
+                                        $edad_p = date_diff(date_create($pac['fecha_nacimiento']), date_create('today'))->y;
+                                        echo $edad_p . ' años';
                                         ?> -
                                         <?php echo htmlspecialchars($pac['genero']); ?>
                                     </option>
@@ -514,11 +513,13 @@ try {
 
                         <div class="col-md-6" id="referido_nombre_div" style="display: none;">
                             <label class="form-label">Nombre del Paciente (Referido)</label>
-                            <input type="text" class="form-control" name="referido_nombre" id="referido_nombre" placeholder="Nombres">
+                            <input type="text" class="form-control" name="referido_nombre" id="referido_nombre"
+                                placeholder="Nombres">
                         </div>
                         <div class="col-md-6" id="referido_apellido_div" style="display: none;">
                             <label class="form-label">Apellido del Paciente (Referido)</label>
-                            <input type="text" class="form-control" name="referido_apellido" id="referido_apellido" placeholder="Apellidos">
+                            <input type="text" class="form-control" name="referido_apellido" id="referido_apellido"
+                                placeholder="Apellidos">
                         </div>
                     </div>
                 </div>
@@ -575,7 +576,8 @@ try {
 
                         <div class="col-md-6" id="referido_doctor_div" style="display: none;">
                             <label class="form-label">Médico Referente (Nombre Completo)</label>
-                            <input type="text" class="form-control" name="referido_doctor" id="referido_doctor" placeholder="Dr. Nombre Apellido">
+                            <input type="text" class="form-control" name="referido_doctor" id="referido_doctor"
+                                placeholder="Dr. Nombre Apellido">
                         </div>
 
                         <div class="col-md-12">
@@ -686,52 +688,52 @@ try {
                 width: '100%'
             });
 
-        // Tipo de Ingreso toggle logic (Referido)
-        const tipoIngresoSelect = document.querySelector('select[name="tipo_ingreso"]');
-        const searchPacienteDiv = document.getElementById('search_paciente_div');
-        const pacienteSelect = document.getElementById('paciente_select');
-        const referidoNombreDiv = document.getElementById('referido_nombre_div');
-        const referidoApellidoDiv = document.getElementById('referido_apellido_div');
-        const referidoNombre = document.getElementById('referido_nombre');
-        const referidoApellido = document.getElementById('referido_apellido');
-        
-        const doctorSelectDiv = document.getElementById('doctor_select_div');
-        const doctorSelect = document.getElementById('id_doctor');
-        const referidoDoctorDiv = document.getElementById('referido_doctor_div');
-        const referidoDoctor = document.getElementById('referido_doctor');
+            // Tipo de Ingreso toggle logic (Referido)
+            const tipoIngresoSelect = document.querySelector('select[name="tipo_ingreso"]');
+            const searchPacienteDiv = document.getElementById('search_paciente_div');
+            const pacienteSelect = document.getElementById('paciente_select');
+            const referidoNombreDiv = document.getElementById('referido_nombre_div');
+            const referidoApellidoDiv = document.getElementById('referido_apellido_div');
+            const referidoNombre = document.getElementById('referido_nombre');
+            const referidoApellido = document.getElementById('referido_apellido');
 
-        function togglePatientInput() {
-            if (tipoIngresoSelect.value === 'Referido') {
-                searchPacienteDiv.style.display = 'none';
-                pacienteSelect.required = false;
-                
-                referidoNombreDiv.style.display = 'block';
-                referidoApellidoDiv.style.display = 'block';
-                referidoNombre.required = true;
-                referidoApellido.required = true;
+            const doctorSelectDiv = document.getElementById('doctor_select_div');
+            const doctorSelect = document.getElementById('id_doctor');
+            const referidoDoctorDiv = document.getElementById('referido_doctor_div');
+            const referidoDoctor = document.getElementById('referido_doctor');
 
-                doctorSelectDiv.style.display = 'none';
-                doctorSelect.required = false;
-                referidoDoctorDiv.style.display = 'block';
-                referidoDoctor.required = true;
-            } else {
-                searchPacienteDiv.style.display = 'block';
-                pacienteSelect.required = true;
-                
-                referidoNombreDiv.style.display = 'none';
-                referidoApellidoDiv.style.display = 'none';
-                referidoNombre.required = false;
-                referidoApellido.required = false;
+            function togglePatientInput() {
+                if (tipoIngresoSelect.value === 'Referido') {
+                    searchPacienteDiv.style.display = 'none';
+                    pacienteSelect.required = false;
 
-                doctorSelectDiv.style.display = 'block';
-                doctorSelect.required = true;
-                referidoDoctorDiv.style.display = 'none';
-                referidoDoctor.required = false;
+                    referidoNombreDiv.style.display = 'block';
+                    referidoApellidoDiv.style.display = 'block';
+                    referidoNombre.required = true;
+                    referidoApellido.required = true;
+
+                    doctorSelectDiv.style.display = 'none';
+                    doctorSelect.required = false;
+                    referidoDoctorDiv.style.display = 'block';
+                    referidoDoctor.required = true;
+                } else {
+                    searchPacienteDiv.style.display = 'block';
+                    pacienteSelect.required = true;
+
+                    referidoNombreDiv.style.display = 'none';
+                    referidoApellidoDiv.style.display = 'none';
+                    referidoNombre.required = false;
+                    referidoApellido.required = false;
+
+                    doctorSelectDiv.style.display = 'block';
+                    doctorSelect.required = true;
+                    referidoDoctorDiv.style.display = 'none';
+                    referidoDoctor.required = false;
+                }
             }
-        }
 
-        tipoIngresoSelect.addEventListener('change', togglePatientInput);
-        togglePatientInput(); // Initialize on load
+            tipoIngresoSelect.addEventListener('change', togglePatientInput);
+            togglePatientInput(); // Initialize on load
 
             // Retrasado logic
             const btnRetrasado = document.getElementById('btn_retrasado');

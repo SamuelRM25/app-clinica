@@ -930,7 +930,7 @@ try {
     <header class="dashboard-header">
         <div class="header-content">
             <div class="brand-container">
-                <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="brand-logo">
+                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
             </div>
             <div class="header-controls">
                 <a href="index.php" class="action-btn secondary">
@@ -1368,7 +1368,7 @@ try {
     <!-- Receipt Print Area (Dedicated for formal printing) -->
     <div id="receipt-print-container" style="display: none;">
         <div class="receipt-header">
-            <img src="../../assets/img/herrerasaenz.png" alt="CMHS" class="receipt-logo">
+            <img src="../../assets/img/Logo.png" alt="CMHS" class="receipt-logo">
             <div class="receipt-title">Centro Médico RS</div>
             <div>Estado de Cuenta Hospitalaria</div>
         </div>

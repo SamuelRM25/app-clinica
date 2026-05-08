@@ -1540,7 +1540,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1623,11 +1623,13 @@ try {
             <?php if ($_SESSION['user_id'] == 1 || $_SESSION['user_id'] == 9 || $_SESSION['user_id'] == 10): ?>
                 <div class="stats-grid">
                     <!-- Valor Total en Inventario -->
-                    <div class="stat-card animate-in delay-0" id="inventoryValueCard" style="cursor: pointer;" onclick="toggleInventoryValue()">
+                    <div class="stat-card animate-in delay-0" id="inventoryValueCard" style="cursor: pointer;"
+                        onclick="toggleInventoryValue()">
                         <div class="stat-header">
                             <div>
                                 <div class="stat-title" id="inventoryValueTitle">Valor en Inventario (Compra)</div>
-                                <div class="stat-value" id="inventoryValueAmount">Q <?php echo number_format($total_value, 2); ?></div>
+                                <div class="stat-value" id="inventoryValueAmount">Q
+                                    <?php echo number_format($total_value, 2); ?></div>
                             </div>
                             <div class="stat-icon success">
                                 <i class="bi bi-cash-stack"></i>
@@ -1937,112 +1939,112 @@ try {
                                     $barcode = strtolower($item['codigo_barras'] ?? '');
                                     $data_attrs = "data-stock='{$status_class}' data-expiry='{$expiry_class}' data-barcode='{$barcode}'";
                                     ?>
-                                            <tr <?php echo $data_attrs; ?>>
-                                                <td>
-                                                    <div class="patient-cell">
-                                                        <div class="patient-avatar" style="background: var(--color-primary);">
-                                                            <i class="bi bi-capsule"></i>
-                                                        </div>
-                                                        <div class="patient-info">
-                                                            <div class="patient-name">
-                                                                <?php echo htmlspecialchars($item['nom_medicamento']); ?>
-                                                            </div>
-                                                            <div class="patient-contact">
-                                                                <?php echo htmlspecialchars($item['casa_farmaceutica']); ?>
-                                                            </div>
-                                                        </div>
+                                    <tr <?php echo $data_attrs; ?>>
+                                        <td>
+                                            <div class="patient-cell">
+                                                <div class="patient-avatar" style="background: var(--color-primary);">
+                                                    <i class="bi bi-capsule"></i>
+                                                </div>
+                                                <div class="patient-info">
+                                                    <div class="patient-name">
+                                                        <?php echo htmlspecialchars($item['nom_medicamento']); ?>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    <span
-                                                        class="text-muted"><?php echo htmlspecialchars($item['mol_medicamento']); ?></span>
-                                                </td>
-                                                <td>
-                                                    <?php echo htmlspecialchars($item['presentacion_med']); ?>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex flex-column gap-1" style="font-size: 0.85rem;">
-                                                        <span class="text-primary fw-bold">V:
-                                                            Q<?php echo number_format($item['precio_venta'] ?? 0, 2); ?></span>
-                                                        <span class="text-info">H:
-                                                            Q<?php echo number_format($item['precio_hospital'] ?? 0, 2); ?></span>
-                                                        <span class="text-success">M:
-                                                            Q<?php echo number_format($item['precio_medico'] ?? 0, 2); ?></span>
+                                                    <div class="patient-contact">
+                                                        <?php echo htmlspecialchars($item['casa_farmaceutica']); ?>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex flex-column gap-1">
-                                                        <span class="status-badge <?php echo $status_class; ?>">
-                                                            <i class="bi bi-shop me-1"></i>Farm: <?php echo $item['cantidad_med']; ?>
-                                                        </span>
-                                                        <span class="status-badge status-info">
-                                                            <i class="bi bi-hospital me-1"></i>Hosp:
-                                                            <?php echo $item['stock_hospital'] ?? 0; ?>
-                                                        </span>
-                                                    </div>
-                                                    <?php if ($estado === 'Pendiente'): ?>
-                                                            <div class="mt-1">
-                                                                <span class="status-badge status-info" style="font-size: 0.75rem;">
-                                                                    Pendiente de recepción
-                                                                </span>
-                                                            </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="text-muted"><?php echo htmlspecialchars($item['mol_medicamento']); ?></span>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($item['presentacion_med']); ?>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-1" style="font-size: 0.85rem;">
+                                                <span class="text-primary fw-bold">V:
+                                                    Q<?php echo number_format($item['precio_venta'] ?? 0, 2); ?></span>
+                                                <span class="text-info">H:
+                                                    Q<?php echo number_format($item['precio_hospital'] ?? 0, 2); ?></span>
+                                                <span class="text-success">M:
+                                                    Q<?php echo number_format($item['precio_medico'] ?? 0, 2); ?></span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-1">
+                                                <span class="status-badge <?php echo $status_class; ?>">
+                                                    <i class="bi bi-shop me-1"></i>Farm: <?php echo $item['cantidad_med']; ?>
+                                                </span>
+                                                <span class="status-badge status-info">
+                                                    <i class="bi bi-hospital me-1"></i>Hosp:
+                                                    <?php echo $item['stock_hospital'] ?? 0; ?>
+                                                </span>
+                                            </div>
+                                            <?php if ($estado === 'Pendiente'): ?>
+                                                <div class="mt-1">
+                                                    <span class="status-badge status-info" style="font-size: 0.75rem;">
+                                                        Pendiente de recepción
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($item['fecha_vencimiento']): ?>
+                                                <div class="mb-1">
+                                                    <?php echo date('d/m/Y', strtotime($item['fecha_vencimiento'])); ?>
+                                                </div>
+                                                <span class="status-badge <?php echo $expiry_class; ?>">
+                                                    <?php echo $expiry_text; ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <?php if ($estado === 'Pendiente'): ?>
+                                                    <button type="button" class="btn-icon receive"
+                                                        onclick="openReceiveModal(<?php echo $item['id_inventario']; ?>, '<?php echo htmlspecialchars($item['nom_medicamento']); ?>', '<?php echo htmlspecialchars($item['codigo_barras'] ?? ''); ?>')"
+                                                        data-bs-toggle="modal" data-bs-target="#receiveMedicineModal"
+                                                        title="Recibir producto">
+                                                        <i class="bi bi-box-arrow-in-down"></i>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <?php if ($can_manage_inventory): ?>
+                                                        <button type="button" class="btn-icon edit"
+                                                            data-id="<?php echo $item['id_inventario']; ?>" data-bs-toggle="modal"
+                                                            data-bs-target="#editMedicineModal" title="Editar">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button type="button" class="btn-icon delete"
+                                                            data-id="<?php echo $item['id_inventario']; ?>" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php if ($item['fecha_vencimiento']): ?>
-                                                            <div class="mb-1">
-                                                                <?php echo date('d/m/Y', strtotime($item['fecha_vencimiento'])); ?>
-                                                            </div>
-                                                            <span class="status-badge <?php echo $expiry_class; ?>">
-                                                                <?php echo $expiry_text; ?>
-                                                            </span>
-                                                    <?php else: ?>
-                                                            <span class="text-muted">-</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <div class="action-buttons">
-                                                        <?php if ($estado === 'Pendiente'): ?>
-                                                                <button type="button" class="btn-icon receive"
-                                                                    onclick="openReceiveModal(<?php echo $item['id_inventario']; ?>, '<?php echo htmlspecialchars($item['nom_medicamento']); ?>', '<?php echo htmlspecialchars($item['codigo_barras'] ?? ''); ?>')"
-                                                                    data-bs-toggle="modal" data-bs-target="#receiveMedicineModal"
-                                                                    title="Recibir producto">
-                                                                    <i class="bi bi-box-arrow-in-down"></i>
-                                                                </button>
-                                                        <?php else: ?>
-                                                                <?php if ($can_manage_inventory): ?>
-                                                                        <button type="button" class="btn-icon edit"
-                                                                            data-id="<?php echo $item['id_inventario']; ?>" data-bs-toggle="modal"
-                                                                            data-bs-target="#editMedicineModal" title="Editar">
-                                                                            <i class="bi bi-pencil"></i>
-                                                                        </button>
-                                                                        <button type="button" class="btn-icon delete"
-                                                                            data-id="<?php echo $item['id_inventario']; ?>" title="Eliminar">
-                                                                            <i class="bi bi-trash"></i>
-                                                                        </button>
-                                                                <?php endif; ?>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-box"></i>
-                            </div>
-                            <h4 class="text-muted mb-2">No hay medicamentos en el inventario</h4>
-                            <p class="text-muted mb-3">Comience agregando nuevos medicamentos al sistema</p>
-                            <?php if ($can_manage_inventory): ?>
-                                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
-                                        <i class="bi bi-plus-circle"></i>
-                                        Agregar primer medicamento
-                                    </button>
-                            <?php endif; ?>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-box"></i>
                         </div>
+                        <h4 class="text-muted mb-2">No hay medicamentos en el inventario</h4>
+                        <p class="text-muted mb-3">Comience agregando nuevos medicamentos al sistema</p>
+                        <?php if ($can_manage_inventory): ?>
+                            <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
+                                <i class="bi bi-plus-circle"></i>
+                                Agregar primer medicamento
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </section>
 
@@ -2071,35 +2073,35 @@ try {
                     ?>
 
                     <?php if (count($expiring_medications) > 0): ?>
-                            <ul class="alert-list">
-                                <?php foreach ($expiring_medications as $medication): ?>
-                                        <?php
-                                        $expiry_date = new DateTime($medication['fecha_vencimiento']);
-                                        $today_dt = new DateTime();
-                                        $days_diff = $today_dt->diff($expiry_date)->days;
-                                        ?>
-                                        <li class="alert-item">
-                                            <div class="alert-item-header">
-                                                <span
-                                                    class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
-                                                <span class="alert-badge warning">
-                                                    <?php echo $days_diff; ?> días
-                                                </span>
-                                            </div>
-                                            <div class="alert-item-details">
-                                                <span>Vence: <?php echo $expiry_date->format('d/m/Y'); ?></span>
-                                                <span>Stock: <?php echo $medication['cantidad_med']; ?></span>
-                                            </div>
-                                        </li>
-                                <?php endforeach; ?>
-                            </ul>
+                        <ul class="alert-list">
+                            <?php foreach ($expiring_medications as $medication): ?>
+                                <?php
+                                $expiry_date = new DateTime($medication['fecha_vencimiento']);
+                                $today_dt = new DateTime();
+                                $days_diff = $today_dt->diff($expiry_date)->days;
+                                ?>
+                                <li class="alert-item">
+                                    <div class="alert-item-header">
+                                        <span
+                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
+                                        <span class="alert-badge warning">
+                                            <?php echo $days_diff; ?> días
+                                        </span>
+                                    </div>
+                                    <div class="alert-item-details">
+                                        <span>Vence: <?php echo $expiry_date->format('d/m/Y'); ?></span>
+                                        <span>Stock: <?php echo $medication['cantidad_med']; ?></span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php else: ?>
-                            <div class="no-alerts">
-                                <div class="no-alerts-icon">
-                                    <i class="bi bi-check-circle"></i>
-                                </div>
-                                <p class="text-muted mb-0">Sin medicamentos próximos a caducar</p>
+                        <div class="no-alerts">
+                            <div class="no-alerts-icon">
+                                <i class="bi bi-check-circle"></i>
                             </div>
+                            <p class="text-muted mb-0">Sin medicamentos próximos a caducar</p>
+                        </div>
                     <?php endif; ?>
                 </div>
 
@@ -2125,26 +2127,26 @@ try {
                     ?>
 
                     <?php if (count($low_stock_medications) > 0): ?>
-                            <ul class="alert-list">
-                                <?php foreach ($low_stock_medications as $medication): ?>
-                                        <li class="alert-item">
-                                            <div class="alert-item-header">
-                                                <span
-                                                    class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
-                                                <span class="alert-badge danger">
-                                                    <?php echo $medication['cantidad_med']; ?> unidades
-                                                </span>
-                                            </div>
-                                        </li>
-                                <?php endforeach; ?>
-                            </ul>
+                        <ul class="alert-list">
+                            <?php foreach ($low_stock_medications as $medication): ?>
+                                <li class="alert-item">
+                                    <div class="alert-item-header">
+                                        <span
+                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
+                                        <span class="alert-badge danger">
+                                            <?php echo $medication['cantidad_med']; ?> unidades
+                                        </span>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php else: ?>
-                            <div class="no-alerts">
-                                <div class="no-alerts-icon">
-                                    <i class="bi bi-check-circle"></i>
-                                </div>
-                                <p class="text-muted mb-0">Inventario con stock suficiente</p>
+                        <div class="no-alerts">
+                            <div class="no-alerts-icon">
+                                <i class="bi bi-check-circle"></i>
                             </div>
+                            <p class="text-muted mb-0">Inventario con stock suficiente</p>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>

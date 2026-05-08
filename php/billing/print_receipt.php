@@ -1619,7 +1619,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1673,7 +1673,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                 <!-- Encabezado de la clínica -->
                 <header class="receipt-header">
                     <div class="logo-section">
-                        <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="clinic-logo">
+                        <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="clinic-logo">
                     </div>
                     <div class="clinic-info">
                         Dirección de prueba<br>

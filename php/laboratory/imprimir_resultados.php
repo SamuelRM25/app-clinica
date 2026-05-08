@@ -229,7 +229,7 @@ try {
             <p>Laboratorio Clínico Especializado</p>
             <p>Amatitlán, Guatemala | Tel: 6633-XXXX</p>
         </div>
-        <img src="../../assets/img/herrerasaenz.png" alt="Logo" class="logo">
+        <img src="../../assets/img/Logo.png" alt="Logo" class="logo">
     </header>
 
     <div class="patient-info">
