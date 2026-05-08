@@ -1,11 +1,11 @@
 <?php
-// dashboard.php - Dashboard Centro Médico RS
+// dashboard.php - Dashboard Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
 // Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../../index.php");
     exit;
 }
 
@@ -114,8 +114,8 @@ try {
     $stmt->execute();
     $total_medications = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-    // 8. Medicamentos próximos a caducar (30 días)
-    $next_month = date('Y-m-d', strtotime('+30 days'));
+    // 8. Medicamentos próximos a caducar (6 meses)
+    $next_month = date('Y-m-d', strtotime('+6 months'));
     $stmt = $conn->prepare("
         SELECT id_inventario, nom_medicamento, fecha_vencimiento, cantidad_med 
         FROM inventario 
@@ -169,7 +169,7 @@ try {
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Dashboard - Centro Médico RS";
+    $page_title = "Dashboard - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -183,7 +183,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard del Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Dashboard del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -380,9 +380,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -2219,7 +2218,7 @@ try {
                         <span class="nav-text">Pacientes</span>
                     </a>
                 </li>
-                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
+                <?php if ($user_type === 'admin'): ?>
                     <li class="nav-item">
                         <a href="../hospitalization/index.php" class="nav-link">
                             <i class="bi bi-hospital nav-icon"></i>
@@ -2227,12 +2226,16 @@ try {
                             <span class="badge bg-info"><?php echo $active_hospitalizations; ?></span>
                         </a>
                     </li>
+                <?php endif; ?>
+                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 29): ?> 
                     <li class="nav-item">
                         <a href="../laboratory/index.php" class="nav-link">
                             <i class="bi bi-virus nav-icon"></i>
                             <span class="nav-text">Laboratorio</span>
                         </a>
                     </li>
+                <?php endif; ?>
+                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 6): ?> 
                     <li class="nav-item">
                         <a href="../inventory/index.php" class="nav-link">
                             <i class="bi bi-box-seam nav-icon"></i>
@@ -2307,7 +2310,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2428,8 +2431,71 @@ try {
             </div>
         </div>
 
+        <!-- Modal Detalle Farmacia -->
+        <div class="modal fade" id="pharmacyDetailsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="bi bi-capsule me-2"></i>Detalle de Ventas - Farmacia
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0" id="pharmacyModalBody">
+                        <!-- Content injected by JS -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
             // Funciones para el Corte de Turno
+            function openPharmacyModal() {
+                const pharmacyData = window.currentShiftData?.pharmacy;
+                if (!pharmacyData) return;
+
+                const modalBody = document.getElementById('pharmacyModalBody');
+                if (pharmacyData.details && pharmacyData.details.length > 0) {
+                    let html = `
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Cliente</th>
+                                        <th>Detalle Medicamentos</th>
+                                        <th>Pago</th>
+                                        <th class="text-end">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+                    pharmacyData.details.forEach(item => {
+                        html += `
+                            <tr>
+                                <td>${item.hora}</td>
+                                <td class="fw-medium">${item.cliente || 'Consumidor Final'}</td>
+                                <td><small class="text-muted">${item.detalle || 'Varios'}</small></td>
+                                <td><span class="badge bg-light text-dark border">${item.tipo_pago}</span></td>
+                                <td class="text-end fw-bold">Q${parseFloat(item.monto).toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `</tbody></table></div>`;
+                    modalBody.innerHTML = html;
+                } else {
+                    modalBody.innerHTML = '<div class="alert alert-info">No hay ventas de farmacia registradas en este turno.</div>';
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('pharmacyDetailsModal'));
+                modal.show();
+            }
+
             async function verifyShiftCode() {
                 const { value: code } = await Swal.fire({
                     title: 'Código de Seguridad',
@@ -2471,65 +2537,180 @@ try {
                 loading.style.display = 'block';
                 content.style.display = 'none';
 
+
+
                 fetch(`get_shift_cut_data.php?date=${date}&shift=${shift}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             const d = data.data;
+                            window.currentShiftData = d; // Store for modal access
+
+                            // Helper para renderizar tabla de detalles
+                            const renderDetailsTable = (details, typeId) => {
+                                if (!details || details.length === 0) return '<div class="text-muted small fst-italic p-2">No hay transacciones</div>';
+
+                                let html = `
+                                        <div class="table-responsive mt-2">
+                                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.85rem;">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Hora</th>
+                                                        <th>Paciente/Cliente</th>
+                                                        <th>Tipo Pago</th>
+                                                        <th class="text-end">Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>`;
+
+                                const methodConfig = {
+                                    'Efectivo': { color: 'text-success', icon: 'bi-cash-coin' },
+                                    'Tarjeta': { color: 'text-primary', icon: 'bi-credit-card' },
+                                    'Transferencia': { color: 'text-info', icon: 'bi-bank' },
+                                    'Traslado': { color: 'text-warning', icon: 'bi-arrow-left-right' }
+                                };
+
+                                details.forEach(item => {
+                                    const mConfig = methodConfig[item.tipo_pago] || { color: 'text-secondary', icon: 'bi-circle' };
+                                    html += `
+                                            <tr>
+                                                <td>${item.hora}</td>
+                                                <td>
+                                                    <div class="fw-medium">${item.paciente || item.cliente || 'Desconocido'}</div>
+                                                    ${item.detalle ? `<div class="text-muted mt-1" style="font-size: 0.75rem;"><i class="bi bi-box-seam me-1"></i>${item.detalle}</div>` : ''}
+                                                </td>
+                                                <td><i class="bi ${mConfig.icon} ${mConfig.color}"></i> ${item.tipo_pago}</td>
+                                                <td class="text-end fw-bold">Q${parseFloat(item.monto || item.cobro || 0).toFixed(2)}</td>
+                                            </tr>`;
+                                });
+
+                                html += `</tbody></table></div>`;
+                                return html;
+                            };
 
                             // Build main table
                             const categories = [
-                                { label: 'Farmacia', data: d.pharmacy, icon: 'bi-capsule text-primary' },
-                                { label: 'Consultas', data: d.consultations, icon: 'bi-person-video text-success' },
-                                { label: 'Laboratorio', data: d.laboratory, icon: 'bi-eyedropper text-danger' },
-                                { label: 'Procedimientos', data: d.procedures, icon: 'bi-bandaid text-warning' },
-                                { label: 'Ultrasonido', data: d.ultrasound, icon: 'bi-activity text-info' },
-                                { label: 'Rayos X', data: d.xray, icon: 'bi-radioactive text-secondary' }
+                                { id: 'pharmacy', label: 'Farmacia', data: d.pharmacy, icon: 'bi-capsule text-primary' },
+                                { id: 'consultations', label: 'Consultas', data: d.consultations, icon: 'bi-person-video text-success' },
+                                { id: 'laboratory', label: 'Laboratorio', data: d.laboratory, icon: 'bi-eyedropper text-danger' },
+                                { id: 'procedures', label: 'Procedimientos', data: d.procedures, icon: 'bi-bandaid text-warning' },
+                                { id: 'ultrasound', label: 'Ultrasonidos', data: d.ultrasound, icon: 'bi-wifi text-info' },
+                                { id: 'xray', label: 'Rayos X', data: d.xray, icon: 'bi-file-medical text-secondary' },
+                                { id: 'electro', label: 'Electrocardiogramas', data: d.electro, icon: 'bi-heart-pulse text-danger' },
+                                { id: 'hospitalization', label: 'Hospitalización', data: d.hospitalization, icon: 'bi-hospital text-danger' }
                             ];
 
-                            let html = '';
+                            tableBody.innerHTML = '';
+
                             categories.forEach(cat => {
-                                html += `
-                                    <tr>
+                                if (!cat.data) return;
+                                const total = parseFloat(cat.data.total || 0);
+                                const collapseId = `collapse-${cat.id}`;
+
+                                let actionBtn = '';
+                                if (cat.id === 'pharmacy') {
+                                    actionBtn = `<button class="btn btn-sm btn-link text-decoration-none p-0 mt-1" type="button" 
+                                        onclick="openPharmacyModal()">
+                                        <i class="bi bi-eye"></i> Ver detalles (Modal)
+                                    </button>`;
+                                } else {
+                                    actionBtn = `<button class="btn btn-sm btn-link text-decoration-none p-0 mt-1" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false">
+                                        <i class="bi bi-eye"></i> Ver detalles
+                                    </button>`;
+                                }
+
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <i class="bi ${cat.icon} fs-5 me-2"></i>
-                                                <span class="fw-semibold">${cat.label}</span>
+                                                <span class="fw-bold">${cat.label}</span>
+                                            </div>
+                                            ${actionBtn}
+                                            <div class="collapse mt-2" id="${collapseId}">
+                                                <div class="card card-body p-2 bg-light border-0">
+                                                    ${renderDetailsTable(cat.data.details, cat.id)}
+                                                </div>
                                             </div>
                                         </td>
-                                        <td class="text-center">Q${cat.data.breakdown?.['Efectivo']?.toFixed(2) || '0.00'}</td>
-                                        <td class="text-center">Q${cat.data.breakdown?.['Tarjeta']?.toFixed(2) || '0.00'}</td>
-                                        <td class="text-center">Q${cat.data.breakdown?.['Transferencia']?.toFixed(2) || '0.00'}</td>
-                                        <td class="text-end fw-bold">Q${cat.data.total.toFixed(2)}</td>
-                                    </tr>
-                                `;
-                            });
-                            tableBody.innerHTML = html;
-                            document.getElementById('cut-grand-total').textContent = d.grand_total.toFixed(2);
-
-                            // Build doctors breakdown
-                            if (d.consultations.by_doctor && d.consultations.by_doctor.length > 0) {
-                                document.getElementById('consultationBreakdown').style.display = 'block';
-                                let docHtml = '<div class="row g-2">';
-                                d.consultations.by_doctor.forEach(doc => {
-                                    docHtml += `
-                                        <div class="col-md-6">
-                                            <div class="card bg-light border-0 p-3 h-100">
-                                                <div class="fw-bold text-primary mb-2">${doc.doctor}</div>
-                                                <div class="d-flex justify-content-between small text-muted">
-                                                    <span>Efectivo: Q${doc.breakdown.Efectivo.toFixed(2)}</span>
-                                                    <span>Tarjeta: Q${doc.breakdown.Tarjeta.toFixed(2)}</span>
-                                                    <span>Transf: Q${doc.breakdown.Transferencia.toFixed(2)}</span>
-                                                </div>
-                                                <div class="text-end fw-bold mt-1">Total: Q${doc.total.toFixed(2)}</div>
-                                            </div>
-                                        </div>
+                                        <td class="text-end">Q${(cat.data.breakdown?.Efectivo || 0).toFixed(2)}</td>
+                                        <td class="text-end">Q${(cat.data.breakdown?.Tarjeta || 0).toFixed(2)}</td>
+                                        <td class="text-end">Q${(cat.data.breakdown?.Transferencia || 0).toFixed(2)}</td>
+                                        <td class="text-end fw-bold bg-light">Q${total.toFixed(2)}</td>
                                     `;
-                                });
-                                docHtml += '</div>';
-                                document.getElementById('doctorsList').innerHTML = docHtml;
+                                tableBody.appendChild(row);
+                            });
+
+                            // Update Tables Footer (Grand Totals)
+                            const grandTotal = d.grand_total || 0;
+                            let totalCash = 0, totalCard = 0, totalTransfer = 0;
+                            categories.forEach(cat => {
+                                if (cat.data) {
+                                    totalCash += cat.data.breakdown?.Efectivo || 0;
+                                    totalCard += cat.data.breakdown?.Tarjeta || 0;
+                                    totalTransfer += cat.data.breakdown?.Transferencia || 0;
+                                }
+                            });
+
+                            const safeSetText = (id, val) => {
+                                const el = document.getElementById(id);
+                                if (el) el.textContent = val;
+                            };
+
+                            safeSetText('totalCash', `Q${totalCash.toFixed(2)}`);
+                            safeSetText('totalCard', `Q${totalCard.toFixed(2)}`);
+                            safeSetText('totalTransfer', `Q${totalTransfer.toFixed(2)}`);
+                            safeSetText('totalGlobal', `Q${grandTotal.toFixed(2)}`);
+                            // Also update specific ID if exists (from previous code)
+                            safeSetText('cut-grand-total', grandTotal.toFixed(2));
+
+                            // Doctors Breakdown
+                            const breakdownContainer = document.getElementById('consultationBreakdown');
+                            if (d.consultations.by_doctor && d.consultations.by_doctor.length > 0) {
+                                if (breakdownContainer) {
+                                    let breakdownHtml = `
+                                            <div class="card border-0 shadow-sm mt-4">
+                                                <div class="card-header bg-success text-white">
+                                                    <h6 class="mb-0"><i class="bi bi-people me-2"></i>Desglose por Médico</h6>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <table class="table table-striped mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Médico</th>
+                                                                <th class="text-end">Efectivo</th>
+                                                                <th class="text-end">Tarjeta</th>
+                                                                <th class="text-end">Transferencia</th>
+                                                                <th class="text-end">Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>`;
+
+                                    d.consultations.by_doctor.forEach(doc => {
+                                        breakdownHtml += `
+                                                <tr>
+                                                    <td><i class="bi bi-person-badge fs-6 me-2 text-muted"></i>${doc.doctor}</td>
+                                                    <td class="text-end">Q${(doc.breakdown.Efectivo || 0).toFixed(2)}</td>
+                                                    <td class="text-end">Q${(doc.breakdown.Tarjeta || 0).toFixed(2)}</td>
+                                                    <td class="text-end">Q${(doc.breakdown.Transferencia || 0).toFixed(2)}</td>
+                                                    <td class="text-end fw-bold">Q${doc.total.toFixed(2)}</td>
+                                                </tr>`;
+                                    });
+
+                                    breakdownHtml += '</tbody></table></div></div>';
+                                    breakdownContainer.innerHTML = breakdownHtml;
+                                    breakdownContainer.style.display = 'block';
+                                }
+
+                                // Update legacy container if it exists
+                                const legDocs = document.getElementById('doctorsList');
+                                if (legDocs) {
+                                    // Keeping backward compatibility if cleaner implementation didn't fully replace DOM structure
+                                    legDocs.innerHTML = '';
+                                }
                             } else {
-                                document.getElementById('consultationBreakdown').style.display = 'none';
+                                if (breakdownContainer) breakdownContainer.style.display = 'none';
                             }
 
                             loading.style.display = 'none';
@@ -2584,7 +2765,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -2594,7 +2775,7 @@ try {
             </div>
 
             <!-- Acciones Rápidas -->
-            <?php if ($_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 1): ?>
+            <?php if ($_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 1 || $_SESSION['user_id'] == 26 || $_SESSION['user_id'] == 27 || $_SESSION['user_id'] == 28 || $_SESSION['user_id'] == 29): ?>
                 <div class="stats-grid mb-4 animate-in delay-1">
                     <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
                         style="text-decoration: none; border-left: 4px solid var(--color-success);">
@@ -2824,6 +3005,7 @@ try {
                 <?php endif; ?>
             </section>
 
+            <?php if ($user_type === 'admin'): ?>
             <!-- Sección de Hospitalización -->
             <section class="appointments-section animate-in delay-2">
                 <div class="section-header">
@@ -2924,6 +3106,7 @@ try {
                     </div>
                 <?php endif; ?>
             </section>
+            <?php endif; ?>
 
             <!-- Panel de alertas -->
             <div class="alerts-grid animate-in delay-3">
@@ -3229,8 +3412,7 @@ try {
                                                         <?php foreach ($pruebas as $prueba): ?>
                                                             <div class="col-md-6 test-item"
                                                                 data-name="<?php echo strtolower(htmlspecialchars($prueba['nombre_prueba'])); ?>">
-                                                                <div class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer"
-                                                                    onclick="toggleLabCheckbox('test_v2_<?php echo $prueba['id_prueba']; ?>')">
+                                                                <div class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer">
                                                                     <div class="check-indicator">
                                                                         <input
                                                                             class="form-check-input test-checkbox stretched-link"
@@ -3382,7 +3564,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -3691,6 +3873,7 @@ try {
                         const hour = date.getHours();
 
                         switch (doctorId) {
+                            case '9': price = (type === 'Consulta') ? 200 : 150; break;
                             case '17': price = (type === 'Consulta') ? 200 : 150; break;
                             case '13': price = (type === 'Consulta') ? 250 : 150; break;
                             case '18': case '11': price = (type === 'Consulta') ? 200 : 100; break;
@@ -3770,6 +3953,7 @@ try {
                     const saveBtn = document.getElementById('saveBillingBtn');
                     if (saveBtn) {
                         saveBtn.addEventListener('click', async () => {
+                            if (saveBtn.disabled) return;
                             const form = document.getElementById('newBillingForm');
                             const patientInput = document.getElementById('billing_paciente_input');
                             const patientHidden = document.getElementById('billing_paciente');
@@ -3840,6 +4024,7 @@ try {
                     const saveBtn = document.getElementById('saveElectroBtn');
                     if (saveBtn) {
                         saveBtn.addEventListener('click', async () => {
+                            if (saveBtn.disabled) return;
                             const form = document.getElementById('electroBillingForm');
                             const patientInput = document.getElementById('electro_paciente_input');
                             const patientHidden = document.getElementById('electro_paciente');
@@ -3943,7 +4128,7 @@ try {
                                         : `<div class="text-primary fw-bold">Q${price.toFixed(2)}</div>`
                                     }
                                     </div>
-                                    <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="document.getElementById('${cb.id}').click()">
+                                    <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="toggleLabCheckbox('${cb.id}')">
                                         <i class="bi bi-trash"></i>
                                     </button>`;
                                 fragment.appendChild(item);
@@ -4064,9 +4249,10 @@ try {
                                         timer: 1500
                                     }).then(() => {
                                         if (result.id_pago) {
-                                            window.open(`../laboratory/print_lab_receipt.php?id=${result.id_pago}`, '_blank');
+                                            window.location.href = `../laboratory/print_lab_receipt.php?id=${result.id_pago}`;
+                                        } else {
+                                            location.reload();
                                         }
-                                        location.reload();
                                     });
                                 } else {
                                     throw new Error(result.message);
@@ -4173,6 +4359,8 @@ try {
 
                     if (saveBtn) {
                         saveBtn.addEventListener('click', async () => {
+                            if (saveBtn.disabled) return;
+
                             const form = document.getElementById('ultrasoundBillingForm');
                             const patientInput = document.getElementById('ultrasound_patient_input');
                             const patientHidden = document.getElementById('ultrasound_patient_id');
@@ -4244,6 +4432,8 @@ try {
                     const saveBtn = document.getElementById('saveXrayBtn');
                     if (saveBtn) {
                         saveBtn.addEventListener('click', async () => {
+                            if (saveBtn.disabled) return;
+
                             const form = document.getElementById('xrayBillingForm');
                             const patientInput = document.getElementById('xray_patient_input');
                             const patientHidden = document.getElementById('xray_patient_id');
@@ -4330,6 +4520,24 @@ try {
                             setTimeout(() => this.showDailyReportNotification(today), 2000);
                         }
                     <?php endif; ?>
+                }
+
+                showDailyReportNotification(date) {
+                    Swal.fire({
+                        title: 'Resumen Diario Disponible',
+                        text: 'El reporte de ayer ya está listo para revisar.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ver Reporte',
+                        cancelButtonText: 'Más tarde',
+                        confirmButtonColor: 'var(--color-primary)'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            localStorage.setItem('dailyReportDate', date);
+                            // Redireccionar al reporte si existe una URL específica, por ahora solo marcamos como visto
+                            // window.location.href = 'reports/daily.php'; 
+                        }
+                    });
                 }
             }
 
@@ -4736,6 +4944,74 @@ try {
         </div>
     </div>
 
+    <!-- Modal para Electrocardiograma -->
+    <div class="modal fade" id="electroBillingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-heart-pulse me-2"></i>Cobro de Electrocardiograma</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="electroBillingForm">
+                        <div class="mb-3">
+                            <label class="form-label">Paciente</label>
+                            <input class="form-control" list="electroDatalistOptions" id="electro_paciente_input"
+                                placeholder="Buscar paciente..." required autocomplete="off">
+                            <datalist id="electroDatalistOptions">
+                                <?php foreach ($pacientes as $paciente): ?>
+                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                    <?php endforeach; ?>
+                            </datalist>
+                            <input type="hidden" id="electro_paciente" name="id_paciente">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Doctor (Opcional)</label>
+                            <select class="form-select" id="electro_doctor" name="id_doctor">
+                                <option value="">Seleccione Doctor</option>
+                                <?php foreach ($doctores as $doc): ?>
+                                    <option value="<?php echo $doc['idUsuario']; ?>">
+                                        <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Horario</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="electro_horario" id="electro_habil"
+                                    value="habil" onchange="updateElectroPrice()" checked autocomplete="off">
+                                <label class="btn btn-outline-danger" for="electro_habil">Normal (Q300)</label>
+
+                                <input type="radio" class="btn-check" name="electro_horario" id="electro_inhabil"
+                                    value="inhabil" onchange="updateElectroPrice()" autocomplete="off">
+                                <label class="btn btn-outline-danger" for="electro_inhabil">Inhábil/Finde (Q400)</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto (Q)</label>
+                            <input type="number" class="form-control" id="electro_precio" name="precio" value="300"
+                                required step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Pago</label>
+                            <select class="form-select" name="tipo_pago">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="saveElectroBtn">Guardar Cobro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para Rayos X -->
     <div class="modal fade" id="xrayBillingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -4791,6 +5067,10 @@ try {
                     </form>
                 </div>
                 <div class="modal-footer">
+                    <div class="me-auto small text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Precios: Q200 (1 reg), Q300 (2 reg), Q400 (3 reg)
+                    </div>
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-secondary" id="saveXrayBtn">Guardar Cobro</button>
                 </div>
@@ -4816,6 +5096,12 @@ try {
             'Retiro de Puntos': { habil: 50, inhabil: 100 },
             'Suero Vitaminado': { habil: 800, inhabil: 1100 }
         };
+
+        function updateElectroPrice() {
+            const isHabil = document.getElementById('electro_habil').checked;
+            const priceField = document.getElementById('electro_precio');
+            priceField.value = isHabil ? "300.00" : "400.00";
+        }
 
         function updateProcedurePrice() {
             const procedure = document.getElementById('procedureSelect').value;

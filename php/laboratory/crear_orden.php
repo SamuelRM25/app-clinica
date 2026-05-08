@@ -45,7 +45,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Crear Orden de Laboratorio - Centro Médico RS">
+    <meta name="description" content="Crear Orden de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -243,9 +243,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1011,7 +1010,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->

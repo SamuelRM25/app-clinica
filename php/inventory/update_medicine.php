@@ -44,6 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
         ]);
 
         if ($result) {
+            // Requerimiento 4: Actualizar unit_cost en purchase_items si el inventario se actualiza
+            $stmt_pi = $conn->prepare("SELECT id_purchase_item FROM inventario WHERE id_inventario = ?");
+            $stmt_pi->execute([$_POST['id_inventario']]);
+            $inv_row = $stmt_pi->fetch(PDO::FETCH_ASSOC);
+
+            if ($inv_row && !empty($inv_row['id_purchase_item'])) {
+                $stmt_update_pi = $conn->prepare("UPDATE purchase_items SET unit_cost = ? WHERE id = ?");
+                $stmt_update_pi->execute([$_POST['precio_compra'] ?? 0.00, $inv_row['id_purchase_item']]);
+            }
+
             $_SESSION['inventory_message'] = 'Medicamento actualizado correctamente';
             $_SESSION['inventory_status'] = 'success';
         } else {

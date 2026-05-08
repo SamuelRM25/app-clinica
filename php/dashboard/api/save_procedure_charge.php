@@ -41,8 +41,8 @@ try {
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
     $stmt = $conn->prepare("
         INSERT INTO procedimientos_menores 
-        (id_paciente, nombre_paciente, procedimiento, cobro, tipo_pago, usuario) 
-        VALUES (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :tipo_pago, :usuario)
+        (id_paciente, nombre_paciente, procedimiento, cobro, tipo_pago, usuario, fecha_procedimiento) 
+        VALUES (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :tipo_pago, :usuario, NOW())
     ");
 
     $result = $stmt->execute([

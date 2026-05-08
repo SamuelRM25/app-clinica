@@ -82,9 +82,16 @@ try {
         $stmt_price->execute([$id_prueba]);
         $test_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
         if ($test_info) {
+            $final_price = $test_info['precio'];
+
+            // EPS Logic: Use custom price if available and is_eps is true
+            if (!empty($data['is_eps']) && isset($data['custom_prices'][$id_prueba])) {
+                $final_price = floatval($data['custom_prices'][$id_prueba]);
+            }
+
             $items_for_billing[] = [
                 'nombre' => $test_info['nombre_prueba'],
-                'precio' => $test_info['precio']
+                'precio' => $final_price
             ];
         }
     }
@@ -128,12 +135,13 @@ try {
         $nombre_paciente_full = $paciente_data['nombre'] ?? 'Paciente Desconocido';
 
         $stmt_bill = $conn->prepare("
-            INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen)
-            VALUES (?, ?, ?, ?, ?, NOW())
+            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
         ");
         $descripcion_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres);
         $stmt_bill->execute([
             $data['id_paciente'],
+            $id_orden,
             $nombre_paciente_full,
             $descripcion_bill,
             $total_order,

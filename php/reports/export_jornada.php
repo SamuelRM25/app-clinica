@@ -1,5 +1,5 @@
 <?php
-// export_jornada.php - Reporte de Jornada - Centro Médico RS
+// export_jornada.php - Reporte de Jornada - Centro Médico Herrera Saenz
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';
@@ -20,15 +20,21 @@ if ($user_type !== 'admin') {
     die("Acceso denegado.");
 }
 
-// Obtener parámetros de fecha y formato
+// Obtener parámetros de fecha, formato y jornada
 $date = $_GET['date'] ?? date('Y-m-d');
 $format = $_GET['format'] ?? 'html'; // html, csv, excel, word
+$shift = $_GET['shift'] ?? 'morning';
 
 // Calcular rango de jornada
-// Jornada 1: 08:00 AM a 05:00 PM (17:00)
-// Jornada 2: 05:00 PM (17:00) a 08:00 AM del día siguiente
-$start_time = $date . ' 08:00:00';
-$end_time = $date . ' 17:00:00';
+if ($shift === 'morning') {
+    $start_time = $date . ' 08:00:00';
+    $end_time = $date . ' 17:00:00';
+    $shift_label = "Mañana (08:00 - 17:00)";
+} else {
+    $start_time = $date . ' 17:00:00';
+    $end_time = date('Y-m-d', strtotime($date . ' +1 day')) . ' 07:59:59';
+    $shift_label = "Noche (17:00 - 08:00)";
+}
 
 try {
     $database = new Database();
@@ -62,8 +68,9 @@ try {
     $total_sales = $stmt->fetchColumn() ?: 0;
 
     // 6. Cobros de consultas
-    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta = ?");
-    $stmt->execute([$date]);
+    // Updated to use strict shift range
+    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ?");
+    $stmt->execute([$start_time, $end_time]);
     $total_billings = $stmt->fetchColumn() ?: 0;
 
     // 7. Ingresos totales
@@ -151,7 +158,7 @@ try {
     $wa_url = "https://wa.me/50239029076?text=" . urlencode($wa_text);
 
     // Título de la página
-    $page_title = "Reporte de Jornada - $date - Centro Médico RS";
+    $page_title = "Reporte de Jornada - $date - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
@@ -163,7 +170,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Jornada - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Reporte de Jornada - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -366,9 +373,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1435,7 +1441,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1584,7 +1590,7 @@ try {
 
                 <!-- Información de generación -->
                 <div class="generation-info">
-                    Generado automáticamente por Centro Médico RS Management System -
+                    Generado automáticamente por Centro Médico Herrera Saenz Management System -
                     <?php echo date('d/m/Y H:i'); ?>
                 </div>
             </div>

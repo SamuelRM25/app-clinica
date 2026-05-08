@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Reportes - Centro Médico RS
+// index.php - Módulo de Reportes - Centro Médico Herrera Saenz
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 
@@ -84,13 +84,14 @@ try {
     $stmt_actual_profit = $conn->prepare("
         SELECT 
             SUM(dv.cantidad_vendida * dv.precio_unitario) as revenue,
-            SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, c.precio_unidad, 0)) as cost
+            SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)) as cost
         FROM detalle_ventas dv
         JOIN ventas v ON dv.id_venta = v.id_venta
         JOIN inventario i ON dv.id_inventario = i.id_inventario
         LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
-        LEFT JOIN compras c ON i.id_purchase_item = c.id_compras
         WHERE v.fecha_venta BETWEEN ? AND ?
+        AND v.tipo_pago != 'Traslado'
+        AND dv.precio_unitario > 0
     ");
     $stmt_actual_profit->execute([$start_datetime, $end_datetime]);
     $profit_data = $stmt_actual_profit->fetch(PDO::FETCH_ASSOC);
@@ -113,8 +114,18 @@ try {
     $stmt_billings->execute([$fecha_inicio, $fecha_fin]);
     $total_billings = $stmt_billings->fetchColumn() ?: 0;
 
+    // 6.b Hospitalizaciones (Cuentas de encamamientos dados de alta)
+    $stmt_hosp = $conn->prepare("
+        SELECT SUM(total_general) 
+        FROM cuenta_hospitalaria ch 
+        JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento 
+        WHERE e.fecha_alta BETWEEN ? AND ?
+    ");
+    $stmt_hosp->execute([$start_datetime, $end_datetime]);
+    $total_hospitalization = $stmt_hosp->fetchColumn() ?: 0;
+
     // 7. Ingresos brutos totales
-    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_exams_revenue + $total_billings;
+    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_exams_revenue + $total_billings + $total_hospitalization;
 
     // 8. Utilidad Bruta
     $total_gross_profit = $total_gross_revenue - $sales_cost;
@@ -140,7 +151,8 @@ try {
         'Ventas' => (float) $total_sales_meds,
         'Consultas' => (float) $total_billings,
         'Procedimientos' => (float) $total_procedures,
-        'Exámenes' => (float) $total_exams_revenue
+        'Exámenes' => (float) $total_exams_revenue,
+        'Hospitalización' => (float) $total_hospitalization
     ];
 
     // C. Top 5 Medicamentos más vendidos
@@ -150,6 +162,8 @@ try {
         JOIN inventario i ON dv.id_inventario = i.id_inventario
         JOIN ventas v ON dv.id_venta = v.id_venta
         WHERE v.fecha_venta BETWEEN ? AND ?
+        AND v.tipo_pago != 'Traslado'
+        AND dv.precio_unitario > 0
         GROUP BY i.id_inventario
         ORDER BY total_vendido DESC
         LIMIT 5
@@ -176,7 +190,156 @@ try {
     $total_medicamentos = $conn->query("SELECT COUNT(*) FROM inventario WHERE cantidad_med > 0")->fetchColumn();
 
     // Título de la página
-    $page_title = "Reportes - Centro Médico RS";
+    $page_title = "Reportes - Centro Médico Herrera Saenz";
+
+    // ============ REPORTE DE RENTABILIDAD DE FARMACIA ============
+
+    // Obtener fechas para filtro de rentabilidad (predeterminado: mes actual)
+    $profit_start = $_GET['profit_start'] ?? date('Y-m-01');
+    $profit_end = $_GET['profit_end'] ?? date('Y-m-d');
+
+    // Ajustar final del día para la fecha fin
+    $profit_end_datetime = $profit_end . ' 23:59:59';
+    $profit_start_datetime = $profit_start . ' 00:00:00';
+
+    $stmt_profitability = $conn->prepare("
+        SELECT 
+            i.nom_medicamento,
+            i.codigo_barras,
+            SUM(dv.cantidad_vendida) as cantidad_total,
+            SUM(dv.cantidad_vendida * dv.precio_unitario) as total_venta,
+            SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)) as total_costo
+        FROM detalle_ventas dv
+        JOIN ventas v ON dv.id_venta = v.id_venta
+        JOIN inventario i ON dv.id_inventario = i.id_inventario
+        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+        WHERE v.fecha_venta BETWEEN ? AND ?
+        AND v.tipo_pago != 'Traslado'
+        AND dv.precio_unitario > 0
+        AND COALESCE(pi.unit_cost, 0) > 0
+        GROUP BY i.id_inventario, i.nom_medicamento, i.codigo_barras
+        ORDER BY total_venta DESC
+    ");
+
+    $stmt_profitability->execute([$profit_start_datetime, $profit_end_datetime]);
+    $profitability_data = $stmt_profitability->fetchAll(PDO::FETCH_ASSOC);
+
+    // Calcular totales generales del reporte
+    $total_profit_revenue = 0;
+    $total_profit_cost = 0;
+
+    foreach ($profitability_data as $row) {
+        $total_profit_revenue += $row['total_venta'];
+        $total_profit_cost += $row['total_costo'];
+    }
+
+    $total_profit_amount = $total_profit_revenue - $total_profit_cost;
+    $total_profit_margin = $total_profit_revenue > 0 ? ($total_profit_amount / $total_profit_revenue) * 100 : 0;
+
+    // ============ REPORTE DETALLADO DE LABORATORIOS ============
+
+    $labs_start_month = $_GET['labs_start'] ?? null;
+    $labs_end_month = $_GET['labs_end'] ?? null;
+
+    $labs_where = "";
+    $labs_params = [];
+    if ($labs_start_month && $labs_end_month) {
+        $labs_where = "AND ol.fecha_orden BETWEEN ? AND ?";
+        $labs_params = [$labs_start_month . '-01 00:00:00', date('Y-m-t 23:59:59', strtotime($labs_end_month . '-01'))];
+    } elseif ($labs_start_month) {
+        $labs_where = "AND ol.fecha_orden >= ?";
+        $labs_params = [$labs_start_month . '-01 00:00:00'];
+    } elseif ($labs_end_month) {
+        $labs_where = "AND ol.fecha_orden <= ?";
+        $labs_params = [date('Y-m-t 23:59:59', strtotime($labs_end_month . '-01'))];
+    }
+
+    $stmt_labs_detail = $conn->prepare("
+        SELECT 
+            p.nombre as paciente_nombre,
+            p.apellido as paciente_apellido,
+            cp.nombre_prueba,
+            DATE(ol.fecha_orden) as fecha,
+            TIME(ol.fecha_orden) as hora,
+            cp.precio
+        FROM ordenes_laboratorio ol
+        JOIN orden_pruebas op ON ol.id_orden = op.id_orden
+        JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
+        JOIN pacientes p ON ol.id_paciente = p.id_paciente
+        WHERE op.estado != 'Devuelto'
+        $labs_where
+        ORDER BY ol.fecha_orden DESC
+    ");
+    $stmt_labs_detail->execute($labs_params);
+    $labs_detail_data_raw = $stmt_labs_detail->fetchAll(PDO::FETCH_ASSOC);
+
+    $total_labs_report = 0;
+    $grouped_labs = [];
+    foreach ($labs_detail_data_raw as $lab) {
+        $total_labs_report += $lab['precio'];
+
+        $timestamp = strtotime($lab['fecha']);
+        // Formatear mes en español
+        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $mes_num = (int)date('m', $timestamp) - 1;
+        $anio = date('Y', $timestamp);
+        $mes_nombre = $meses[$mes_num] . ' ' . $anio;
+        
+        $dia_str = date('d/m/Y', $timestamp);
+        $paciente_nombre = $lab['paciente_nombre'] . ' ' . $lab['paciente_apellido'];
+        
+        if (!isset($grouped_labs[$mes_nombre])) {
+            $grouped_labs[$mes_nombre] = ['total' => 0, 'count' => 0, 'dias' => []];
+        }
+        $grouped_labs[$mes_nombre]['total'] += $lab['precio'];
+        $grouped_labs[$mes_nombre]['count'] += 1;
+        
+        if (!isset($grouped_labs[$mes_nombre]['dias'][$dia_str])) {
+            $grouped_labs[$mes_nombre]['dias'][$dia_str] = ['total' => 0, 'count' => 0, 'pacientes' => []];
+        }
+        $grouped_labs[$mes_nombre]['dias'][$dia_str]['total'] += $lab['precio'];
+        $grouped_labs[$mes_nombre]['dias'][$dia_str]['count'] += 1;
+        
+        if (!isset($grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre])) {
+            $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre] = ['total' => 0, 'count' => 0, 'labs' => []];
+        }
+        $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['total'] += $lab['precio'];
+        $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['count'] += 1;
+        
+        $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['labs'][] = $lab;
+    }
+
+
+    // ============ REPORTE DE TRASLADOS (Acceso Restringido) ============
+    $can_view_transfers = in_array($user_id, [1, 9, 10]);
+    $transfers_data = [];
+    $total_transfers_amount = 0;
+
+    if ($can_view_transfers) {
+        $stmt_transfers = $conn->prepare("
+            SELECT 
+                i.nom_medicamento,
+                dv.cantidad_vendida,
+                v.fecha_venta,
+                v.nombre_cliente as destino,
+                v.total as valor_traslado,
+                CONCAT(u.nombre, ' ', u.apellido) as realizado_por
+            FROM ventas v
+            JOIN detalle_ventas dv ON v.id_venta = dv.id_venta
+            JOIN inventario i ON dv.id_inventario = i.id_inventario
+            LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
+            WHERE v.tipo_pago = 'Traslado'
+            AND v.fecha_venta BETWEEN ? AND ?
+            ORDER BY v.fecha_venta DESC
+        ");
+        $stmt_transfers->execute([$profit_start_datetime, $profit_end_datetime]);
+        $transfers_data = $stmt_transfers->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($transfers_data as $transfer) {
+            $total_transfers_amount += $transfer['valor_traslado'];
+        }
+    }
+
 
 } catch (PDOException $e) {
     // Error específico de base de datos
@@ -202,7 +365,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Reportes - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Reportes - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -404,9 +567,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1141,7 +1303,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1332,6 +1494,14 @@ try {
                                                 </span>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>Hospitalización</td>
+                                            <td class="text-end">
+                                                <span class="amount-badge income">
+                                                    Q<?php echo number_format($total_hospitalization, 2); ?>
+                                                </span>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1453,7 +1623,235 @@ try {
                 </div>
             </div>
 
-            <!-- Sección de datos detallados -->
+            <!-- Nuevo Reporte Detallado de Laboratorios -->
+            <div class="content-section animate-in delay-4 mt-5">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-droplet-half section-title-icon" style="color: var(--color-info);"></i>
+                        Reporte Detallado de Laboratorios
+                    </h3>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="amount-badge income">
+                            Total: Q
+                            <?php echo number_format($total_labs_report, 2); ?>
+                        </span>
+                        <?php if ($user_type === 'admin'): ?>
+                            <a href="export_labs.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                                target="_blank" class="action-btn" style="background: var(--color-success)">
+                                <i class="bi bi-file-earmark-excel me-2"></i>
+                                Exportar Laboratorios
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <style>
+                    .report-details {
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        margin-bottom: var(--space-sm);
+                        background: var(--color-card);
+                        overflow: hidden;
+                    }
+                    .report-details > summary {
+                        padding: var(--space-md);
+                        background: var(--color-surface);
+                        cursor: pointer;
+                        font-weight: 600;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        list-style: none; /* Hide default arrow */
+                        user-select: none;
+                        transition: background var(--transition-base);
+                    }
+                    .report-details > summary::-webkit-details-marker {
+                        display: none;
+                    }
+                    .report-details > summary:hover {
+                        background: var(--color-border);
+                    }
+                    .report-details-body {
+                        padding: var(--space-md);
+                        border-top: 1px solid var(--color-border);
+                    }
+                    .report-details.level-2 {
+                        border-color: rgba(0,0,0,0.05);
+                    }
+                    .report-details.level-2 > summary {
+                        background: rgba(var(--color-info-rgb), 0.05);
+                        padding: var(--space-sm) var(--space-md);
+                    }
+                    .report-details.level-3 > summary {
+                        background: rgba(var(--color-primary-rgb), 0.05);
+                        padding: var(--space-sm) var(--space-md);
+                    }
+                    details > summary::before {
+                        content: '\F282'; /* bi-chevron-down */
+                        font-family: 'bootstrap-icons';
+                        margin-right: 10px;
+                        display: inline-block;
+                        transition: transform 0.2s ease-in-out;
+                    }
+                    details[open] > summary::before {
+                        transform: rotate(180deg);
+                    }
+                </style>
+
+                <div class="custom-accordion-wrapper" id="labsAccordion">
+                    <?php if (empty($grouped_labs)): ?>
+                        <div class="text-center py-4 text-muted border rounded" style="background: var(--color-surface);">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No se encontraron laboratorios realizados en este período.
+                        </div>
+                    <?php else: ?>
+                        <?php 
+                        // Obtener el nombre del mes actual para expandirlo por defecto
+                        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                        $mes_actual_nombre = $meses[(int)date('n') - 1] . ' ' . date('Y');
+                        
+                        $mes_id = 0; foreach ($grouped_labs as $mes_nombre => $mes_data): $mes_id++; 
+                            $is_current_month = ($mes_nombre === $mes_actual_nombre);
+                        ?>
+                            <details class="report-details level-1" name="mes_accordion" <?php echo $is_current_month ? 'open' : ''; ?>>
+                                <summary class="custom-summary">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i> 
+                                        <span><?php echo $mes_nombre; ?></span>
+                                        <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?> labs</span>
+                                    </div>
+                                    <span class="text-success">Q <?php echo number_format($mes_data['total'], 2); ?></span>
+                                </summary>
+                                <div class="report-details-body">
+                                    <?php $dia_id = 0; foreach ($mes_data['dias'] as $dia_str => $dia_data): $dia_id++; ?>
+                                        <details class="report-details level-2" name="dia_accordion_<?php echo $mes_id; ?>">
+                                            <summary class="custom-summary">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-calendar-day me-2 text-info"></i> 
+                                                    <span>Día: <?php echo $dia_str; ?></span>
+                                                    <span class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?> labs</span>
+                                                </div>
+                                                <span class="text-success fw-semibold">Q <?php echo number_format($dia_data['total'], 2); ?></span>
+                                            </summary>
+                                            <div class="report-details-body">
+                                                <?php $pac_id = 0; foreach ($dia_data['pacientes'] as $paciente_nombre => $pac_data): $pac_id++; ?>
+                                                    <details class="report-details level-3" name="paciente_accordion_<?php echo $mes_id . '_' . $dia_id; ?>">
+                                                        <summary class="custom-summary">
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="bi bi-person me-2 text-secondary"></i> 
+                                                                <span><?php echo htmlspecialchars($paciente_nombre); ?></span>
+                                                                <span class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?> labs</span>
+                                                            </div>
+                                                            <span class="text-success fw-medium">Q <?php echo number_format($pac_data['total'], 2); ?></span>
+                                                        </summary>
+                                                        <div class="report-details-body p-0">
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-hover mb-0" style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
+                                                                    <thead style="background: var(--color-surface);">
+                                                                        <tr>
+                                                                            <th class="ps-3 border-0">Examen (Prueba)</th>
+                                                                            <th class="border-0">Hora</th>
+                                                                            <th class="text-end pe-3 border-0">Precio</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <?php foreach ($pac_data['labs'] as $lab): ?>
+                                                                            <tr>
+                                                                                <td class="ps-3 border-bottom" style="border-color: var(--color-border);">
+                                                                                    <span class="badge" style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
+                                                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td class="border-bottom" style="border-color: var(--color-border);">
+                                                                                    <small style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
+                                                                                </td>
+                                                                                <td class="text-end pe-3 fw-bold text-success border-bottom" style="border-color: var(--color-border);">
+                                                                                    Q <?php echo number_format($lab['precio'], 2); ?>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <?php endforeach; ?>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </details>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </details>
+                                    <?php endforeach; ?>
+                                </div>
+                            </details>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            </div>
+
+            <!-- Nuevo Reporte de Traslados (Restringido) -->
+            <?php if ($can_view_transfers): ?>
+                <div class="content-section animate-in delay-4 mt-5">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
+                            Reporte de Traslados (Dispensario)
+                        </h3>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <span class="amount-badge expense">
+                                Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
+                            </span>
+                            <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                                target="_blank" class="action-btn" style="background: var(--color-success)">
+                                <i class="bi bi-file-earmark-excel me-2"></i>
+                                Exportar Traslados
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Medicamento</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th>Destino / Paciente</th>
+                                    <th>Realizado por</th>
+                                    <th>Fecha y Hora</th>
+                                    <th class="text-end">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($transfers_data as $transfer): ?>
+                                    <tr>
+                                        <td class="fw-semibold"><?php echo htmlspecialchars($transfer['nom_medicamento']); ?></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">
+                                                <?php echo $transfer['cantidad_vendida']; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($transfer['destino']); ?></td>
+                                        <td><?php echo htmlspecialchars($transfer['realizado_por']); ?></td>
+                                        <td>
+                                            <?php echo date('d/m/Y h:i A', strtotime($transfer['fecha_venta'])); ?>
+                                        </td>
+                                        <td class="text-end fw-bold text-danger">
+                                            Q<?php echo number_format($transfer['valor_traslado'], 2); ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($transfers_data)): ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            No se encontraron traslados en este período.
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="row g-4 animate-in delay-2">
                 <!-- Procedimientos menores -->
                 <div class="col-lg-6">
@@ -1649,12 +2047,155 @@ try {
                     </div>
                 </div>
             </div>
+
+            <!-- SECCIÓN RENTABILIDAD DE FARMACIA -->
+            <div class="content-section animate-in" style="margin-top: 2rem;">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-cash-stack section-title-icon"></i>
+                        Rentabilidad Farmacia
+                    </h3>
+                    <div class="page-actions">
+                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=csv"
+                            target="_blank" class="action-btn secondary">
+                            <i class="bi bi-filetype-csv"></i> CSV
+                        </a>
+                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=excel"
+                            target="_blank" class="action-btn secondary">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+                        </a>
+                        <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=print"
+                            target="_blank" class="action-btn secondary">
+                            <i class="bi bi-printer"></i> PDF
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filter-panel">
+                    <form method="GET" class="filter-form">
+                        <div class="form-group">
+                            <label class="form-label">Fecha Inicio</label>
+                            <input type="date" name="profit_start" class="form-control"
+                                value="<?php echo $profit_start; ?>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha Fin</label>
+                            <input type="date" name="profit_end" class="form-control"
+                                value="<?php echo $profit_end; ?>">
+                        </div>
+                        <div class="form-group" style="flex: 0; min-width: 150px;">
+                            <input type="hidden" name="fecha_filtro" value="<?php echo $fecha_filtro ?? ''; ?>">
+                            <button type="submit" class="action-btn primary w-100">
+                                <i class="bi bi-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Resumen de Estadísticas -->
+                <div class="stats-grid" style="margin-top: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                        <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?></div>
+                        <div class="stat-label">Ventas Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="bi bi-cart-x"></i>
+                        </div>
+                        <div class="stat-value">Q<?php echo number_format($total_profit_cost, 2); ?></div>
+                        <div class="stat-label">Costos Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div class="stat-value">Q<?php echo number_format($total_profit_amount, 2); ?></div>
+                        <div class="stat-label">Ganancia Neta (<?php echo number_format($total_profit_margin, 1); ?>%)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Detalles -->
+                <div class="table-responsive" style="margin-top: 2rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">P. Venta</th>
+                                <th class="text-end">Costo</th>
+                                <th class="text-end">Total Venta</th>
+                                <th class="text-end">Total Costo</th>
+                                <th class="text-end">Ganancia</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($profitability_data as $row):
+                                $ganancia = $row['total_venta'] - $row['total_costo'];
+                                $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+
+                                $p_venta_unit = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
+                                $p_costo_unit = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
+                                ?>
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">
+                                            <?php echo htmlspecialchars($row['nom_medicamento']); ?>
+                                        </div>
+                                        <?php if (!empty($row['codigo_barras'])): ?>
+                                            <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
+                                                <i class="bi bi-upc"></i> <?php echo htmlspecialchars($row['codigo_barras']); ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="amount-badge"><?php echo $row['cantidad_total']; ?></span>
+                                    </td>
+                                    <td class="text-end text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
+                                    <td class="text-end text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
+                                    <td class="text-end" style="font-weight: 600;">
+                                        Q<?php echo number_format($row['total_venta'], 2); ?></td>
+                                    <td class="text-end text-muted">Q<?php echo number_format($row['total_costo'], 2); ?>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="amount-badge <?php echo $ganancia >= 0 ? 'income' : 'expense'; ?>">
+                                            Q<?php echo number_format($ganancia, 2); ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span
+                                            style="font-weight: 700; color: <?php echo $margen > 30 ? 'var(--color-success)' : ($margen > 15 ? 'var(--color-warning)' : 'var(--color-danger)'); ?>;">
+                                            <?php echo number_format($margen, 0); ?>%
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($profitability_data)): ?>
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div style="opacity: 0.5; margin-bottom: 1rem;">
+                                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <div style="color: var(--color-text-secondary);">No se encontraron ventas en el
+                                            rango seleccionado</div>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Reportes - Centro Médico RS
+        // Módulo de Reportes - Centro Médico Herrera Saenz
         // JavaScript para funcionalidades del módulo de reportes
 
         (function () {
@@ -1824,7 +2365,7 @@ try {
                                 labels: Object.keys(categoryData),
                                 datasets: [{
                                     data: Object.values(categoryData),
-                                    backgroundColor: ['#7c90db', '#8dd7bf', '#f8b195', '#38bdf8'],
+                                    backgroundColor: ['#7c90db', '#8dd7bf', '#f8b195', '#38bdf8', '#fbbf24'],
                                     borderWidth: 0,
                                     hoverOffset: 15
                                 }]

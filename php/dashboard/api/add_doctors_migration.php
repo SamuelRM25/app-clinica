@@ -1,6 +1,6 @@
 <?php
 // api/add_doctors_migration.php
-require_once '../../config/database.php';
+require_once '../../../config/database.php';
 
 header('Content-Type: text/plain');
 
@@ -32,7 +32,7 @@ try {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM usuarios WHERE usuario = ?");
         $stmt->execute([$doc['usuario']]);
         if ($stmt->fetchColumn() == 0) {
-            $sql = "INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad) VALUES (?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, clinica, telefono, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmtInsert = $conn->prepare($sql);
             $stmtInsert->execute([
                 $doc['usuario'],
@@ -40,7 +40,10 @@ try {
                 $doc['nombre'],
                 $doc['apellido'],
                 $doc['tipoUsuario'],
-                $doc['especialidad']
+                $doc['especialidad'],
+                'Centro Médico Herrera Saenz',
+                '0000',
+                $doc['usuario'] . '@cmhs.com'
             ]);
             echo "Doctor agregado: " . $doc['nombre'] . " " . $doc['apellido'] . "\n";
         } else {

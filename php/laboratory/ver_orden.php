@@ -256,19 +256,26 @@ try {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($pruebas as $prueba): ?>
+                    <?php
+                    $total = 0;
+                    foreach ($pruebas as $prueba):
+                        $precio = isset($prueba['precio']) ? $prueba['precio'] : 0;
+                        $total += $precio;
+                        ?>
                         <tr>
                             <td><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></td>
                             <td><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></td>
                             <td><?php echo $prueba['estado']; ?></td>
-                            <td><?php
-                            // Check if precio exists in the prueba array (from catalogo_pruebas join)
-                            $precio = isset($prueba['precio']) ? $prueba['precio'] : 0;
-                            echo 'Q' . number_format($precio, 2);
-                            ?></td>
+                            <td><?php echo 'Q' . number_format($precio, 2); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
+                <tfoot>
+                    <tr style="background-color: #f8f9fa; font-weight: bold;">
+                        <td colspan="3" style="text-align: right;">TOTAL:</td>
+                        <td><?php echo 'Q' . number_format($total, 2); ?></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
 

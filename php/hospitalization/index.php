@@ -1,5 +1,5 @@
 <?php
-// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico RS
+// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico Herrera Saenz
 session_start();
 
 // Verificar sesión activa
@@ -136,7 +136,7 @@ try {
     die("Error: " . $e->getMessage());
 }
 
-$page_title = "Gestión de Hospitalización - Centro Médico RS";
+$page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -229,12 +229,11 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
             bottom: 0;
             pointer-events: none;
             z-index: -1;
-            opacity: 0.4;
+            opacity: 0.3;
             background-image:
                 radial-gradient(circle at 20% 30%, rgba(124, 144, 219, 0.08) 0%, transparent 30%),
                 radial-gradient(circle at 80% 70%, rgba(141, 215, 191, 0.08) 0%, transparent 30%),
                 radial-gradient(circle at 40% 80%, rgba(248, 177, 149, 0.08) 0%, transparent 30%);
-            animation: marbleFloat 20s ease-in-out infinite;
         }
 
         @keyframes marbleFloat {
@@ -785,7 +784,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <div class="header-controls">
@@ -828,6 +827,10 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
                 <p class="page-subtitle">Control de camas, pacientes hospitalizados y seguimiento médico</p>
 
                 <div class="page-actions">
+                    <button class="action-btn secondary" onclick="openDischargesModal()">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                        Reporte de Altas
+                    </button>
                     <button class="action-btn" onclick="window.location.href='ingresar_paciente.php'">
                         <i class="bi bi-person-plus-fill"></i>
                         Ingresar Paciente
@@ -1047,6 +1050,71 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
         </main>
     </div>
 
+    <!-- Modal Reporte de Altas -->
+    <div class="modal fade" id="dischargesModal" tabindex="-1" aria-labelledby="dischargesModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content"
+                style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--color-border);">
+                    <h5 class="modal-title" id="dischargesModalLabel">
+                        <i class="bi bi-file-earmark-spreadsheet text-primary"></i>
+                        Reporte de Altas y Facturación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        style="filter: var(--bs-reboot-close-filter);"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="report_start_date"
+                                value="<?php echo date('Y-m-01'); ?>">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha Fin</label>
+                            <input type="date" class="form-control" id="report_end_date"
+                                value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="action-btn w-100" onclick="generateDischargesReport()">
+                                <i class="bi bi-search"></i> Generar Reporte
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="report_results_container" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="data-table" id="discharges_report_table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha Alta</th>
+                                        <th>Paciente</th>
+                                        <th>Tipo Ingreso</th>
+                                        <th>Médico</th>
+                                        <th>Días</th>
+                                        <th class="text-end">Total Generado</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report_table_body">
+                                    <!-- Results will be injected here -->
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid var(--color-border); font-weight: bold;">
+                                        <td colspan="5" class="text-end">TOTAL GENERAL:</td>
+                                        <td class="text-end" id="report_total_amount">Q0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1091,6 +1159,77 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
 
         function viewPatientDetails(encamamentoId) {
             window.location.href = 'detalle_encamamiento.php?id=' + encamamentoId;
+        }
+
+        const dischargesModal = new bootstrap.Modal(document.getElementById('dischargesModal'));
+
+        function openDischargesModal() {
+            dischargesModal.show();
+        }
+
+        async function generateDischargesReport() {
+            const start = document.getElementById('report_start_date').value;
+            const end = document.getElementById('report_end_date').value;
+            const container = document.getElementById('report_results_container');
+            const tbody = document.getElementById('report_table_body');
+            const totalElem = document.getElementById('report_total_amount');
+
+            if (!start || !end) {
+                Swal.fire('Error', 'Debe seleccionar ambas fechas', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/get_discharges_report.php?start=${start}&end=${end}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al obtener el reporte');
+                }
+
+                tbody.innerHTML = '';
+                let totalGeneral = 0;
+
+                if (data.report.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No se encontraron altas en este periodo</td></tr>';
+                } else {
+                    data.report.forEach(row => {
+                        const total = parseFloat(row.total_general) || 0;
+                        totalGeneral += total;
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                        <td>${new Date(row.fecha_alta).toLocaleDateString()}</td>
+                        <td><strong>${row.nombre_paciente} ${row.apellido_paciente}</strong></td>
+                        <td><span class="badge ${getTipoBadgeClass(row.tipo_ingreso)}">${row.tipo_ingreso}</span></td>
+                        <td>Dr(a). ${row.nombre_doctor} ${row.apellido_doctor}</td>
+                        <td>${row.dias_hospitalizado}</td>
+                        <td class="text-end">Q${total.toLocaleString('es-GT', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info" onclick="viewPatientDetails(${row.id_encamamiento})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                totalElem.innerText = `Q${totalGeneral.toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
+                container.style.display = 'block';
+
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        function getTipoBadgeClass(tipo) {
+            switch (tipo) {
+                case 'Urgente': return 'badge-urgente';
+                case 'Programado': return 'badge-programado';
+                case 'Referido': return 'badge-referido';
+                default: return 'bg-secondary';
+            }
         }
 
         console.log('Hospitalización Dashboard - CMHS v3.0');

@@ -1,5 +1,5 @@
 <?php
-// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico RS
+// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -18,7 +18,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 // Título de la página
-$page_title = "Historial de Procedimientos - Centro Médico RS";
+$page_title = "Historial de Procedimientos - Centro Médico Herrera Saenz";
 
 // Configuración de paginación
 $limit = 20; // Registros por página
@@ -81,7 +81,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico RS">
+    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -280,9 +280,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1791,7 +1790,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2106,7 +2105,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Historial de Procedimientos Reingenierizado - Centro Médico RS
+        // Historial de Procedimientos Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -2401,7 +2400,7 @@ try {
                     // Crear contenido del reporte
                     const reportContent = `
                     Reporte de Procedimientos Menores
-                    Centro Médico RS
+                    Centro Médico Herrera Saenz
                     Fecha: ${date}
                     ========================================
                     

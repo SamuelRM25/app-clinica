@@ -44,6 +44,11 @@ try {
     $edad = date_diff(date_create($orden['fecha_nacimiento']), date_create('today'))->y;
     $genero = $orden['genero'];
 
+    // 3. Obtener el archivo de resultados global de la orden
+    $stmt_archivo = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? ORDER BY id_archivo DESC LIMIT 1");
+    $stmt_archivo->execute([$id_orden]);
+    $archivo_orden = $stmt_archivo->fetch(PDO::FETCH_ASSOC);
+
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -175,6 +180,29 @@ try {
             font-size: 12px;
         }
 
+        .result-file-container {
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+        }
+
+        .result-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-link-container {
+            padding: 15px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
         @media print {
             body {
                 padding: 0;
@@ -197,11 +225,11 @@ try {
 
     <header class="report-header">
         <div class="hospital-info">
-            <h1>Centro Médico RS</h1>
+            <h1>CENTRO MÉDICO HERRERA SAENZ</h1>
             <p>Laboratorio Clínico Especializado</p>
-            <p>Amatitlán, Guatemala | Tel: 0000-0000</p>
+            <p>Amatitlán, Guatemala | Tel: 6633-XXXX</p>
         </div>
-        <img src="../../assets/img/cmrs.png" alt="Logo" class="logo">
+        <img src="../../assets/img/herrerasaenz.png" alt="Logo" class="logo">
     </header>
 
     <div class="patient-info">
@@ -230,6 +258,31 @@ try {
             Dr. <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?>
         </div>
     </div>
+
+    <!-- Archivo de Resultados Adjunto -->
+    <?php if ($archivo_orden):
+        $file_url = "api/get_result_file.php?id=" . $archivo_orden['id_archivo'];
+        $mime_type = $archivo_orden['tipo_contenido'];
+        ?>
+        <div class="result-file-container">
+            <h3 style="color: #7c90db; font-size: 16px; margin-top: 0; margin-bottom: 15px; text-align: left;">
+                <i class="bi bi-file-earmark-medical"></i> Archivo de Resultados Adjunto
+            </h3>
+
+            <?php if (strpos($mime_type, 'image') !== false): ?>
+                <img src="<?php echo htmlspecialchars($file_url); ?>" class="result-img" alt="Resultado Adjunto">
+            <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
+                <div class="pdf-link-container">
+                    <i class="bi bi-file-pdf text-danger" style="font-size: 24px;"></i>
+                    <p style="margin: 10px 0 0 0; font-weight: 600;">Se adjuntó un archivo PDF de resultados.</p>
+                    <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank" class="no-print"
+                        style="color: #7c90db; text-decoration: none; font-size: 13px;">
+                        Haga clic aquí para visualizar el PDF
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
     <?php foreach ($pruebas as $prueba): ?>
         <section class="test-section">

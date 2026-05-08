@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Cobros - Centro Médico RS
+// index.php - Módulo de Cobros - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -63,7 +63,7 @@ try {
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Cobros - Centro Médico RS";
+    $page_title = "Cobros - Centro Médico Herrera Saenz";
 
     // Obtener estadísticas rápidas
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE()");
@@ -86,7 +86,8 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Cobros - Centro Médico RS - Sistema de gestión de cobros médicos">
+    <meta name="description"
+        content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -288,9 +289,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1386,7 +1386,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1701,7 +1701,9 @@ try {
                             <select class="form-select" id="id_doctor" name="id_doctor" required>
                                 <option value="">Seleccione un médico...</option>
                                 <?php foreach ($doctores as $doctor): ?>
-                                    <option value="<?php echo $doctor['idUsuario']; ?>">
+                                    <option value="<?php echo $doctor['idUsuario']; ?>"
+                                        data-nombre="<?php echo htmlspecialchars($doctor['nombre']); ?>"
+                                        data-apellido="<?php echo htmlspecialchars($doctor['apellido']); ?>">
                                         Dr(a).
                                         <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
                                     </option>
@@ -1749,7 +1751,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Cobros Reingenierizado - Centro Médico RS
+        // Módulo de Cobros Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -1922,6 +1924,27 @@ try {
                                 }
                                 break;
                             default: price = (type === 'Consulta') ? 100 : 0; break;
+                        }
+
+                        // Overrides based on name
+                        const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
+                        if (selectedOption) {
+                            const nombre = (selectedOption.getAttribute('data-nombre') || '').toLowerCase();
+                            const apellido = (selectedOption.getAttribute('data-apellido') || '').toLowerCase();
+                            
+                            // Dr. Estuardo Rivas - Q400 off-hours/weekends
+                            if (nombre.includes('estuardo') && apellido.includes('rivas')) {
+                                if (day === 0 || day === 6 || hour >= 16) {
+                                    price = 400;
+                                }
+                            }
+                            
+                            // Dra. Libny - Q300 off-hours/weekends
+                            if (nombre.includes('libny')) {
+                                if (day === 0 || day === 6 || hour >= 16) {
+                                    price = 300;
+                                }
+                            }
                         }
                         montoInput.value = price;
                     };

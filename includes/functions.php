@@ -80,4 +80,31 @@ function output_keep_alive_script()
     });
     </script>";
 }
+
+/**
+ * Compresses an image from source to destination with specified quality.
+ * Supports JPG, JPEG, and PNG.
+ */
+function compressImage($sourcePath, $destinationPath, $quality = 60)
+{
+    $info = getimagesize($sourcePath);
+
+    if ($info['mime'] == 'image/jpeg') {
+        $image = imagecreatefromjpeg($sourcePath);
+        imagejpeg($image, $destinationPath, $quality);
+    } elseif ($info['mime'] == 'image/png') {
+        $image = imagecreatefrompng($sourcePath);
+        // Scale quality 0-100 to 0-9 for PNG
+        $pngQuality = ($quality - 100) / 11.111111;
+        $pngQuality = round(abs($pngQuality));
+        imagepng($image, $destinationPath, $pngQuality);
+    } else {
+        // Fallback for other formats (like PDF), just move if possible
+        // This function is mainly for images though
+        return false;
+    }
+    
+    imagedestroy($image);
+    return true;
+}
 ?>

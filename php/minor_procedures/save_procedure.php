@@ -95,7 +95,4 @@ try {
     header("Location: index.php?status=error&message=" . urlencode($e->getMessage()));
     exit;
 }
-
-// Finalizar buffer y enviar
-ob_end_flush();
 ?>

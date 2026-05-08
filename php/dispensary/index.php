@@ -1,5 +1,5 @@
 <?php
-// inventory/index.php - Módulo de Ventas - Centro Médico RS
+// inventory/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -82,7 +82,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico RS";
+    $page_title = "Ventas - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
@@ -94,7 +94,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas del Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -110,6 +110,9 @@ try {
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- FullCalendar -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet'>
 
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -296,9 +299,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1421,7 +1423,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1585,7 +1587,15 @@ try {
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end mb-3">
+                        <div class="d-flex justify-content-end mb-3 gap-2">
+                            <button class="btn btn-info btn-sm fw-bold shadow-sm"
+                                onclick="window.dashboard.pos.openHistory()">
+                                <i class="bi bi-clock-history me-1"></i> Historial
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm fw-bold shadow-sm"
+                                onclick="window.dashboard.pos.openHistory('Traslado')">
+                                <i class="bi bi-arrow-left-right me-1"></i> Historial Traslados
+                            </button>
                             <button class="btn btn-warning btn-sm fw-bold shadow-sm"
                                 onclick="window.dashboard.pos.openShiftReport()">
                                 <i class="bi bi-receipt-cutoff me-1"></i> Corte de Jornada
@@ -1648,7 +1658,7 @@ try {
                                 <label class="form-label">Precio Unitario</label>
                                 <div class="d-flex align-items-center">
                                     <span class="me-2">Q</span>
-                                    <input type="number" class="form-input" id="unitPrice" step="0.01" min="0" required
+                                    <input type="number" class="form-input" id="unitPrice" step="1" min="0" required
                                         style="flex: 1;" readonly>
                                 </div>
                             </div>
@@ -1749,6 +1759,104 @@ try {
         </main>
     </div>
 
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+                <div class="modal-header bg-info text-white py-3">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Historial de Ventas (Turno
+                        Actual)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="nav nav-tabs nav-fill" id="historyTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="list-tab" data-bs-toggle="tab"
+                                data-bs-target="#list-pane" type="button" role="tab">
+                                <i class="bi bi-list-ul me-2"></i>Lista
+                            </button>
+                        </li>
+                        <li class="nav-item d-none" id="detail-tab-container" role="presentation">
+                            <button class="nav-link" id="detail-tab" data-bs-toggle="tab"
+                                data-bs-target="#detail-pane" type="button" role="tab"
+                                onclick="window.dashboard.pos.loadTransferDetails()">
+                                <i class="bi bi-box-seam me-2"></i>Detalle por Insumo
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="calendar-tab" data-bs-toggle="tab"
+                                data-bs-target="#calendar-pane" type="button" role="tab"
+                                onclick="window.dashboard.pos.initHistoryCalendar()">
+                                <i class="bi bi-calendar3 me-2"></i>Calendario
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="historyTabContent">
+                        <div class="tab-pane fade show active" id="list-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">Hora</th>
+                                            <th>Cliente</th>
+                                            <th class="text-end">Total</th>
+                                            <th class="text-center pe-4">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody">
+                                        <!-- Data will be injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="historyLoading" class="text-center py-5">
+                                <div class="spinner-border text-info" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando historial...</p>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="detail-pane" role="tabpanel">
+                            <div class="p-3 border-bottom bg-light">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted mb-1">Fecha Inicio</label>
+                                        <input type="date" class="form-control form-control-sm" id="transferStartDate" value="<?php echo date('Y-m-d'); ?>" onchange="window.dashboard.pos.loadTransferDetails()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted mb-1">Fecha Fin</label>
+                                        <input type="date" class="form-control form-control-sm" id="transferEndDate" value="<?php echo date('Y-m-d'); ?>" onchange="window.dashboard.pos.loadTransferDetails()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted mb-1">Buscar Producto</label>
+                                        <input type="text" class="form-control form-control-sm" id="transferSearch" placeholder="Nombre de insumo..." oninput="window.dashboard.pos.loadTransferDetails()">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="bg-light sticky-top">
+                                        <tr>
+                                            <th class="ps-3">Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Realizado Por</th>
+                                            <th>A Quién</th>
+                                            <th class="text-end pe-3">Cant.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="transferDetailsBody">
+                                        <tr><td colspan="5" class="text-center text-muted py-3">Seleccione un rango de fechas</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="calendar-pane" role="tabpanel">
+                            <div id="historyCalendar" class="p-3" style="min-height: 500px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Auth Modal -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -1772,9 +1880,13 @@ try {
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
+
     <!-- JavaScript Optimizado (mismo que dashboard con funcionalidad POS) -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
         // Módulo de Ventas - Punto de Venta
 
         (function () {
@@ -2006,6 +2118,13 @@ try {
                     document.getElementById('btnModeSpecial').className = `btn ${mode === 'special' ? 'btn-warning text-white' : 'btn-outline-warning'}`;
                     document.getElementById('btnModeTransfer').className = `btn ${mode === 'transfer' ? 'btn-danger text-white' : 'btn-outline-danger'}`;
 
+                    // Toggle price editing
+                    if (mode === 'special') {
+                        DOM.unitPrice.removeAttribute('readonly');
+                    } else {
+                        DOM.unitPrice.setAttribute('readonly', true);
+                    }
+
                     // Update UI if item selected
                     if (selectedItem) {
                         this.selectProduct(selectedItem);
@@ -2209,8 +2328,22 @@ try {
                     // Agregar al carrito
                     DOM.addToCartBtn.addEventListener('click', () => this.addToCart());
 
-                    // Permitir Enter en cantidad para agregar
+                    // Permitir Enter en cantidad
                     DOM.quantity.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            // En modos especiales, mover foco a precio en lugar de agregar
+                            if (currentMode === 'public') {
+                                this.addToCart();
+                            } else {
+                                DOM.unitPrice.focus();
+                                DOM.unitPrice.select();
+                            }
+                        }
+                    });
+
+                    // Permitir Enter en precio (para modos especiales)
+                    DOM.unitPrice.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             this.addToCart();
@@ -2477,6 +2610,153 @@ try {
                     });
                 }
 
+                initHistoryCalendar() {
+                    const calendarEl = document.getElementById('historyCalendar');
+                    if (!calendarEl) return;
+
+                    // If already initialized, just refetch
+                    if (this.calendar) {
+                        this.calendar.refetchEvents();
+                        setTimeout(() => this.calendar.updateSize(), 200);
+                        return;
+                    }
+
+                    this.calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'dayGridMonth',
+                        locale: 'es',
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek'
+                        },
+                        events: 'get_transfer_events.php',
+                        eventClick: (info) => {
+                            window.open(`print_receipt.php?id=${info.event.id}`, '_blank');
+                        },
+                        themeSystem: 'bootstrap5',
+                        height: 500
+                    });
+
+                    this.calendar.render();
+                    setTimeout(() => this.calendar.updateSize(), 200);
+                }
+
+                async openHistory(type = '') {
+                    const modalEl = document.getElementById('historyModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    const tbody = document.getElementById('historyTableBody');
+                    const loading = document.getElementById('historyLoading');
+                    const title = document.querySelector('#historyModal .modal-title');
+
+                    // Reset to list tab
+                    const listTab = document.getElementById('list-tab');
+                    if (listTab) {
+                        bootstrap.Tab.getOrCreateInstance(listTab).show();
+                    }
+
+                    const detailTabContainer = document.getElementById('detail-tab-container');
+                    if (detailTabContainer) {
+                        if (type === 'Traslado') {
+                            detailTabContainer.classList.remove('d-none');
+                        } else {
+                            detailTabContainer.classList.add('d-none');
+                        }
+                    }
+
+                    tbody.innerHTML = '';
+                    loading.style.display = 'block';
+
+                    if (title) {
+                        title.innerHTML = type === 'Traslado'
+                            ? '<i class="bi bi-arrow-left-right me-2"></i>Historial de Traslados (Turno Actual)'
+                            : '<i class="bi bi-clock-history me-2"></i>Historial de Ventas (Turno Actual)';
+                    }
+
+                    modal.show();
+
+                    try {
+                        const response = await fetch(`get_recent_sales.php${type ? '?type=' + type : ''}`);
+                        const data = await response.json();
+
+                        loading.style.display = 'none';
+
+                        if (data.status === 'success' && data.sales.length > 0) {
+                            data.sales.forEach(sale => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td class="ps-4 small text-muted">${sale.hora}</td>
+                                    <td>
+                                        <div class="fw-bold">${sale.nombre_cliente}</div>
+                                        ${sale.tipo_pago ? `<span class="badge bg-light text-dark border">${sale.tipo_pago}</span>` : ''}
+                                    </td>
+                                    <td class="text-end fw-bold">Q${parseFloat(sale.total).toFixed(2)}</td>
+                                    <td class="text-center pe-4">
+                                        <button class="btn btn-light btn-sm shadow-sm" onclick="window.open('print_receipt.php?id=${sale.id_venta}', '_blank')">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
+                        }
+                    } catch (error) {
+                        console.error('Error loading history:', error);
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
+                    }
+                }
+
+                async loadTransferDetails() {
+                    const tbody = document.getElementById('transferDetailsBody');
+                    const startDate = document.getElementById('transferStartDate').value;
+                    const endDate = document.getElementById('transferEndDate').value;
+                    const search = document.getElementById('transferSearch').value;
+
+                    if (!tbody) return;
+
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-info spinner-border-sm" role="status"></div></td></tr>';
+
+                    try {
+                        const url = new URL('get_transfer_details.php', window.location.href);
+                        url.searchParams.append('start', startDate);
+                        url.searchParams.append('end', endDate);
+                        if (search) url.searchParams.append('q', search);
+
+                        const response = await fetch(url);
+                        const data = await response.json();
+
+                        tbody.innerHTML = '';
+
+                        if (data.status === 'success' && data.details.length > 0) {
+                            data.details.forEach(item => {
+                                const row = document.createElement('tr');
+                                // Formatear fecha para remover segundos o dejarla amigable si es necesario, 
+                                // O simplemente mostrar el valor directo que viene de 'fecha_venta'
+                                const fechaCompleta = new Date(item.fecha_venta);
+                                const fechaTexto = fechaCompleta.toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' }) || item.fecha_venta;
+
+                                row.innerHTML = `
+                                    <td class="ps-3 small text-muted">${fechaTexto}</td>
+                                    <td>
+                                        <div class="fw-bold">${item.nom_medicamento}</div>
+                                        <small class="text-muted">${item.mol_medicamento || ''}</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>${item.realizado_por || 'Sistema'}</span></td>
+                                    <td class="fw-medium">${item.nombre_cliente}</td>
+                                    <td class="text-end pe-3 fw-bold">${item.cantidad_vendida}</td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No hay traslados en este periodo.</td></tr>';
+                        }
+                    } catch (error) {
+                        console.error('Error loading transfer details:', error);
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Error al cargar detalles.</td></tr>';
+                    }
+                }
+
                 setupAnimations() {
                     const observerOptions = {
                         root: null,
@@ -2515,7 +2795,7 @@ try {
                 };
 
                 // Log de inicialización
-                console.log('Módulo de Ventas - Centro Médico RS');
+                console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
                 console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
                 console.log('Productos disponibles: <?php echo count($inventario); ?>');
                 console.log('Ventas hoy: <?php echo $today_sales['count'] ?? 0; ?>');

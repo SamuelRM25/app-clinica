@@ -26,7 +26,7 @@ try {
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
 
     // Insert into rayos_x
-    $stmt = $conn->prepare("INSERT INTO rayos_x (id_paciente, nombre_paciente, tipo_estudio, cobro, tipo_pago, usuario) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO rayos_x (id_paciente, nombre_paciente, tipo_estudio, cobro, tipo_pago, usuario, fecha_estudio) VALUES (?, ?, ?, ?, ?, ?, NOW())");
     $stmt->execute([
         $patient_id,
         $patient_name,

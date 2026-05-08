@@ -1,5 +1,5 @@
 <?php
-// index.php - Calendario de Citas - Centro Médico RS
+// index.php - Calendario de Citas - Centro Médico Herrera Saenz
 // Versión: 4.0 - Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -45,7 +45,7 @@ try {
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Calendario de Citas - Centro Médico RS";
+    $page_title = "Calendario de Citas - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -59,7 +59,8 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calendario de Citas del Centro Médico RS - Sistema de gestión de agenda médica">
+    <meta name="description"
+        content="Calendario de Citas del Centro Médico Herrera Saenz - Sistema de gestión de agenda médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -266,9 +267,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1419,7 +1419,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1635,7 +1635,7 @@ try {
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
     <script>
-        // Calendario de Citas Reingenierizado - Centro Médico RS
+        // Calendario de Citas Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';

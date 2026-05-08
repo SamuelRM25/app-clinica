@@ -16,15 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     $id_orden = $_POST['id_orden'] ?? null;
     $fecha_recepcion = $_POST['fecha_recepcion'] ?? date('Y-m-d H:i:s');
     $observaciones = $_POST['observaciones'] ?? '';
-    
+
     if (!$id_orden) {
         throw new Exception('ID de orden no proporcionado');
     }
-    
+
     // Update order status to Muestra_Recibida
     $stmt = $conn->prepare("
         UPDATE ordenes_laboratorio 
@@ -33,7 +33,30 @@ try {
         WHERE id_orden = ?
     ");
     $stmt->execute([$fecha_recepcion, $id_orden]);
-    
+
+    // Handle file upload if present
+    if (isset($_FILES['archivo_orden']) && $_FILES['archivo_orden']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = '../../../uploads/results/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $fileInfo = pathinfo($_FILES['archivo_orden']['name']);
+        $extension = strtolower($fileInfo['extension']);
+        $newFileName = 'orden_' . $id_orden . '_' . uniqid() . '.' . $extension;
+        $targetPath = $uploadDir . $newFileName;
+
+        $allowedExts = ['pdf', 'jpg', 'jpeg', 'png'];
+
+        if (in_array($extension, $allowedExts)) {
+            if (move_uploaded_file($_FILES['archivo_orden']['tmp_name'], $targetPath)) {
+                $dbPath = '../../uploads/results/' . $newFileName;
+                $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ?");
+                $stmt_file->execute([$dbPath, $id_orden]);
+            }
+        }
+    }
+
     // Log the action if observations were provided
     if ($observaciones) {
         $stmt = $conn->prepare("
@@ -42,12 +65,12 @@ try {
         ");
         $stmt->execute([$id_orden, $observaciones, $_SESSION['idUsuario']]);
     }
-    
+
     echo json_encode([
         'success' => true,
         'message' => 'Muestra registrada exitosamente'
     ]);
-    
+
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,

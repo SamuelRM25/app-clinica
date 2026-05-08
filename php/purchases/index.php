@@ -1,5 +1,5 @@
 <?php
-// purchases/index.php - Módulo de Compras del Centro Médico RS
+// purchases/index.php - Módulo de Compras del Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -92,7 +92,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Compras - Centro Médico RS";
+    $page_title = "Compras - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -107,7 +107,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Compras - Centro Médico RS - Gestión de compras de medicamentos e insumos">
+        content="Módulo de Compras - Centro Médico Herrera Saenz - Gestión de compras de medicamentos e insumos">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -309,9 +309,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1548,7 +1547,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2200,7 +2199,7 @@ try {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="action-btn" onclick="savePurchase()">
+                    <button type="button" class="action-btn" id="savePurchaseBtn" onclick="savePurchase()">
                         <i class="bi bi-check-lg me-2"></i>Guardar Compra
                     </button>
                 </div>
@@ -2258,7 +2257,8 @@ try {
                                     <textarea class="form-control" name="notes" id="pay_notes" rows="2"></textarea>
                                 </div>
 
-                                <button type="button" class="action-btn w-100" onclick="submitPayment()">
+                                <button type="button" class="action-btn w-100" id="submitPaymentBtn"
+                                    onclick="submitPayment()">
                                     <i class="bi bi-check-circle me-2"></i>Registrar Pago
                                 </button>
                             </form>
@@ -2315,7 +2315,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Compras Reingenierizado - Centro Médico RS
+        // Módulo de Compras Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -2759,6 +2759,13 @@ try {
                     return;
                 }
 
+                // Deshabilitar botón para evitar duplicados
+                const saveBtn = document.getElementById('savePurchaseBtn');
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Guardando...';
+                }
+
                 // Preparar datos del encabezado
                 const header = {
                     purchase_date: document.getElementById('purchase_date').value,
@@ -2795,7 +2802,9 @@ try {
                                 icon: 'success',
                                 confirmButtonText: 'Aceptar'
                             }).then(() => {
-                                // Cerrar modal y recargar página
+                                // Limpiar items y cerrar modal
+                                purchaseItems = [];
+                                renderItems();
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('newPurchaseModal'));
                                 modal.hide();
                                 location.reload();
@@ -2817,6 +2826,13 @@ try {
                             icon: 'error',
                             confirmButtonText: 'Entendido'
                         });
+                    })
+                    .finally(() => {
+                        // Rehabilitar botón en caso de error o éxito
+                        if (saveBtn) {
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Guardar Compra';
+                        }
                     });
             };
 
@@ -3045,6 +3061,13 @@ try {
                         confirmButtonText: 'Entendido'
                     });
                     return;
+                }
+
+                // Deshabilitar botón para evitar duplicados
+                const payBtn = document.getElementById('submitPaymentBtn');
+                if (payBtn) {
+                    payBtn.disabled = true;
+                    payBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Procesando...';
                 }
 
                 // Enviar pago al servidor

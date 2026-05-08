@@ -29,7 +29,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Gestión de Pacientes - Centro Médico RS";
+    $page_title = "Gestión de Pacientes - Centro Médico Herrera Saenz";
 
     // Obtener parámetros de ordenamiento
     $sort = $_GET['sort'] ?? 'name';
@@ -107,7 +107,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gestión de Pacientes - Centro Médico RS">
+    <meta name="description" content="Gestión de Pacientes - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -302,9 +302,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1525,7 +1524,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1578,7 +1577,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1771,39 +1770,67 @@ try {
                                         data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>"
                                         data-notes="<?php echo htmlspecialchars($patient['notas'] ?? ''); ?>">
                                         <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
+                                            <div class="d-flex align-items-center">
+                                                <div
+                                                    class="avatar-sm me-3 <?php echo $patient['genero'] === 'Femenino' ? 'bg-female' : 'bg-male'; ?>">
+                                                    <?php echo strtoupper(substr($patient['nombre'], 0, 1) . substr($patient['apellido'], 0, 1)); ?>
                                                 </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name">
-                                                        <?php echo htmlspecialchars(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? '')); ?>
+                                                <div>
+                                                    <div class="fw-bold text-dark">
+                                                        <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>
                                                     </div>
-                                                    <div class="patient-contact">
-                                                        ID:
-                                                        #<?php echo str_pad($patient['id_paciente'], 5, '0', STR_PAD_LEFT); ?>
+                                                    <div class="small text-muted">
+                                                        <?php
+                                                        if (isset($patient['fecha_nacimiento'])) {
+                                                            $dob = new DateTime($patient['fecha_nacimiento']);
+                                                            $diff = (new DateTime())->diff($dob);
+
+                                                            if ($diff->y > 0) {
+                                                                echo $diff->y . ' años';
+                                                            } elseif ($diff->m > 0) {
+                                                                echo $diff->m . ' meses';
+                                                            } else {
+                                                                echo $diff->d . ' días';
+                                                            }
+                                                        } else {
+                                                            echo 'N/A';
+                                                        }
+                                                        ?>
+                                                        • <?php echo htmlspecialchars($patient['genero']); ?>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column gap-1">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
-                                                    <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
-                                                </div>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
-                                                    <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
-                                                </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
+                                                <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
                                             </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
+                                                <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
+                                            </div>
+                                        </div>
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column gap-1">
                                                 <div class="d-flex align-items-center gap-2">
                                                     <i class="bi bi-calendar3 text-muted" style="font-size: 0.875rem;"></i>
                                                     <span><?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? 'N/A'); ?>
-                                                        (<?php echo $edad; ?> años)</span>
+                                                        (<?php
+                                                        if (isset($patient['fecha_nacimiento'])) {
+                                                            if ($diff->y > 0) {
+                                                                echo $diff->y . ' años';
+                                                            } elseif ($diff->m > 0) {
+                                                                echo $diff->m . ' meses';
+                                                            } else {
+                                                                echo $diff->d . ' días';
+                                                            }
+                                                        } else {
+                                                            echo 'N/A';
+                                                        }
+                                                        ?>)</span>
                                                 </div>
                                                 <?php if (isset($patient['genero'])): ?>
                                                     <span class="gender-badge <?php
@@ -2074,7 +2101,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
         (function () {
             'use strict';
 
@@ -2399,12 +2426,32 @@ try {
                 if (!birthDate) return;
                 const today = new Date();
                 const birth = new Date(birthDate);
-                let age = today.getFullYear() - birth.getFullYear();
-                const m = today.getMonth() - birth.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-                    age--;
+                
+                let years = today.getFullYear() - birth.getFullYear();
+                let months = today.getMonth() - birth.getMonth();
+                let days = today.getDate() - birth.getDate();
+
+                if (days < 0) {
+                    months--;
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    days += prevMonth.getDate();
                 }
-                document.getElementById('edad_display').value = age + (age === 1 ? ' año' : ' años');
+                
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+
+                let display = '';
+                if (years > 0) {
+                    display = years + (years === 1 ? ' año' : ' años');
+                } else if (months > 0) {
+                    display = months + (months === 1 ? ' mes' : ' meses');
+                } else {
+                    display = days + (days === 1 ? ' día' : ' días');
+                }
+                
+                document.getElementById('edad_display').value = display;
             };
 
             window.filterPatients = function (filterType) {

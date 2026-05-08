@@ -1,5 +1,5 @@
 <?php
-// index.php - Procedimientos Menores - Centro Médico RS
+// index.php - Procedimientos Menores - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -88,7 +88,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Procedimientos Menores - Centro Médico RS";
+    $page_title = "Procedimientos Menores - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -102,7 +102,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico RS">
+    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -300,9 +300,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1600,7 +1599,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1963,7 +1962,7 @@ try {
                         <p class="text-muted mb-2">Total acumulado en sistema:
                             <strong><?php echo $total_procedures; ?></strong> procedimientos
                         </p>
-                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico RS</p>
+                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico Herrera Saenz</p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -1977,7 +1976,7 @@ try {
     <script>
         /**
          * Procedimientos Menores v4.5 - Reingenierizado
-         * Centro Médico RS
+         * Centro Médico Herrera Saenz
          */
         'use strict';
 

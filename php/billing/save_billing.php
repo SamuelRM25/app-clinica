@@ -26,7 +26,7 @@ if (!empty($_POST)) {
 $paciente_id = !empty($data['paciente']) ? $data['paciente'] : null;
 $paciente_nombre = !empty($data['paciente_nombre']) ? $data['paciente_nombre'] : '';
 $cantidad = !empty($data['cantidad']) ? (float) $data['cantidad'] : 0;
-$fecha = !empty($data['fecha_consulta']) ? $data['fecha_consulta'] : date('Y-m-d');
+$fecha = !empty($data['fecha_consulta']) ? $data['fecha_consulta'] : date('Y-m-d H:i:s');
 $id_doctor = !empty($data['id_doctor']) ? $data['id_doctor'] : null;
 $tipo_consulta = !empty($data['tipo_consulta']) ? $data['tipo_consulta'] : 'Consulta';
 

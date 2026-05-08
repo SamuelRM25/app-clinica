@@ -81,12 +81,14 @@ try {
                p.nombre, p.apellido, p.genero, p.fecha_nacimiento,
                u.nombre as doctor_nombre, u.apellido as doctor_apellido,
                COUNT(op.id_orden_prueba) as num_pruebas,
-               TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad
+               TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad,
+               er.id_examen_realizado
         FROM ordenes_laboratorio ol
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON ol.id_doctor = u.idUsuario
         LEFT JOIN orden_pruebas op ON ol.id_orden = op.id_orden
-        WHERE ol.estado IN ('Pendiente', 'Muestra_Recibida', 'En_Proceso', 'Completada')
+        LEFT JOIN examenes_realizados er ON ol.id_orden = er.id_orden
+        WHERE ol.estado IN ('Pendiente', 'Muestra_Recibida', 'En_Proceso', 'Completada', 'Validada')
         GROUP BY ol.id_orden
         ORDER BY 
             CASE 
@@ -94,10 +96,10 @@ try {
                 WHEN ol.estado = 'Muestra_Recibida' THEN 2
                 WHEN ol.estado = 'En_Proceso' THEN 3
                 WHEN ol.estado = 'Completada' THEN 4
-                ELSE 5
+                WHEN ol.estado = 'Validada' THEN 5
+                ELSE 6
             END,
             ol.fecha_orden DESC
-        LIMIT 20
     ");
     $stmt->execute();
     $ordenes_recientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -114,7 +116,7 @@ try {
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Título de la página
-    $page_title = "Laboratorio - Centro Médico RS";
+    $page_title = "Laboratorio - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -128,7 +130,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard de Laboratorio - Centro Médico RS">
+    <meta name="description" content="Dashboard de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -326,9 +328,8 @@ try {
                 radial-gradient(circle at 80% 20%, var(--marble-color-2) 0%, transparent 50%),
                 var(--color-bg);
             background-blend-mode: overlay;
-            background-size: 200% 200%;
-            animation: marbleFloat 20s ease-in-out infinite alternate;
-            opacity: 0.7;
+            background-size: cover;
+            opacity: 0.3;
             pointer-events: none;
         }
 
@@ -1564,7 +1565,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmrs.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1824,6 +1825,18 @@ try {
                                                                 class="btn-icon pdf" title="Ver Resultados PDF" target="_blank">
                                                                 <i class="bi bi-file-earmark-pdf"></i>
                                                             </a>
+                                                            <!-- Imprimir Ticket -->
+                                                            <a href="print_lab_receipt.php?id=<?php echo $orden['id_examen_realizado']; ?>"
+                                                                class="btn-icon bg-info text-white border-0" title="Imprimir Ticket"
+                                                                target="_blank">
+                                                                <i class="bi bi-receipt"></i>
+                                                            </a>
+                                                            <!-- Botón Devolución -->
+                                                            <button type="button" class="btn-icon bg-danger text-white border-0"
+                                                                title="Devolución"
+                                                                onclick="iniciarDevolucion(<?php echo $orden['id_orden']; ?>)">
+                                                                <i class="bi bi-arrow-return-left"></i>
+                                                            </button>
                                                         <?php else: ?>
                                                             <a href="procesar_orden.php?id=<?php echo $orden['id_orden']; ?>"
                                                                 class="btn-icon process" title="Procesar orden">
@@ -1919,6 +1932,56 @@ try {
             </div>
         </main>
     </div>
+
+    <!-- Modal Devolución Laboratorio -->
+    <div class="modal fade" id="modalDevolucionLab" tabindex="-1" aria-hidden="true"
+        style="display: none; background: rgba(0,0,0,0.5); z-index: 1050; position: fixed; inset: 0;">
+        <div class="modal-dialog modal-dialog-centered"
+            style="margin: 1.75rem auto; max-width: 500px; background: var(--color-card); border-radius: var(--radius-lg); padding: var(--space-md);">
+            <div class="modal-content" style="border: none; background: transparent;">
+                <div class="modal-header"
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-sm); margin-bottom: var(--space-md);">
+                    <h5 class="modal-title fw-bold">Devolución de Orden <span id="lblNumOrdenDev"></span></h5>
+                    <button type="button" class="btn-close" onclick="cerrarModalDevolucion()"
+                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="formDevolucionLab">
+                        <input type="hidden" id="dev_id_orden" name="id_orden">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Seleccione Pruebas a Devolver</label>
+                            <div id="listaPruebasDevolucion"
+                                style="max-height: 150px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                <!-- Checkboxes generados dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="dev_monto" class="form-label fw-semibold">Monto a Devolver (Q)</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="dev_monto" name="monto"
+                                required
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="dev_motivo" class="form-label fw-semibold">Motivo de Devolución</label>
+                            <textarea class="form-control" id="dev_motivo" name="motivo" rows="2" required
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md);"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer"
+                    style="display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md);">
+                    <button type="button" class="action-btn secondary"
+                        onclick="cerrarModalDevolucion()">Cancelar</button>
+                    <button type="button" class="action-btn bg-danger" onclick="procesarDevolucionLab()">Confirmar
+                        Devolución</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- JavaScript Optimizado -->
     <script>
@@ -2127,6 +2190,137 @@ try {
         }
     `;
         document.head.appendChild(style);
+
+        // --- Lógica Devoluciones ---
+        function iniciarDevolucion(id_orden) {
+            // Evitar propagación a la fila
+            const evt = window.event;
+            if (evt) evt.stopPropagation();
+
+            document.getElementById('dev_id_orden').value = id_orden;
+            document.getElementById('dev_monto').value = '';
+            document.getElementById('dev_motivo').value = '';
+            document.getElementById('lblNumOrdenDev').textContent = '#' + id_orden;
+
+            const contPruebas = document.getElementById('listaPruebasDevolucion');
+            contPruebas.innerHTML = '<div class="text-center text-muted py-2"><i class="bi bi-arrow-clockwise spin"></i> Cargando pruebas...</div>';
+            document.getElementById('modalDevolucionLab').style.display = 'block';
+
+            // Cargar pruebas de la orden
+            fetch(`api/get_order_details.php?id=${id_orden}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success' && data.pruebas) {
+                        contPruebas.innerHTML = '';
+                        let totalCalculado = 0;
+                        data.pruebas.forEach(p => {
+                            // Ignorar las ya devueltas
+                            if (p.estado === 'Devuelto') return;
+
+                            totalCalculado += parseFloat(p.precio) || 0;
+                            const div = document.createElement('div');
+                            div.className = 'form-check mb-1';
+                            div.innerHTML = `
+                                <input class="form-check-input chk-dev-prueba" type="checkbox" value="${p.id_orden_prueba}" data-precio="${p.precio}" id="chkDev_${p.id_orden_prueba}" checked onchange="recalcularMontoDevolucion()">
+                                <label class="form-check-label w-100 d-flex justify-content-between" for="chkDev_${p.id_orden_prueba}" style="cursor:pointer; user-select:none;">
+                                    <span>${p.nombre_prueba}</span>
+                                    <span class="text-muted">Q${parseFloat(p.precio).toFixed(2)}</span>
+                                </label>
+                            `;
+                            contPruebas.appendChild(div);
+                        });
+
+                        if (contPruebas.innerHTML === '') {
+                            contPruebas.innerHTML = '<div class="text-muted py-2">No hay pruebas disponibles para devolver en esta orden.</div>';
+                            document.getElementById('dev_monto').value = 0;
+                        } else {
+                            document.getElementById('dev_monto').value = totalCalculado.toFixed(2);
+                        }
+                    } else {
+                        contPruebas.innerHTML = `<div class="text-danger py-2">Error: ${data.message || 'No se pudieron cargar las pruebas'}</div>`;
+                    }
+                })
+                .catch(err => {
+                    contPruebas.innerHTML = '<div class="text-danger py-2">Error de conexión al obtener pruebas.</div>';
+                });
+        }
+
+        function recalcularMontoDevolucion() {
+            let total = 0;
+            document.querySelectorAll('.chk-dev-prueba:checked').forEach(chk => {
+                total += parseFloat(chk.getAttribute('data-precio') || 0);
+            });
+            document.getElementById('dev_monto').value = total.toFixed(2);
+        }
+
+        function cerrarModalDevolucion() {
+            document.getElementById('modalDevolucionLab').style.display = 'none';
+        }
+
+        function procesarDevolucionLab() {
+            const id_orden = document.getElementById('dev_id_orden').value;
+            const monto = parseFloat(document.getElementById('dev_monto').value);
+            const motivo = document.getElementById('dev_motivo').value.trim();
+
+            const checks = document.querySelectorAll('.chk-dev-prueba:checked');
+            const pruebasIds = Array.from(checks).map(chk => chk.value);
+
+            if (pruebasIds.length === 0) {
+                Swal.fire("Error", "Debe seleccionar al menos una prueba para devolver.", "error");
+                return;
+            }
+
+            if (isNaN(monto) || monto <= 0) {
+                Swal.fire("Error", "Debe especificar un monto válido a devolver.", "error");
+                return;
+            }
+
+            if (!motivo) {
+                Swal.fire("Error", "Debe detallar un motivo para la devolución.", "error");
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Confirmar Devolución?',
+                text: `Se registrará una devolución de Q${monto.toFixed(2)} por las pruebas seleccionadas.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, aplicar devolución',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    cerrarModalDevolucion();
+                    Swal.fire({ title: 'Procesando...', text: 'Por favor espere', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+                    fetch('api/process_refund.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id_orden: id_orden,
+                            monto: monto,
+                            motivo: motivo,
+                            pruebas: pruebasIds
+                        })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                Swal.fire("¡Éxito!", data.message, "success").then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire("Error", data.message || "No se pudo procesar la devolución", "error");
+                            }
+                        })
+                        .catch(err => {
+                            console.error("Fetch error:", err);
+                            Swal.fire("Error", "Ocurrió un error de comunicación con el servidor.", "error");
+                        });
+                }
+            });
+        }
     </script>
 </body>
 
