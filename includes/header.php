@@ -41,6 +41,21 @@
     <!-- Mantenimiento de sesión (Global) -->
     <?php if (function_exists('output_keep_alive_script'))
         output_keep_alive_script(); ?>
+
+    <!-- Seguridad y Protección de Código -->
+    <?php
+    $path_to_security = 'assets/js/security.js';
+    $prefix = '';
+    // Buscar el archivo hacia arriba hasta 3 niveles
+    for ($i = 0; $i < 3; $i++) {
+        if (file_exists($prefix . $path_to_security)) {
+            $final_path = $prefix . $path_to_security;
+            break;
+        }
+        $prefix .= '../';
+    }
+    ?>
+    <script src="<?php echo $final_path ?? 'assets/js/security.js'; ?>"></script>
 </head>
 
 <body>

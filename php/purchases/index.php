@@ -128,6 +128,9 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
         /* ==========================================================================

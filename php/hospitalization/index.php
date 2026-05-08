@@ -162,6 +162,9 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <style>
         /* Variables CSS para modo claro y oscuro */
         :root {

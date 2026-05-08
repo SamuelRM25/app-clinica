@@ -386,6 +386,9 @@ try {
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
         /* ==========================================================================

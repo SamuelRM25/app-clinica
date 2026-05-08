@@ -80,6 +80,9 @@ try {
     <!-- FullCalendar CSS -->
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet'>
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>
         /* ==========================================================================

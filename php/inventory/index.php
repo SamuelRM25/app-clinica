@@ -120,6 +120,9 @@ try {
     <!-- Bootstrap CSS (Required for Modals) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <!-- SweetAlert2 -->
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <style>

@@ -87,6 +87,8 @@ try {
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -117,6 +119,9 @@ try {
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
 
     <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <style>

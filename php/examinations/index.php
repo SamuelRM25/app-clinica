@@ -116,6 +116,9 @@ try {
     <!-- Choices.js (para búsqueda en selects) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
+
     <!-- CSS COMPLETAMENTE IDÉNTICO AL DASHBOARD (NO CAMBIAR NADA) -->
     <style>
         /* ==========================================================================
