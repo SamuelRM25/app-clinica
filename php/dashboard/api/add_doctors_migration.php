@@ -41,7 +41,7 @@ try {
                 $doc['apellido'],
                 $doc['tipoUsuario'],
                 $doc['especialidad'],
-                'Centro Médico Herrera Saenz',
+                'Centro Médico RS',
                 '0000',
                 $doc['usuario'] . '@cmhs.com'
             ]);

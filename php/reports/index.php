@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Reportes - Centro Médico Herrera Saenz
+// index.php - Módulo de Reportes - Centro Médico RS
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 
@@ -190,7 +190,7 @@ try {
     $total_medicamentos = $conn->query("SELECT COUNT(*) FROM inventario WHERE cantidad_med > 0")->fetchColumn();
 
     // Título de la página
-    $page_title = "Reportes - Centro Médico Herrera Saenz";
+    $page_title = "Reportes - Centro Médico RS";
 
     // ============ REPORTE DE RENTABILIDAD DE FARMACIA ============
 
@@ -365,7 +365,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Reportes - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Reportes - Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1303,7 +1303,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2195,7 +2195,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Reportes - Centro Médico Herrera Saenz
+        // Módulo de Reportes - Centro Médico RS
         // JavaScript para funcionalidades del módulo de reportes
 
         (function () {

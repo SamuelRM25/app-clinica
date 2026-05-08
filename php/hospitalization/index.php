@@ -1,5 +1,5 @@
 <?php
-// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico Herrera Saenz
+// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico RS
 session_start();
 
 // Verificar sesión activa
@@ -136,7 +136,7 @@ try {
     die("Error: " . $e->getMessage());
 }
 
-$page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
+$page_title = "Gestión de Hospitalización - Centro Médico RS";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -784,7 +784,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <div class="header-controls">

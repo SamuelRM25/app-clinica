@@ -1,5 +1,5 @@
 <?php
-// sales/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
+// sales/index.php - Módulo de Ventas - Centro Médico RS
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 
@@ -73,7 +73,7 @@ try {
     $pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['pendientes'] ?? 0;
     
     // Título de la página
-    $page_title = "Ventas - Centro Médico Herrera Saenz";
+    $page_title = "Ventas - Centro Médico RS";
     
 } catch (Exception $e) {
     // Manejo de errores
@@ -92,7 +92,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas - Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
@@ -1335,7 +1335,7 @@ try {
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
                 
                 <!-- Controles -->
@@ -1763,7 +1763,7 @@ try {
     
     <!-- JavaScript Optimizado -->
     <script>
-    // Módulo de Ventas Reingenierizado - Centro Médico Herrera Saenz
+    // Módulo de Ventas Reingenierizado - Centro Médico RS
     
     (function() {
         'use strict';

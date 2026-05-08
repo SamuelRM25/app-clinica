@@ -1,5 +1,5 @@
 <?php
-// historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
+// historial_examenes.php - Historial de Exámenes - Centro Médico RS
 // Versión: 4.0 - Estilo Dashboard Principal
 session_start();
 
@@ -29,7 +29,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Historial de Exámenes - Centro Médico RS";
 
     // Configuración de paginación
     $limit = 20; // Registros por página
@@ -68,7 +68,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Historial de Exámenes - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1463,7 +1463,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1512,7 +1512,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico RS
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1728,7 +1728,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico RS
 
         (function () {
             'use strict';
@@ -2062,7 +2062,7 @@ try {
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(22);
                     doc.setFont('helvetica', 'bold');
-                    doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
+                    doc.text("Centro Médico RS", 105, 18, { align: 'center' });
 
                     doc.setFontSize(14);
                     doc.setFont('helvetica', 'normal');

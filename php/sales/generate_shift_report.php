@@ -1,5 +1,5 @@
 <?php
-// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro Médico Herrera Saenz
+// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro Médico RS
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 require_once '../../config/database.php';
@@ -89,14 +89,14 @@ $user_name = $_SESSION['nombre'];
 $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
 // Título de la página
-$page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
+$page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Ventas por Jornada - Centro Médico Herrera Saenz">
+    <meta name="description" content="Reporte de Ventas por Jornada - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
     
     <!-- Favicon -->
@@ -1071,7 +1071,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
     <div class="report-container">
         <!-- Encabezado -->
         <div class="report-header animate-in">
-            <h1 class="clinic-name">Centro Médico Herrera Saenz</h1>
+            <h1 class="clinic-name">Centro Médico RS</h1>
             <h2 class="report-title">Reporte de Ventas por Jornada</h2>
             <div class="period-info">
                 <i class="bi bi-calendar-range"></i>
@@ -1320,7 +1320,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
                 <?php echo htmlspecialchars($user_specialty); ?>
             </p>
             <p class="text-muted">
-                Centro Médico Herrera Saenz - Sistema de Gestión Médica v4.0
+                Centro Médico RS - Sistema de Gestión Médica v4.0
             </p>
         </div>
     </div>

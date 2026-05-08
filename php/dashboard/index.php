@@ -1,5 +1,5 @@
 <?php
-// dashboard.php - Dashboard Centro Médico Herrera Saenz
+// dashboard.php - Dashboard Centro Médico RS
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -169,7 +169,7 @@ try {
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Dashboard - Centro Médico Herrera Saenz";
+    $page_title = "Dashboard - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -183,7 +183,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard del Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Dashboard del Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -2310,7 +2310,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -2765,7 +2765,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico RS
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -3564,7 +3564,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico RS
 
         (function () {
             'use strict';

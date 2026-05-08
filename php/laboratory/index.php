@@ -116,7 +116,7 @@ try {
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Título de la página
-    $page_title = "Laboratorio - Centro Médico Herrera Saenz";
+    $page_title = "Laboratorio - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -130,7 +130,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard de Laboratorio - Centro Médico Herrera Saenz">
+    <meta name="description" content="Dashboard de Laboratorio - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1565,7 +1565,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->

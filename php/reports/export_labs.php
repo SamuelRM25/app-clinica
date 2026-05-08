@@ -1,5 +1,5 @@
 <?php
-// export_labs.php - Reporte de Laboratorios - Centro Médico Herrera Saenz
+// export_labs.php - Reporte de Laboratorios - Centro Médico RS
 // Versión 1.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';

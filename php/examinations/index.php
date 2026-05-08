@@ -1,5 +1,5 @@
 <?php
-// index.php - Registro de Exámenes - Centro Médico Herrera Saenz
+// index.php - Registro de Exámenes - Centro Médico RS
 // Versión: 4.5 - Estilo Dashboard Principal con Estadísticas
 session_start();
 
@@ -88,7 +88,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Registro de Exámenes - Centro Médico RS";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -103,7 +103,7 @@ try {
     <!-- META TAGS IDÉNTICOS AL DASHBOARD -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Registro de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Registro de Exámenes - Centro Médico RS">
     <title><?php echo $page_title; ?></title>
 
     <!-- FAVICON Y FUENTES IDÉNTICAS -->
@@ -1542,7 +1542,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1794,7 +1794,7 @@ try {
         <div class="mt-3">
             <p class="text-muted mb-2">Total acumulado en sistema: <strong><?php echo $total_exams; ?></strong> exámenes
             </p>
-            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Herrera Saenz</p>
+            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico RS</p>
         </div>
     </div>
     </main>
@@ -1807,7 +1807,7 @@ try {
     <script>
         /**
          * Registro de Exámenes v4.5 - Reingenierizado
-         * Centro Médico Herrera Saenz
+         * Centro Médico RS
          */
         'use strict';
 

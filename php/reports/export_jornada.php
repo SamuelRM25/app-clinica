@@ -1,5 +1,5 @@
 <?php
-// export_jornada.php - Reporte de Jornada - Centro Médico Herrera Saenz
+// export_jornada.php - Reporte de Jornada - Centro Médico RS
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';
@@ -158,7 +158,7 @@ try {
     $wa_url = "https://wa.me/50239029076?text=" . urlencode($wa_text);
 
     // Título de la página
-    $page_title = "Reporte de Jornada - $date - Centro Médico Herrera Saenz";
+    $page_title = "Reporte de Jornada - $date - Centro Médico RS";
 
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
@@ -170,7 +170,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Jornada - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Reporte de Jornada - Centro Médico RS - Sistema de gestión médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->
@@ -1441,7 +1441,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1590,7 +1590,7 @@ try {
 
                 <!-- Información de generación -->
                 <div class="generation-info">
-                    Generado automáticamente por Centro Médico Herrera Saenz Management System -
+                    Generado automáticamente por Centro Médico RS Management System -
                     <?php echo date('d/m/Y H:i'); ?>
                 </div>
             </div>

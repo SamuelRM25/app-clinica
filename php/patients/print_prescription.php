@@ -14,7 +14,7 @@ $id_historial = $_GET['id'];
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Obtener receta y datos del paciente
     $stmt = $conn->prepare("
         SELECT 
@@ -33,26 +33,26 @@ try {
     ");
     $stmt->execute([$id_historial]);
     $receta = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$receta) {
         die("Receta médica no encontrada");
     }
-    
+
     // Calcular edad
     $fecha_nac = new DateTime($receta['fecha_nacimiento']);
     $hoy = new DateTime();
     $edad = $hoy->diff($fecha_nac)->y;
-    
+
     // Formatear fecha
     $fecha_consulta = new DateTime($receta['fecha_consulta']);
     $fecha_formateada = $fecha_consulta->format('d/m/Y');
-    
+
     // Información de la clínica
     $clinica_nombre = "Centro Médico Herrera Sáenz";
-    $clinica_direccion = "7ma Av 7-25 Zona 1, Atrás del parqueo Hospital Antiguo. Huehuetenango";
+    $clinica_direccion = "Dirección de prueba";
     $clinica_telefono = "(+502) 4195-8112";
     $clinica_email = "contacto@herrerasaenz.com";
-    
+
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }
@@ -60,17 +60,19 @@ try {
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro Médico Herrera Sáenz</title>
-    
+    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro
+        Médico Herrera Sáenz</title>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
+
     <style>
         :root {
             /* Colores del dashboard */
@@ -85,7 +87,7 @@ try {
             --border-color: #e9ecef;
             --background-color: #ffffff;
         }
-        
+
         body.dark-mode {
             --primary-color: #3b82f6;
             --secondary-color: #64748b;
@@ -98,13 +100,13 @@ try {
             --border-color: #2d3748;
             --background-color: #0f172a;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background-color);
@@ -117,7 +119,7 @@ try {
             min-height: 100vh;
             transition: all 0.3s ease;
         }
-        
+
         /* Contenedor de receta */
         .prescription-container {
             width: 210mm;
@@ -128,7 +130,7 @@ try {
             overflow: hidden;
             position: relative;
         }
-        
+
         /* Cabecera */
         .prescription-header {
             padding: 40px;
@@ -137,7 +139,7 @@ try {
             position: relative;
             overflow: hidden;
         }
-        
+
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -145,26 +147,26 @@ try {
             position: relative;
             z-index: 1;
         }
-        
+
         .clinic-info h1 {
             font-size: 32px;
             font-weight: 700;
             margin-bottom: 8px;
         }
-        
+
         .clinic-details {
             font-size: 14px;
             opacity: 0.9;
         }
-        
+
         .prescription-meta {
             text-align: right;
         }
-        
+
         .prescription-meta strong {
             font-size: 16px;
         }
-        
+
         /* Símbolo Rx de fondo */
         .rx-watermark {
             position: absolute;
@@ -177,25 +179,25 @@ try {
             pointer-events: none;
             z-index: 0;
         }
-        
+
         /* Información del paciente */
         .patient-info {
             padding: 30px 40px;
             background-color: #f8fafc;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         .info-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
         }
-        
+
         .info-item {
             display: flex;
             flex-direction: column;
         }
-        
+
         .info-label {
             font-size: 12px;
             color: var(--text-muted);
@@ -203,23 +205,23 @@ try {
             letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
-        
+
         .info-value {
             font-size: 16px;
             font-weight: 500;
         }
-        
+
         /* Cuerpo de la receta */
         .prescription-body {
             padding: 50px 40px;
             min-height: 400px;
         }
-        
+
         .prescription-title {
             text-align: center;
             margin-bottom: 40px;
         }
-        
+
         .prescription-title h2 {
             font-size: 24px;
             font-weight: 600;
@@ -227,7 +229,7 @@ try {
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-        
+
         .prescription-content {
             font-size: 18px;
             line-height: 2;
@@ -238,48 +240,48 @@ try {
             border-radius: 8px;
             border: 1px dashed var(--border-color);
         }
-        
+
         /* Pie de página */
         .prescription-footer {
             padding: 30px 40px;
             border-top: 1px solid var(--border-color);
             background-color: #f8fafc;
         }
-        
+
         .footer-content {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
-        
+
         .doctor-signature {
             text-align: center;
         }
-        
+
         .signature-line {
             width: 250px;
             height: 1px;
             background-color: var(--text-color);
             margin: 0 auto 10px;
         }
-        
+
         .doctor-name {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 4px;
         }
-        
+
         .doctor-specialty {
             font-size: 14px;
             color: var(--text-muted);
         }
-        
+
         .document-meta {
             text-align: right;
             font-size: 12px;
             color: var(--text-muted);
         }
-        
+
         /* Botones de acción */
         .action-buttons {
             position: fixed;
@@ -289,7 +291,7 @@ try {
             gap: 15px;
             z-index: 1000;
         }
-        
+
         .action-btn {
             padding: 12px 24px;
             border-radius: 8px;
@@ -302,47 +304,47 @@ try {
             gap: 8px;
             transition: all 0.3s ease;
         }
-        
+
         .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        
+
         .btn-print {
             background-color: var(--primary-color);
             color: white;
         }
-        
+
         .btn-close {
             background-color: var(--secondary-color);
             color: white;
         }
-        
+
         /* Estilos para impresión */
         @media print {
             body {
                 padding: 0;
                 background: white;
             }
-            
+
             .prescription-container {
                 box-shadow: none;
                 border-radius: 0;
                 width: 210mm;
                 height: 297mm;
             }
-            
+
             .action-buttons {
                 display: none;
             }
-            
+
             .prescription-header {
                 background: var(--primary-color) !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
         }
-        
+
         /* Responsive */
         @media (max-width: 768px) {
             .prescription-container {
@@ -350,29 +352,29 @@ try {
                 max-width: 400px;
                 margin: 20px;
             }
-            
+
             .prescription-header {
                 padding: 30px 20px;
             }
-            
+
             .clinic-info h1 {
                 font-size: 24px;
             }
-            
+
             .info-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
+
             .prescription-body {
                 padding: 30px 20px;
             }
-            
+
             .footer-content {
                 flex-direction: column;
                 gap: 20px;
                 text-align: center;
             }
-            
+
             .action-buttons {
                 bottom: 20px;
                 right: 20px;
@@ -381,11 +383,12 @@ try {
         }
     </style>
 </head>
+
 <body>
     <div class="prescription-container">
         <!-- Marca de agua -->
         <div class="rx-watermark">Rx</div>
-        
+
         <!-- Cabecera -->
         <header class="prescription-header">
             <div class="header-content">
@@ -404,17 +407,19 @@ try {
                 </div>
             </div>
         </header>
-        
+
         <!-- Información del paciente -->
         <section class="patient-info">
             <div class="info-grid">
                 <div class="info-item">
                     <span class="info-label">Paciente</span>
-                    <span class="info-value"><?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?></span>
+                    <span
+                        class="info-value"><?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?></span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Edad / Género</span>
-                    <span class="info-value"><?php echo $edad; ?> años / <?php echo htmlspecialchars($receta['genero']); ?></span>
+                    <span class="info-value"><?php echo $edad; ?> años /
+                        <?php echo htmlspecialchars($receta['genero']); ?></span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Teléfono</span>
@@ -426,14 +431,14 @@ try {
                 </div>
             </div>
         </section>
-        
+
         <!-- Cuerpo de la receta -->
         <main class="prescription-body">
             <div class="prescription-title">
                 <h2>Prescripción Médica</h2>
             </div>
             <div class="prescription-content">
-                <?php 
+                <?php
                 // Sanitizar y formatear contenido de la receta
                 $raw_receta = $receta['receta_medica'];
                 $clean_lines = array_map('trim', explode("\n", $raw_receta));
@@ -442,7 +447,7 @@ try {
                 ?>
             </div>
         </main>
-        
+
         <!-- Pie de página -->
         <footer class="prescription-footer">
             <div class="footer-content">
@@ -458,7 +463,7 @@ try {
             </div>
         </footer>
     </div>
-    
+
     <!-- Botones de acción -->
     <div class="action-buttons">
         <button class="action-btn btn-close" onclick="window.close()">
@@ -470,25 +475,26 @@ try {
             Imprimir
         </button>
     </div>
-    
+
     <script>
         // Mejorar experiencia de impresión
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Optimizar para dispositivos móviles
             if (window.matchMedia('(max-width: 768px)').matches) {
                 document.querySelector('.prescription-content').style.fontSize = '16px';
             }
-            
+
             // Auto-enfoque en el botón de imprimir para mejor accesibilidad
             document.querySelector('.btn-print').focus();
         });
-        
+
         // Manejar tecla Escape para cerrar ventana
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 window.close();
             }
         });
     </script>
 </body>
+
 </html>

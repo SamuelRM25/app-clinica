@@ -225,7 +225,7 @@ try {
 
     <header class="report-header">
         <div class="hospital-info">
-            <h1>CENTRO MÉDICO HERRERA SAENZ</h1>
+            <h1>Centro Médico RS</h1>
             <p>Laboratorio Clínico Especializado</p>
             <p>Amatitlán, Guatemala | Tel: 6633-XXXX</p>
         </div>

@@ -1,5 +1,5 @@
 <?php
-// export_transfers.php - Reporte de Traslados (Restringido) - Centro Médico Herrera Saenz
+// export_transfers.php - Reporte de Traslados (Restringido) - Centro Médico RS
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';

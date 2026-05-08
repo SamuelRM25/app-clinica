@@ -144,7 +144,7 @@ try {
 
     <div class="header">
         <img src="../../assets/img/Logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
-        <h1>Centro Médico Herrera Saenz</h1>
+        <h1>Centro Médico RS</h1>
         <p>Respaldo de Compras Registradas</p>
         <div style="font-size: 9pt; color: #666;">Generado el:
             <?php echo date('d/m/Y H:i'); ?>

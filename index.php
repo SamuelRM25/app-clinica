@@ -1,5 +1,5 @@
 <?php
-// index.php - Sistema de Gestión Médica Centro Médico Herrera Saenz
+// index.php - Sistema de Gestión Médica Centro Médico RS
 // Versión: 2.0 - Rediseño Minimalista con Modo Nocturno
 session_start();
 
@@ -10,7 +10,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Configuración inicial
-$page_title = "Login - Centro Médico Herrera Saenz";
+$page_title = "Login - Centro Médico RS";
 date_default_timezone_set('America/Mexico_City');
 ?>
 <!DOCTYPE html>
@@ -38,7 +38,7 @@ date_default_timezone_set('America/Mexico_City');
         <!-- Encabezado con logo y control de tema -->
         <header class="app-header">
             <div class="logo-container">
-                <img src="assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="main-logo">
+                <img src="assets/img/herrerasaenz.png" alt="Centro Médico RS" class="main-logo">
             </div>
             
             <!-- Control de modo día/noche -->
@@ -132,7 +132,7 @@ date_default_timezone_set('America/Mexico_City');
     <style>
     /* 
      * Estilos CSS para el Sistema de Gestión Médica
-     * Centro Médico Herrera Saenz - Versión Minimalista
+     * Centro Médico RS - Versión Minimalista
      * Diseño: Fondo blanco, colores pastel, modo noche
      */
     
@@ -754,7 +754,7 @@ date_default_timezone_set('America/Mexico_City');
     <!-- JavaScript para funcionalidades -->
     <script>
     // Sistema de Gestión Médica - JavaScript
-    // Centro Médico Herrera Saenz
+    // Centro Médico RS
     
     // Esperar a que el DOM esté completamente cargado
     document.addEventListener('DOMContentLoaded', function() {
@@ -925,7 +925,7 @@ date_default_timezone_set('America/Mexico_City');
         });
         
         // Mostrar mensaje de bienvenida
-        console.log('Sistema de Gestión Médica - Centro Médico Herrera Saenz');
+        console.log('Sistema de Gestión Médica - Centro Médico RS');
         console.log('Versión 2.0 - Diseño Minimalista con Modo Nocturno');
     });
     </script>

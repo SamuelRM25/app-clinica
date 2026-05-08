@@ -1,6 +1,6 @@
 <?php
 // inventory/insumos.php - Módulo de Insumos
-// Centro Médico Herrera Saenz
+// Centro Médico RS
 // Restringido a Admin (1) e YSantos (12)
 
 session_start();

@@ -1,6 +1,6 @@
 <?php
 // inventory/hospital_medications.php - Módulo de Inventario Reingenierizado
-// Centro Médico Herrera Saenz - Sistema de Gestión Médica
+// Centro Médico RS - Sistema de Gestión Médica
 
 session_start();
 
