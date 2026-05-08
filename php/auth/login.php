@@ -14,9 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$usuario]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && $password === $user['password']) { // In production, use password_verify()
+    if ($user && $password === $user['password']) {
         $_SESSION['user_id'] = $user['idUsuario'];
         $_SESSION['nombre'] = $user['nombre'];
+        $_SESSION['id_hospital'] = $user['id_hospital'];
+
+        // Cargar configuración del hospital
+        require_once '../../includes/multitenant.php';
+        $h_config = get_hospital_config($conn, $user['id_hospital']);
+        
+        if ($h_config) {
+            $_SESSION['hospital_nombre'] = $h_config['nombre'];
+            $_SESSION['hospital_modulos'] = $h_config['modulos_activos'];
+            $_SESSION['hospital_status'] = $h_config['estado_suscripcion'];
+            $_SESSION['hospital_expiry'] = $h_config['fecha_vencimiento'];
+        }
+
         $_SESSION['apellido'] = $user['apellido'];
         $_SESSION['clinica'] = $user['clinica'];
         $_SESSION['especialidad'] = $user['especialidad'];

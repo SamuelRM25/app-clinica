@@ -12,10 +12,18 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
 verify_session();
+
+// Verificar suscripción
+if (!check_subscription_status()) {
+    // Si la suscripción no está activa, podrías redirigir a una página de pago
+    // O mostrar un modal persistente. Por ahora, permitiremos entrar pero con aviso.
+    $subscription_warning = true;
+}
 
 try {
     // Conectar a la base de datos
@@ -634,6 +642,37 @@ try {
             /* Usar fallback sólido si rgba falla, pero definir rgb variables arriba */
             background-color: rgba(var(--color-card-rgb), 0.95);
             box-shadow: var(--shadow-sm);
+        }
+
+        /* Módulos Bloqueados */
+        .nav-link.locked {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+            filter: grayscale(0.8);
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-link.locked:hover {
+            transform: none !important;
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            color: var(--color-text-secondary) !important;
+        }
+
+        .nav-link.locked::after {
+            content: '\F470'; /* Bootstrap icon bi-lock-fill */
+            font-family: 'Bootstrap Icons' !important;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9rem;
+            color: var(--color-warning);
+            font-style: normal;
+        }
+
+        [data-theme="dark"] .nav-link.locked {
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
         .header-content {
@@ -2200,14 +2239,22 @@ try {
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
-                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
-                    <li class="nav-item">
+
+                <!-- Punto de Venta (Dispensario) -->
+                <li class="nav-item">
+                    <?php if (is_module_active('pharmacy')): ?>
                         <a href="../dispensary/index.php" class="nav-link">
                             <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
                             <span class="nav-text">Punto de Venta</span>
                         </a>
-                    </li>
-                <?php endif; ?>
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Punto de Venta / Farmacia')">
+                            <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
+                            <span class="nav-text">Punto de Venta</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
                 <li class="nav-item">
                     <a href="../appointments/index.php" class="nav-link">
                         <i class="bi bi-calendar-check nav-icon"></i>
@@ -2215,31 +2262,48 @@ try {
                         <span class="badge bg-primary"><?php echo $total_appointments; ?></span>
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a href="../patients/index.php" class="nav-link">
                         <i class="bi bi-people nav-icon"></i>
                         <span class="nav-text">Pacientes</span>
                     </a>
                 </li>
-                <?php if ($user_type === 'admin'): ?>
-                    <li class="nav-item">
+
+                <!-- Hospitalización -->
+                <li class="nav-item">
+                    <?php if (is_module_active('hospitalization')): ?>
                         <a href="../hospitalization/index.php" class="nav-link">
                             <i class="bi bi-hospital nav-icon"></i>
                             <span class="nav-text">Hospitalización</span>
                             <span class="badge bg-info"><?php echo $active_hospitalizations; ?></span>
                         </a>
-                    </li>
-                <?php endif; ?>
-                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 29): ?>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Hospitalización')">
+                            <i class="bi bi-hospital nav-icon"></i>
+                            <span class="nav-text">Hospitalización</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <!-- Laboratorio -->
+                <li class="nav-item">
+                    <?php if (is_module_active('laboratory')): ?>
                         <a href="../laboratory/index.php" class="nav-link">
-                            <i class="bi bi-virus nav-icon"></i>
+                            <i class="bi bi-flask nav-icon"></i>
                             <span class="nav-text">Laboratorio</span>
                         </a>
-                    </li>
-                <?php endif; ?>
-                <?php if ($user_type === 'admin' || $_SESSION['user_id'] == 6): ?>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Laboratorio Clínico')">
+                            <i class="bi bi-flask nav-icon"></i>
+                            <span class="nav-text">Laboratorio</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <!-- Inventario -->
+                <li class="nav-item">
+                    <?php if (is_module_active('inventory')): ?>
                         <a href="../inventory/index.php" class="nav-link">
                             <i class="bi bi-box-seam nav-icon"></i>
                             <span class="nav-text">Inventario</span>
@@ -2247,62 +2311,124 @@ try {
                                 <span class="badge bg-warning"><?php echo $pending_purchases; ?></span>
                             <?php endif; ?>
                         </a>
-                    </li>
-                <?php endif; ?>
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Inventario')">
+                            <i class="bi bi-box-seam nav-icon"></i>
+                            <span class="nav-text">Inventario</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
 
-                <?php if ($user_type === 'admin'): ?>
-                    <li class="nav-item">
+                <!-- Otros Módulos -->
+                <li class="nav-item">
+                    <?php if (is_module_active('imaging')): ?>
                         <a href="../minor_procedures/index.php" class="nav-link">
                             <i class="bi bi-bandaid nav-icon"></i>
                             <span class="nav-text">Procedimientos</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Procedimientos Menores')">
+                            <i class="bi bi-bandaid nav-icon"></i>
+                            <span class="nav-text">Procedimientos</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <li class="nav-item">
+                    <?php if (is_module_active('imaging')): ?>
                         <a href="../examinations/index.php" class="nav-link">
                             <i class="bi bi-file-earmark-medical nav-icon"></i>
                             <span class="nav-text">Exámenes</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Exámenes Especializados')">
+                            <i class="bi bi-file-earmark-medical nav-icon"></i>
+                            <span class="nav-text">Exámenes</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <li class="nav-item">
+                    <?php if (is_module_active('purchases')): ?>
                         <a href="../purchases/index.php" class="nav-link">
                             <i class="bi bi-cart nav-icon"></i>
                             <span class="nav-text">Compras</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Compras')">
+                            <i class="bi bi-cart nav-icon"></i>
+                            <span class="nav-text">Compras</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <li class="nav-item">
+                    <?php if (is_module_active('sales')): ?>
                         <a href="../sales/index.php" class="nav-link">
                             <i class="bi bi-receipt nav-icon"></i>
                             <span class="nav-text">Ventas</span>
                         </a>
-                    </li>
-                <?php endif; ?>
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Ventas y Facturación')">
+                            <i class="bi bi-receipt nav-icon"></i>
+                            <span class="nav-text">Ventas</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
 
-                <?php if ($user_type === 'admin'): ?>
-                    <li class="nav-item">
+                <li class="nav-item">
+                    <?php if (is_module_active('finances')): ?>
                         <a href="../billing/index.php" class="nav-link">
                             <i class="bi bi-cash-coin nav-icon"></i>
                             <span class="nav-text">Cobros</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Finanzas')">
+                            <i class="bi bi-cash-coin nav-icon"></i>
+                            <span class="nav-text">Cobros</span>
+                        </a>
+                    <?php endif; ?>
+                </li>
+
+                <li class="nav-item">
+                    <?php if (is_module_active('reports')): ?>
                         <a href="../reports/index.php" class="nav-link">
                             <i class="bi bi-graph-up nav-icon"></i>
                             <span class="nav-text">Reportes</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="../settings/index.php" class="nav-link">
-                            <i class="bi bi-gear nav-icon"></i>
-                            <span class="nav-text">Configuración</span>
+                    <?php else: ?>
+                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Reportes Estadísticos')">
+                            <i class="bi bi-graph-up nav-icon"></i>
+                            <span class="nav-text">Reportes</span>
                         </a>
-                    </li>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </li>
+
+                <li class="nav-item">
+                    <a href="../settings/subscription.php" class="nav-link">
+                        <i class="bi bi-credit-card nav-icon"></i>
+                        <span class="nav-text">Suscripción</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../settings/index.php" class="nav-link">
+                        <i class="bi bi-gear nav-icon"></i>
+                        <span class="nav-text">Configuración</span>
+                    </a>
+                </li>
             </ul>
         </nav>
     </aside>
 
     <!-- Contenedor Principal -->
     <div class="dashboard-container">
+        <?php if (isset($subscription_warning) && $subscription_warning): ?>
+            <div class="alert alert-warning alert-dismissible fade show m-3" role="alert" style="z-index: 1000;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Atención:</strong> Su suscripción ha vencido o el hospital está inactivo. Contacte al administrador.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
@@ -5169,6 +5295,20 @@ try {
                     console.error('Error:', error);
                     Swal.fire('Error', 'Error al procesar el cobro', 'error');
                 });
+        function lockedModule(moduleName) {
+            Swal.fire({
+                title: 'Módulo Bloqueado',
+                text: 'El módulo "' + moduleName + '" no está incluido en su suscripción actual o no ha sido adquirido.',
+                icon: 'lock',
+                showCancelButton: true,
+                confirmButtonText: 'Contactar Ventas',
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#0d6efd'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open('https://wa.me/tu_numero_whatsapp', '_blank');
+                }
+            });
         }
     </script>
 </body>
