@@ -13,6 +13,9 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -65,6 +68,7 @@ try {
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -79,7 +83,7 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    
+
     <style>
         :root {
             /* Tema dia y layout, replicamos los esenciales */
@@ -100,13 +104,15 @@ try {
             --space-lg: 1.5rem;
             --radius-md: 0.5rem;
             --radius-lg: 0.75rem;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
         }
+
         body {
             font-family: var(--font-family);
             background-color: var(--color-bg);
             color: var(--color-text);
         }
+
         .dashboard-header {
             background-color: var(--color-card);
             border-bottom: 1px solid var(--color-border);
@@ -115,11 +121,13 @@ try {
             align-items: center;
             justify-content: space-between;
         }
+
         .main-content {
             padding: var(--space-lg);
             max-width: 1400px;
             margin: 0 auto;
         }
+
         .appointments-section {
             background: var(--color-card);
             border: 1px solid var(--color-border);
@@ -127,6 +135,7 @@ try {
             padding: var(--space-lg);
             box-shadow: var(--shadow-sm);
         }
+
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -136,10 +145,19 @@ try {
             font-size: 0.85rem;
             font-weight: 500;
         }
-        .status-pending { background: rgba(var(--bs-warning-rgb), 0.1); color: var(--color-warning); }
-        .status-linked { background: rgba(var(--bs-success-rgb), 0.1); color: var(--color-success); }
+
+        .status-pending {
+            background: rgba(var(--bs-warning-rgb), 0.1);
+            color: var(--color-warning);
+        }
+
+        .status-linked {
+            background: rgba(var(--bs-success-rgb), 0.1);
+            color: var(--color-success);
+        }
     </style>
 </head>
+
 <body>
     <div class="dashboard-header">
         <div class="d-flex align-items-center gap-3">
@@ -152,8 +170,9 @@ try {
 
     <div class="main-content">
         <div class="appointments-section">
-            <h5 class="mb-4"><i class="bi bi-hospital me-2 text-primary"></i> Registro de Administración a Pacientes</h5>
-            
+            <h5 class="mb-4"><i class="bi bi-hospital me-2 text-primary"></i> Registro de Administración a Pacientes
+            </h5>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle" id="hospitalMedsTable">
                     <thead class="table-light">
@@ -169,32 +188,37 @@ try {
                     </thead>
                     <tbody>
                         <?php foreach ($hospital_meds as $med): ?>
-                        <tr>
-                            <td><?php echo date('d/m/Y H:i', strtotime($med['fecha_cargo'])); ?></td>
-                            <td>
-                                <strong><?php echo htmlspecialchars($med['nombre_paciente'] . ' ' . $med['apellido_paciente']); ?></strong>
-                            </td>
-                            <td>
-                                <?php echo htmlspecialchars($med['cargo_descripcion']); ?>
-                                <?php if($med['referencia_id']) echo '<br><small class="text-success">Vinculado: ' . htmlspecialchars($med['inv_medicamento']) . '</small>'; ?>
-                            </td>
-                            <td><span class="badge bg-secondary"><?php echo $med['cargo_cantidad']; ?></span></td>
-                            <td>
-                                <?php if ($med['referencia_id']): ?>
-                                    <span class="status-badge status-linked"><i class="bi bi-check-circle"></i> Descargado</span>
-                                <?php else: ?>
-                                    <span class="status-badge status-pending"><i class="bi bi-clock"></i> Pendiente</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><small class="text-muted"><?php echo htmlspecialchars($med['registrado_por_nombre'] ?? 'Sistema'); ?></small></td>
-                            <td>
-                                <?php if (!$med['referencia_id'] && $can_manage_inventory): ?>
-                                    <button class="btn btn-sm btn-primary" onclick="openLinkModal(<?php echo $med['id_cargo']; ?>, '<?php echo htmlspecialchars(addslashes($med['cargo_descripcion'])); ?>', <?php echo $med['cargo_cantidad']; ?>)">
-                                        <i class="bi bi-link-45deg"></i> Asignar
-                                    </button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
+                                <tr>
+                                    <td><?php echo date('d/m/Y H:i', strtotime($med['fecha_cargo'])); ?></td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($med['nombre_paciente'] . ' ' . $med['apellido_paciente']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php echo htmlspecialchars($med['cargo_descripcion']); ?>
+                                        <?php if ($med['referencia_id'])
+                                            echo '<br><small class="text-success">Vinculado: ' . htmlspecialchars($med['inv_medicamento']) . '</small>'; ?>
+                                    </td>
+                                    <td><span class="badge bg-secondary"><?php echo $med['cargo_cantidad']; ?></span></td>
+                                    <td>
+                                        <?php if ($med['referencia_id']): ?>
+                                                <span class="status-badge status-linked"><i class="bi bi-check-circle"></i>
+                                                    Descargado</span>
+                                        <?php else: ?>
+                                                <span class="status-badge status-pending"><i class="bi bi-clock"></i> Pendiente</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><small
+                                            class="text-muted"><?php echo htmlspecialchars($med['registrado_por_nombre'] ?? 'Sistema'); ?></small>
+                                    </td>
+                                    <td>
+                                        <?php if (!$med['referencia_id'] && $can_manage_inventory): ?>
+                                                <button class="btn btn-sm btn-primary"
+                                                    onclick="openLinkModal(<?php echo $med['id_cargo']; ?>, '<?php echo htmlspecialchars(addslashes($med['cargo_descripcion'])); ?>', <?php echo $med['cargo_cantidad']; ?>)">
+                                                    <i class="bi bi-link-45deg"></i> Asignar
+                                                </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -215,7 +239,8 @@ try {
                     <div class="modal-body">
                         <div class="alert alert-info">
                             <strong>Descarga de Inventario</strong><br>
-                            Al confirmar, se descontará la cantidad del <strong>Stock Hospital</strong> del medicamento seleccionado.
+                            Al confirmar, se descontará la cantidad del <strong>Stock Hospital</strong> del medicamento
+                            seleccionado.
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Medicamento Administrado</label>
@@ -226,15 +251,16 @@ try {
                             <select class="form-select" name="id_inventario" id="link_id_inventario" required>
                                 <option value="">Seleccione un medicamento...</option>
                                 <?php foreach ($inventory_list as $inv): ?>
-                                    <option value="<?php echo $inv['id_inventario']; ?>">
-                                        <?php echo htmlspecialchars($inv['nom_medicamento'] . ' ' . $inv['presentacion_med'] . ' (Hosp: ' . $inv['stock_hospital'] . ')'); ?>
-                                    </option>
+                                        <option value="<?php echo $inv['id_inventario']; ?>">
+                                            <?php echo htmlspecialchars($inv['nom_medicamento'] . ' ' . $inv['presentacion_med'] . ' (Hosp: ' . $inv['stock_hospital'] . ')'); ?>
+                                        </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cantidad a Descontar</label>
-                            <input type="number" class="form-control" name="cantidad" id="link_cantidad" required min="1" step="0.01">
+                            <input type="number" class="form-control" name="cantidad" id="link_cantidad" required
+                                min="1" step="0.01">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -255,7 +281,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             $('#hospitalMedsTable').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -265,9 +291,9 @@ try {
             });
 
             // Handle Form submission with AJAX
-            $('#linkInventoryForm').on('submit', function(e) {
+            $('#linkInventoryForm').on('submit', function (e) {
                 e.preventDefault();
-                
+
                 const btn = $('#btnConfirmLink');
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...');
 
@@ -276,7 +302,7 @@ try {
                     url: $(this).attr('action'),
                     data: $(this).serialize(),
                     dataType: 'json',
-                    success: function(response) {
+                    success: function (response) {
                         if (response.success) {
                             Swal.fire({
                                 icon: 'success',
@@ -296,7 +322,7 @@ try {
                             btn.prop('disabled', false).html('Confirmar y Descontar');
                         }
                     },
-                    error: function() {
+                    error: function () {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error de servidor',
@@ -318,4 +344,5 @@ try {
         }
     </script>
 </body>
+
 </html>

@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -264,41 +267,41 @@ try {
         $file_url = "api/get_result_file.php?id=" . $archivo_orden['id_archivo'];
         $mime_type = $archivo_orden['tipo_contenido'];
         ?>
-        <div class="result-file-container">
-            <h3 style="color: #7c90db; font-size: 16px; margin-top: 0; margin-bottom: 15px; text-align: left;">
-                <i class="bi bi-file-earmark-medical"></i> Archivo de Resultados Adjunto
-            </h3>
+            <div class="result-file-container">
+                <h3 style="color: #7c90db; font-size: 16px; margin-top: 0; margin-bottom: 15px; text-align: left;">
+                    <i class="bi bi-file-earmark-medical"></i> Archivo de Resultados Adjunto
+                </h3>
 
-            <?php if (strpos($mime_type, 'image') !== false): ?>
-                <img src="<?php echo htmlspecialchars($file_url); ?>" class="result-img" alt="Resultado Adjunto">
-            <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
-                <div class="pdf-link-container">
-                    <i class="bi bi-file-pdf text-danger" style="font-size: 24px;"></i>
-                    <p style="margin: 10px 0 0 0; font-weight: 600;">Se adjuntó un archivo PDF de resultados.</p>
-                    <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank" class="no-print"
-                        style="color: #7c90db; text-decoration: none; font-size: 13px;">
-                        Haga clic aquí para visualizar el PDF
-                    </a>
-                </div>
-            <?php endif; ?>
-        </div>
+                <?php if (strpos($mime_type, 'image') !== false): ?>
+                        <img src="<?php echo htmlspecialchars($file_url); ?>" class="result-img" alt="Resultado Adjunto">
+                <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
+                        <div class="pdf-link-container">
+                            <i class="bi bi-file-pdf text-danger" style="font-size: 24px;"></i>
+                            <p style="margin: 10px 0 0 0; font-weight: 600;">Se adjuntó un archivo PDF de resultados.</p>
+                            <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank" class="no-print"
+                                style="color: #7c90db; text-decoration: none; font-size: 13px;">
+                                Haga clic aquí para visualizar el PDF
+                            </a>
+                        </div>
+                <?php endif; ?>
+            </div>
     <?php endif; ?>
 
     <?php foreach ($pruebas as $prueba): ?>
-        <section class="test-section">
-            <div class="test-header"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th width="40%">Parámetro</th>
-                        <th width="20%">Resultado</th>
-                        <th width="15%">Unidades</th>
-                        <th width="25%">Valores de Referencia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $stmt_res = $conn->prepare("
+            <section class="test-section">
+                <div class="test-header"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Parámetro</th>
+                            <th width="20%">Resultado</th>
+                            <th width="15%">Unidades</th>
+                            <th width="25%">Valores de Referencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $stmt_res = $conn->prepare("
                     SELECT rl.*, pp.nombre_parametro, pp.unidad_medida, 
                            pp.valor_ref_hombre_min, pp.valor_ref_hombre_max,
                            pp.valor_ref_mujer_min, pp.valor_ref_mujer_max,
@@ -308,49 +311,49 @@ try {
                     WHERE rl.id_orden_prueba = ?
                     ORDER BY pp.orden_visualizacion
                 ");
-                    $stmt_res->execute([$prueba['id_orden_prueba']]);
-                    $resultados = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
+                        $stmt_res->execute([$prueba['id_orden_prueba']]);
+                        $resultados = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
-                    foreach ($resultados as $res):
-                        // Range logic for display
-                        $min = 0;
-                        $max = 0;
-                        if ($edad <= 12) {
-                            $min = $res['valor_ref_pediatrico_min'];
-                            $max = $res['valor_ref_pediatrico_max'];
-                        } elseif ($genero === 'Masculino') {
-                            $min = $res['valor_ref_hombre_min'];
-                            $max = $res['valor_ref_hombre_max'];
-                        } else {
-                            $min = $res['valor_ref_mujer_min'];
-                            $max = $res['valor_ref_mujer_max'];
-                        }
-                        $ref_text = ($min !== null && $max !== null) ? "$min - $max" : "N/A";
+                        foreach ($resultados as $res):
+                            // Range logic for display
+                            $min = 0;
+                            $max = 0;
+                            if ($edad <= 12) {
+                                $min = $res['valor_ref_pediatrico_min'];
+                                $max = $res['valor_ref_pediatrico_max'];
+                            } elseif ($genero === 'Masculino') {
+                                $min = $res['valor_ref_hombre_min'];
+                                $max = $res['valor_ref_hombre_max'];
+                            } else {
+                                $min = $res['valor_ref_mujer_min'];
+                                $max = $res['valor_ref_mujer_max'];
+                            }
+                            $ref_text = ($min !== null && $max !== null) ? "$min - $max" : "N/A";
 
-                        $flag_class = '';
-                        if ($res['fuera_rango'] === 'Alto')
-                            $flag_class = 'flag-H';
-                        elseif ($res['fuera_rango'] === 'Bajo')
-                            $flag_class = 'flag-L';
-                        ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($res['nombre_parametro']); ?></td>
-                            <td>
-                                <strong class="<?php echo $flag_class; ?>">
-                                    <?php echo htmlspecialchars($res['valor_resultado']); ?>
-                                </strong>
-                                <?php if ($res['fuera_rango'] !== 'Normal'): ?>
-                                    <span
-                                        class="<?php echo $flag_class; ?>">(<?php echo substr($res['fuera_rango'], 0, 1); ?>)</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo htmlspecialchars($res['unidad_medida']); ?></td>
-                            <td><small><?php echo $ref_text; ?></small></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </section>
+                            $flag_class = '';
+                            if ($res['fuera_rango'] === 'Alto')
+                                $flag_class = 'flag-H';
+                            elseif ($res['fuera_rango'] === 'Bajo')
+                                $flag_class = 'flag-L';
+                            ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($res['nombre_parametro']); ?></td>
+                                    <td>
+                                        <strong class="<?php echo $flag_class; ?>">
+                                            <?php echo htmlspecialchars($res['valor_resultado']); ?>
+                                        </strong>
+                                        <?php if ($res['fuera_rango'] !== 'Normal'): ?>
+                                                <span
+                                                    class="<?php echo $flag_class; ?>">(<?php echo substr($res['fuera_rango'], 0, 1); ?>)</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($res['unidad_medida']); ?></td>
+                                    <td><small><?php echo $ref_text; ?></small></td>
+                                </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </section>
     <?php endforeach; ?>
 
     <div class="signatures">

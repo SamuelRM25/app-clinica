@@ -1,6 +1,9 @@
 <?php
 // Configuración de la base de datos
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
 
 try {
     $database = new Database();

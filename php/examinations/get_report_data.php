@@ -5,6 +5,9 @@ ob_start();
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Limpiar cualquier output previo (espacios, warnings)
 ob_clean();
@@ -24,7 +27,7 @@ try {
     $conn = $database->getConnection();
 
     $date = $_GET['date'];
-    
+
     // Definir jornada: 8:00 AM del día seleccionado hasta 8:00 AM del día siguiente
     // Jornada 1: 08:00 AM a 05:00 PM (17:00)
     // Jornada 2: 05:00 PM (17:00) a 08:00 AM del día siguiente
@@ -46,9 +49,9 @@ try {
     $stmt->bindParam(':start_dt', $start_datetime);
     $stmt->bindParam(':end_dt', $end_datetime);
     $stmt->execute();
-    
+
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Calcular total
     $total = 0;
     foreach ($data as $row) {

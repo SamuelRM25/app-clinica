@@ -31,7 +31,7 @@ $solicitudes = [];
 $db_error    = null;
 
 if ($logged_in) {
-    $db_file = __DIR__ . '/hospital_pruebas/config/database.php';
+    $db_file = __DIR__ . '/base/config/database.php';
     
     if (!file_exists($db_file)) {
         $db_error = "El archivo de configuración de base de datos no se encuentra en el servidor. Ruta buscada: " . $db_file;
@@ -97,6 +97,54 @@ if ($logged_in) {
                     $conn->prepare("UPDATE hospitales SET modulos_activos=?, tipo_suscripcion=?, estado_suscripcion=?, fecha_vencimiento=? WHERE id_hospital=?")
                          ->execute([json_encode($mods), $_POST['tipo_suscripcion'], $_POST['estado'], ($_POST['fecha_vencimiento']?:null), $id_h]);
                     echo json_encode(['status'=>'success', 'message'=>'Actualizado']);
+                } elseif ($action === 'create_hospital') {
+                    $nombre = trim($_POST['nombre']);
+                    $codigo = trim($_POST['codigo']);
+                    $stmt = $conn->prepare("INSERT INTO hospitales (nombre, codigo_hospital, modulos_activos, estado_suscripcion) VALUES (?, ?, '[\"core\"]', 'Prueba')");
+                    $stmt->execute([$nombre, $codigo]);
+                    echo json_encode(['status'=>'success', 'message'=>'Hospital creado']);
+                } elseif ($action === 'create_user') {
+                    $id_h = (int)$_POST['id_hospital'];
+                    $user = trim($_POST['usuario']);
+                    $pass = trim($_POST['password']);
+                    $nombre = trim($_POST['nombre']);
+                    $apellido = trim($_POST['apellido']);
+                    $especialidad = trim($_POST['especialidad'] ?? '');
+                    $tipo = $_POST['tipoUsuario'];
+                    $telefono = trim($_POST['telefono']);
+                    $email = trim($_POST['email'] ?? '');
+                    
+                    $h_stmt = $conn->prepare("SELECT nombre FROM hospitales WHERE id_hospital = ?");
+                    $h_stmt->execute([$id_h]);
+                    $clinica_nombre = $h_stmt->fetchColumn() ?: 'Clínica';
+
+                    $stmt = $conn->prepare("
+                        INSERT INTO usuarios (id_hospital, usuario, password, nombre, apellido, especialidad, tipoUsuario, clinica, telefono, email) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$id_h, $user, $pass, $nombre, $apellido, $especialidad, $tipo, $clinica_nombre, $telefono, $email]);
+                    echo json_encode(['status'=>'success', 'message'=>'Usuario creado']);
+                } elseif ($action === 'get_users') {
+                    $id_h = (int)$_GET['id_hospital'];
+                    $stmt = $conn->prepare("SELECT * FROM usuarios WHERE id_hospital = ?");
+                    $stmt->execute([$id_h]);
+                    echo json_encode($stmt->fetchAll());
+                } elseif ($action === 'update_user') {
+                    $id_u = (int)$_POST['id_usuario'];
+                    $stmt = $conn->prepare("UPDATE usuarios SET usuario=?, password=?, nombre=?, apellido=?, especialidad=?, tipoUsuario=?, telefono=?, email=? WHERE idUsuario=?");
+                    $stmt->execute([$_POST['usuario'], $_POST['password'], $_POST['nombre'], $_POST['apellido'], $_POST['especialidad'], $_POST['tipoUsuario'], $_POST['telefono'], $_POST['email'], $id_u]);
+                    echo json_encode(['status'=>'success', 'message'=>'Usuario actualizado']);
+                } elseif ($action === 'delete_user') {
+                    $id_u = (int)$_POST['id_usuario'];
+                    $conn->prepare("DELETE FROM usuarios WHERE idUsuario = ?")->execute([$id_u]);
+                    echo json_encode(['status'=>'success', 'message'=>'Usuario eliminado']);
+                } elseif ($action === 'delete_hospital') {
+                    $id_h = (int)$_POST['id_hospital'];
+                    // Primero borrar usuarios de ese hospital
+                    $conn->prepare("DELETE FROM usuarios WHERE id_hospital = ?")->execute([$id_h]);
+                    // Luego borrar hospital
+                    $conn->prepare("DELETE FROM hospitales WHERE id_hospital = ?")->execute([$id_h]);
+                    echo json_encode(['status'=>'success', 'message'=>'Hospital eliminado']);
                 }
             } catch (Exception $e) {
                 echo json_encode(['status'=>'error', 'message'=>$e->getMessage()]);
@@ -299,9 +347,20 @@ $module_labels = [
           <?php endforeach; ?>
         </td>
         <td>
-          <button class="btn btn-sm btn-outline-primary" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>, <?php echo htmlspecialchars(json_encode($h), ENT_QUOTES); ?>)'>
-            <i class="bi bi-pencil"></i>
-          </button>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>, <?php echo htmlspecialchars(json_encode($h), ENT_QUOTES); ?>)' title="Editar Hospital">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-success" onclick="openCreateUser(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Crear Usuario">
+              <i class="bi bi-person-plus"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" onclick="viewUsers(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Ver Usuarios">
+              <i class="bi bi-people"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Eliminar Hospital">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
         </td>
       </tr>
     <?php endforeach; ?>
@@ -395,7 +454,7 @@ $module_labels = [
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
       <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Editar Hospital</h5>
+        <h5 class="modal-title fw-bold text-primary" id="hospModalTitle"><i class="bi bi-pencil-square me-2"></i>Editar Hospital</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -405,23 +464,27 @@ $module_labels = [
             <label class="form-label small text-secondary">Nombre</label>
             <input type="text" id="editNombre" class="form-control">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-6" id="codigoHospWrap">
+            <label class="form-label small text-secondary">Código del Hospital</label>
+            <input type="text" id="editCodigo" class="form-control" placeholder="Ej: HOSP01">
+          </div>
+          <div class="col-md-3 edit-only">
             <label class="form-label small text-secondary">Estado</label>
             <select id="editEstado" class="form-select">
               <option>Activo</option><option>Inactivo</option><option>Vencido</option><option>Prueba</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3 edit-only">
             <label class="form-label small text-secondary">Tipo Suscripción</label>
             <select id="editTipo" class="form-select">
               <option>Mensual</option><option>Anual</option><option>De por vida</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 edit-only">
             <label class="form-label small text-secondary">Fecha Vencimiento</label>
             <input type="date" id="editVenc" class="form-control">
           </div>
-          <div class="col-12">
+          <div class="col-12 edit-only">
             <label class="form-label small text-secondary mb-2">Módulos Activos</label>
             <div class="d-flex flex-wrap gap-2">
               <?php foreach ($all_modules as $m): ?>
@@ -436,7 +499,153 @@ $module_labels = [
       </div>
       <div class="modal-footer border-0">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary px-4 fw-semibold" onclick="submitEditHospital()"><i class="bi bi-save me-1"></i>Guardar Cambios</button>
+        <button class="btn btn-primary px-4 fw-semibold" onclick="submitHosp()"><i class="bi bi-save me-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Crear Usuario -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-success"><i class="bi bi-person-plus me-2"></i>Crear Nuevo Usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="userHospId">
+        <p class="text-secondary small mb-4">Hospital: <strong id="userHospName" class="text-white"></strong></p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Usuario (Login)</label>
+            <input type="text" id="newUserLogin" class="form-control" placeholder="ej: admin1">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Contraseña</label>
+            <input type="text" id="newUserPass" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Nombre</label>
+            <input type="text" id="newUserName" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Apellido</label>
+            <input type="text" id="newUserApe" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Tipo de Usuario</label>
+            <select id="newUserTipo" class="form-select">
+              <option value="admin">Administrador</option>
+              <option value="doc">Doctor</option>
+              <option value="user">Usuario Regular</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Especialidad (opcional)</label>
+            <input type="text" id="newUserEsp" class="form-control" placeholder="ej: Pediatría">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Teléfono</label>
+            <input type="text" id="newUserTel" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Email (opcional)</label>
+            <input type="email" id="newUserEmail" class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success px-4 fw-semibold" onclick="submitCreateUser()">Guardar Usuario</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ver Usuarios -->
+<div class="modal fade" id="viewUsersModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-info"><i class="bi bi-people me-2"></i>Usuarios del Hospital</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary small">Lista de usuarios registrados en: <strong id="viewUsersHospName" class="text-white"></strong></p>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover border-secondary small mt-2">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre Completo</th>
+                <th>Tipo</th>
+                <th>Especialidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="viewUsersBody">
+              <!-- Cargado via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Editar Usuario -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-warning"><i class="bi bi-pencil me-2"></i>Editar Usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editUserId">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Usuario</label>
+            <input type="text" id="editUserLogin" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Contraseña</label>
+            <input type="text" id="editUserPass" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Nombre</label>
+            <input type="text" id="editUserName" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Apellido</label>
+            <input type="text" id="editUserApe" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Tipo</label>
+            <select id="editUserTipo" class="form-select">
+              <option value="admin">Administrador</option>
+              <option value="doc">Doctor</option>
+              <option value="user">Usuario Regular</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Especialidad</label>
+            <input type="text" id="editUserEsp" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Teléfono</label>
+            <input type="text" id="editUserTel" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary">Email</label>
+            <input type="email" id="editUserEmail" class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-warning px-4 fw-semibold" onclick="submitUpdateUser()">Guardar Cambios</button>
       </div>
     </div>
   </div>
@@ -494,13 +703,26 @@ async function rejectReq(id) {
     Swal.fire(j.status==='success'?'Rechazada':'Error', j.message, j.status).then(()=>location.reload());
 }
 
-// ── EDIT HOSPITAL ──────────────────────────────────────────────────────────
+// ── HOSPITALES ─────────────────────────────────────────────────────────────
+function openNewHospital() {
+    document.getElementById('editHospId').value = '';
+    document.getElementById('editNombre').value = '';
+    document.getElementById('editCodigo').value = '';
+    document.getElementById('hospModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Nuevo Hospital';
+    document.querySelectorAll('.edit-only').forEach(el => el.style.display = 'none');
+    new bootstrap.Modal(document.getElementById('editHospModal')).show();
+}
+
 function openEditHospital(id, data) {
     document.getElementById('editHospId').value   = id;
     document.getElementById('editNombre').value   = data.nombre;
+    document.getElementById('editCodigo').value   = data.codigo_hospital || '';
     document.getElementById('editEstado').value   = data.estado_suscripcion;
     document.getElementById('editTipo').value     = data.tipo_suscripcion || 'Mensual';
     document.getElementById('editVenc').value     = data.fecha_vencimiento || '';
+    document.getElementById('hospModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Editar Hospital';
+    document.querySelectorAll('.edit-only').forEach(el => el.style.display = '');
+    
     const mods = typeof data.modulos_activos === 'string' ? JSON.parse(data.modulos_activos) : data.modulos_activos;
     document.querySelectorAll('.edit-mod-check').forEach(c => {
         c.checked = mods.includes(c.value);
@@ -508,20 +730,155 @@ function openEditHospital(id, data) {
     new bootstrap.Modal(document.getElementById('editHospModal')).show();
 }
 
-async function submitEditHospital() {
-    const mods = [];
-    document.querySelectorAll('.edit-mod-check:checked').forEach(c => mods.push(c.value));
+async function submitHosp() {
+    const id = document.getElementById('editHospId').value;
     const fd = new FormData();
-    fd.append('action','update_modules');
-    fd.append('id_hospital', document.getElementById('editHospId').value);
-    fd.append('modulos', JSON.stringify(mods));
-    fd.append('tipo_suscripcion', document.getElementById('editTipo').value);
-    fd.append('estado', document.getElementById('editEstado').value);
-    fd.append('fecha_vencimiento', document.getElementById('editVenc').value);
+    
+    if (id) {
+        // UPDATE
+        const mods = [];
+        document.querySelectorAll('.edit-mod-check:checked').forEach(c => mods.push(c.value));
+        fd.append('action','update_modules');
+        fd.append('id_hospital', id);
+        fd.append('modulos', JSON.stringify(mods));
+        fd.append('tipo_suscripcion', document.getElementById('editTipo').value);
+        fd.append('estado', document.getElementById('editEstado').value);
+        fd.append('fecha_vencimiento', document.getElementById('editVenc').value);
+    } else {
+        // CREATE
+        fd.append('action','create_hospital');
+        fd.append('nombre', document.getElementById('editNombre').value);
+        fd.append('codigo', document.getElementById('editCodigo').value);
+    }
+    
     const r = await fetch('index.php',{method:'POST',body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('editHospModal')).hide();
     Swal.fire(j.status==='success'?'Guardado':'Error', j.message, j.status).then(()=>location.reload());
+}
+
+// ── USUARIOS ───────────────────────────────────────────────────────────────
+function openCreateUser(id, name) {
+    document.getElementById('userHospId').value = id;
+    document.getElementById('userHospName').textContent = name;
+    document.getElementById('newUserLogin').value = '';
+    document.getElementById('newUserPass').value = '';
+    new bootstrap.Modal(document.getElementById('createUserModal')).show();
+}
+
+async function submitCreateUser() {
+    const fd = new FormData();
+    fd.append('action', 'create_user');
+    fd.append('id_hospital', document.getElementById('userHospId').value);
+    fd.append('usuario', document.getElementById('newUserLogin').value);
+    fd.append('password', document.getElementById('newUserPass').value);
+    fd.append('nombre', document.getElementById('newUserName').value);
+    fd.append('apellido', document.getElementById('newUserApe').value);
+    fd.append('tipoUsuario', document.getElementById('newUserTipo').value);
+    fd.append('especialidad', document.getElementById('newUserEsp').value);
+    fd.append('telefono', document.getElementById('newUserTel').value);
+    fd.append('email', document.getElementById('newUserEmail').value);
+    
+    const r = await fetch(location.pathname,{method:'POST',body:fd});
+    const j = await r.json();
+    bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+    Swal.fire(j.status==='success'?'Creado':'Error', j.message, j.status);
+}
+
+// ── VER/EDITAR/BORRAR USUARIOS ─────────────────────────────────────────────
+async function viewUsers(id, name) {
+    document.getElementById('viewUsersHospName').textContent = name;
+    refreshUserList(id);
+    new bootstrap.Modal(document.getElementById('viewUsersModal')).show();
+}
+
+async function refreshUserList(id) {
+    const body = document.getElementById('viewUsersBody');
+    body.innerHTML = '<tr><td colspan="5" class="text-center">Cargando...</td></tr>';
+    
+    try {
+        const r = await fetch(location.pathname + '?action=get_users&id_hospital=' + id);
+        const users = await r.json();
+        body.innerHTML = users.length ? '' : '<tr><td colspan="5" class="text-center text-secondary">No hay usuarios</td></tr>';
+        users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${u.usuario}</td>
+                <td>${u.nombre} ${u.apellido}</td>
+                <td><span class="badge bg-secondary">${u.tipoUsuario}</span></td>
+                <td>${u.especialidad || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick='openEditUser(${JSON.stringify(u)})'><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.idUsuario}, ${u.id_hospital})"><i class="bi bi-trash"></i></button>
+                </td>
+            `;
+            body.appendChild(tr);
+        });
+    } catch(e) {
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar usuarios</td></tr>';
+    }
+}
+
+function openEditUser(u) {
+    document.getElementById('editUserId').value = u.idUsuario;
+    document.getElementById('editUserLogin').value = u.usuario;
+    document.getElementById('editUserPass').value = u.password;
+    document.getElementById('editUserName').value = u.nombre;
+    document.getElementById('editUserApe').value = u.apellido;
+    document.getElementById('editUserTipo').value = u.tipoUsuario;
+    document.getElementById('editUserEsp').value = u.especialidad || '';
+    document.getElementById('editUserTel').value = u.telefono || '';
+    document.getElementById('editUserEmail').value = u.email || '';
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+async function submitUpdateUser() {
+    const fd = new FormData();
+    fd.append('action', 'update_user');
+    fd.append('id_usuario', document.getElementById('editUserId').value);
+    fd.append('usuario', document.getElementById('editUserLogin').value);
+    fd.append('password', document.getElementById('editUserPass').value);
+    fd.append('nombre', document.getElementById('editUserName').value);
+    fd.append('apellido', document.getElementById('editUserApe').value);
+    fd.append('tipoUsuario', document.getElementById('editUserTipo').value);
+    fd.append('especialidad', document.getElementById('editUserEsp').value);
+    fd.append('telefono', document.getElementById('editUserTel').value);
+    fd.append('email', document.getElementById('editUserEmail').value);
+    
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
+    const j = await r.json();
+    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+    Swal.fire(j.status==='success'?'Actualizado':'Error', j.message, j.status);
+    // Recargar lista si es posible o esperar a que cierre modal
+}
+
+async function deleteUser(id, hospId) {
+    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_user');
+    fd.append('id_usuario', id);
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
+    const j = await r.json();
+    if (j.status === 'success') refreshUserList(hospId);
+    else Swal.fire('Error', j.message, 'error');
+}
+
+async function deleteHospital(id, name) {
+    const {isConfirmed} = await Swal.fire({
+        title: '¿Eliminar Hospital?',
+        text: `Se borrará "${name}" y TODOS sus usuarios. Esta acción es irreversible.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar todo',
+        confirmButtonColor: '#ef4444'
+    });
+    if (!isConfirmed) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_hospital');
+    fd.append('id_hospital', id);
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
+    const j = await r.json();
+    Swal.fire(j.status==='success'?'Eliminado':'Error', j.message, j.status).then(()=>location.reload());
 }
 </script>
 <?php endif; ?>

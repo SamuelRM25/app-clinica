@@ -12,6 +12,12 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
+
+check_module_access('reports');
+
+
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -1354,10 +1360,10 @@ try {
                 </div>
                 <div class="page-actions">
                     <?php if ($user_type === 'admin'): ?>
-                        <a href="export_jornada.php" target="_blank" class="action-btn">
-                            <i class="bi bi-download me-2"></i>
-                            Exportar Jornada
-                        </a>
+                            <a href="export_jornada.php" target="_blank" class="action-btn">
+                                <i class="bi bi-download me-2"></i>
+                                Exportar Jornada
+                            </a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1639,11 +1645,11 @@ try {
                             <?php echo number_format($total_labs_report, 2); ?>
                         </span>
                         <?php if ($user_type === 'admin'): ?>
-                            <a href="export_labs.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
-                                target="_blank" class="action-btn" style="background: var(--color-success)">
-                                <i class="bi bi-file-earmark-excel me-2"></i>
-                                Exportar Laboratorios
-                            </a>
+                                <a href="export_labs.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                                    target="_blank" class="action-btn" style="background: var(--color-success)">
+                                    <i class="bi bi-file-earmark-excel me-2"></i>
+                                    Exportar Laboratorios
+                                </a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1714,108 +1720,108 @@ try {
 
                 <div class="custom-accordion-wrapper" id="labsAccordion">
                     <?php if (empty($grouped_labs)): ?>
-                        <div class="text-center py-4 text-muted border rounded" style="background: var(--color-surface);">
-                            <i class="bi bi-info-circle me-2"></i>
-                            No se encontraron laboratorios realizados en este período.
-                        </div>
+                            <div class="text-center py-4 text-muted border rounded" style="background: var(--color-surface);">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No se encontraron laboratorios realizados en este período.
+                            </div>
                     <?php else: ?>
-                        <?php
-                        // Obtener el nombre del mes actual para expandirlo por defecto
-                        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                        $mes_actual_nombre = $meses[(int) date('n') - 1] . ' ' . date('Y');
+                            <?php
+                            // Obtener el nombre del mes actual para expandirlo por defecto
+                            $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                            $mes_actual_nombre = $meses[(int) date('n') - 1] . ' ' . date('Y');
 
-                        $mes_id = 0;
-                        foreach ($grouped_labs as $mes_nombre => $mes_data):
-                            $mes_id++;
-                            $is_current_month = ($mes_nombre === $mes_actual_nombre);
-                            ?>
-                            <details class="report-details level-1" name="mes_accordion" <?php echo $is_current_month ? 'open' : ''; ?>>
-                                <summary class="custom-summary">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
-                                        <span><?php echo $mes_nombre; ?></span>
-                                        <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?>
-                                            labs</span>
-                                    </div>
-                                    <span class="text-success">Q <?php echo number_format($mes_data['total'], 2); ?></span>
-                                </summary>
-                                <div class="report-details-body">
-                                    <?php $dia_id = 0;
-                                    foreach ($mes_data['dias'] as $dia_str => $dia_data):
-                                        $dia_id++; ?>
-                                        <details class="report-details level-2" name="dia_accordion_<?php echo $mes_id; ?>">
-                                            <summary class="custom-summary">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-calendar-day me-2 text-info"></i>
-                                                    <span>Día: <?php echo $dia_str; ?></span>
-                                                    <span
-                                                        class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?>
-                                                        labs</span>
-                                                </div>
-                                                <span class="text-success fw-semibold">Q
-                                                    <?php echo number_format($dia_data['total'], 2); ?></span>
-                                            </summary>
-                                            <div class="report-details-body">
-                                                <?php $pac_id = 0;
-                                                foreach ($dia_data['pacientes'] as $paciente_nombre => $pac_data):
-                                                    $pac_id++; ?>
-                                                    <details class="report-details level-3"
-                                                        name="paciente_accordion_<?php echo $mes_id . '_' . $dia_id; ?>">
+                            $mes_id = 0;
+                            foreach ($grouped_labs as $mes_nombre => $mes_data):
+                                $mes_id++;
+                                $is_current_month = ($mes_nombre === $mes_actual_nombre);
+                                ?>
+                                    <details class="report-details level-1" name="mes_accordion" <?php echo $is_current_month ? 'open' : ''; ?>>
+                                        <summary class="custom-summary">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                                <span><?php echo $mes_nombre; ?></span>
+                                                <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?>
+                                                    labs</span>
+                                            </div>
+                                            <span class="text-success">Q <?php echo number_format($mes_data['total'], 2); ?></span>
+                                        </summary>
+                                        <div class="report-details-body">
+                                            <?php $dia_id = 0;
+                                            foreach ($mes_data['dias'] as $dia_str => $dia_data):
+                                                $dia_id++; ?>
+                                                    <details class="report-details level-2" name="dia_accordion_<?php echo $mes_id; ?>">
                                                         <summary class="custom-summary">
                                                             <div class="d-flex align-items-center">
-                                                                <i class="bi bi-person me-2 text-secondary"></i>
-                                                                <span><?php echo htmlspecialchars($paciente_nombre); ?></span>
+                                                                <i class="bi bi-calendar-day me-2 text-info"></i>
+                                                                <span>Día: <?php echo $dia_str; ?></span>
                                                                 <span
-                                                                    class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?>
+                                                                    class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?>
                                                                     labs</span>
                                                             </div>
-                                                            <span class="text-success fw-medium">Q
-                                                                <?php echo number_format($pac_data['total'], 2); ?></span>
+                                                            <span class="text-success fw-semibold">Q
+                                                                <?php echo number_format($dia_data['total'], 2); ?></span>
                                                         </summary>
-                                                        <div class="report-details-body p-0">
-                                                            <div class="table-responsive">
-                                                                <table class="table table-sm table-hover mb-0"
-                                                                    style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
-                                                                    <thead style="background: var(--color-surface);">
-                                                                        <tr>
-                                                                            <th class="ps-3 border-0">Examen (Prueba)</th>
-                                                                            <th class="border-0">Hora</th>
-                                                                            <th class="text-end pe-3 border-0">Precio</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <?php foreach ($pac_data['labs'] as $lab): ?>
-                                                                            <tr>
-                                                                                <td class="ps-3 border-bottom"
-                                                                                    style="border-color: var(--color-border);">
-                                                                                    <span class="badge"
-                                                                                        style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
-                                                                                        <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
-                                                                                    </span>
-                                                                                </td>
-                                                                                <td class="border-bottom"
-                                                                                    style="border-color: var(--color-border);">
-                                                                                    <small
-                                                                                        style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
-                                                                                </td>
-                                                                                <td class="text-end pe-3 fw-bold text-success border-bottom"
-                                                                                    style="border-color: var(--color-border);">
-                                                                                    Q <?php echo number_format($lab['precio'], 2); ?>
-                                                                                </td>
-                                                                            </tr>
-                                                                        <?php endforeach; ?>
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
+                                                        <div class="report-details-body">
+                                                            <?php $pac_id = 0;
+                                                            foreach ($dia_data['pacientes'] as $paciente_nombre => $pac_data):
+                                                                $pac_id++; ?>
+                                                                    <details class="report-details level-3"
+                                                                        name="paciente_accordion_<?php echo $mes_id . '_' . $dia_id; ?>">
+                                                                        <summary class="custom-summary">
+                                                                            <div class="d-flex align-items-center">
+                                                                                <i class="bi bi-person me-2 text-secondary"></i>
+                                                                                <span><?php echo htmlspecialchars($paciente_nombre); ?></span>
+                                                                                <span
+                                                                                    class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?>
+                                                                                    labs</span>
+                                                                            </div>
+                                                                            <span class="text-success fw-medium">Q
+                                                                                <?php echo number_format($pac_data['total'], 2); ?></span>
+                                                                        </summary>
+                                                                        <div class="report-details-body p-0">
+                                                                            <div class="table-responsive">
+                                                                                <table class="table table-sm table-hover mb-0"
+                                                                                    style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
+                                                                                    <thead style="background: var(--color-surface);">
+                                                                                        <tr>
+                                                                                            <th class="ps-3 border-0">Examen (Prueba)</th>
+                                                                                            <th class="border-0">Hora</th>
+                                                                                            <th class="text-end pe-3 border-0">Precio</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                        <?php foreach ($pac_data['labs'] as $lab): ?>
+                                                                                                <tr>
+                                                                                                    <td class="ps-3 border-bottom"
+                                                                                                        style="border-color: var(--color-border);">
+                                                                                                        <span class="badge"
+                                                                                                            style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
+                                                                                                            <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
+                                                                                                        </span>
+                                                                                                    </td>
+                                                                                                    <td class="border-bottom"
+                                                                                                        style="border-color: var(--color-border);">
+                                                                                                        <small
+                                                                                                            style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
+                                                                                                    </td>
+                                                                                                    <td class="text-end pe-3 fw-bold text-success border-bottom"
+                                                                                                        style="border-color: var(--color-border);">
+                                                                                                        Q <?php echo number_format($lab['precio'], 2); ?>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                        <?php endforeach; ?>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </div>
+                                                                    </details>
+                                                            <?php endforeach; ?>
                                                         </div>
                                                     </details>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </details>
-                                    <?php endforeach; ?>
-                                </div>
-                            </details>
-                        <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </details>
+                            <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1824,67 +1830,67 @@ try {
 
     <!-- Nuevo Reporte de Traslados (Restringido) -->
     <?php if ($can_view_transfers): ?>
-        <div class="content-section animate-in delay-4 mt-5">
-            <div class="section-header">
-                <h3 class="section-title">
-                    <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
-                    Reporte de Traslados (Dispensario)
-                </h3>
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <span class="amount-badge expense">
-                        Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
-                    </span>
-                    <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
-                        target="_blank" class="action-btn" style="background: var(--color-success)">
-                        <i class="bi bi-file-earmark-excel me-2"></i>
-                        Exportar Traslados
-                    </a>
+            <div class="content-section animate-in delay-4 mt-5">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
+                        Reporte de Traslados (Dispensario)
+                    </h3>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="amount-badge expense">
+                            Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
+                        </span>
+                        <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                            target="_blank" class="action-btn" style="background: var(--color-success)">
+                            <i class="bi bi-file-earmark-excel me-2"></i>
+                            Exportar Traslados
+                        </a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th class="text-center">Cant.</th>
+                                <th>Destino / Paciente</th>
+                                <th>Realizado por</th>
+                                <th>Fecha y Hora</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($transfers_data as $transfer): ?>
+                                    <tr>
+                                        <td class="fw-semibold"><?php echo htmlspecialchars($transfer['nom_medicamento']); ?></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">
+                                                <?php echo $transfer['cantidad_vendida']; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($transfer['destino']); ?></td>
+                                        <td><?php echo htmlspecialchars($transfer['realizado_por']); ?></td>
+                                        <td>
+                                            <?php echo date('d/m/Y h:i A', strtotime($transfer['fecha_venta'])); ?>
+                                        </td>
+                                        <td class="text-end fw-bold text-danger">
+                                            Q<?php echo number_format($transfer['valor_traslado'], 2); ?>
+                                        </td>
+                                    </tr>
+                            <?php endforeach; ?>
+                            <?php if (empty($transfers_data)): ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            No se encontraron traslados en este período.
+                                        </td>
+                                    </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Medicamento</th>
-                            <th class="text-center">Cant.</th>
-                            <th>Destino / Paciente</th>
-                            <th>Realizado por</th>
-                            <th>Fecha y Hora</th>
-                            <th class="text-end">Valor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($transfers_data as $transfer): ?>
-                            <tr>
-                                <td class="fw-semibold"><?php echo htmlspecialchars($transfer['nom_medicamento']); ?></td>
-                                <td class="text-center">
-                                    <span class="badge bg-light text-dark border">
-                                        <?php echo $transfer['cantidad_vendida']; ?>
-                                    </span>
-                                </td>
-                                <td><?php echo htmlspecialchars($transfer['destino']); ?></td>
-                                <td><?php echo htmlspecialchars($transfer['realizado_por']); ?></td>
-                                <td>
-                                    <?php echo date('d/m/Y h:i A', strtotime($transfer['fecha_venta'])); ?>
-                                </td>
-                                <td class="text-end fw-bold text-danger">
-                                    Q<?php echo number_format($transfer['valor_traslado'], 2); ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <?php if (empty($transfers_data)): ?>
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    No se encontraron traslados en este período.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     <?php endif; ?>
     <div class="row g-4 animate-in delay-2">
         <!-- Procedimientos menores -->
@@ -2035,15 +2041,15 @@ try {
                         </thead>
                         <tbody>
                             <?php foreach ($top_meds_data as $med): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
-                                    <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
-                                </tr>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($med['nombre_med']); ?></td>
+                                        <td class="text-end font-weight-bold"><?php echo $med['total_vendido']; ?></td>
+                                    </tr>
                             <?php endforeach; ?>
                             <?php if (empty($top_meds_data)): ?>
-                                <tr>
-                                    <td colspan="2" class="text-center py-3">Sin datos en el periodo</td>
-                                </tr>
+                                    <tr>
+                                        <td colspan="2" class="text-center py-3">Sin datos en el periodo</td>
+                                    </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -2173,49 +2179,49 @@ try {
                         $p_venta_unit = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
                         $p_costo_unit = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
                         ?>
-                        <tr>
-                            <td>
-                                <div style="font-weight: 600;">
-                                    <?php echo htmlspecialchars($row['nom_medicamento']); ?>
-                                </div>
-                                <?php if (!empty($row['codigo_barras'])): ?>
-                                    <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
-                                        <i class="bi bi-upc"></i> <?php echo htmlspecialchars($row['codigo_barras']); ?>
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600;">
+                                        <?php echo htmlspecialchars($row['nom_medicamento']); ?>
                                     </div>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <span class="amount-badge"><?php echo $row['cantidad_total']; ?></span>
-                            </td>
-                            <td class="text-end text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
-                            <td class="text-end text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
-                            <td class="text-end" style="font-weight: 600;">
-                                Q<?php echo number_format($row['total_venta'], 2); ?></td>
-                            <td class="text-end text-muted">Q<?php echo number_format($row['total_costo'], 2); ?>
-                            </td>
-                            <td class="text-end">
-                                <span class="amount-badge <?php echo $ganancia >= 0 ? 'income' : 'expense'; ?>">
-                                    Q<?php echo number_format($ganancia, 2); ?>
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                <span
-                                    style="font-weight: 700; color: <?php echo $margen > 30 ? 'var(--color-success)' : ($margen > 15 ? 'var(--color-warning)' : 'var(--color-danger)'); ?>;">
-                                    <?php echo number_format($margen, 0); ?>%
-                                </span>
-                            </td>
-                        </tr>
+                                    <?php if (!empty($row['codigo_barras'])): ?>
+                                            <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
+                                                <i class="bi bi-upc"></i> <?php echo htmlspecialchars($row['codigo_barras']); ?>
+                                            </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <span class="amount-badge"><?php echo $row['cantidad_total']; ?></span>
+                                </td>
+                                <td class="text-end text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
+                                <td class="text-end text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
+                                <td class="text-end" style="font-weight: 600;">
+                                    Q<?php echo number_format($row['total_venta'], 2); ?></td>
+                                <td class="text-end text-muted">Q<?php echo number_format($row['total_costo'], 2); ?>
+                                </td>
+                                <td class="text-end">
+                                    <span class="amount-badge <?php echo $ganancia >= 0 ? 'income' : 'expense'; ?>">
+                                        Q<?php echo number_format($ganancia, 2); ?>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <span
+                                        style="font-weight: 700; color: <?php echo $margen > 30 ? 'var(--color-success)' : ($margen > 15 ? 'var(--color-warning)' : 'var(--color-danger)'); ?>;">
+                                        <?php echo number_format($margen, 0); ?>%
+                                    </span>
+                                </td>
+                            </tr>
                     <?php endforeach; ?>
                     <?php if (empty($profitability_data)): ?>
-                        <tr>
-                            <td colspan="8" class="text-center py-5">
-                                <div style="opacity: 0.5; margin-bottom: 1rem;">
-                                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                </div>
-                                <div style="color: var(--color-text-secondary);">No se encontraron ventas en el
-                                    rango seleccionado</div>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div style="opacity: 0.5; margin-bottom: 1rem;">
+                                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <div style="color: var(--color-text-secondary);">No se encontraron ventas en el
+                                        rango seleccionado</div>
+                                </td>
+                            </tr>
                     <?php endif; ?>
                 </tbody>
             </table>

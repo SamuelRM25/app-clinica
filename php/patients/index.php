@@ -12,6 +12,10 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
+
+check_module_access('core'); // Pacientes siempre activo (módulo base)
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -40,35 +44,36 @@ try {
     }
 
     // Consulta optimizada según tipo de usuario
+    $hid = hospital_id();
     if ($user_type === 'doc') {
-        // Pacientes atendidos por este médico
         $stmt = $conn->prepare("
             SELECT DISTINCT p.*, 
                    COUNT(c.id_cita) as total_citas,
                    MAX(c.fecha_cita) as ultima_cita
             FROM pacientes p
             LEFT JOIN citas c ON (p.nombre = c.nombre_pac AND p.apellido = c.apellido_pac)
-            WHERE c.id_doctor = ? OR p.id_paciente IN (
+            WHERE p.id_hospital = ?
+              AND (c.id_doctor = ? OR p.id_paciente IN (
                 SELECT DISTINCT id_paciente FROM historial_clinico 
                 WHERE medico_responsable LIKE ?
-            )
+            ))
             GROUP BY p.id_paciente
             ORDER BY $order_clause
         ");
         $doctor_name = $_SESSION['nombre'] . ' ' . $_SESSION['apellido'];
-        $stmt->execute([$user_id, '%' . $doctor_name . '%']);
+        $stmt->execute([$hid, $user_id, '%' . $doctor_name . '%']);
     } else {
-        // Todos los pacientes para admin/usuarios
         $stmt = $conn->prepare("
             SELECT p.*, 
                    COUNT(c.id_cita) as total_citas,
                    MAX(c.fecha_cita) as ultima_cita
             FROM pacientes p
             LEFT JOIN citas c ON (p.nombre = c.nombre_pac AND p.apellido = c.apellido_pac)
+            WHERE p.id_hospital = ?
             GROUP BY p.id_paciente
             ORDER BY $order_clause
         ");
-        $stmt->execute();
+        $stmt->execute([$hid]);
     }
 
     $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -89,10 +94,10 @@ try {
     $stmt_doctors = $conn->prepare("
         SELECT idUsuario, nombre, apellido 
         FROM usuarios 
-        WHERE tipoUsuario = 'doc' 
+        WHERE tipoUsuario = 'doc' AND id_hospital = ?
         ORDER BY nombre, apellido
     ");
-    $stmt_doctors->execute();
+    $stmt_doctors->execute([hospital_id()]);
     $doctors = $stmt_doctors->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {

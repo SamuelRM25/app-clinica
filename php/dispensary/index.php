@@ -3,7 +3,6 @@
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
-// Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
     exit;
@@ -11,10 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 
-// Establecer zona horaria
+check_module_access('pharmacy');
+
 date_default_timezone_set('America/Guatemala');
-
 verify_session();
 
 try {
@@ -36,7 +37,7 @@ try {
     // Limpiar reservas antiguas (> 60 minutos)
     $conn->exec("DELETE FROM reservas_inventario WHERE fecha_reserva < (NOW() - INTERVAL 1 HOUR)");
 
-    // Obtener items de inventario para venta, restando items reservados
+    // Obtener items de inventario para venta, filtrando por hospital
     $stmt = $conn->prepare("
         SELECT i.id_inventario, i.codigo_barras, i.nom_medicamento, i.mol_medicamento, 
                i.presentacion_med, i.casa_farmaceutica, i.cantidad_med, i.stock_hospital,
@@ -46,34 +47,34 @@ try {
         FROM inventario i
         LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
         LEFT JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
-        WHERE i.cantidad_med > 0 AND i.estado != 'Pendiente'
+        WHERE i.cantidad_med > 0 AND i.estado != 'Pendiente' AND i.id_hospital = ?
         ORDER BY i.nom_medicamento
     ");
-    $stmt->execute();
+    $stmt->execute([hospital_id()]);
     $inventario = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener estadísticas para el dashboard
     // Ventas del día
     $today = date('Y-m-d');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE DATE(fecha_venta) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE DATE(fecha_venta) = ? AND id_hospital = ?");
+    $stmt->execute([$today, hospital_id()]);
     $today_sales = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Ventas del mes
     $month_start = date('Y-m-01');
     $month_end = date('Y-m-t');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
-    $stmt->execute([$month_start, $month_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$month_start, $month_end, hospital_id()]);
     $month_sales = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Total de ventas
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(total) as total FROM ventas WHERE id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $total_sales = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Productos en inventario
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(cantidad_med) as total FROM inventario WHERE cantidad_med > 0");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, SUM(cantidad_med) as total FROM inventario WHERE cantidad_med > 0 AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $inventory_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Información del usuario

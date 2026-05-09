@@ -4,6 +4,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -1374,7 +1377,7 @@ try {
                         <i class="bi bi-box-seam nav-icon"></i>
                         <span class="nav-text">Inventario</span>
                         <?php if ($pending_purchases > 0): ?>
-                            <span class="badge bg-warning"><?php echo $pending_purchases; ?></span>
+                                <span class="badge bg-warning"><?php echo $pending_purchases; ?></span>
                         <?php endif; ?>
                     </a>
                 </li>
@@ -1569,9 +1572,9 @@ try {
                     <div class="highlight-value">Q<?php echo number_format($net_performance, 2); ?></div>
                     <div class="mt-2 opacity-75">
                         <?php if ($net_performance >= 0): ?>
-                            <i class="bi bi-arrow-up-right"></i> Resultado positivo
+                                <i class="bi bi-arrow-up-right"></i> Resultado positivo
                         <?php else: ?>
-                            <i class="bi bi-arrow-down-right"></i> Resultado negativo
+                                <i class="bi bi-arrow-down-right"></i> Resultado negativo
                         <?php endif; ?>
                     </div>
                 </div>

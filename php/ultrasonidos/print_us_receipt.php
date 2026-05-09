@@ -6,6 +6,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 verify_session();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {

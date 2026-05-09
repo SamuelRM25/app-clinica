@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -19,18 +22,18 @@ if (!$data || !isset($data['id']) || !is_numeric($data['id'])) {
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Update billing status
     $stmt = $conn->prepare("UPDATE cobros SET estado = 'Pagado' WHERE in_cobro = ?");
     $stmt->execute([$data['id']]);
-    
+
     if ($stmt->rowCount() === 0) {
         echo json_encode(['status' => 'error', 'message' => 'Cobro no encontrado o ya está marcado como pagado']);
         exit;
     }
-    
+
     echo json_encode(['status' => 'success', 'message' => 'Cobro marcado como pagado correctamente']);
-    
+
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

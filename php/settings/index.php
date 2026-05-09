@@ -3,6 +3,12 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
+
+check_module_access('core');
+
+
 
 verify_session();
 

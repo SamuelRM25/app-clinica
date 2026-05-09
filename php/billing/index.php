@@ -12,6 +12,10 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
+
+check_module_access('core'); // Cobros es módulo base
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -29,13 +33,13 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Obtener todos los pacientes para el dropdown
-    $stmt = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes ORDER BY nombre");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes WHERE id_hospital = ? ORDER BY nombre");
+    $stmt->execute([hospital_id()]);
     $pacientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener doctores (usuarios tipo 'doc')
-    $stmtDoc = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre");
-    $stmtDoc->execute();
+    $stmtDoc = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY nombre");
+    $stmtDoc->execute([hospital_id()]);
     $doctores = $stmtDoc->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener cobros con paginación
@@ -44,8 +48,8 @@ try {
     $offset = ($page - 1) * $limit;
 
     // Obtener total para paginación
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     $total_pages = ceil($total_records / $limit);
 
@@ -54,11 +58,13 @@ try {
         SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente 
         FROM cobros c
         JOIN pacientes p ON c.paciente_cobro = p.id_paciente
+        WHERE c.id_hospital = ?
         ORDER BY c.fecha_consulta DESC
         LIMIT ? OFFSET ?
     ");
-    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+    $stmt->bindValue(1, hospital_id(), PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
     $stmt->execute();
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -66,12 +72,12 @@ try {
     $page_title = "Cobros - Centro Médico RS";
 
     // Obtener estadísticas rápidas
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE()");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE() AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $hoy_cobros = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) as total FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE())");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) as total FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $mes_total = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 } catch (Exception $e) {
@@ -1542,129 +1548,129 @@ try {
                 </div>
 
                 <?php if (count($cobros) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="billing-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Monto</th>
-                                    <th>Fecha</th>
-                                    <th>ID Cobro</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($cobros as $cobro): ?>
-                                    <?php
-                                    $patient_name = htmlspecialchars($cobro['nombre_paciente']);
-                                    $patient_initials = strtoupper(
-                                        substr(explode(' ', $cobro['nombre_paciente'])[0], 0, 1) .
-                                        (isset(explode(' ', $cobro['nombre_paciente'])[1]) ? substr(explode(' ', $cobro['nombre_paciente'])[1], 0, 1) : '')
-                                    );
-                                    ?>
+                        <div class="table-responsive">
+                            <table class="billing-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="amount-badge">
-                                                <i class="bi bi-currency-dollar"></i>
-                                                Q<?php echo number_format($cobro['cantidad_consulta'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>
-                                        </td>
-                                        <td>
-                                            <span
-                                                class="badge bg-secondary">#<?php echo str_pad($cobro['in_cobro'], 5, '0', STR_PAD_LEFT); ?></span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <a href="print_receipt.php?id=<?php echo $cobro['in_cobro']; ?>" target="_blank"
-                                                    class="btn-icon print" title="Imprimir recibo">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                                <button type="button" class="btn-icon view view-details"
-                                                    data-id="<?php echo $cobro['in_cobro']; ?>"
-                                                    data-nombre="<?php echo htmlspecialchars($cobro['nombre_paciente']); ?>"
-                                                    data-monto="<?php echo $cobro['cantidad_consulta']; ?>"
-                                                    data-fecha="<?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>"
-                                                    title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <th>Paciente</th>
+                                        <th>Monto</th>
+                                        <th>Fecha</th>
+                                        <th>ID Cobro</th>
+                                        <th>Acciones</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($cobros as $cobro): ?>
+                                            <?php
+                                            $patient_name = htmlspecialchars($cobro['nombre_paciente']);
+                                            $patient_initials = strtoupper(
+                                                substr(explode(' ', $cobro['nombre_paciente'])[0], 0, 1) .
+                                                (isset(explode(' ', $cobro['nombre_paciente'])[1]) ? substr(explode(' ', $cobro['nombre_paciente'])[1], 0, 1) : '')
+                                            );
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="patient-cell">
+                                                        <div class="patient-avatar">
+                                                            <?php echo $patient_initials; ?>
+                                                        </div>
+                                                        <div class="patient-info">
+                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="amount-badge">
+                                                        <i class="bi bi-currency-dollar"></i>
+                                                        Q<?php echo number_format($cobro['cantidad_consulta'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        class="badge bg-secondary">#<?php echo str_pad($cobro['in_cobro'], 5, '0', STR_PAD_LEFT); ?></span>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="print_receipt.php?id=<?php echo $cobro['in_cobro']; ?>" target="_blank"
+                                                            class="btn-icon print" title="Imprimir recibo">
+                                                            <i class="bi bi-printer"></i>
+                                                        </a>
+                                                        <button type="button" class="btn-icon view view-details"
+                                                            data-id="<?php echo $cobro['in_cobro']; ?>"
+                                                            data-nombre="<?php echo htmlspecialchars($cobro['nombre_paciente']); ?>"
+                                                            data-monto="<?php echo $cobro['cantidad_consulta']; ?>"
+                                                            data-fecha="<?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>"
+                                                            title="Ver detalles">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <!-- Paginación -->
-                    <?php if ($total_pages > 1): ?>
-                        <nav class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                        <i class="bi bi-chevron-left"></i>
-                                    </a>
-                                </li>
+                        <!-- Paginación -->
+                        <?php if ($total_pages > 1): ?>
+                                <nav class="mt-4">
+                                    <ul class="pagination justify-content-center">
+                                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
 
-                                <?php
-                                $range = 2;
-                                $start = max(1, $page - $range);
-                                $end = min($total_pages, $page + $range);
+                                        <?php
+                                        $range = 2;
+                                        $start = max(1, $page - $range);
+                                        $end = min($total_pages, $page + $range);
 
-                                if ($start > 1): ?>
-                                    <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
-                                    <?php if ($start > 2): ?>
-                                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                                    <?php endif; ?>
-                                <?php endif; ?>
+                                        if ($start > 1): ?>
+                                                <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
+                                                <?php if ($start > 2): ?>
+                                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                                <?php endif; ?>
+                                        <?php endif; ?>
 
-                                <?php for ($i = $start; $i <= $end; $i++): ?>
-                                    <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                    </li>
-                                <?php endfor; ?>
+                                        <?php for ($i = $start; $i <= $end; $i++): ?>
+                                                <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+                                                    <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                                </li>
+                                        <?php endfor; ?>
 
-                                <?php if ($end < $total_pages): ?>
-                                    <?php if ($end < $total_pages - 1): ?>
-                                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                                    <?php endif; ?>
-                                    <li class="page-item"><a class="page-link"
-                                            href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a></li>
-                                <?php endif; ?>
+                                        <?php if ($end < $total_pages): ?>
+                                                <?php if ($end < $total_pages - 1): ?>
+                                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                                <?php endif; ?>
+                                                <li class="page-item"><a class="page-link"
+                                                        href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a></li>
+                                        <?php endif; ?>
 
-                                <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                        <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    <?php endif; ?>
+                                        <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                        <?php endif; ?>
 
                 <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-cash-coin"></i>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-cash-coin"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay cobros registrados</h4>
+                            <p class="text-muted mb-3">Comience registrando un nuevo cobro</p>
+                            <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#newBillingModal">
+                                <i class="bi bi-plus-lg"></i>
+                                Registrar primer cobro
+                            </button>
                         </div>
-                        <h4 class="text-muted mb-2">No hay cobros registrados</h4>
-                        <p class="text-muted mb-3">Comience registrando un nuevo cobro</p>
-                        <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#newBillingModal">
-                            <i class="bi bi-plus-lg"></i>
-                            Registrar primer cobro
-                        </button>
-                    </div>
                 <?php endif; ?>
             </section>
         </main>
@@ -1691,8 +1697,8 @@ try {
                                 required autocomplete="off">
                             <datalist id="datalistOptions">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="paciente" name="paciente">
@@ -1703,12 +1709,12 @@ try {
                             <select class="form-select" id="id_doctor" name="id_doctor" required>
                                 <option value="">Seleccione un médico...</option>
                                 <?php foreach ($doctores as $doctor): ?>
-                                    <option value="<?php echo $doctor['idUsuario']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($doctor['nombre']); ?>"
-                                        data-apellido="<?php echo htmlspecialchars($doctor['apellido']); ?>">
-                                        Dr(a).
-                                        <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                    </option>
+                                        <option value="<?php echo $doctor['idUsuario']; ?>"
+                                            data-nombre="<?php echo htmlspecialchars($doctor['nombre']); ?>"
+                                            data-apellido="<?php echo htmlspecialchars($doctor['apellido']); ?>">
+                                            Dr(a).
+                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                        </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

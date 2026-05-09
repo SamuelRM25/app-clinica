@@ -3,17 +3,18 @@
 // Versión: 4.0 - Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
-// Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
     exit;
 }
 
-// Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 
-// Establecer zona horaria
+check_module_access('core'); // Citas es módulo base
+
 date_default_timezone_set('America/Guatemala');
 verify_session();
 
@@ -29,19 +30,19 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Obtener doctores para el dropdown
-    $stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre, apellido");
-    $stmtDocs->execute();
+    $stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY nombre, apellido");
+    $stmtDocs->execute([hospital_id()]);
     $doctors = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
 
     // Estadísticas para la barra lateral
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $total_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Citas de hoy
     $today = date('Y-m-d');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ? AND id_hospital = ?");
+    $stmt->execute([$today, hospital_id()]);
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
@@ -59,8 +60,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Calendario de Citas del Centro Médico RS - Sistema de gestión de agenda médica">
+    <meta name="description" content="Calendario de Citas del Centro Médico RS - Sistema de gestión de agenda médica">
     <title><?php echo $page_title; ?></title>
 
     <!-- Favicon -->

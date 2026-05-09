@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -145,185 +148,185 @@ try {
     // Vista de Impresión (PDF)
     // Usamos HTML limpio que el navegador imprime bien
     ?>
-    <!DOCTYPE html>
-    <html lang="es">
+        <!DOCTYPE html>
+        <html lang="es">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>Reporte Rentabilidad - CMHS</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 12px;
-                color: #333;
-            }
-
-            .header {
-                text-align: center;
-                margin-bottom: 20px;
-                border-bottom: 2px solid #ccc;
-                padding-bottom: 10px;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 18px;
-            }
-
-            h2 {
-                margin: 5px 0;
-                font-size: 14px;
-                font-weight: normal;
-                color: #666;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-            }
-
-            th,
-            td {
-                border: 1px solid #ddd;
-                padding: 6px;
-                text-align: left;
-            }
-
-            th {
-                background-color: #f2f2f2;
-                font-weight: bold;
-            }
-
-            .text-right {
-                text-align: right;
-            }
-
-            .totals {
-                font-weight: bold;
-                background-color: #e9ecef;
-            }
-
-            .print-btn {
-                padding: 10px 20px;
-                background: #007bff;
-                color: white;
-                border: none;
-                cursor: pointer;
-                border-radius: 4px;
-            }
-
-            @media print {
-                .no-print {
-                    display: none;
-                }
-
+        <head>
+            <meta charset="UTF-8">
+            <title>Reporte Rentabilidad - CMHS</title>
+            <style>
                 body {
-                    margin: 0;
-                    padding: 0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-size: 12px;
+                    color: #333;
                 }
-            }
-        </style>
-    </head>
 
-    <body>
-        <div class="no-print" style="margin-bottom: 20px;">
-            <button onclick="window.print()" class="print-btn">🖨️ Imprimir / Guardar como PDF</button>
-            <button onclick="window.close()" class="print-btn" style="background: #6c757d;">Cerrar</button>
-        </div>
+                .header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #ccc;
+                    padding-bottom: 10px;
+                }
 
-        <div class="header">
-            <h1>Centro Médico RS</h1>
-            <h2>Reporte de Rentabilidad en Farmacia</h2>
-            <p>Periodo:
-                <?php echo date('d/m/Y', strtotime($start_date)); ?> al
-                <?php echo date('d/m/Y', strtotime($end_date)); ?>
-            </p>
-        </div>
+                h1 {
+                    margin: 0;
+                    font-size: 18px;
+                }
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Medicamento</th>
-                    <th class="text-right">Cant.</th>
-                    <th class="text-right">P. Venta</th>
-                    <th class="text-right">Costo</th>
-                    <th class="text-right">Total Venta</th>
-                    <th class="text-right">Total Costo</th>
-                    <th class="text-right">Ganancia</th>
-                    <th class="text-right">%</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($data as $row):
-                    $ganancia = $row['total_venta'] - $row['total_costo'];
-                    $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
-                    $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
-                    $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
-                    ?>
+                h2 {
+                    margin: 5px 0;
+                    font-size: 14px;
+                    font-weight: normal;
+                    color: #666;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }
+
+                th,
+                td {
+                    border: 1px solid #ddd;
+                    padding: 6px;
+                    text-align: left;
+                }
+
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+
+                .text-right {
+                    text-align: right;
+                }
+
+                .totals {
+                    font-weight: bold;
+                    background-color: #e9ecef;
+                }
+
+                .print-btn {
+                    padding: 10px 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    border-radius: 4px;
+                }
+
+                @media print {
+                    .no-print {
+                        display: none;
+                    }
+
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+            <div class="no-print" style="margin-bottom: 20px;">
+                <button onclick="window.print()" class="print-btn">🖨️ Imprimir / Guardar como PDF</button>
+                <button onclick="window.close()" class="print-btn" style="background: #6c757d;">Cerrar</button>
+            </div>
+
+            <div class="header">
+                <h1>Centro Médico RS</h1>
+                <h2>Reporte de Rentabilidad en Farmacia</h2>
+                <p>Periodo:
+                    <?php echo date('d/m/Y', strtotime($start_date)); ?> al
+                    <?php echo date('d/m/Y', strtotime($end_date)); ?>
+                </p>
+            </div>
+
+            <table>
+                <thead>
                     <tr>
-                        <td>
-                            <?php echo $row['codigo_barras']; ?>
+                        <th>Código</th>
+                        <th>Medicamento</th>
+                        <th class="text-right">Cant.</th>
+                        <th class="text-right">P. Venta</th>
+                        <th class="text-right">Costo</th>
+                        <th class="text-right">Total Venta</th>
+                        <th class="text-right">Total Costo</th>
+                        <th class="text-right">Ganancia</th>
+                        <th class="text-right">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($data as $row):
+                        $ganancia = $row['total_venta'] - $row['total_costo'];
+                        $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+                        $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
+                        $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
+                        ?>
+                            <tr>
+                                <td>
+                                    <?php echo $row['codigo_barras']; ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars($row['nom_medicamento']); ?>
+                                </td>
+                                <td class="text-right">
+                                    <?php echo $row['cantidad_total']; ?>
+                                </td>
+                                <td class="text-right">Q
+                                    <?php echo number_format($p_venta, 2); ?>
+                                </td>
+                                <td class="text-right">Q
+                                    <?php echo number_format($p_costo, 2); ?>
+                                </td>
+                                <td class="text-right">Q
+                                    <?php echo number_format($row['total_venta'], 2); ?>
+                                </td>
+                                <td class="text-right">Q
+                                    <?php echo number_format($row['total_costo'], 2); ?>
+                                </td>
+                                <td class="text-right">Q
+                                    <?php echo number_format($ganancia, 2); ?>
+                                </td>
+                                <td class="text-right">
+                                    <?php echo number_format($margen, 1); ?>%
+                                </td>
+                            </tr>
+                    <?php endforeach; ?>
+                    <tr class="totals">
+                        <td colspan="5" class="text-right">TOTALES GENERALES</td>
+                        <td class="text-right">Q
+                            <?php echo number_format($total_revenue, 2); ?>
                         </td>
-                        <td>
-                            <?php echo htmlspecialchars($row['nom_medicamento']); ?>
+                        <td class="text-right">Q
+                            <?php echo number_format($total_cost, 2); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($total_profit, 2); ?>
                         </td>
                         <td class="text-right">
-                            <?php echo $row['cantidad_total']; ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($p_venta, 2); ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($p_costo, 2); ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($row['total_venta'], 2); ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($row['total_costo'], 2); ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($ganancia, 2); ?>
-                        </td>
-                        <td class="text-right">
-                            <?php echo number_format($margen, 1); ?>%
+                            <?php echo number_format($total_margin, 1); ?>%
                         </td>
                     </tr>
-                <?php endforeach; ?>
-                <tr class="totals">
-                    <td colspan="5" class="text-right">TOTALES GENERALES</td>
-                    <td class="text-right">Q
-                        <?php echo number_format($total_revenue, 2); ?>
-                    </td>
-                    <td class="text-right">Q
-                        <?php echo number_format($total_cost, 2); ?>
-                    </td>
-                    <td class="text-right">Q
-                        <?php echo number_format($total_profit, 2); ?>
-                    </td>
-                    <td class="text-right">
-                        <?php echo number_format($total_margin, 1); ?>%
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                </tbody>
+            </table>
 
-        <div style="font-size: 10px; color: #888; text-align: center; margin-top: 30px;">
-            Generado por Sistema CMHS el
-            <?php echo date('d/m/Y H:i:s'); ?> por
-            <?php echo $_SESSION['nombre']; ?>
-        </div>
+            <div style="font-size: 10px; color: #888; text-align: center; margin-top: 30px;">
+                Generado por Sistema CMHS el
+                <?php echo date('d/m/Y H:i:s'); ?> por
+                <?php echo $_SESSION['nombre']; ?>
+            </div>
 
-        <script>
-            // Auto-print on load if desired, or just let user click button
-            // window.onload = function() { window.print(); }
-        </script>
-    </body>
+            <script>
+                // Auto-print on load if desired, or just let user click button
+                // window.onload = function() { window.print(); }
+            </script>
+        </body>
 
-    </html>
-    <?php
+        </html>
+        <?php
 
 } catch (PDOException $e) {
     die("Error de base de datos: " . $e->getMessage());

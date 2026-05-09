@@ -1,7 +1,7 @@
 <?php
-// index.php - Sistema de Gestión Médica Centro Médico RS
-// Versión: 2.0 - Rediseño Minimalista con Modo Nocturno
+// index.php - Sistema de Gestión Médica
 session_start();
+require_once __DIR__ . '/config/hospital.php';
 
 // Verificar si el usuario ya está autenticado
 if (isset($_SESSION['user_id'])) {

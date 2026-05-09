@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -1073,8 +1076,8 @@ try {
                                             value="<?php echo $preselected_patient ? htmlspecialchars($preselected_patient['nombre'] . ' ' . $preselected_patient['apellido']) : ''; ?>">
                                         <datalist id="patientDatalist">
                                             <?php foreach ($all_patients as $p): ?>
-                                                <option data-id="<?php echo $p['id_paciente']; ?>"
-                                                    value="<?php echo htmlspecialchars($p['nombre'] . ' ' . $p['apellido']); ?>">
+                                                    <option data-id="<?php echo $p['id_paciente']; ?>"
+                                                        value="<?php echo htmlspecialchars($p['nombre'] . ' ' . $p['apellido']); ?>">
                                                 <?php endforeach; ?>
                                         </datalist>
                                         <input type="hidden" name="id_paciente" id="id_paciente"
@@ -1087,10 +1090,10 @@ try {
                                         <select id="id_doctor" name="id_doctor" class="form-control">
                                             <option value="">Seleccionar doctor...</option>
                                             <?php foreach ($doctors as $doc): ?>
-                                                <option value="<?php echo $doc['idUsuario']; ?>">
-                                                    Dr.
-                                                    <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
-                                                </option>
+                                                    <option value="<?php echo $doc['idUsuario']; ?>">
+                                                        Dr.
+                                                        <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
+                                                    </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -1131,50 +1134,50 @@ try {
                             </div>
 
                             <?php if (count($catalogo) > 0): ?>
-                                <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
-                                    <div class="category-section">
-                                        <h4 class="category-title">
-                                            <i class="bi bi-folder2"></i>
-                                            <?php echo htmlspecialchars($categoria); ?>
-                                        </h4>
+                                    <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
+                                            <div class="category-section">
+                                                <h4 class="category-title">
+                                                    <i class="bi bi-folder2"></i>
+                                                    <?php echo htmlspecialchars($categoria); ?>
+                                                </h4>
 
-                                        <div class="tests-grid">
-                                            <?php foreach ($pruebas as $prueba): ?>
-                                                <div class="test-selection-card"
-                                                    onclick="toggleTest(this, <?php echo htmlspecialchars(json_encode($prueba)); ?>)"
-                                                    data-id="<?php echo $prueba['id_prueba']; ?>">
-                                                    <input type="checkbox" name="pruebas[]"
-                                                        value="<?php echo $prueba['id_prueba']; ?>" class="d-none">
-                                                    <div class="test-selection-checkbox"></div>
-                                                    <div class="test-selection-info">
-                                                        <div class="test-selection-name">
-                                                            <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
-                                                        </div>
-                                                        <div class="test-selection-details">
-                                                            <span class="test-selection-price">
-                                                                Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?>
-                                                            </span>
-                                                            <span class="test-selection-time">
-                                                                <i class="bi bi-clock"></i>
-                                                                <?php echo $prueba['tiempo_procesamiento_horas']; ?>h
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                                                <div class="tests-grid">
+                                                    <?php foreach ($pruebas as $prueba): ?>
+                                                            <div class="test-selection-card"
+                                                                onclick="toggleTest(this, <?php echo htmlspecialchars(json_encode($prueba)); ?>)"
+                                                                data-id="<?php echo $prueba['id_prueba']; ?>">
+                                                                <input type="checkbox" name="pruebas[]"
+                                                                    value="<?php echo $prueba['id_prueba']; ?>" class="d-none">
+                                                                <div class="test-selection-checkbox"></div>
+                                                                <div class="test-selection-info">
+                                                                    <div class="test-selection-name">
+                                                                        <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
+                                                                    </div>
+                                                                    <div class="test-selection-details">
+                                                                        <span class="test-selection-price">
+                                                                            Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?>
+                                                                        </span>
+                                                                        <span class="test-selection-time">
+                                                                            <i class="bi bi-clock"></i>
+                                                                            <?php echo $prueba['tiempo_procesamiento_horas']; ?>h
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                    <?php endforeach; ?>
                                                 </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
+                                            </div>
+                                    <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="empty-state text-center py-5">
-                                    <i class="bi bi-clipboard-x empty-icon"></i>
-                                    <h4 class="text-muted mb-2">No hay pruebas disponibles</h4>
-                                    <p class="text-muted">Configure primero el catálogo de pruebas</p>
-                                    <a href="catalogo_pruebas.php" class="action-btn secondary">
-                                        <i class="bi bi-gear"></i>
-                                        Ir al Catálogo
-                                    </a>
-                                </div>
+                                    <div class="empty-state text-center py-5">
+                                        <i class="bi bi-clipboard-x empty-icon"></i>
+                                        <h4 class="text-muted mb-2">No hay pruebas disponibles</h4>
+                                        <p class="text-muted">Configure primero el catálogo de pruebas</p>
+                                        <a href="catalogo_pruebas.php" class="action-btn secondary">
+                                            <i class="bi bi-gear"></i>
+                                            Ir al Catálogo
+                                        </a>
+                                    </div>
                             <?php endif; ?>
                         </div>
                     </div>

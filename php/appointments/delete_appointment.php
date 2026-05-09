@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -13,9 +16,9 @@ header('Content-Type: application/json');
 if (isset($data['id'])) {
     try {
         $database = new Database();
-if (!($conn = $database->getConnection())) {
-    throw new Exception('Failed to establish database connection');
-}
+        if (!($conn = $database->getConnection())) {
+            throw new Exception('Failed to establish database connection');
+        }
 
         // Prepare and execute the delete statement
         $stmt = $conn->prepare("DELETE FROM citas WHERE id_cita = ?");

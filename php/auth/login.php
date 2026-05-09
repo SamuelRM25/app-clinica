@@ -2,6 +2,10 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+require_once '../../config/hospital.php'; // Identidad de la carpeta
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $database = new Database();
@@ -10,19 +14,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuario = sanitize_input($_POST['usuario']);
     $password = sanitize_input($_POST['password']);
 
-    $stmt = $conn->prepare("SELECT * FROM usuarios WHERE usuario = ?");
-    $stmt->execute([$usuario]);
+    // Buscar el usuario uniendo con la tabla hospitales para validar el CÓDIGO
+    $stmt = $conn->prepare("
+        SELECT u.*, h.id_hospital as hospital_real_id
+        FROM usuarios u
+        JOIN hospitales h ON u.id_hospital = h.id_hospital
+        WHERE u.usuario = ? AND h.codigo_hospital = ?
+    ");
+    $stmt->execute([$usuario, CURRENT_HOSPITAL_CODE]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && $password === $user['password']) {
         $_SESSION['user_id'] = $user['idUsuario'];
         $_SESSION['nombre'] = $user['nombre'];
-        $_SESSION['id_hospital'] = $user['id_hospital'];
+        $_SESSION['id_hospital'] = $user['hospital_real_id']; // Guardamos el ID numérico real
 
         // Cargar configuración del hospital
         require_once '../../includes/multitenant.php';
         $h_config = get_hospital_config($conn, $user['id_hospital']);
-        
+
         if ($h_config) {
             $_SESSION['hospital_nombre'] = $h_config['nombre'];
             $_SESSION['hospital_modulos'] = $h_config['modulos_activos'];

@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -1116,123 +1119,123 @@ try {
 
                     <div id="paramsContainer" class="mb-4">
                         <?php if (count($parametros) > 0): ?>
-                            <?php foreach ($parametros as $idx => $param): ?>
-                                <div class="param-row animate-in delay-<?php echo min($idx + 1, 4); ?>"
-                                    data-id="<?php echo $param['id_parametro']; ?>">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <div class="drag-handle flex-shrink-0" title="Arrastrar para reordenar">
-                                            <i class="bi bi-grip-vertical"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="row">
-                                                <div class="col-md-5 mb-3">
-                                                    <label class="form-label">Nombre del Parámetro *</label>
-                                                    <input type="text" name="params[<?php echo $idx; ?>][nombre]"
-                                                        class="form-control"
-                                                        value="<?php echo htmlspecialchars($param['nombre_parametro']); ?>"
-                                                        required placeholder="Ej: Glucosa, Hemoglobina, etc.">
+                                <?php foreach ($parametros as $idx => $param): ?>
+                                        <div class="param-row animate-in delay-<?php echo min($idx + 1, 4); ?>"
+                                            data-id="<?php echo $param['id_parametro']; ?>">
+                                            <div class="d-flex align-items-start gap-3">
+                                                <div class="drag-handle flex-shrink-0" title="Arrastrar para reordenar">
+                                                    <i class="bi bi-grip-vertical"></i>
                                                 </div>
-                                                <div class="col-md-3 mb-3">
-                                                    <label class="form-label">Unidad de Medida</label>
-                                                    <input type="text" name="params[<?php echo $idx; ?>][unidad]"
-                                                        class="form-control"
-                                                        value="<?php echo htmlspecialchars($param['unidad_medida']); ?>"
-                                                        placeholder="mg/dL, %, g/dL...">
-                                                </div>
-                                                <div class="col-md-3 mb-3">
-                                                    <label class="form-label">Tipo de Dato</label>
-                                                    <select name="params[<?php echo $idx; ?>][tipo]" class="form-select">
-                                                        <option value="Numérico" <?php echo $param['tipo_dato'] === 'Numérico' ? 'selected' : ''; ?>>Numérico</option>
-                                                        <option value="Texto" <?php echo $param['tipo_dato'] === 'Texto' ? 'selected' : ''; ?>>Texto</option>
-                                                        <option value="Selección" <?php echo $param['tipo_dato'] === 'Selección' ? 'selected' : ''; ?>>Selección</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-1 mb-3 d-flex align-items-end">
-                                                    <button type="button" class="btn-icon remove" onclick="removeParam(this)"
-                                                        title="Eliminar parámetro">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
+                                                <div class="flex-grow-1">
+                                                    <div class="row">
+                                                        <div class="col-md-5 mb-3">
+                                                            <label class="form-label">Nombre del Parámetro *</label>
+                                                            <input type="text" name="params[<?php echo $idx; ?>][nombre]"
+                                                                class="form-control"
+                                                                value="<?php echo htmlspecialchars($param['nombre_parametro']); ?>"
+                                                                required placeholder="Ej: Glucosa, Hemoglobina, etc.">
+                                                        </div>
+                                                        <div class="col-md-3 mb-3">
+                                                            <label class="form-label">Unidad de Medida</label>
+                                                            <input type="text" name="params[<?php echo $idx; ?>][unidad]"
+                                                                class="form-control"
+                                                                value="<?php echo htmlspecialchars($param['unidad_medida']); ?>"
+                                                                placeholder="mg/dL, %, g/dL...">
+                                                        </div>
+                                                        <div class="col-md-3 mb-3">
+                                                            <label class="form-label">Tipo de Dato</label>
+                                                            <select name="params[<?php echo $idx; ?>][tipo]" class="form-select">
+                                                                <option value="Numérico" <?php echo $param['tipo_dato'] === 'Numérico' ? 'selected' : ''; ?>>Numérico</option>
+                                                                <option value="Texto" <?php echo $param['tipo_dato'] === 'Texto' ? 'selected' : ''; ?>>Texto</option>
+                                                                <option value="Selección" <?php echo $param['tipo_dato'] === 'Selección' ? 'selected' : ''; ?>>Selección</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-1 mb-3 d-flex align-items-end">
+                                                            <button type="button" class="btn-icon remove" onclick="removeParam(this)"
+                                                                title="Eliminar parámetro">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <input type="hidden" name="params[<?php echo $idx; ?>][id_parametro]"
+                                                        value="<?php echo $param['id_parametro']; ?>">
+
+                                                    <div class="ref-values-grid">
+                                                        <div class="ref-group">
+                                                            <div class="ref-title hombre">
+                                                                <i class="bi bi-gender-male"></i>
+                                                                Hombres
+                                                            </div>
+                                                            <div class="input-range">
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][h_min]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_hombre_min']; ?>"
+                                                                    placeholder="Mínimo">
+                                                                <span class="range-separator">-</span>
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][h_max]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_hombre_max']; ?>"
+                                                                    placeholder="Máximo">
+                                                            </div>
+                                                        </div>
+                                                        <div class="ref-group">
+                                                            <div class="ref-title mujer">
+                                                                <i class="bi bi-gender-female"></i>
+                                                                Mujeres
+                                                            </div>
+                                                            <div class="input-range">
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][m_min]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_mujer_min']; ?>"
+                                                                    placeholder="Mínimo">
+                                                                <span class="range-separator">-</span>
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][m_max]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_mujer_max']; ?>"
+                                                                    placeholder="Máximo">
+                                                            </div>
+                                                        </div>
+                                                        <div class="ref-group">
+                                                            <div class="ref-title pediatria">
+                                                                <i class="bi bi-emoji-smile"></i>
+                                                                Pediatría
+                                                            </div>
+                                                            <div class="input-range">
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][p_min]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_pediatrico_min']; ?>"
+                                                                    placeholder="Mínimo">
+                                                                <span class="range-separator">-</span>
+                                                                <input type="number" step="0.0001"
+                                                                    name="params[<?php echo $idx; ?>][p_max]"
+                                                                    class="form-control form-control-sm"
+                                                                    value="<?php echo $param['valor_ref_pediatrico_max']; ?>"
+                                                                    placeholder="Máximo">
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            <input type="hidden" name="params[<?php echo $idx; ?>][id_parametro]"
-                                                value="<?php echo $param['id_parametro']; ?>">
-
-                                            <div class="ref-values-grid">
-                                                <div class="ref-group">
-                                                    <div class="ref-title hombre">
-                                                        <i class="bi bi-gender-male"></i>
-                                                        Hombres
-                                                    </div>
-                                                    <div class="input-range">
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][h_min]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_hombre_min']; ?>"
-                                                            placeholder="Mínimo">
-                                                        <span class="range-separator">-</span>
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][h_max]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_hombre_max']; ?>"
-                                                            placeholder="Máximo">
-                                                    </div>
-                                                </div>
-                                                <div class="ref-group">
-                                                    <div class="ref-title mujer">
-                                                        <i class="bi bi-gender-female"></i>
-                                                        Mujeres
-                                                    </div>
-                                                    <div class="input-range">
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][m_min]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_mujer_min']; ?>"
-                                                            placeholder="Mínimo">
-                                                        <span class="range-separator">-</span>
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][m_max]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_mujer_max']; ?>"
-                                                            placeholder="Máximo">
-                                                    </div>
-                                                </div>
-                                                <div class="ref-group">
-                                                    <div class="ref-title pediatria">
-                                                        <i class="bi bi-emoji-smile"></i>
-                                                        Pediatría
-                                                    </div>
-                                                    <div class="input-range">
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][p_min]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_pediatrico_min']; ?>"
-                                                            placeholder="Mínimo">
-                                                        <span class="range-separator">-</span>
-                                                        <input type="number" step="0.0001"
-                                                            name="params[<?php echo $idx; ?>][p_max]"
-                                                            class="form-control form-control-sm"
-                                                            value="<?php echo $param['valor_ref_pediatrico_max']; ?>"
-                                                            placeholder="Máximo">
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-list-check"></i>
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-list-check"></i>
+                                    </div>
+                                    <h4 class="text-muted mb-2">No hay parámetros configurados</h4>
+                                    <p class="text-muted mb-3">Comience agregando el primer parámetro para esta prueba</p>
+                                    <button type="button" class="action-btn" onclick="addParamRow()">
+                                        <i class="bi bi-plus-lg"></i>
+                                        Agregar Primer Parámetro
+                                    </button>
                                 </div>
-                                <h4 class="text-muted mb-2">No hay parámetros configurados</h4>
-                                <p class="text-muted mb-3">Comience agregando el primer parámetro para esta prueba</p>
-                                <button type="button" class="action-btn" onclick="addParamRow()">
-                                    <i class="bi bi-plus-lg"></i>
-                                    Agregar Primer Parámetro
-                                </button>
-                            </div>
                         <?php endif; ?>
                     </div>
 

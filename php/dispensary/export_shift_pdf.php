@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 if (!isset($_SESSION['user_id'])) {
     die("No autorizado");
@@ -201,32 +204,32 @@ try {
         </thead>
         <tbody>
             <?php if (empty($sales)): ?>
-                <tr>
-                    <td colspan="6" style="text-align: center;">No hay ventas registradas en este turno.</td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($sales as $sale): ?>
                     <tr>
-                        <td>#
-                            <?php echo str_pad($sale['id_venta'], 5, '0', STR_PAD_LEFT); ?>
-                        </td>
-                        <td>
-                            <?php echo date('d/m/y H:i', strtotime($sale['fecha_venta'])); ?>
-                        </td>
-                        <td>
-                            <?php echo htmlspecialchars($sale['nombre_cliente']); ?>
-                        </td>
-                        <td>
-                            <?php echo htmlspecialchars($sale['nit_cliente'] ?? 'C/F'); ?>
-                        </td>
-                        <td>
-                            <?php echo $sale['tipo_pago']; ?>
-                        </td>
-                        <td style="text-align: right;">Q
-                            <?php echo number_format($sale['total'], 2); ?>
-                        </td>
+                        <td colspan="6" style="text-align: center;">No hay ventas registradas en este turno.</td>
                     </tr>
-                <?php endforeach; ?>
+            <?php else: ?>
+                    <?php foreach ($sales as $sale): ?>
+                            <tr>
+                                <td>#
+                                    <?php echo str_pad($sale['id_venta'], 5, '0', STR_PAD_LEFT); ?>
+                                </td>
+                                <td>
+                                    <?php echo date('d/m/y H:i', strtotime($sale['fecha_venta'])); ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars($sale['nombre_cliente']); ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars($sale['nit_cliente'] ?? 'C/F'); ?>
+                                </td>
+                                <td>
+                                    <?php echo $sale['tipo_pago']; ?>
+                                </td>
+                                <td style="text-align: right;">Q
+                                    <?php echo number_format($sale['total'], 2); ?>
+                                </td>
+                            </tr>
+                    <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>

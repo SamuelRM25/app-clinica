@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -15,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cobro = $_POST['cobro'];
 
     // Filtrar exámenes vacíos
-    $examenes_filtrados = array_filter($examenes, function($value) {
+    $examenes_filtrados = array_filter($examenes, function ($value) {
         return !empty($value);
     });
 
@@ -36,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Combinar todos los exámenes en un solo texto
         $examen_texto = implode(', ', $examenes_filtrados);
-        
+
         // Obtener la fecha y hora actual en la zona horaria de Guatemala
         $fecha_actual = date('Y-m-d H:i:s');
 
@@ -46,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':cobro', $cobro);
         $stmt->bindParam(':fecha_examen', $fecha_actual);
         $stmt->bindParam(':usuario', $_SESSION['nombre']);
-        
+
         $stmt->execute();
 
         header('Location: index.php?status=success&message=Examen guardado exitosamente.');

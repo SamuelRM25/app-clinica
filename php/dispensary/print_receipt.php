@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -260,14 +263,14 @@ $hora_formateada = $fecha->format('H:i');
             </thead>
             <tbody>
                 <?php foreach ($items as $item): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($item['nom_medicamento']); ?><br>
-                            <small
-                                style="font-size: 9px;"><?php echo htmlspecialchars($item['presentacion_med']); ?></small>
-                        </td>
-                        <td class="text-center"><?php echo $item['cantidad_vendida']; ?></td>
-                        <td class="text-right">Q<?php echo number_format($item['subtotal'], 2); ?></td>
-                    </tr>
+                        <tr>
+                            <td><?php echo htmlspecialchars($item['nom_medicamento']); ?><br>
+                                <small
+                                    style="font-size: 9px;"><?php echo htmlspecialchars($item['presentacion_med']); ?></small>
+                            </td>
+                            <td class="text-center"><?php echo $item['cantidad_vendida']; ?></td>
+                            <td class="text-right">Q<?php echo number_format($item['subtotal'], 2); ?></td>
+                        </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>

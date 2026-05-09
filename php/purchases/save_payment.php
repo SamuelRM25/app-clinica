@@ -1,6 +1,9 @@
 <?php
 session_start();
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
 
 header('Content-Type: application/json');
 
@@ -40,7 +43,7 @@ try {
     }
 
     $new_paid_amount = $purchase['paid_amount'] + $amount;
-    
+
     // Check if overpayment (optional validation, but good to have)
     // if ($new_paid_amount > $purchase['total_amount']) {
     //     throw new Exception("El monto excede el saldo pendiente");

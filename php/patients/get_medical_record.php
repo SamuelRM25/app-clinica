@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -15,11 +18,11 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     $stmt = $conn->prepare("SELECT * FROM historial_clinico WHERE id_historial = ?");
     $stmt->execute([$_GET['id']]);
     $record = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if ($record) {
         echo json_encode(['status' => 'success', 'record' => $record]);
     } else {

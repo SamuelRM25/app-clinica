@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -1662,7 +1665,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
             <!-- Notificación -->
             <?php if (!empty($mensaje)): ?>
-                <?php echo $mensaje; ?>
+                    <?php echo $mensaje; ?>
             <?php endif; ?>
 
             <!-- Recibo de cobro -->

@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -15,17 +18,17 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Get sale data
     $stmt = $conn->prepare("SELECT * FROM ventas WHERE id_venta = ?");
     $stmt->execute([$_GET['id']]);
     $venta = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$venta) {
         echo json_encode(['status' => 'error', 'message' => 'Venta no encontrada']);
         exit;
     }
-    
+
     // Get sale items
     $stmt = $conn->prepare("
         SELECT dv.*, i.nom_medicamento, i.mol_medicamento, i.presentacion_med, i.casa_farmaceutica
@@ -35,9 +38,9 @@ try {
     ");
     $stmt->execute([$_GET['id']]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     echo json_encode(['status' => 'success', 'venta' => $venta, 'items' => $items]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

@@ -4,6 +4,9 @@ header('Content-Type: application/json');
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['error' => 'No autorizado']);
@@ -15,7 +18,7 @@ $q = $_GET['q'] ?? '';
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     $search = "%$q%";
     $stmt = $conn->prepare("
         SELECT id_paciente, nombre, apellido, dpi 
@@ -25,9 +28,9 @@ try {
     ");
     $stmt->execute([$search, $search, $search]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     echo json_encode($results);
-    
+
 } catch (Exception $e) {
     echo json_encode(['error' => $e->getMessage()]);
 }

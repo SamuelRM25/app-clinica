@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -20,7 +23,7 @@ try {
     // Initialize database connection
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Get billing data with patient name
     $stmt = $conn->prepare("
         SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente 
@@ -30,18 +33,18 @@ try {
     ");
     $stmt->execute([$id_cobro]);
     $cobro = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$cobro) {
         echo json_encode(['status' => 'error', 'message' => 'Cobro no encontrado']);
         exit;
     }
-    
+
     // Format date
     $fecha = new DateTime($cobro['fecha_consulta']);
     $cobro['fecha_formateada'] = $fecha->format('d/m/Y');
-    
+
     echo json_encode(['status' => 'success', 'cobro' => $cobro]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

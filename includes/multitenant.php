@@ -2,9 +2,17 @@
 /**
  * multitenant.php - Gestión de Multi-hospital y Suscripciones
  */
+require_once __DIR__ . '/../config/hospital.php'; // Identidad de la carpeta
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
+}
+
+// ── Seguridad: Verificar que la sesión pertenezca a esta carpeta ──
+if (isset($_SESSION['id_hospital'])) {
+    // Si ya hay sesión, verificamos que el ID coincida con el código de esta carpeta
+    // (Esto evita que alguien con sesión en Hospital A entre a la carpeta del Hospital B)
+    // Solo lo hacemos si la conexión a la BD está disponible o al menos una vez.
 }
 
 // Cache en memoria por request para evitar múltiples queries por página
@@ -20,15 +28,26 @@ function get_hospital_config($conn, $hospital_id = null) {
         return $_HOSPITAL_CONFIG_CACHE;
     }
 
-    if ($hospital_id === null) {
-        $hospital_id = $_SESSION['id_hospital'] ?? 1;
+    if ($hospital_id !== null) {
+        // Buscar por ID numérico
+        $stmt = $conn->prepare("SELECT * FROM hospitales WHERE id_hospital = ?");
+        $stmt->execute([$hospital_id]);
+    } else {
+        // Buscar por CÓDIGO de la carpeta
+        $stmt = $conn->prepare("SELECT * FROM hospitales WHERE codigo_hospital = ?");
+        $stmt->execute([CURRENT_HOSPITAL_CODE]);
     }
 
-    $stmt = $conn->prepare("SELECT * FROM hospitales WHERE id_hospital = ?");
-    $stmt->execute([$hospital_id]);
     $hospital = $stmt->fetch();
 
     if ($hospital) {
+        // SEGURIDAD: Verificar que si hay una sesión, coincida con este hospital
+        if (isset($_SESSION['id_hospital']) && $_SESSION['id_hospital'] != $hospital['id_hospital']) {
+            session_destroy();
+            header("Location: /index.php?err=security");
+            exit;
+        }
+
         $hospital['modulos_activos'] = json_decode($hospital['modulos_activos'], true) ?: ['core'];
         // Actualizar sesión para mantener en sincronía
         $_SESSION['hospital_modulos'] = $hospital['modulos_activos'];
@@ -84,7 +103,14 @@ function check_subscription_status() {
  * Genera el filtro SQL para el hospital actual
  */
 function get_hospital_filter($alias = '') {
-    $hospital_id = $_SESSION['id_hospital'] ?? 1;
+    // Intentar usar el ID de la sesión primero
+    $hospital_id = $_SESSION['id_hospital'] ?? null;
+    
+    // Si no hay sesión (ej: scripts de fondo o antes del login completo), 
+    // podrías querer resolver el código, pero lo normal es que siempre haya sesión.
+    // Como medida de seguridad, si no hay ID, usamos un valor que no devuelva nada o el ID 1.
+    if (!$hospital_id) $hospital_id = 1; 
+
     $prefix = $alias ? "$alias." : "";
     return " {$prefix}id_hospital = " . (int)$hospital_id . " ";
 }

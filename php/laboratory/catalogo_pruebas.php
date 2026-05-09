@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -1300,70 +1303,70 @@ try {
                 </div>
 
                 <?php if (count($catalogo) > 0): ?>
-                    <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
-                        <div class="category-header animate-in">
-                            <i class="bi bi-folder2-open"></i>
-                            <?php echo htmlspecialchars($categoria); ?>
-                            <span class="badge bg-primary ms-2"><?php echo count($pruebas); ?></span>
-                        </div>
-
-                        <div class="tests-grid">
-                            <?php foreach ($pruebas as $prueba): ?>
-                                <div class="test-card animate-in">
-                                    <div class="test-header">
-                                        <div class="test-code"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></div>
-                                        <div class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
-                                    </div>
-
-                                    <div class="test-details">
-                                        <div class="test-detail">
-                                            <i class="bi bi-droplet"></i>
-                                            <span><?php echo htmlspecialchars($prueba['muestra_requerida'] ?: 'No especificada'); ?></span>
-                                        </div>
-                                        <div class="test-detail">
-                                            <i class="bi bi-clock"></i>
-                                            <span><?php echo $prueba['tiempo_procesamiento_horas']; ?> horas de procesamiento</span>
-                                        </div>
-                                        <div class="test-detail">
-                                            <i class="bi bi-info-circle"></i>
-                                            <span><?php echo htmlspecialchars($prueba['descripcion'] ?? 'Sin descripción'); ?></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="test-footer">
-                                        <div>
-                                            <div class="test-price">Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?></div>
-                                            <div class="test-params">
-                                                <?php echo $prueba['num_parametros']; ?> parámetros
-                                            </div>
-                                        </div>
-                                        <div class="test-actions">
-                                            <button class="btn-icon manage" title="Gestionar parámetros"
-                                                onclick="manageParameters(<?php echo $prueba['id_prueba']; ?>)">
-                                                <i class="bi bi-list-check"></i>
-                                            </button>
-                                            <button class="btn-icon edit" title="Editar prueba"
-                                                onclick="editTest(<?php echo htmlspecialchars(json_encode($prueba)); ?>)">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                        <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
+                                <div class="category-header animate-in">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <?php echo htmlspecialchars($categoria); ?>
+                                    <span class="badge bg-primary ms-2"><?php echo count($pruebas); ?></span>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endforeach; ?>
+
+                                <div class="tests-grid">
+                                    <?php foreach ($pruebas as $prueba): ?>
+                                            <div class="test-card animate-in">
+                                                <div class="test-header">
+                                                    <div class="test-code"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></div>
+                                                    <div class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
+                                                </div>
+
+                                                <div class="test-details">
+                                                    <div class="test-detail">
+                                                        <i class="bi bi-droplet"></i>
+                                                        <span><?php echo htmlspecialchars($prueba['muestra_requerida'] ?: 'No especificada'); ?></span>
+                                                    </div>
+                                                    <div class="test-detail">
+                                                        <i class="bi bi-clock"></i>
+                                                        <span><?php echo $prueba['tiempo_procesamiento_horas']; ?> horas de procesamiento</span>
+                                                    </div>
+                                                    <div class="test-detail">
+                                                        <i class="bi bi-info-circle"></i>
+                                                        <span><?php echo htmlspecialchars($prueba['descripcion'] ?? 'Sin descripción'); ?></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="test-footer">
+                                                    <div>
+                                                        <div class="test-price">Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?></div>
+                                                        <div class="test-params">
+                                                            <?php echo $prueba['num_parametros']; ?> parámetros
+                                                        </div>
+                                                    </div>
+                                                    <div class="test-actions">
+                                                        <button class="btn-icon manage" title="Gestionar parámetros"
+                                                            onclick="manageParameters(<?php echo $prueba['id_prueba']; ?>)">
+                                                            <i class="bi bi-list-check"></i>
+                                                        </button>
+                                                        <button class="btn-icon edit" title="Editar prueba"
+                                                            onclick="editTest(<?php echo htmlspecialchars(json_encode($prueba)); ?>)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                    <?php endforeach; ?>
+                                </div>
+                        <?php endforeach; ?>
                 <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-clipboard-x"></i>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-clipboard-x"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay pruebas registradas</h4>
+                            <p class="text-muted mb-3">Comience agregando la primera prueba al catálogo</p>
+                            <button class="action-btn" onclick="openTestModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                Agregar Primera Prueba
+                            </button>
                         </div>
-                        <h4 class="text-muted mb-2">No hay pruebas registradas</h4>
-                        <p class="text-muted mb-3">Comience agregando la primera prueba al catálogo</p>
-                        <button class="action-btn" onclick="openTestModal()">
-                            <i class="bi bi-plus-lg"></i>
-                            Agregar Primera Prueba
-                        </button>
-                    </div>
                 <?php endif; ?>
             </section>
         </main>

@@ -9,6 +9,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
 
 try {
     $database = new Database();
@@ -38,7 +41,7 @@ try {
         WHERE v.tipo_pago = 'Traslado'
         AND v.fecha_venta BETWEEN ? AND ?
     ";
-    
+
     $params = [$start_datetime, $end_datetime];
 
     if ($search !== '') {

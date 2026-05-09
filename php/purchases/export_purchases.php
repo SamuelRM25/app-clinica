@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Verificar sesión y permisos (solo admin)
 if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {

@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 if (!isset($_SESSION['user_id'])) {
     die("No autorizado");
@@ -148,35 +151,35 @@ try {
         </thead>
         <tbody>
             <?php foreach ($items as $item): ?>
-                <tr>
-                    <td>
-                        <?php echo $item['codigo_barras']; ?>
-                    </td>
-                    <td><strong>
-                            <?php echo htmlspecialchars($item['nom_medicamento']); ?>
-                        </strong></td>
-                    <td>
-                        <?php echo htmlspecialchars($item['mol_medicamento']); ?>
-                    </td>
-                    <td>
-                        <?php echo htmlspecialchars($item['presentacion_med']); ?>
-                    </td>
-                    <td>
-                        <?php echo $item['cantidad_med']; ?>
-                    </td>
-                    <td>
-                        <?php echo date('d/m/y', strtotime($item['fecha_vencimiento'])); ?>
-                    </td>
-                    <td>
-                        <?php echo htmlspecialchars($item['document_number'] ?? 'N/A'); ?>
-                    </td>
-                    <td>Q
-                        <?php echo number_format($item['unit_cost'] ?? $item['precio_compra'], 2); ?>
-                    </td>
-                    <td>Q
-                        <?php echo number_format($item['precio_venta'], 2); ?>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>
+                            <?php echo $item['codigo_barras']; ?>
+                        </td>
+                        <td><strong>
+                                <?php echo htmlspecialchars($item['nom_medicamento']); ?>
+                            </strong></td>
+                        <td>
+                            <?php echo htmlspecialchars($item['mol_medicamento']); ?>
+                        </td>
+                        <td>
+                            <?php echo htmlspecialchars($item['presentacion_med']); ?>
+                        </td>
+                        <td>
+                            <?php echo $item['cantidad_med']; ?>
+                        </td>
+                        <td>
+                            <?php echo date('d/m/y', strtotime($item['fecha_vencimiento'])); ?>
+                        </td>
+                        <td>
+                            <?php echo htmlspecialchars($item['document_number'] ?? 'N/A'); ?>
+                        </td>
+                        <td>Q
+                            <?php echo number_format($item['unit_cost'] ?? $item['precio_compra'], 2); ?>
+                        </td>
+                        <td>Q
+                            <?php echo number_format($item['precio_venta'], 2); ?>
+                        </td>
+                    </tr>
             <?php endforeach; ?>
         </tbody>
     </table>

@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -17,27 +20,27 @@ $apellido = $_GET['apellido'];
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Buscar al paciente por nombre y apellido
     $stmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ?");
     $stmt->execute([$nombre, $apellido]);
     $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if ($paciente) {
         // Si el paciente existe, devolver su ID
         echo json_encode([
-            'status' => 'success', 
-            'exists' => true, 
+            'status' => 'success',
+            'exists' => true,
             'id' => $paciente['id_paciente']
         ]);
     } else {
         // Si el paciente no existe, indicarlo
         echo json_encode([
-            'status' => 'success', 
+            'status' => 'success',
             'exists' => false
         ]);
     }
-    
+
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

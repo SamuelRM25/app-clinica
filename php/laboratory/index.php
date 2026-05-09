@@ -3,17 +3,18 @@
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
-// Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
     exit;
 }
 
-// Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 
-// Establecer zona horaria
+check_module_access('laboratory');
+
 date_default_timezone_set('America/Guatemala');
 verify_session();
 
@@ -31,19 +32,23 @@ try {
     // ============ ESTADÍSTICAS DEL LABORATORIO ============
 
     // 1. Órdenes pendientes
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Pendiente'");
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $ordenes_pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 2. Muestras recibidas
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Muestra_Recibida'");
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE estado = 'Muestra_Recibida' AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $muestras_recibidas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-    // 3. Pendientes de validar (Pruebas en proceso pero no validadas)
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM orden_pruebas WHERE estado = 'En_Proceso'");
+    // 3. Pendientes de validar
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM orden_pruebas op JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden WHERE op.estado = 'En_Proceso' AND ol.id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $pendientes_validar = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 4. Completadas hoy
-    $stmt = $conn->query("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND estado = 'Completada'");
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND estado = 'Completada' AND id_hospital = ?");
+    $stmt->execute([hospital_id()]);
     $completadas_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 
@@ -89,6 +94,7 @@ try {
         LEFT JOIN orden_pruebas op ON ol.id_orden = op.id_orden
         LEFT JOIN examenes_realizados er ON ol.id_orden = er.id_orden
         WHERE ol.estado IN ('Pendiente', 'Muestra_Recibida', 'En_Proceso', 'Completada', 'Validada')
+          AND ol.id_hospital = ?
         GROUP BY ol.id_orden
         ORDER BY 
             CASE 
@@ -101,7 +107,7 @@ try {
             END,
             ol.fecha_orden DESC
     ");
-    $stmt->execute();
+    $stmt->execute([hospital_id()]);
     $ordenes_recientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 8. Órdenes con retraso (más de 2 días en estado Pendiente)
@@ -1617,21 +1623,21 @@ try {
 
             <!-- Alertas importantes -->
             <?php if ($ordenes_retrasadas > 0): ?>
-                <div class="alert-card mb-4 animate-in delay-1">
-                    <div class="alert-header">
-                        <div class="alert-icon warning">
-                            <i class="bi bi-exclamation-triangle"></i>
+                    <div class="alert-card mb-4 animate-in delay-1">
+                        <div class="alert-header">
+                            <div class="alert-icon warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <h3 class="alert-title">Órdenes con Retraso</h3>
                         </div>
-                        <h3 class="alert-title">Órdenes con Retraso</h3>
+                        <p class="text-muted mb-0">
+                            Hay <strong><?php echo $ordenes_retrasadas; ?></strong> órdenes con más de 2 días en estado
+                            "Pendiente".
+                            <a href="?filter=retraso" class="text-primary text-decoration-none ms-1">
+                                Revisar <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </p>
                     </div>
-                    <p class="text-muted mb-0">
-                        Hay <strong><?php echo $ordenes_retrasadas; ?></strong> órdenes con más de 2 días en estado
-                        "Pendiente".
-                        <a href="?filter=retraso" class="text-primary text-decoration-none ms-1">
-                            Revisar <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </p>
-                </div>
             <?php endif; ?>
 
             <!-- Estadísticas principales -->
@@ -1722,153 +1728,153 @@ try {
                                 </a>
 
                                 <?php if ($user_type === 'user' || $user_type === 'admin'): ?>
-                                    <a href="crear_orden.php" class="action-btn">
-                                        <i class="bi bi-plus-lg"></i>
-                                        Nueva Orden
-                                    </a>
+                                        <a href="crear_orden.php" class="action-btn">
+                                            <i class="bi bi-plus-lg"></i>
+                                            Nueva Orden
+                                        </a>
                                 <?php endif; ?>
                             </div>
                         </div>
 
                         <?php if (count($ordenes_recientes) > 0): ?>
-                            <div class="table-responsive">
-                                <table class="orders-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Orden #</th>
-                                            <th>Paciente</th>
-                                            <th>Doctor</th>
-                                            <th>Fecha</th>
-                                            <th>Pruebas</th>
-                                            <th>Estado</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($ordenes_recientes as $orden): ?>
-                                            <?php
-                                            $patient_name = htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']);
-                                            $patient_initials = strtoupper(
-                                                substr($orden['nombre'], 0, 1) .
-                                                substr($orden['apellido'], 0, 1)
-                                            );
-                                            ?>
+                                <div class="table-responsive">
+                                    <table class="orders-table">
+                                        <thead>
                                             <tr>
-                                                <td>
-                                                    <strong><?php echo htmlspecialchars($orden['numero_orden']); ?></strong>
-                                                    <br>
-                                                    <small class="text-muted">ID: <?php echo $orden['id_orden']; ?></small>
-                                                </td>
-                                                <td>
-                                                    <div class="patient-cell">
-                                                        <div class="patient-avatar">
-                                                            <?php echo $patient_initials; ?>
-                                                        </div>
-                                                        <div class="patient-info">
-                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                            <div class="patient-contact">
-                                                                <?php echo $orden['edad']; ?> años -
-                                                                <?php echo htmlspecialchars($orden['genero']); ?>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <?php if ($orden['doctor_nombre']): ?>
-                                                        <small class="d-block">Dr.
-                                                            <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></small>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">-</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php echo date('d/m/Y', strtotime($orden['fecha_orden'])); ?>
-                                                    <br>
-                                                    <small
-                                                        class="text-muted"><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></small>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span>
-                                                </td>
-                                                <td>
-                                                    <?php
-                                                    $estado_class = '';
-                                                    $estado_text = '';
-                                                    switch ($orden['estado']) {
-                                                        case 'Pendiente':
-                                                            $estado_class = 'pendiente';
-                                                            $estado_text = 'Pendiente';
-                                                            break;
-                                                        case 'Muestra_Recibida':
-                                                            $estado_class = 'muestra';
-                                                            $estado_text = 'Muestra Recibida';
-                                                            break;
-                                                        case 'En_Proceso':
-                                                            $estado_class = 'proceso';
-                                                            $estado_text = 'En Proceso';
-                                                            break;
-                                                        case 'Completada':
-                                                            $estado_class = 'completada';
-                                                            $estado_text = 'Completada';
-                                                            break;
-                                                        case 'Validada':
-                                                            $estado_class = 'validada';
-                                                            $estado_text = 'Validada';
-                                                            break;
-                                                    }
-                                                    ?>
-                                                    <span class="status-badge <?php echo $estado_class; ?>">
-                                                        <?php echo $estado_text; ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div class="action-buttons">
-                                                        <?php if ($orden['estado'] === 'Validada' || $orden['estado'] === 'Completada'): ?>
-                                                            <a href="imprimir_resultados.php?id=<?php echo $orden['id_orden']; ?>"
-                                                                class="btn-icon pdf" title="Ver Resultados PDF" target="_blank">
-                                                                <i class="bi bi-file-earmark-pdf"></i>
-                                                            </a>
-                                                            <!-- Imprimir Ticket -->
-                                                            <a href="print_lab_receipt.php?id=<?php echo $orden['id_examen_realizado']; ?>"
-                                                                class="btn-icon bg-info text-white border-0" title="Imprimir Ticket"
-                                                                target="_blank">
-                                                                <i class="bi bi-receipt"></i>
-                                                            </a>
-                                                            <!-- Botón Devolución -->
-                                                            <button type="button" class="btn-icon bg-danger text-white border-0"
-                                                                title="Devolución"
-                                                                onclick="iniciarDevolucion(<?php echo $orden['id_orden']; ?>)">
-                                                                <i class="bi bi-arrow-return-left"></i>
-                                                            </button>
-                                                        <?php else: ?>
-                                                            <a href="procesar_orden.php?id=<?php echo $orden['id_orden']; ?>"
-                                                                class="btn-icon process" title="Procesar orden">
-                                                                <i class="bi bi-pencil-square"></i>
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <a href="ver_orden.php?id=<?php echo $orden['id_orden']; ?>"
-                                                            class="btn-icon" title="Ver detalles">
-                                                            <i class="bi bi-eye"></i>
-                                                        </a>
-                                                    </div>
-                                                </td>
+                                                <th>Orden #</th>
+                                                <th>Paciente</th>
+                                                <th>Doctor</th>
+                                                <th>Fecha</th>
+                                                <th>Pruebas</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-inbox"></i>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($ordenes_recientes as $orden): ?>
+                                                    <?php
+                                                    $patient_name = htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']);
+                                                    $patient_initials = strtoupper(
+                                                        substr($orden['nombre'], 0, 1) .
+                                                        substr($orden['apellido'], 0, 1)
+                                                    );
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($orden['numero_orden']); ?></strong>
+                                                            <br>
+                                                            <small class="text-muted">ID: <?php echo $orden['id_orden']; ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <div class="patient-cell">
+                                                                <div class="patient-avatar">
+                                                                    <?php echo $patient_initials; ?>
+                                                                </div>
+                                                                <div class="patient-info">
+                                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                                    <div class="patient-contact">
+                                                                        <?php echo $orden['edad']; ?> años -
+                                                                        <?php echo htmlspecialchars($orden['genero']); ?>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($orden['doctor_nombre']): ?>
+                                                                    <small class="d-block">Dr.
+                                                                        <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></small>
+                                                            <?php else: ?>
+                                                                    <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php echo date('d/m/Y', strtotime($orden['fecha_orden'])); ?>
+                                                            <br>
+                                                            <small
+                                                                class="text-muted"><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <?php
+                                                            $estado_class = '';
+                                                            $estado_text = '';
+                                                            switch ($orden['estado']) {
+                                                                case 'Pendiente':
+                                                                    $estado_class = 'pendiente';
+                                                                    $estado_text = 'Pendiente';
+                                                                    break;
+                                                                case 'Muestra_Recibida':
+                                                                    $estado_class = 'muestra';
+                                                                    $estado_text = 'Muestra Recibida';
+                                                                    break;
+                                                                case 'En_Proceso':
+                                                                    $estado_class = 'proceso';
+                                                                    $estado_text = 'En Proceso';
+                                                                    break;
+                                                                case 'Completada':
+                                                                    $estado_class = 'completada';
+                                                                    $estado_text = 'Completada';
+                                                                    break;
+                                                                case 'Validada':
+                                                                    $estado_class = 'validada';
+                                                                    $estado_text = 'Validada';
+                                                                    break;
+                                                            }
+                                                            ?>
+                                                            <span class="status-badge <?php echo $estado_class; ?>">
+                                                                <?php echo $estado_text; ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="action-buttons">
+                                                                <?php if ($orden['estado'] === 'Validada' || $orden['estado'] === 'Completada'): ?>
+                                                                        <a href="imprimir_resultados.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                            class="btn-icon pdf" title="Ver Resultados PDF" target="_blank">
+                                                                            <i class="bi bi-file-earmark-pdf"></i>
+                                                                        </a>
+                                                                        <!-- Imprimir Ticket -->
+                                                                        <a href="print_lab_receipt.php?id=<?php echo $orden['id_examen_realizado']; ?>"
+                                                                            class="btn-icon bg-info text-white border-0" title="Imprimir Ticket"
+                                                                            target="_blank">
+                                                                            <i class="bi bi-receipt"></i>
+                                                                        </a>
+                                                                        <!-- Botón Devolución -->
+                                                                        <button type="button" class="btn-icon bg-danger text-white border-0"
+                                                                            title="Devolución"
+                                                                            onclick="iniciarDevolucion(<?php echo $orden['id_orden']; ?>)">
+                                                                            <i class="bi bi-arrow-return-left"></i>
+                                                                        </button>
+                                                                <?php else: ?>
+                                                                        <a href="procesar_orden.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                            class="btn-icon process" title="Procesar orden">
+                                                                            <i class="bi bi-pencil-square"></i>
+                                                                        </a>
+                                                                <?php endif; ?>
+                                                                <a href="ver_orden.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                    class="btn-icon" title="Ver detalles">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <h4 class="text-muted mb-2">No hay órdenes activas</h4>
-                                <p class="text-muted mb-3">Las órdenes pendientes aparecerán aquí</p>
-                                <a href="crear_orden.php" class="action-btn">
-                                    <i class="bi bi-plus-lg"></i>
-                                    Crear Primera Orden
-                                </a>
-                            </div>
+                        <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h4 class="text-muted mb-2">No hay órdenes activas</h4>
+                                    <p class="text-muted mb-3">Las órdenes pendientes aparecerán aquí</p>
+                                    <a href="crear_orden.php" class="action-btn">
+                                        <i class="bi bi-plus-lg"></i>
+                                        Crear Primera Orden
+                                    </a>
+                                </div>
                         <?php endif; ?>
                     </section>
                 </div>
@@ -1885,19 +1891,19 @@ try {
                         </div>
 
                         <?php if (count($pruebas_populares) > 0): ?>
-                            <div class="test-list">
-                                <?php foreach ($pruebas_populares as $prueba): ?>
-                                    <div class="test-item">
-                                        <span class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></span>
-                                        <span class="test-count"><?php echo $prueba['cantidad']; ?></span>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                                <div class="test-list">
+                                    <?php foreach ($pruebas_populares as $prueba): ?>
+                                            <div class="test-item">
+                                                <span class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></span>
+                                                <span class="test-count"><?php echo $prueba['cantidad']; ?></span>
+                                            </div>
+                                    <?php endforeach; ?>
+                                </div>
                         <?php else: ?>
-                            <div class="empty-state py-3">
-                                <i class="bi bi-bar-chart text-muted"></i>
-                                <p class="text-muted mb-0 mt-2">No hay datos del mes</p>
-                            </div>
+                                <div class="empty-state py-3">
+                                    <i class="bi bi-bar-chart text-muted"></i>
+                                    <p class="text-muted mb-0 mt-2">No hay datos del mes</p>
+                                </div>
                         <?php endif; ?>
                     </section>
                 </div>

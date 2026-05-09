@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -13,10 +16,10 @@ if ($_SESSION['tipoUsuario'] !== 'admin') {
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
     $fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-t');
-    
+
     $stmt = $conn->prepare("
         SELECT c.*, p.nombre, p.apellido 
         FROM cobros c
@@ -26,13 +29,13 @@ try {
     ");
     $stmt->execute([$fecha_inicio, $fecha_fin]);
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=cobros_' . $fecha_inicio . '_a_' . $fecha_fin . '.csv');
-    
+
     $output = fopen('php://output', 'w');
     fputcsv($output, ['ID', 'Paciente', 'Fecha', 'Cantidad', 'Método Pago', 'Estado', 'Notas']);
-    
+
     foreach ($cobros as $row) {
         fputcsv($output, [
             $row['id_cobro'],
@@ -45,7 +48,7 @@ try {
         ]);
     }
     fclose($output);
-    
+
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());
 }

@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -191,65 +194,65 @@ try {
             </div>
 
             <?php if (count($ordenes) > 0): ?>
-                <div class="table-responsive">
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th>Orden #</th>
-                                <th>Paciente</th>
-                                <th>Hora</th>
-                                <th>Pruebas</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($ordenes as $orden): ?>
+                    <div class="table-responsive">
+                        <table class="orders-table">
+                            <thead>
                                 <tr>
-                                    <td><strong><?php echo htmlspecialchars($orden['numero_orden']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></td>
-                                    <td><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></td>
-                                    <td><span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span></td>
-                                    <td>
-                                        <?php
-                                        $estado_class = '';
-                                        $estado_text = '';
-                                        switch ($orden['estado']) {
-                                            case 'Pendiente':
-                                                $estado_class = 'pendiente';
-                                                $estado_text = 'Pendiente';
-                                                break;
-                                            case 'Muestra_Recibida':
-                                                $estado_class = 'muestra';
-                                                $estado_text = 'Muestra Recibida';
-                                                break;
-                                            case 'En_Proceso':
-                                                $estado_class = 'proceso';
-                                                $estado_text = 'En Proceso';
-                                                break;
-                                            case 'Completada':
-                                                $estado_class = 'completada';
-                                                $estado_text = 'Completada';
-                                                break;
-                                            case 'Validada':
-                                                $estado_class = 'validada';
-                                                $estado_text = 'Validada';
-                                                break;
-                                        }
-                                        ?>
-                                        <span class="status-badge <?php echo $estado_class; ?>">
-                                            <?php echo $estado_text; ?>
-                                        </span>
-                                    </td>
+                                    <th>Orden #</th>
+                                    <th>Paciente</th>
+                                    <th>Hora</th>
+                                    <th>Pruebas</th>
+                                    <th>Estado</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($ordenes as $orden): ?>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($orden['numero_orden']); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></td>
+                                            <td><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></td>
+                                            <td><span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span></td>
+                                            <td>
+                                                <?php
+                                                $estado_class = '';
+                                                $estado_text = '';
+                                                switch ($orden['estado']) {
+                                                    case 'Pendiente':
+                                                        $estado_class = 'pendiente';
+                                                        $estado_text = 'Pendiente';
+                                                        break;
+                                                    case 'Muestra_Recibida':
+                                                        $estado_class = 'muestra';
+                                                        $estado_text = 'Muestra Recibida';
+                                                        break;
+                                                    case 'En_Proceso':
+                                                        $estado_class = 'proceso';
+                                                        $estado_text = 'En Proceso';
+                                                        break;
+                                                    case 'Completada':
+                                                        $estado_class = 'completada';
+                                                        $estado_text = 'Completada';
+                                                        break;
+                                                    case 'Validada':
+                                                        $estado_class = 'validada';
+                                                        $estado_text = 'Validada';
+                                                        break;
+                                                }
+                                                ?>
+                                                <span class="status-badge <?php echo $estado_class; ?>">
+                                                    <?php echo $estado_text; ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
             <?php else: ?>
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--color-text-muted);"></i>
-                    <h4 class="text-muted mt-3">No hay órdenes para esta fecha</h4>
-                </div>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: var(--color-text-muted);"></i>
+                        <h4 class="text-muted mt-3">No hay órdenes para esta fecha</h4>
+                    </div>
             <?php endif; ?>
         </main>
     </div>

@@ -8,8 +8,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once '../../config/database.php';
+ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 date_default_timezone_set('America/Guatemala');
 verify_session();

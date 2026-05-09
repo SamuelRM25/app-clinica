@@ -2,6 +2,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -17,7 +20,7 @@ $term = $_GET['term'];
 try {
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     // Search for patients by name or last name
     $stmt = $conn->prepare("
         SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo 
@@ -26,13 +29,13 @@ try {
         ORDER BY nombre, apellido 
         LIMIT 10
     ");
-    
+
     $searchTerm = "%{$term}%";
     $stmt->execute([$searchTerm, $searchTerm]);
     $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     echo json_encode($patients);
-    
+
 } catch (Exception $e) {
     echo json_encode(['error' => $e->getMessage()]);
 }

@@ -3,6 +3,9 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 verify_session();
 
@@ -110,38 +113,38 @@ try {
             </div>
 
             <?php if (count($ordenes_pendientes) > 0): ?>
-                <?php foreach ($ordenes_pendientes as $orden): ?>
-                    <div class="order-card">
-                        <div class="order-header">
-                            <div>
-                                <div class="order-number"><?php echo htmlspecialchars($orden['numero_orden']); ?></div>
-                                <div class="patient-name">
-                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                    <?php foreach ($ordenes_pendientes as $orden): ?>
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div>
+                                        <div class="order-number"><?php echo htmlspecialchars($orden['numero_orden']); ?></div>
+                                        <div class="patient-name">
+                                            <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?> pruebas</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i>
+                                        <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
+                                    </small>
+                                    <button class="action-btn"
+                                        onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
+                                        <i class="bi bi-check-circle"></i>
+                                        Registrar Muestra
+                                    </button>
                                 </div>
                             </div>
-                            <div>
-                                <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?> pruebas</span>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                <i class="bi bi-calendar"></i>
-                                <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
-                            </small>
-                            <button class="action-btn"
-                                onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
-                                <i class="bi bi-check-circle"></i>
-                                Registrar Muestra
-                            </button>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
             <?php else: ?>
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--color-text-muted);"></i>
-                    <h4 class="text-muted mt-3">No hay órdenes pendientes</h4>
-                    <p class="text-muted">Todas las muestras han sido registradas</p>
-                </div>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: var(--color-text-muted);"></i>
+                        <h4 class="text-muted mt-3">No hay órdenes pendientes</h4>
+                        <p class="text-muted">Todas las muestras han sido registradas</p>
+                    </div>
             <?php endif; ?>
         </main>
     </div>

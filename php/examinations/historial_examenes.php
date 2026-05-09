@@ -12,6 +12,9 @@ if (!isset($_SESSION['user_id'])) {
 // Incluir configuraciones y funciones
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -1547,137 +1550,137 @@ try {
 
                 <!-- Mensaje de error -->
                 <?php if (!empty($error_message)): ?>
-                    <div class="alert alert-danger border-0 mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <?php echo htmlspecialchars($error_message); ?>
-                    </div>
+                        <div class="alert alert-danger border-0 mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <?php echo htmlspecialchars($error_message); ?>
+                        </div>
                 <?php endif; ?>
 
                 <?php if (empty($examenes)): ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-clipboard-x"></i>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-clipboard-x"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No se encontraron registros</h4>
+                            <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
+                            <a href="index.php" class="action-btn">
+                                <i class="bi bi-plus-lg"></i>
+                                Registrar primer examen
+                            </a>
                         </div>
-                        <h4 class="text-muted mb-2">No se encontraron registros</h4>
-                        <p class="text-muted mb-3">No hay exámenes registrados en el sistema.</p>
-                        <a href="index.php" class="action-btn">
-                            <i class="bi bi-plus-lg"></i>
-                            Registrar primer examen
-                        </a>
-                    </div>
                 <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="history-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Tipo de Examen</th>
-                                    <th>Cobro</th>
-                                    <th>Fecha y Hora</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $prev_jornada = null;
-                                foreach ($examenes as $exam):
-                                    // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
-                                    $timestamp = strtotime($exam['fecha_examen']);
-                                    $hora = (int) date('H', $timestamp);
-                                    $fecha_base = date('Y-m-d', $timestamp);
-
-                                    if ($hora < 8) {
-                                        $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
-                                    } else {
-                                        $jornada_date = $fecha_base;
-                                    }
-
-                                    // Mostrar divisor si cambia la jornada
-                                    if ($jornada_date !== $prev_jornada):
-                                        $display_date = date('d/m/Y', strtotime($jornada_date));
-                                        // Formato amigable: Hoy, Ayer, o fecha
-                                        if ($jornada_date == date('Y-m-d')) {
-                                            $display_text = "Jornada de Hoy ($display_date)";
-                                        } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
-                                            $display_text = "Jornada de Ayer ($display_date)";
-                                        } else {
-                                            $display_text = "Jornada del " . $display_date;
-                                        }
-                                        ?>
-                                        <tr class="jornada-row">
-                                            <td colspan="4" class="jornada-cell">
-                                                <i class="bi bi-calendar-range jornada-icon"></i>
-                                                <?php echo $display_text; ?>
-                                            </td>
-                                        </tr>
-                                        <?php
-                                        $prev_jornada = $jornada_date;
-                                    endif;
-
-                                    // Obtener iniciales del paciente
-                                    $patient_name = htmlspecialchars($exam['nombre_paciente']);
-                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
-                                    ?>
+                        <div class="table-responsive">
+                            <table class="history-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="fw-medium"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
-                                        </td>
-                                        <td>
-                                            <span class="amount-badge">
-                                                Q<?php echo number_format($exam['cobro'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge">
-                                                <i class="bi bi-clock"></i>
-                                                <?php echo date('h:i A', strtotime($exam['fecha_examen'])); ?>
-                                            </span>
-                                        </td>
+                                        <th>Paciente</th>
+                                        <th>Tipo de Examen</th>
+                                        <th>Cobro</th>
+                                        <th>Fecha y Hora</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $prev_jornada = null;
+                                    foreach ($examenes as $exam):
+                                        // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
+                                        $timestamp = strtotime($exam['fecha_examen']);
+                                        $hora = (int) date('H', $timestamp);
+                                        $fecha_base = date('Y-m-d', $timestamp);
 
-                    <!-- Paginación -->
-                    <?php if ($total_paginas > 1): ?>
-                        <div class="pagination-container">
-                            <ul class="pagination">
-                                <?php if ($page > 1): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
+                                        if ($hora < 8) {
+                                            $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
+                                        } else {
+                                            $jornada_date = $fecha_base;
+                                        }
 
-                                <li class="page-item active">
-                                    <span class="page-link"><?php echo $page; ?> de <?php echo $total_paginas; ?></span>
-                                </li>
+                                        // Mostrar divisor si cambia la jornada
+                                        if ($jornada_date !== $prev_jornada):
+                                            $display_date = date('d/m/Y', strtotime($jornada_date));
+                                            // Formato amigable: Hoy, Ayer, o fecha
+                                            if ($jornada_date == date('Y-m-d')) {
+                                                $display_text = "Jornada de Hoy ($display_date)";
+                                            } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
+                                                $display_text = "Jornada de Ayer ($display_date)";
+                                            } else {
+                                                $display_text = "Jornada del " . $display_date;
+                                            }
+                                            ?>
+                                                    <tr class="jornada-row">
+                                                        <td colspan="4" class="jornada-cell">
+                                                            <i class="bi bi-calendar-range jornada-icon"></i>
+                                                            <?php echo $display_text; ?>
+                                                        </td>
+                                                    </tr>
+                                                    <?php
+                                                    $prev_jornada = $jornada_date;
+                                        endif;
 
-                                <?php if ($page < $total_paginas): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
-                            </ul>
+                                        // Obtener iniciales del paciente
+                                        $patient_name = htmlspecialchars($exam['nombre_paciente']);
+                                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                        ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="patient-cell">
+                                                        <div class="patient-avatar">
+                                                            <?php echo $patient_initials; ?>
+                                                        </div>
+                                                        <div class="patient-info">
+                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="fw-medium"><?php echo htmlspecialchars($exam['tipo_examen']); ?></span>
+                                                </td>
+                                                <td>
+                                                    <span class="amount-badge">
+                                                        Q<?php echo number_format($exam['cobro'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="time-badge">
+                                                        <i class="bi bi-clock"></i>
+                                                        <?php echo date('h:i A', strtotime($exam['fecha_examen'])); ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endif; ?>
 
-                    <div class="text-center mt-4">
-                        <p class="text-muted">Total de registros: <?php echo $total_registros; ?></p>
-                    </div>
+                        <!-- Paginación -->
+                        <?php if ($total_paginas > 1): ?>
+                                <div class="pagination-container">
+                                    <ul class="pagination">
+                                        <?php if ($page > 1): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                                        <i class="bi bi-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                        <?php endif; ?>
+
+                                        <li class="page-item active">
+                                            <span class="page-link"><?php echo $page; ?> de <?php echo $total_paginas; ?></span>
+                                        </li>
+
+                                        <?php if ($page < $total_paginas): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                                        <i class="bi bi-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </div>
+                        <?php endif; ?>
+
+                        <div class="text-center mt-4">
+                            <p class="text-muted">Total de registros: <?php echo $total_registros; ?></p>
+                        </div>
                 <?php endif; ?>
             </section>
         </main>

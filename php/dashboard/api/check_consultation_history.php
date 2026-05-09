@@ -2,6 +2,9 @@
 // api/check_consultation_history.php
 header('Content-Type: application/json');
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
 
 if (!isset($_GET['id_paciente'])) {
     echo json_encode(['status' => 'error', 'message' => 'Falta id_paciente']);
