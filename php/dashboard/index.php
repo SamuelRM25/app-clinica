@@ -2873,7 +2873,7 @@ try {
         <!-- Contenido Principal -->
         <main class="main-content">
             <!-- Notificación de compras pendientes -->
-            <?php if ($pending_purchases > 0 && $_SESSION['user_id'] == 6): ?>
+            <?php if ($pending_purchases > 0 && $user_type === 'user'): ?>
                 <div class="alert-card mb-4 animate-in delay-1">
                     <div class="alert-header">
                         <div class="alert-icon warning">
@@ -2912,7 +2912,7 @@ try {
             </div>
 
             <!-- Acciones Rápidas -->
-            <?php if ($_SESSION['user_id'] == 7 || $_SESSION['user_id'] == 1 || $_SESSION['user_id'] == 26 || $_SESSION['user_id'] == 27 || $_SESSION['user_id'] == 28 || $_SESSION['user_id'] == 29): ?>
+            <?php if ($user_type === 'user'): ?>
                 <div class="stats-grid mb-4 animate-in delay-1">
                     <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
                         style="text-decoration: none; border-left: 4px solid var(--color-success);">

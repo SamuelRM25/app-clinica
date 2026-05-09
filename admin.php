@@ -62,11 +62,11 @@ if ($logged_in) {
             }
             unset($s);
 
-        // ── MANEJO DE ACCIONES API (POST) ──────────────────────────────────
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        // ── MANEJO DE ACCIONES API (POST/GET) ──────────────────────────────
+        $action = $_POST['action'] ?? $_GET['action'] ?? null;
+        if ($action) {
             header('Content-Type: application/json');
             ob_clean(); // Limpiar cualquier output previo
-            $action = $_POST['action'];
 
             try {
                 if ($action === 'approve') {
@@ -604,6 +604,7 @@ $module_labels = [
       </div>
       <div class="modal-body">
         <input type="hidden" id="editUserId">
+        <input type="hidden" id="editUserHospId">
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label small text-secondary">Usuario</label>
@@ -799,6 +800,7 @@ async function refreshUserList(id) {
     try {
         const r = await fetch(location.pathname + '?action=get_users&id_hospital=' + id);
         const users = await r.json();
+        _tempUsers = users; // Store for the edit by ID function
         body.innerHTML = users.length ? '' : '<tr><td colspan="5" class="text-center text-secondary">No hay usuarios</td></tr>';
         users.forEach(u => {
             const tr = document.createElement('tr');
@@ -808,7 +810,7 @@ async function refreshUserList(id) {
                 <td><span class="badge bg-secondary">${u.tipoUsuario}</span></td>
                 <td>${u.especialidad || '-'}</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick='openEditUser(${JSON.stringify(u)})'><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-warning" onclick='openEditUserById(${u.idUsuario})'><i class="bi bi-pencil"></i></button>
                     <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.idUsuario}, ${u.id_hospital})"><i class="bi bi-trash"></i></button>
                 </td>
             `;
@@ -821,6 +823,7 @@ async function refreshUserList(id) {
 
 function openEditUser(u) {
     document.getElementById('editUserId').value = u.idUsuario;
+    document.getElementById('editUserHospId').value = u.id_hospital;
     document.getElementById('editUserLogin').value = u.usuario;
     document.getElementById('editUserPass').value = u.password;
     document.getElementById('editUserName').value = u.nombre;
@@ -830,6 +833,13 @@ function openEditUser(u) {
     document.getElementById('editUserTel').value = u.telefono || '';
     document.getElementById('editUserEmail').value = u.email || '';
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+let _tempUsers = []; // Global to store currently viewed hospital users
+
+async function openEditUserById(id) {
+    const u = _tempUsers.find(x => x.idUsuario == id);
+    if (u) openEditUser(u);
 }
 
 async function submitUpdateUser() {
@@ -848,8 +858,12 @@ async function submitUpdateUser() {
     const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
-    Swal.fire(j.status==='success'?'Actualizado':'Error', j.message, j.status);
-    // Recargar lista si es posible o esperar a que cierre modal
+    if (j.status === 'success') {
+        Swal.fire('Actualizado', j.message, 'success');
+        refreshUserList(document.getElementById('editUserHospId').value);
+    } else {
+        Swal.fire('Error', j.message, 'error');
+    }
 }
 
 async function deleteUser(id, hospId) {

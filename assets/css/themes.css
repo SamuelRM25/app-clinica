@@ -1,0 +1,78 @@
+/* themes.css - Definición de temas para ClinicApp */
+
+/* 1. Classic Medical (Azul tradicional) */
+.theme-classic {
+    --color-primary: #7c90db;
+    --color-primary-dark: #5a6ebf;
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text: #1e293b;
+    --color-text-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+}
+
+/* 2. Midnight Pro (Modo Oscuro Elegante) */
+.theme-midnight {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-bg: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+}
+
+/* 3. Emerald Health (Verde Clínico) */
+.theme-emerald {
+    --color-primary: #10b981;
+    --color-primary-dark: #059669;
+    --color-bg: #f0fdf4;
+    --color-surface: #ffffff;
+    --color-text: #064e3b;
+    --color-text-muted: #374151;
+    --color-border: #d1fae5;
+    --color-success: #059669;
+    --color-warning: #d97706;
+    --color-error: #dc2626;
+}
+
+/* 4. Royal Purple (Prestigio) */
+.theme-purple {
+    --color-primary: #8b5cf6;
+    --color-primary-dark: #7c3aed;
+    --color-bg: #f5f3ff;
+    --color-surface: #ffffff;
+    --color-text: #2e1065;
+    --color-text-muted: #6b7280;
+    --color-border: #ede9fe;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+}
+
+/* 5. Sunset Clinical (Cálido y Amigable) */
+.theme-sunset {
+    --color-primary: #f43f5e;
+    --color-primary-dark: #e11d48;
+    --color-bg: #fff1f2;
+    --color-surface: #ffffff;
+    --color-text: #4c0519;
+    --color-text-muted: #4b5563;
+    --color-border: #ffe4e6;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+}
+
+/* Aplicación global si se usa en el body */
+body.theme-classic { background-color: var(--color-bg); color: var(--color-text); }
+body.theme-midnight { background-color: var(--color-bg); color: var(--color-text); }
+body.theme-emerald { background-color: var(--color-bg); color: var(--color-text); }
+body.theme-purple { background-color: var(--color-bg); color: var(--color-text); }
+body.theme-sunset { background-color: var(--color-bg); color: var(--color-text); }

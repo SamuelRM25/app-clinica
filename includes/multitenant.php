@@ -55,6 +55,7 @@ function get_hospital_config($conn, $hospital_id = null) {
         $_SESSION['hospital_type']   = $hospital['tipo_suscripcion'];
         $_SESSION['hospital_expiry'] = $hospital['fecha_vencimiento'];
         $_SESSION['hospital_nombre'] = $hospital['nombre'];
+        $_SESSION['hospital_tema']   = $hospital['tema'] ?? 'classic';
     }
 
     $_HOSPITAL_CONFIG_CACHE = $hospital;
@@ -113,4 +114,37 @@ function get_hospital_filter($alias = '') {
 
     $prefix = $alias ? "$alias." : "";
     return " {$prefix}id_hospital = " . (int)$hospital_id . " ";
+}
+
+/**
+ * Inyecta el CSS del tema seleccionado por el hospital
+ */
+function apply_hospital_theme() {
+    $tema = $_SESSION['hospital_tema'] ?? 'classic';
+    $path_to_css = (strpos($_SERVER['SCRIPT_NAME'], '/php/') !== false) ? '../../assets/css/themes.css' : 'assets/css/themes.css';
+    if (strpos($_SERVER['SCRIPT_NAME'], '/php/settings/') !== false || strpos($_SERVER['SCRIPT_NAME'], '/php/dashboard/') !== false) {
+        // Ajuste para carpetas profundas
+        $depth = count(explode('/', trim($_SERVER['SCRIPT_NAME'], '/'))) - 1;
+        $prefix = str_repeat('../', $depth - 1);
+        $path_to_css = $prefix . 'assets/css/themes.css';
+    }
+    
+    // Si estamos en la raíz (ej: admin.php o index.php)
+    if (basename($_SERVER['SCRIPT_NAME']) == 'admin.php' || basename($_SERVER['SCRIPT_NAME']) == 'index.php') {
+        $path_to_css = 'assets/css/themes.css';
+    }
+
+    echo "<!-- Theme Engine -->\n";
+    echo "<link rel='stylesheet' href='{$path_to_css}'>\n";
+    echo "<script>document.body.classList.add('theme-{$tema}');</script>\n";
+    echo "<style>
+        :root {
+            --color-primary: var(--color-primary, #7c90db);
+            --primary: var(--color-primary);
+            --color-bg: var(--color-bg, #f8fafc);
+            --color-surface: var(--color-surface, #ffffff);
+            --color-text: var(--color-text, #1e293b);
+            --color-border: var(--color-border, #e2e8f0);
+        }
+    </style>\n";
 }

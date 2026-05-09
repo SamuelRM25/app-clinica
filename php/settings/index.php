@@ -56,6 +56,7 @@ try {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <?php apply_hospital_theme(); ?>
 
     <style>
         :root {
@@ -139,6 +140,36 @@ try {
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
         }
+
+        .theme-card {
+            border: 2px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .theme-card:hover {
+            border-color: var(--color-primary-light);
+            transform: translateY(-2px);
+        }
+
+        .theme-card.active {
+            border-color: var(--color-primary);
+            background: rgba(124, 144, 219, 0.05);
+        }
+
+        .theme-preview {
+            height: 60px;
+            border-radius: 0.4rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .theme-dot { width: 15px; height: 15px; border-radius: 50%; }
 
         .form-section {
             margin-bottom: 2.5rem;
@@ -272,6 +303,10 @@ try {
                     <i class="bi bi-database"></i>
                     Respaldo
                 </a>
+                <a href="#appearance" class="nav-item">
+                    <i class="bi bi-palette"></i>
+                    Apariencia
+                </a>
             </aside>
 
             <main class="settings-content animate-in">
@@ -328,6 +363,50 @@ try {
                         </form>
                     </div>
                 </div>
+
+                <div id="appearance-section" style="display: none;">
+                    <h3 class="section-title"><i class="bi bi-palette me-2"></i>Personalización Visual</h3>
+                    <p class="text-muted small mb-4">Seleccione el tema que mejor se adapte a la identidad de su hospital.</p>
+
+                    <form action="save_settings.php" method="POST">
+                        <input type="hidden" name="action" value="save_theme">
+                        <input type="hidden" name="tema" id="selectedTheme" value="<?php echo $_SESSION['hospital_tema']; ?>">
+
+                        <div class="row g-3">
+                            <?php
+                            $themes = [
+                                'classic' => ['label' => 'Classic Medical', 'colors' => ['#7c90db', '#f8fafc', '#1e293b']],
+                                'midnight' => ['label' => 'Midnight Pro', 'colors' => ['#3b82f6', '#0f172a', '#f8fafc']],
+                                'emerald' => ['label' => 'Emerald Health', 'colors' => ['#10b981', '#f0fdf4', '#064e3b']],
+                                'purple' => ['label' => 'Royal Purple', 'colors' => ['#8b5cf6', '#f5f3ff', '#2e1065']],
+                                'sunset' => ['label' => 'Sunset Clinical', 'colors' => ['#f43f5e', '#fff1f2', '#4c0519']],
+                            ];
+                            foreach ($themes as $id => $t):
+                                $isActive = ($_SESSION['hospital_tema'] == $id);
+                            ?>
+                            <div class="col-md-4">
+                                <div class="theme-card <?php echo $isActive ? 'active' : ''; ?>" onclick="selectTheme('<?php echo $id; ?>', this)">
+                                    <div class="theme-preview" style="background: <?php echo $t['colors'][1]; ?>; border: 1px solid #ddd;">
+                                        <div class="theme-dot" style="background: <?php echo $t['colors'][0]; ?>"></div>
+                                        <div class="theme-dot" style="background: <?php echo $t['colors'][2]; ?>"></div>
+                                    </div>
+                                    <div class="fw-bold small"><?php echo $t['label']; ?></div>
+                                    <?php if ($isActive): ?>
+                                        <span class="badge bg-primary position-absolute top-0 end-0 m-2" style="font-size: 0.6rem;">Activo</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 3rem;">
+                            <button type="submit" class="action-btn">
+                                <i class="bi bi-check-lg"></i>
+                                Aplicar Tema
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </main>
         </div>
     </div>
@@ -344,10 +423,21 @@ try {
         // Toggle aside active state
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function (e) {
+                const target = this.getAttribute('href').substring(1);
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
+                
+                // Show/hide sections
+                document.getElementById('general-section').style.display = (target === 'general') ? 'block' : 'none';
+                document.getElementById('appearance-section').style.display = (target === 'appearance') ? 'block' : 'none';
             });
         });
+
+        function selectTheme(id, el) {
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('selectedTheme').value = id;
+        }
     </script>
     </body>
 

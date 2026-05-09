@@ -1591,7 +1591,7 @@ try {
         <!-- Contenido Principal -->
         <main class="main-content">
             <!-- Notificación de compras pendientes -->
-            <?php if ($pending_purchases > 0 && $_SESSION['user_id'] == 6): ?>
+            <?php if ($pending_purchases > 0 && $user_type === 'user'): ?>
                     <div class="alert-card mb-4 animate-in delay-1">
                         <div class="alert-header">
                             <div class="alert-icon warning">
@@ -1629,7 +1629,7 @@ try {
             </div>
 
             <!-- Estadísticas principales -->
-            <?php if ($_SESSION['user_id'] == 1 || $_SESSION['user_id'] == 9 || $_SESSION['user_id'] == 10): ?>
+            <?php if ($user_type === 'admin'): ?>
                     <div class="stats-grid">
                         <!-- Valor Total en Inventario -->
                         <div class="stat-card animate-in delay-0" id="inventoryValueCard" style="cursor: pointer;"
@@ -1745,7 +1745,7 @@ try {
                             <i class="bi bi-file-earmark-text"></i>
                             Resumen CSV
                         </a>
-                        <?php if (in_array($_SESSION['user_id'], [1, 12])): ?>
+                        <?php if ($user_type === 'admin'): ?>
                                 <a href="insumos.php" class="action-btn" style="background: var(--color-info);">
                                     <i class="bi bi-box-fill"></i>
                                     Descarga de Insumos
