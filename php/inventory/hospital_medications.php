@@ -84,78 +84,7 @@ try {
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
-    <style>
-        :root {
-            /* Tema dia y layout, replicamos los esenciales */
-            --color-bg: #ffffff;
-            --color-surface: #f8f9fa;
-            --color-card: #ffffff;
-            --color-text: #1a1a1a;
-            --color-text-secondary: #6c757d;
-            --color-border: #e9ecef;
-            --color-primary: #0d6efd;
-            --color-secondary: #6c757d;
-            --color-success: #198754;
-            --color-warning: #ffc107;
-            --color-danger: #dc3545;
-            --color-info: #0dcaf0;
-            --font-family: 'Inter', sans-serif;
-            --space-md: 1rem;
-            --space-lg: 1.5rem;
-            --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
-        }
-
-        body {
-            font-family: var(--font-family);
-            background-color: var(--color-bg);
-            color: var(--color-text);
-        }
-
-        .dashboard-header {
-            background-color: var(--color-card);
-            border-bottom: 1px solid var(--color-border);
-            padding: var(--space-md) var(--space-lg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .main-content {
-            padding: var(--space-lg);
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .appointments-section {
-            background: var(--color-card);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: var(--space-lg);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-pending {
-            background: rgba(var(--bs-warning-rgb), 0.1);
-            color: var(--color-warning);
-        }
-
-        .status-linked {
-            background: rgba(var(--bs-success-rgb), 0.1);
-            color: var(--color-success);
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 
 <body>

@@ -114,3 +114,30 @@
     console.log('%cDerechos reservados RS SOLUTIONS', 'color: black; font-size: 18px;');
 
 })();
+
+// Theme and Global Settings Manager
+(function() {
+    // 1. Theme Configuration
+    const applyTheme = () => {
+        const theme = localStorage.getItem('dashboard-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Optional custom colors from settings
+        const customPrimary = localStorage.getItem('custom-primary-color');
+        if (customPrimary) {
+            document.documentElement.style.setProperty('--color-primary-day', customPrimary);
+            document.documentElement.style.setProperty('--color-primary-night', customPrimary);
+            document.documentElement.style.setProperty('--color-primary', customPrimary);
+        }
+    };
+
+    // Apply immediately to prevent FOUC (Flash of Unstyled Content)
+    applyTheme();
+
+    // Listen for storage changes to sync across tabs
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'dashboard-theme' || e.key === 'custom-primary-color') {
+            applyTheme();
+        }
+    });
+})();

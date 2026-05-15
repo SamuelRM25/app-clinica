@@ -22,21 +22,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../../assets/css/style.css">
 
-    <style>
-        /* Font display swap to handle slow network conditions */
-        @font-face {
-            font-family: 'Bootstrap Icons';
-            font-display: swap;
-            src: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/fonts/bootstrap-icons.woff2") format("woff2");
-        }
 
-        /* Ensure icons have a fallback */
-        .bi::before {
-            font-family: 'Bootstrap Icons', sans-serif;
-        }
-
-        /* Add any additional custom styles here */
-    </style>
 
     <!-- Mantenimiento de sesión (Global) -->
     <?php if (function_exists('output_keep_alive_script'))

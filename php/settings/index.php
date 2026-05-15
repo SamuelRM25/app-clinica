@@ -58,219 +58,7 @@ try {
     <link rel="stylesheet" href="../../assets/css/dashboard.css">
     <?php apply_hospital_theme(); ?>
 
-    <style>
-        :root {
-            --color-primary: #7c90db;
-            --color-primary-dark: #5a6ebf;
-            --color-bg: #f8fafc;
-            --color-surface: #ffffff;
-            --color-text: #1e293b;
-            --color-text-muted: #64748b;
-            --color-border: #e2e8f0;
-            --radius-lg: 1rem;
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        [data-theme="dark"] {
-            --color-bg: #0f172a;
-            --color-surface: #1e293b;
-            --color-text: #f8fafc;
-            --color-text-muted: #94a3b8;
-            --color-border: #334155;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            margin: 0;
-            display: flex;
-        }
-
-        .settings-container {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .settings-nav {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            padding: 1rem;
-            border-radius: var(--radius-lg);
-            height: fit-content;
-            position: sticky;
-            top: 2rem;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            color: var(--color-text-muted);
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-            margin-bottom: 0.25rem;
-        }
-
-        .nav-item.active {
-            background: var(--color-primary);
-            color: white;
-        }
-
-        .nav-item:hover:not(.active) {
-            background: var(--color-bg);
-            color: var(--color-text);
-        }
-
-        .settings-content {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            padding: 2.5rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-        }
-
-        .theme-card {
-            border: 2px solid var(--color-border);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .theme-card:hover {
-            border-color: var(--color-primary-light);
-            transform: translateY(-2px);
-        }
-
-        .theme-card.active {
-            border-color: var(--color-primary);
-            background: rgba(124, 144, 219, 0.05);
-        }
-
-        .theme-preview {
-            height: 60px;
-            border-radius: 0.4rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            gap: 4px;
-            padding: 8px;
-        }
-
-        .theme-dot { width: 15px; height: 15px; border-radius: 50%; }
-
-        .form-section {
-            margin-bottom: 2.5rem;
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--color-primary-dark);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: var(--color-text-muted);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--color-border);
-            border-radius: 0.5rem;
-            background: var(--color-bg);
-            color: var(--color-text);
-            font-family: inherit;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--color-primary);
-        }
-
-        .action-btn {
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .action-btn:hover {
-            background: var(--color-primary-dark);
-        }
-
-        .profile-banner {
-            height: 120px;
-            background: linear-gradient(135deg, #7c90db, #5a6ebf);
-            border-radius: 0.75rem;
-            margin-bottom: 3rem;
-            position: relative;
-        }
-
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            bottom: -50px;
-            left: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            box-shadow: var(--shadow-md);
-            border: 4px solid var(--color-surface);
-        }
-
-        .animate-in {
-            animation: fadeInUp 0.5s ease forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
     <div class="settings-container">
         <header class="d-flex justify-content-between align-items-center mb-4">
@@ -366,46 +154,54 @@ try {
 
                 <div id="appearance-section" style="display: none;">
                     <h3 class="section-title"><i class="bi bi-palette me-2"></i>Personalización Visual</h3>
-                    <p class="text-muted small mb-4">Seleccione el tema que mejor se adapte a la identidad de su hospital.</p>
+                    <p class="text-muted small mb-4">Seleccione el tema o personalice los colores para adaptar la identidad visual del sistema. (Se guarda localmente en su navegador).</p>
 
-                    <form action="save_settings.php" method="POST">
-                        <input type="hidden" name="action" value="save_theme">
-                        <input type="hidden" name="tema" id="selectedTheme" value="<?php echo $_SESSION['hospital_tema']; ?>">
+                    <div class="row g-3 mb-4">
+                        <?php
+                        $themes = [
+                            'classic' => ['label' => 'Classic Medical', 'colors' => ['#7c90db', '#f8fafc', '#1e293b']],
+                            'midnight' => ['label' => 'Midnight Pro', 'colors' => ['#3b82f6', '#0f172a', '#f8fafc']],
+                            'emerald' => ['label' => 'Emerald Health', 'colors' => ['#10b981', '#f0fdf4', '#064e3b']],
+                            'purple' => ['label' => 'Royal Purple', 'colors' => ['#8b5cf6', '#f5f3ff', '#2e1065']],
+                            'sunset' => ['label' => 'Sunset Clinical', 'colors' => ['#f43f5e', '#fff1f2', '#4c0519']],
+                        ];
+                        foreach ($themes as $id => $t):
+                            // El activo real vendrá del localStorage ahora, pero dejamos el visual inicial
+                        ?>
+                        <div class="col-md-4">
+                            <div class="theme-card" data-theme-id="<?php echo $id; ?>" data-color="<?php echo $t['colors'][0]; ?>" onclick="applyPresetTheme('<?php echo $id; ?>', '<?php echo $t['colors'][0]; ?>', this)">
+                                <div class="theme-preview" style="background: <?php echo $t['colors'][1]; ?>; border: 1px solid #ddd;">
+                                    <div class="theme-dot" style="background: <?php echo $t['colors'][0]; ?>"></div>
+                                    <div class="theme-dot" style="background: <?php echo $t['colors'][2]; ?>"></div>
+                                </div>
+                                <div class="fw-bold small"><?php echo $t['label']; ?></div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
 
-                        <div class="row g-3">
-                            <?php
-                            $themes = [
-                                'classic' => ['label' => 'Classic Medical', 'colors' => ['#7c90db', '#f8fafc', '#1e293b']],
-                                'midnight' => ['label' => 'Midnight Pro', 'colors' => ['#3b82f6', '#0f172a', '#f8fafc']],
-                                'emerald' => ['label' => 'Emerald Health', 'colors' => ['#10b981', '#f0fdf4', '#064e3b']],
-                                'purple' => ['label' => 'Royal Purple', 'colors' => ['#8b5cf6', '#f5f3ff', '#2e1065']],
-                                'sunset' => ['label' => 'Sunset Clinical', 'colors' => ['#f43f5e', '#fff1f2', '#4c0519']],
-                            ];
-                            foreach ($themes as $id => $t):
-                                $isActive = ($_SESSION['hospital_tema'] == $id);
-                            ?>
-                            <div class="col-md-4">
-                                <div class="theme-card <?php echo $isActive ? 'active' : ''; ?>" onclick="selectTheme('<?php echo $id; ?>', this)">
-                                    <div class="theme-preview" style="background: <?php echo $t['colors'][1]; ?>; border: 1px solid #ddd;">
-                                        <div class="theme-dot" style="background: <?php echo $t['colors'][0]; ?>"></div>
-                                        <div class="theme-dot" style="background: <?php echo $t['colors'][2]; ?>"></div>
-                                    </div>
-                                    <div class="fw-bold small"><?php echo $t['label']; ?></div>
-                                    <?php if ($isActive): ?>
-                                        <span class="badge bg-primary position-absolute top-0 end-0 m-2" style="font-size: 0.6rem;">Activo</span>
-                                    <?php endif; ?>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">Personalización Avanzada</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Color Principal Personalizado</label>
+                                    <input type="color" class="form-control form-control-color" id="customColorPicker" value="#0d6efd" title="Elige tu color" onchange="updateCustomColor(this.value)">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Modo Visual</label>
+                                    <select class="form-select" id="themeModeSelector" onchange="updateThemeMode(this.value)">
+                                        <option value="light">Día (Claro)</option>
+                                        <option value="dark">Noche (Oscuro)</option>
+                                    </select>
                                 </div>
                             </div>
-                            <?php endforeach; ?>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                                <button type="button" class="btn btn-outline-danger" onclick="resetStyles()">Restaurar Valores por Defecto</button>
+                            </div>
                         </div>
-
-                        <div style="display: flex; justify-content: flex-end; margin-top: 3rem;">
-                            <button type="submit" class="action-btn">
-                                <i class="bi bi-check-lg"></i>
-                                Aplicar Tema
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </main>
         </div>
@@ -433,11 +229,60 @@ try {
             });
         });
 
-        function selectTheme(id, el) {
+        // Theme management UI logic
+        function applyPresetTheme(id, color, el) {
             document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
-            document.getElementById('selectedTheme').value = id;
+            updateCustomColor(color);
+            document.getElementById('customColorPicker').value = color;
         }
+
+        function updateCustomColor(color) {
+            localStorage.setItem('custom-primary-color', color);
+            // Trigger storage event manually for current window
+            window.dispatchEvent(new Event('storage'));
+            document.documentElement.style.setProperty('--color-primary-day', color);
+            document.documentElement.style.setProperty('--color-primary-night', color);
+            document.documentElement.style.setProperty('--color-primary', color);
+            // Si el color es claro, quiza el texto deba ser oscuro. Simplificamos asumiendo que es un color primario.
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Color actualizado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+
+        function updateThemeMode(mode) {
+            document.documentElement.setAttribute('data-theme', mode);
+            localStorage.setItem('dashboard-theme', mode);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Modo visual actualizado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+
+        function resetStyles() {
+            localStorage.removeItem('custom-primary-color');
+            localStorage.removeItem('dashboard-theme');
+            location.reload();
+        }
+
+        // Initialize UI from localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedColor = localStorage.getItem('custom-primary-color');
+            if (savedColor) {
+                document.getElementById('customColorPicker').value = savedColor;
+            }
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+            document.getElementById('themeModeSelector').value = savedTheme;
+        });
     </script>
     </body>
 

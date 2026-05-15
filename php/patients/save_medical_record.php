@@ -25,6 +25,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Handle Physical Exam and Pain Points
+        $examen_fisico = $_POST['examen_fisico'] ?? '';
+        if (!empty($_POST['puntos_dolor'])) {
+            $examen_fisico .= "\n\n[MAPA DE DOLOR]: " . $_POST['puntos_dolor'];
+        }
+
+        // Handle Lab Tests (Select2 Array)
+        $examenes_ids = $_POST['examenes_realizados'] ?? [];
+        $examenes_texto = '';
+        if (!empty($examenes_ids)) {
+            // Fetch names of selected tests for the text field
+            $placeholders = implode(',', array_fill(0, count($examenes_ids), '?'));
+            $stmtNames = $conn->prepare("SELECT nombre_prueba FROM catalogo_pruebas WHERE id_prueba IN ($placeholders)");
+            $stmtNames->execute($examenes_ids);
+            $test_names = $stmtNames->fetchAll(PDO::FETCH_COLUMN);
+            $examenes_texto = implode(', ', $test_names);
+        }
+
+
         // Prepare SQL statement
         $sql = "INSERT INTO historial_clinico (
                     id_paciente, motivo_consulta, sintomas, examen_fisico, diagnostico, tratamiento, 
@@ -44,13 +63,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':id_paciente', $_POST['id_paciente']);
         $stmt->bindParam(':motivo_consulta', $_POST['motivo_consulta']);
         $stmt->bindParam(':sintomas', $_POST['sintomas']);
-        $stmt->bindParam(':examen_fisico', $_POST['examen_fisico']);
+        $stmt->bindParam(':examen_fisico', $examen_fisico);
         $stmt->bindParam(':diagnostico', $_POST['diagnostico']);
         $stmt->bindParam(':tratamiento', $_POST['tratamiento']);
         $stmt->bindParam(':receta_medica', $_POST['receta_medica']);
         $stmt->bindParam(':antecedentes_personales', $_POST['antecedentes_personales']);
         $stmt->bindParam(':antecedentes_familiares', $_POST['antecedentes_familiares']);
-        $stmt->bindParam(':examenes_realizados', $_POST['examenes_realizados']);
+        $stmt->bindParam(':examenes_realizados', $examenes_texto);
         $stmt->bindParam(':resultados_examenes', $_POST['resultados_examenes']);
         $stmt->bindParam(':observaciones', $_POST['observaciones']);
 
@@ -121,6 +140,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['message'] .= " pero hubo un error al programar la próxima cita";
                 }
             }
+
+            // --- AUTOMATIC LAB ORDER LOGIC ---
+            if (!empty($examenes_ids)) {
+                // 1. Map Doctor Name to ID
+                $stmtDoc = $conn->prepare("SELECT idUsuario FROM usuarios WHERE CONCAT(nombre, ' ', apellido) = ? LIMIT 1");
+                $stmtDoc->execute([$_POST['medico_responsable']]);
+                $id_doctor = $stmtDoc->fetch(PDO::FETCH_ASSOC)['idUsuario'] ?? $_SESSION['user_id'];
+
+                // 2. Generate unique order number
+                $today_order = date('Ymd');
+                $stmtCount = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE()");
+                $stmtCount->execute();
+                $count = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'] + 1;
+                $numero_orden = "LAB-" . $today_order . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+
+                // 3. Check if patient is hospitalized
+                $stmtHosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' LIMIT 1");
+                $stmtHosp->execute([$_POST['id_paciente']]);
+                $hosp_data = $stmtHosp->fetch(PDO::FETCH_ASSOC);
+                $id_encamamiento = $hosp_data ? $hosp_data['id_encamamiento'] : null;
+
+                // 4. Create Order
+                $stmtOrder = $conn->prepare("
+                    INSERT INTO ordenes_laboratorio (
+                        numero_orden, id_paciente, id_doctor, id_encamamiento, 
+                        prioridad, observaciones, estado, fecha_orden
+                    ) VALUES (?, ?, ?, ?, 'Rutina', 'Orden generada desde consulta médica', 'Pendiente', NOW())
+                ");
+                $stmtOrder->execute([$numero_orden, $_POST['id_paciente'], $id_doctor, $id_encamamiento]);
+                $id_orden = $conn->lastInsertId();
+
+                // 5. Insert Details and Billing
+                $stmtDetail = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
+                $stmtPrice = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ?");
+                $items_billing = [];
+
+                foreach ($examenes_ids as $id_prueba) {
+                    $stmtDetail->execute([$id_orden, $id_prueba]);
+                    $stmtPrice->execute([$id_prueba]);
+                    $test_inf = $stmtPrice->fetch(PDO::FETCH_ASSOC);
+                    if ($test_inf) {
+                        $items_billing[] = ['nombre' => $test_inf['nombre_prueba'], 'precio' => $test_inf['precio']];
+                    }
+                }
+
+                // 6. Handling Billing/Cargos
+                if ($id_encamamiento) {
+                    $stmtCargo = $conn->prepare("
+                        INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por)
+                        VALUES (
+                            (SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND estado_pago = 'Pendiente' LIMIT 1),
+                            'Laboratorio', ?, ?, NOW(), ?
+                        )
+                    ");
+                    foreach ($items_billing as $item) {
+                        $stmtCargo->execute([$id_encamamiento, "Laboratorio: " . $item['nombre'] . " (Orden #" . $numero_orden . ")", $item['precio'], $_SESSION['user_id']]);
+                    }
+                } else {
+                    // Regular payment record (using same logic as save_order.php)
+                    $total_bill = array_sum(array_column($items_billing, 'precio'));
+                    $desc_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", array_column($items_billing, 'nombre'));
+                    
+                    $patientDataStmt = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre_full FROM pacientes WHERE id_paciente = ?");
+                    $patientDataStmt->execute([$_POST['id_paciente']]);
+                    $pac_full = $patientDataStmt->fetch(PDO::FETCH_ASSOC)['nombre_full'] ?? 'Paciente';
+
+                    $stmtBill = $conn->prepare("
+                        INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen)
+                        VALUES (?, ?, ?, ?, ?, 'Efectivo', NOW())
+                    ");
+                    $stmtBill->execute([$_POST['id_paciente'], $id_orden, $pac_full, $desc_bill, $total_bill]);
+                }
+                
+                $_SESSION['message'] .= " y se ha generado la Orden de Laboratorio #$numero_orden";
+            }
+
         } else {
             throw new Exception("Error al guardar el registro médico");
         }

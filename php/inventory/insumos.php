@@ -53,67 +53,7 @@ $page_title = "Gestión de Insumos - CMHS";
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        :root {
-            --color-primary: #0d6efd;
-            --color-bg: #f8f9fa;
-            --color-card: #ffffff;
-            --color-text: #1a1a1a;
-            --radius-lg: 0.75rem;
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        body {
-            background-color: var(--color-bg);
-            font-family: 'Inter', sans-serif;
-            color: var(--color-text);
-        }
-
-        .main-container {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-
-        .card {
-            border: none;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .header {
-            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
-            color: white;
-            padding: 1.5rem;
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        }
-
-        .search-container {
-            position: relative;
-        }
-
-        .search-results {
-            position: absolute;
-            width: 100%;
-            z-index: 1000;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0 0 8px 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .search-item {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-
-        .search-item:hover {
-            background: #f0f7ff;
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 
 <body>

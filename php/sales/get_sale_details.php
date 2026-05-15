@@ -122,65 +122,7 @@ function generate_html_report($ventas, $start_date, $end_date, $total_jornada)
         <title>Reporte de Jornada</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-        <style>
-            @media print {
-                .no-print {
-                    display: none;
-                }
-
-                body {
-                    padding: 20px;
-                }
-            }
-
-            .header-report {
-                border-bottom: 2px solid #333;
-                padding-bottom: 15px;
-                margin-bottom: 20px;
-            }
-
-            .report-title {
-                font-size: 1.8rem;
-                font-weight: bold;
-            }
-
-            .shift-info {
-                background-color: #f8f9fa;
-                padding: 15px;
-                border-radius: 5px;
-                margin-bottom: 20px;
-            }
-
-            .total-jornada {
-                font-size: 1.4rem;
-                font-weight: bold;
-                background-color: #e9ecef;
-                padding: 10px;
-                border-radius: 5px;
-            }
-
-            .sale-details {
-                margin-top: 30px;
-            }
-
-            .sale-header {
-                background-color: #0d6efd;
-                color: white;
-                padding: 8px 15px;
-                border-radius: 5px;
-                margin-bottom: 10px;
-            }
-
-            .sale-items {
-                margin-left: 30px;
-                margin-bottom: 20px;
-            }
-
-            .sale-item {
-                border-bottom: 1px solid #dee2e6;
-                padding: 5px 0;
-            }
-        </style>
+        <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     </head>
 
     <body>
