@@ -46,166 +46,188 @@ $available_modules = [
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-</head>
+    <link rel="stylesheet" href="../../assets/css/global_dashb<body>
+    <!-- Efecto de mármol animado -->
+    <div class="marble-effect"></div>
 
-<body>
-    <div class="container py-4" style="max-width: 960px;">
-
-        <!-- Botón volver -->
-        <a href="../dashboard/index.php" class="btn btn-outline-secondary btn-sm mb-3">
-            <i class="bi bi-arrow-left me-1"></i> Volver al Panel
-        </a>
-
-        <!-- Encabezado -->
-        <div class="sub-header">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                    <h2><i class="bi bi-credit-card-2-front me-2"></i>Estado de Suscripción</h2>
-                    <p><?php echo htmlspecialchars($h['nombre'] ?? 'Hospital'); ?></p>
+    <div class="dashboard-container">
+        <!-- Header Superior -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <!-- Logo -->
+                <div class="brand-container">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
-                <?php
-                $chip_class = match ($h['estado_suscripcion'] ?? '') {
-                    'Activo' => 'chip-activo',
-                    'Vencido' => 'chip-vencido',
-                    'Inactivo' => 'chip-inactivo',
-                    default => 'chip-prueba'
-                };
-                ?>
-                <span class="status-chip <?php echo $chip_class; ?>" style="font-size:.95rem; padding:.5rem 1.2rem;">
-                    <i class="bi bi-circle-fill" style="font-size:.5rem;"></i>
-                    <?php echo strtoupper($h['estado_suscripcion'] ?? 'PRUEBA'); ?>
-                </span>
+
+                <!-- Controles -->
+                <div class="header-controls">
+                    <!-- Control de tema -->
+                    <div class="theme-toggle">
+                        <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema claro/oscuro">
+                            <i class="bi bi-sun theme-icon sun-icon"></i>
+                            <i class="bi bi-moon theme-icon moon-icon"></i>
+                        </button>
+                    </div>
+
+                    <!-- Back Button -->
+                    <a href="../dashboard/index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Dashboard
+                    </a>
+                </div>
             </div>
-        </div>
+        </header>
 
-        <div class="row g-4">
-            <!-- Info de suscripción -->
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm h-100" style="border-radius:1rem;">
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3">Detalles del Plan</h5>
-                        <table class="table table-borderless table-sm">
-                            <tr>
-                                <td class="text-muted">Tipo</td>
-                                <td class="fw-bold"><?php echo $h['tipo_suscripcion'] ?? '—'; ?></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Estado</td>
-                                <td><span
-                                        class="status-chip <?php echo $chip_class; ?>"><?php echo $h['estado_suscripcion'] ?? '—'; ?></span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Vencimiento</td>
-                                <td class="fw-bold text-primary">
-                                    <?php if (($h['tipo_suscripcion'] ?? '') === 'De por vida'): ?>
-                                        <span class="text-success">♾ De por vida</span>
-                                    <?php else: ?>
-                                        <?php echo $h['fecha_vencimiento'] ?? '—'; ?>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <hr>
-                        <h6 class="fw-bold mb-2">Módulos Activos</h6>
-                        <div class="d-flex flex-wrap gap-1">
-                            <?php foreach ($h['modulos_activos'] as $mod): ?>
-                                <span class="badge text-bg-success px-2 py-1"><?php echo ucfirst($mod); ?></span>
-                            <?php endforeach; ?>
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <div class="container-fluid px-0">
+                <!-- Encabezado -->
+                <div class="stat-card mb-4 animate-in">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div>
+                            <h2 class="fw-bold mb-1"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Estado de Suscripción</h2>
+                            <p class="text-muted mb-0"><?php echo htmlspecialchars($h['nombre'] ?? 'Hospital'); ?></p>
                         </div>
-
-                        <hr>
-                        <h6 class="fw-bold mb-2">Métodos de Pago</h6>
-                        <ul class="list-unstyled small text-muted mb-0">
-                            <li class="mb-1"><i class="bi bi-bank me-1"></i>Transferencia Bancaria (BI, Banrural, G&T)
-                            </li>
-                            <li class="mb-1"><i class="bi bi-credit-card me-1"></i>Tarjeta de Crédito/Débito</li>
-                            <li><i class="bi bi-paypal me-1"></i>PayPal / Enlace de Pago</li>
-                        </ul>
+                        <?php
+                        $chip_class = match ($h['estado_suscripcion'] ?? '') {
+                            'Activo' => 'chip-activo',
+                            'Vencido' => 'chip-vencido',
+                            'Inactivo' => 'chip-inactivo',
+                            default => 'chip-prueba'
+                        };
+                        ?>
+                        <span class="status-chip <?php echo $chip_class; ?>" style="font-size:.95rem; padding:.5rem 1.2rem;">
+                            <i class="bi bi-circle-fill" style="font-size:.5rem;"></i>
+                            <?php echo strtoupper($h['estado_suscripcion'] ?? 'PRUEBA'); ?>
+                        </span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Selector de módulos -->
-            <div class="col-md-8">
-                <div class="card border-0 shadow-sm" style="border-radius:1rem;">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <h5 class="fw-bold mb-0">Solicitar / Renovar Módulos</h5>
-                            <div class="btn-group btn-group-sm" id="billingToggle" role="group">
-                                <input type="radio" class="btn-check" name="billing" id="bilMes" value="mes" checked>
-                                <label class="btn btn-outline-primary" for="bilMes">Mensual</label>
-                                <input type="radio" class="btn-check" name="billing" id="bilAnual" value="anual">
-                                <label class="btn btn-outline-primary" for="bilAnual">Anual <span
-                                        class="badge bg-warning text-dark ms-1">-15%</span></label>
-                                <input type="radio" class="btn-check" name="billing" id="bilVida" value="vida">
-                                <label class="btn btn-outline-primary" for="bilVida">De por vida</label>
+                <div class="row g-4">
+                    <!-- Info de suscripción -->
+                    <div class="col-md-4 animate-in" style="animation-delay: 0.1s;">
+                        <div class="card border-0 shadow-sm h-100" style="border-radius:1rem; background: var(--color-card); border: 1px solid var(--color-border) !important;">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold mb-3" style="color: var(--color-text);">Detalles del Plan</h5>
+                                <table class="table table-borderless table-sm text-start">
+                                    <tr>
+                                        <td class="text-muted">Tipo</td>
+                                        <td class="fw-bold" style="color: var(--color-text);"><?php echo $h['tipo_suscripcion'] ?? '—'; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Estado</td>
+                                        <td><span
+                                                class="status-chip <?php echo $chip_class; ?>"><?php echo $h['estado_suscripcion'] ?? '—'; ?></span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Vencimiento</td>
+                                        <td class="fw-bold text-primary">
+                                            <?php if (($h['tipo_suscripcion'] ?? '') === 'De por vida'): ?>
+                                                <span class="text-success">♾ De por vida</span>
+                                            <?php else: ?>
+                                                <?php echo $h['fecha_vencimiento'] ?? '—'; ?>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <hr style="border-color: var(--color-border);">
+                                <h6 class="fw-bold mb-2" style="color: var(--color-text);">Módulos Activos</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <?php foreach ($h['modulos_activos'] as $mod): ?>
+                                        <span class="badge badge-success px-2 py-1"><?php echo ucfirst($mod); ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <hr style="border-color: var(--color-border);">
+                                <h6 class="fw-bold mb-2" style="color: var(--color-text);">Métodos de Pago</h6>
+                                <ul class="list-unstyled small text-muted mb-0 text-start">
+                                    <li class="mb-1"><i class="bi bi-bank me-1 text-primary"></i>Transferencia Bancaria (BI, Banrural, G&T)</li>
+                                    <li class="mb-1"><i class="bi bi-credit-card me-1 text-primary"></i>Tarjeta de Crédito/Débito</li>
+                                    <li><i class="bi bi-paypal me-1 text-primary"></i>PayPal / Enlace de Pago</li>
+                                </ul>
                             </div>
                         </div>
-                        <p class="text-muted small mb-3">Selecciona los módulos que necesitas. Los que ya tienes activos
-                            están marcados.</p>
+                    </div>
 
-                        <div class="row g-2" id="moduleGrid">
-                            <?php foreach ($available_modules as $key => $mod):
-                                $is_core = ($key === 'core');
-                                $is_active = in_array($key, $h['modulos_activos']);
-                                $class = $is_core ? 'core-module' : ($is_active ? 'active-now selected' : '');
-                                ?>
-                                <div class="col-sm-6">
-                                    <div class="module-card <?php echo $class; ?>" data-module="<?php echo $key; ?>"
-                                        data-price-mes="<?php echo $mod['precio_mes']; ?>"
-                                        data-price-anual="<?php echo $mod['precio_anual']; ?>" onclick="toggleModule(this)"
-                                        <?php if ($is_core)
-                                            echo 'onclick="return false;"'; ?>>
-                                        <div class="module-check"></div>
-                                        <div class="module-icon"><i class="bi <?php echo $mod['icon']; ?>"></i></div>
-                                        <div class="module-name"><?php echo $mod['label']; ?></div>
-                                        <div class="module-desc"><?php echo $mod['desc']; ?></div>
-                                        <div class="module-price" id="price-<?php echo $key; ?>">
-                                            <?php if ($mod['precio_mes'] === 0): ?>
-                                                <span class="text-success">Incluido</span>
-                                            <?php else: ?>
-                                                Q<?php echo $mod['precio_mes']; ?>/mes
-                                            <?php endif; ?>
-                                        </div>
+                    <!-- Selector de módulos -->
+                    <div class="col-md-8 animate-in" style="animation-delay: 0.2s;">
+                        <div class="card border-0 shadow-sm" style="border-radius:1rem; background: var(--color-card); border: 1px solid var(--color-border) !important;">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                    <h5 class="fw-bold mb-0" style="color: var(--color-text);">Solicitar / Renovar Módulos</h5>
+                                    <div class="btn-group btn-group-sm" id="billingToggle" role="group">
+                                        <input type="radio" class="btn-check" name="billing" id="bilMes" value="mes" checked>
+                                        <label class="btn btn-outline-primary" for="bilMes">Mensual</label>
+                                        <input type="radio" class="btn-check" name="billing" id="bilAnual" value="anual">
+                                        <label class="btn btn-outline-primary" for="bilAnual">Anual <span
+                                                class="badge badge-warning ms-1">-15%</span></label>
+                                        <input type="radio" class="btn-check" name="billing" id="bilVida" value="vida">
+                                        <label class="btn btn-outline-primary" for="bilVida">De por vida</label>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
+                                <p class="text-muted small mb-3">Selecciona los módulos que necesitas. Los que ya tienes activos están marcados.</p>
 
-                        <div class="total-bar mt-3">
-                            <div>
-                                <div class="small text-muted">Total estimado</div>
-                                <div class="total-amount" id="totalPrice">Q0/mes</div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-outline-secondary btn-sm"
-                                    onclick="resetSelection()">Restablecer</button>
-                                <button class="btn btn-primary px-4" onclick="openRequestModal()">
-                                    <i class="bi bi-send me-1"></i>Enviar Solicitud
-                                </button>
+                                <div class="row g-3" id="moduleGrid">
+                                    <?php foreach ($available_modules as $key => $mod):
+                                        $is_core = ($key === 'core');
+                                        $is_active = in_array($key, $h['modulos_activos']);
+                                        $class = $is_core ? 'core-module' : ($is_active ? 'active-now selected' : '');
+                                        ?>
+                                        <div class="col-sm-6">
+                                            <div class="module-card <?php echo $class; ?>" data-module="<?php echo $key; ?>"
+                                                data-price-mes="<?php echo $mod['precio_mes']; ?>"
+                                                data-price-anual="<?php echo $mod['precio_anual']; ?>" onclick="toggleModule(this)"
+                                                <?php if ($is_core)
+                                                    echo 'onclick="return false;"'; ?>>
+                                                <div class="module-check"></div>
+                                                <div class="module-icon"><i class="bi <?php echo $mod['icon']; ?>"></i></div>
+                                                <div class="module-name"><?php echo $mod['label']; ?></div>
+                                                <div class="module-desc"><?php echo $mod['desc']; ?></div>
+                                                <div class="module-price" id="price-<?php echo $key; ?>">
+                                                    <?php if ($mod['precio_mes'] === 0): ?>
+                                                        <span class="text-success">Incluido</span>
+                                                    <?php else: ?>
+                                                        Q<?php echo $mod['precio_mes']; ?>/mes
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <div class="total-bar mt-4">
+                                    <div>
+                                        <div class="small text-muted">Total estimado</div>
+                                        <div class="total-amount" id="totalPrice" style="color: var(--color-primary);">Q0/mes</div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                            onclick="resetSelection()">Restablecer</button>
+                                        <button class="btn btn-primary px-4" onclick="openRequestModal()">
+                                            <i class="bi bi-send me-1"></i>Enviar Solicitud
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Modal confirmación de solicitud -->
     <div class="modal fade" id="requestModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius:1rem; border:0;">
+            <div class="modal-content" style="border-radius:1rem; border:0; background: var(--color-card); border: 1px solid var(--color-border) !important;">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-send-check me-2 text-primary"></i>Confirmar
-                        Solicitud</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold" style="color: var(--color-text);"><i class="bi bi-send-check me-2 text-primary"></i>Confirmar Solicitud</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: var(--theme-close-btn-filter, none);"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Revisa los módulos seleccionados antes de enviar. El administrador
-                        recibirá tu solicitud y la aprobará a la brevedad.</p>
+                    <p class="text-muted small mb-3">Revisa los módulos seleccionados antes de enviar. El administrador recibirá tu solicitud y la aprobará a la brevedad.</p>
                     <div id="requestSummary" class="mb-3"></div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Tipo de suscripción</label>
@@ -222,7 +244,7 @@ $available_modules = [
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-light" data-bs-dismiss="modal" style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">Cancelar</button>
                     <button class="btn btn-primary px-4" onclick="submitRequest()">
                         <i class="bi bi-check2-circle me-1"></i>Confirmar y Enviar
                     </button>

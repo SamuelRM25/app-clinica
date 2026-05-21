@@ -690,203 +690,199 @@ try {
     </div>
 
     <!-- Modal para nueva compra -->
-    <div class="modal fade" id="newPurchaseModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-bag-plus text-primary"></i>
-                        Registrar Nueva Compra
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="purchaseForm">
-                        <!-- Header Info -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-3">
-                                <label class="form-label">Fecha de Compra</label>
-                                <input type="date" class="form-control" name="purchase_date" id="purchase_date"
-                                    required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Tipo de Documento</label>
-                                <select class="form-select" name="document_type" id="document_type" required>
-                                    <option value="Factura">Factura</option>
-                                    <option value="Nota de Envío">Nota de Envío</option>
-                                    <option value="Consumidor Final">Consumidor Final</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">No. Documento</label>
-                                <input type="text" class="form-control" name="document_number" id="document_number"
-                                    placeholder="Ej. A-12345">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Casa Farmacéutica / Proveedor</label>
-                                <input type="text" class="form-control" name="provider_name" id="provider_name"
-                                    placeholder="Nombre de la casa farmacéutica">
-                            </div>
+    <div class="custom-modal-overlay" id="newPurchaseModal">
+        <div class="custom-modal modal-xl">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-bag-plus text-primary me-2"></i>
+                    Registrar Nueva Compra
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <form id="purchaseForm">
+                    <!-- Header Info -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha de Compra</label>
+                            <input type="date" class="form-control" name="purchase_date" id="purchase_date"
+                                required>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo de Documento</label>
+                            <select class="form-select" name="document_type" id="document_type" required>
+                                <option value="Factura">Factura</option>
+                                <option value="Nota de Envío">Nota de Envío</option>
+                                <option value="Consumidor Final">Consumidor Final</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">No. Documento</label>
+                            <input type="text" class="form-control" name="document_number" id="document_number"
+                                placeholder="Ej. A-12345">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Casa Farmacéutica / Proveedor</label>
+                            <input type="text" class="form-control" name="provider_name" id="provider_name"
+                                placeholder="Nombre de la casa farmacéutica">
+                        </div>
+                    </div>
 
-                        <hr class="opacity-25">
+                    <hr class="opacity-25">
 
-                        <!-- Add Item Section -->
-                        <h6 class="fw-bold mb-3">Agregar Productos</h6>
-                        <div class="card bg-light border-0 mb-4">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Producto/Medicamento</label>
-                                        <input type="text" class="form-control form-control-sm" id="item_name"
-                                            placeholder="Nombre">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Presentación</label>
-                                        <input type="text" class="form-control form-control-sm" id="item_presentation"
-                                            placeholder="Ej. Tableta">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Molécula</label>
-                                        <input type="text" class="form-control form-control-sm" id="item_molecule"
-                                            placeholder="Componente">
-                                    </div>
-                                    <div class="col-md-1">
-                                        <label class="form-label small">Cant.</label>
-                                        <input type="number" class="form-control form-control-sm" id="item_qty" min="1"
-                                            value="1">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Costo (Q)</label>
-                                        <input type="number" class="form-control form-control-sm" id="item_cost" min="0"
-                                            step="0.01">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Precio Venta (Q)</label>
-                                        <input type="number" class="form-control form-control-sm" id="item_sale_price"
-                                            min="0" step="0.01">
-                                    </div>
-                                    <div class="col-md-12 d-flex justify-content-end mt-3">
-                                        <button type="button" class="action-btn btn-sm" onclick="addItem()">
-                                            <i class="bi bi-plus-lg me-2"></i>Agregar
-                                        </button>
-                                    </div>
+                    <!-- Add Item Section -->
+                    <h6 class="fw-bold mb-3">Agregar Productos</h6>
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Producto/Medicamento</label>
+                                    <input type="text" class="form-control form-control-sm" id="item_name"
+                                        placeholder="Nombre">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Presentación</label>
+                                    <input type="text" class="form-control form-control-sm" id="item_presentation"
+                                        placeholder="Ej. Tableta">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Molécula</label>
+                                    <input type="text" class="form-control form-control-sm" id="item_molecule"
+                                        placeholder="Componente">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small">Cant.</label>
+                                    <input type="number" class="form-control form-control-sm" id="item_qty" min="1"
+                                        value="1">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Costo (Q)</label>
+                                    <input type="number" class="form-control form-control-sm" id="item_cost" min="0"
+                                        step="0.01">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Precio Venta (Q)</label>
+                                    <input type="number" class="form-control form-control-sm" id="item_sale_price"
+                                        min="0" step="0.01">
+                                </div>
+                                <div class="col-md-12 d-flex justify-content-end mt-3">
+                                    <button type="button" class="action-btn btn-sm" onclick="addItem()">
+                                        <i class="bi bi-plus-lg me-2"></i>Agregar
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Items List -->
-                        <div class="table-responsive mb-3" style="max-height: 300px;">
-                            <table class="table table-sm table-bordered" id="itemsTable">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th>Producto</th>
-                                        <th>Presentación</th>
-                                        <th>Cant.</th>
-                                        <th>Costo U.</th>
-                                        <th>Precio Venta</th>
-                                        <th>Subtotal</th>
-                                        <th style="width: 50px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Items will be added here -->
-                                </tbody>
-                                <tfoot class="table-light">
-                                    <tr>
-                                        <td colspan="4" class="text-end fw-bold">Total Compra:</td>
-                                        <td class="fw-bold text-primary">Q<span id="totalAmount">0.00</span></td>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="action-btn" id="savePurchaseBtn" onclick="savePurchase()">
-                        <i class="bi bi-check-lg me-2"></i>Guardar Compra
-                    </button>
-                </div>
+                    <!-- Items List -->
+                    <div class="table-responsive mb-3" style="max-height: 300px;">
+                        <table class="table table-sm table-bordered" id="itemsTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Presentación</th>
+                                    <th>Cant.</th>
+                                    <th>Costo U.</th>
+                                    <th>Precio Venta</th>
+                                    <th>Subtotal</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Items will be added here -->
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Total Compra:</td>
+                                    <td class="fw-bold text-primary">Q<span id="totalAmount">0.00</span></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary" onclick="document.getElementById('newPurchaseModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn primary" id="savePurchaseBtn" onclick="savePurchase()">
+                    <i class="bi bi-check-lg me-2"></i>Guardar Compra
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Modal para pagos -->
-    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-cash-coin text-primary"></i>
-                        Gestionar Pagos / Abonos
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="custom-modal-overlay" id="paymentModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-cash-coin text-primary me-2"></i>
+                    Gestionar Pagos / Abonos
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div id="paymentHeaderInfo"
+                    class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+                    <!-- Loaded dynamically -->
+                    <span>Cargando información...</span>
                 </div>
-                <div class="modal-body">
-                    <div id="paymentHeaderInfo"
-                        class="alert alert-info d-flex justify-content-between align-items-center mb-4">
-                        <!-- Loaded dynamically -->
-                        <span>Cargando información...</span>
+
+                <div class="row">
+                    <div class="col-md-5 border-end">
+                        <h6 class="fw-bold mb-3">Registrar Nuevo Abono</h6>
+                        <form id="paymentForm">
+                            <input type="hidden" id="pay_purchase_id" name="purchase_id">
+
+                            <div class="mb-3">
+                                <label class="form-label">Fecha</label>
+                                <input type="date" class="form-control" name="payment_date" id="pay_date" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Monto (Q)</label>
+                                <input type="number" class="form-control" name="amount" id="pay_amount" step="0.01"
+                                    min="0.01" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Método de Pago</label>
+                                <select class="form-select" name="payment_method" id="pay_method">
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Depósito">Depósito</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Notas</label>
+                                <textarea class="form-control" name="notes" id="pay_notes" rows="2"></textarea>
+                            </div>
+
+                            <button type="button" class="action-btn primary w-100" id="submitPaymentBtn"
+                                onclick="submitPayment()">
+                                <i class="bi bi-check-circle me-2"></i>Registrar Pago
+                            </button>
+                        </form>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-5 border-end">
-                            <h6 class="fw-bold mb-3">Registrar Nuevo Abono</h6>
-                            <form id="paymentForm">
-                                <input type="hidden" id="pay_purchase_id" name="purchase_id">
-
-                                <div class="mb-3">
-                                    <label class="form-label">Fecha</label>
-                                    <input type="date" class="form-control" name="payment_date" id="pay_date" required>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Monto (Q)</label>
-                                    <input type="number" class="form-control" name="amount" id="pay_amount" step="0.01"
-                                        min="0.01" required>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Método de Pago</label>
-                                    <select class="form-select" name="payment_method" id="pay_method">
-                                        <option value="Efectivo">Efectivo</option>
-                                        <option value="Cheque">Cheque</option>
-                                        <option value="Transferencia">Transferencia</option>
-                                        <option value="Depósito">Depósito</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Notas</label>
-                                    <textarea class="form-control" name="notes" id="pay_notes" rows="2"></textarea>
-                                </div>
-
-                                <button type="button" class="action-btn w-100" id="submitPaymentBtn"
-                                    onclick="submitPayment()">
-                                    <i class="bi bi-check-circle me-2"></i>Registrar Pago
-                                </button>
-                            </form>
-                        </div>
-
-                        <div class="col-md-7">
-                            <h6 class="fw-bold mb-3">Historial de Pagos</h6>
-                            <div class="table-responsive" style="max-height: 300px;">
-                                <table class="table table-sm table-hover" id="paymentsHistoryTable">
-                                    <thead class="table-light sticky-top">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Método</th>
-                                            <th>Monto</th>
-                                            <th>Notas</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Loaded dynamically -->
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="col-md-7">
+                        <h6 class="fw-bold mb-3">Historial de Pagos</h6>
+                        <div class="table-responsive" style="max-height: 300px;">
+                            <table class="table table-sm table-hover" id="paymentsHistoryTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Método</th>
+                                        <th>Monto</th>
+                                        <th>Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -895,17 +891,19 @@ try {
     </div>
 
     <!-- Modal para detalles -->
-    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detalles de Compra</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detailsModalBody">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary"></div>
-                    </div>
+    <div class="custom-modal-overlay" id="detailsModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-eye text-primary me-2"></i>
+                    Detalles de Compra
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body" id="detailsModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2 text-muted">Cargando detalles...</p>
                 </div>
             </div>
         </div>
@@ -1206,14 +1204,14 @@ try {
 
             // Mostrar modal de nueva compra
             window.showNewPurchaseModal = function () {
-                const modal = new bootstrap.Modal(document.getElementById('newPurchaseModal'));
+                const modal = document.getElementById('newPurchaseModal');
                 const hasDraft = window.purchaseDraftManager && window.purchaseDraftManager.hasDraft();
 
                 if (hasDraft) {
                     // Si hay borrador, restaurarlo
                     window.purchaseDraftManager.restoreDraft();
                     window.purchaseDraftManager.showDraftNotification();
-                    modal.show();
+                    modal.classList.add('active');
                     return;
                 }
 
@@ -1235,7 +1233,7 @@ try {
                 renderItems();
 
                 // Mostrar modal
-                modal.show();
+                document.getElementById('newPurchaseModal').classList.add('active');
             };
 
             // Mostrar compras pendientes
@@ -1411,8 +1409,7 @@ try {
                                 // Limpiar items y cerrar modal
                                 purchaseItems = [];
                                 renderItems();
-                                const modal = bootstrap.Modal.getInstance(document.getElementById('newPurchaseModal'));
-                                modal.hide();
+                                document.getElementById('newPurchaseModal').classList.remove('active');
                                 location.reload();
                             });
                         } else {
@@ -1444,8 +1441,7 @@ try {
 
             // Ver detalles de compra
             window.viewPurchaseDetails = function (id) {
-                const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
-                modal.show();
+                document.getElementById('detailsModal').classList.add('active');
 
                 // Mostrar spinner mientras carga
                 document.getElementById('detailsModalBody').innerHTML = `
@@ -1552,8 +1548,7 @@ try {
                 loadPayments(id);
 
                 // Mostrar modal
-                const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-                modal.show();
+                document.getElementById('paymentModal').classList.add('active');
             };
 
             // Cargar información de pagos
@@ -1597,8 +1592,8 @@ try {
                             <small class="text-muted">${h.provider_name}</small>
                         </div>
                         <div class="text-end">
-                            <div class="badge bg-success mb-1">Pagado: Q${paid.toFixed(2)}</div><br>
-                            <div class="badge ${balance > 0 ? 'bg-danger' : 'bg-success'}">Saldo: Q${balance.toFixed(2)}</div>
+                            <div class="badge badge-success mb-1">Pagado: Q${paid.toFixed(2)}</div><br>
+                            <div class="badge ${balance > 0 ? 'badge-danger' : 'badge-success'}">Saldo: Q${balance.toFixed(2)}</div>
                         </div>
                     `;
                             document.getElementById('paymentHeaderInfo').innerHTML = infoHtml;
@@ -1693,8 +1688,7 @@ try {
                                 showConfirmButton: false
                             }).then(() => {
                                 // Cerrar modal y recargar página
-                                const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
-                                modal.hide();
+                                document.getElementById('paymentModal').classList.remove('active');
                                 location.reload();
                             });
                         } else {

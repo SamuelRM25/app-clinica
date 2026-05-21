@@ -85,6 +85,76 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .select2-container--default .select2-selection--single {
+            border: 1.5px solid var(--color-border);
+            border-radius: 0.75rem;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            background: var(--color-card);
+            color: var(--color-text);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--color-text);
+            line-height: 48px;
+            padding-left: 1rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 48px;
+        }
+        .select2-dropdown {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            background: var(--color-card);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-family: var(--font-family);
+        }
+        .select2-container--default .select2-results__option--highlighted {
+            background: var(--color-primary);
+        }
+        .select2-container--default .select2-results__option {
+            padding: 0.625rem 1rem;
+            color: var(--color-text);
+        }
+        .reconsulta-toggle-container {
+            background: rgba(var(--color-primary-rgb), 0.05);
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            border: 1.5px dashed var(--color-primary);
+            transition: background 0.2s;
+        }
+        .reconsulta-toggle-container:has(#reconsultaToggle:checked) {
+            background: rgba(var(--color-primary-rgb), 0.1);
+            border-style: solid;
+        }
+        .input-icon-wrapper {
+            position: relative;
+        }
+        .input-icon-wrapper > i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-secondary);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .input-icon-wrapper .ps-5 {
+            padding-left: 2.75rem !important;
+        }
+    </style>
 
 </head>
 
@@ -97,6 +167,11 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
+                <!-- Logo -->
+                <div class="brand-container">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                </div>
+
                 <!-- Controles -->
                 <div class="header-controls">
                     <!-- Control de tema -->
@@ -265,20 +340,42 @@ try {
                 </div>
                 <form id="appointmentForm" action="save_appointment.php" method="POST">
                     <div class="modal-body">
+                        <div class="reconsulta-toggle-container mb-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 fw-bold">¿Es Reconsulta?</h6>
+                                <small class="text-muted">Active para buscar un paciente ya registrado</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="reconsultaToggle" style="width: 3rem; height: 1.5rem;">
+                            </div>
+                        </div>
+
                         <div class="row g-4">
-                            <div class="col-md-6">
+                            <!-- Buscador de pacientes existentes (Oculto por defecto) -->
+                            <div class="col-12" id="existingPatientSection" style="display: none;">
+                                <label class="form-label">Buscar Paciente Registrado</label>
+                                <div class="input-icon-wrapper">
+                                    <i class="bi bi-search"></i>
+                                    <select class="form-select ps-5" id="patientSearch" style="width: 100%;">
+                                        <option value="">Escriba nombre, apellido o DPI...</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="id_paciente" id="selectedPatientId">
+                            </div>
+
+                            <div class="col-md-6 name-field">
                                 <label class="form-label">Nombre del Paciente</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-person"></i>
-                                    <input type="text" class="form-control" name="nombre_pac" placeholder="Ej. Juan"
+                                    <input type="text" class="form-control" name="nombre_pac" id="nombre_pac" placeholder="Ej. Juan"
                                         required>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 name-field">
                                 <label class="form-label">Apellido del Paciente</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-person"></i>
-                                    <input type="text" class="form-control" name="apellido_pac" placeholder="Ej. Pérez"
+                                    <input type="text" class="form-control" name="apellido_pac" id="apellido_pac" placeholder="Ej. Pérez"
                                         required>
                                 </div>
                             </div>
@@ -417,6 +514,10 @@ try {
 
     <!-- Menú contextual -->
     <div id="contextMenu" class="context-menu">
+        <div class="context-item" id="contextNew">
+            <i class="bi bi-calendar-plus text-success"></i>
+            <span>Nueva Cita</span>
+        </div>
         <div class="context-item" id="contextHistory">
             <i class="bi bi-journal-medical text-info"></i>
             <span>Ver Historial</span>
@@ -432,6 +533,10 @@ try {
     </div>
 
     <!-- JavaScript Optimizado -->
+    <!-- jQuery & Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
@@ -464,6 +569,7 @@ try {
                 currentTimeElement: document.getElementById('current-time'),
                 calendar: document.getElementById('calendar'),
                 contextMenu: document.getElementById('contextMenu'),
+                contextNew: document.getElementById('contextNew'),
                 contextHistory: document.getElementById('contextHistory'),
                 contextEdit: document.getElementById('contextEdit'),
                 contextDelete: document.getElementById('contextDelete')
@@ -523,6 +629,32 @@ try {
                 }
 
                 setupEventListeners() {
+                    // Reconsulta Toggle Logic
+                    const reconsultaToggle = document.getElementById('reconsultaToggle');
+                    const existingPatientSection = document.getElementById('existingPatientSection');
+                    const nameFields = document.querySelectorAll('.name-field');
+                    const nombreInput = document.getElementById('nombre_pac');
+                    const apellidoInput = document.getElementById('apellido_pac');
+
+                    if (reconsultaToggle) {
+                        reconsultaToggle.addEventListener('change', (e) => {
+                            if (e.target.checked) {
+                                existingPatientSection.style.display = 'block';
+                                nameFields.forEach(f => f.style.display = 'none');
+                                nombreInput.removeAttribute('required');
+                                apellidoInput.removeAttribute('required');
+                                // Inicializar Select2 si no está inicializado
+                                this.initPatientSearch();
+                            } else {
+                                existingPatientSection.style.display = 'none';
+                                nameFields.forEach(f => f.style.display = 'block');
+                                nombreInput.setAttribute('required', '');
+                                apellidoInput.setAttribute('required', '');
+                                document.getElementById('selectedPatientId').value = '';
+                            }
+                        });
+                    }
+
                     if (DOM.themeSwitch) {
                         DOM.themeSwitch.addEventListener('click', () => this.toggleTheme());
                     }
@@ -535,6 +667,52 @@ try {
                         }
                     });
                 }
+
+                initPatientSearch() {
+                    const $search = $('#patientSearch');
+                    if ($search.hasClass('select2-hidden-accessible')) return;
+
+                    $search.select2({
+                        theme: 'default',
+                        dropdownParent: $('#newAppointmentModal'),
+                        placeholder: 'Escriba nombre, apellido o DPI...',
+                        minimumInputLength: 2,
+                        language: {
+                            searching: () => 'Buscando...',
+                            noResults: () => 'No se encontraron pacientes',
+                            inputTooShort: () => 'Ingrese al menos 2 caracteres',
+                            errorLoading: () => 'Error al cargar resultados'
+                        },
+                        ajax: {
+                            url: '../patients/search_patients.php',
+                            dataType: 'json',
+                            delay: 300,
+                            data: function (params) {
+                                return { q: params.term };
+                            },
+                            processResults: function (data) {
+                                if (!Array.isArray(data)) return { results: [] };
+                                return {
+                                    results: data.map(p => ({
+                                        id: p.id_paciente,
+                                        text: `${p.nombre} ${p.apellido}${p.dpi ? ' — ' + p.dpi : ''}`,
+                                        nombre: p.nombre,
+                                        apellido: p.apellido
+                                    }))
+                                };
+                            },
+                            cache: true,
+                            error: function() {
+                                console.warn('Error searching patients');
+                            }
+                        }
+                    }).on('select2:select', function (e) {
+                        const data = e.params.data;
+                        document.getElementById('selectedPatientId').value = data.id;
+                        document.getElementById('nombre_pac').value = data.nombre;
+                        document.getElementById('apellido_pac').value = data.apellido;
+                    });
+                }
             }
 
             // ==========================================================================
@@ -544,6 +722,7 @@ try {
                 constructor() {
                     this.calendar = null;
                     this.currentEvent = null;
+                    this.currentDateStr = null; // Guardar la fecha/hora para la nueva cita
                     this.initialize();
                 }
 
@@ -628,6 +807,22 @@ try {
 
                     this.calendar.render();
 
+                    // Manejar click derecho en espacios vacíos del calendario
+                    DOM.calendar.addEventListener('contextmenu', (e) => {
+                        // Buscar el elemento de fecha/hora más cercano
+                        const cell = e.target.closest('.fc-daygrid-day, .fc-timegrid-slot, .fc-timegrid-col');
+                        if (cell) {
+                            e.preventDefault();
+                            let dateStr = cell.getAttribute('data-date');
+                            
+                            if (dateStr) {
+                                this.currentEvent = null; // No hay evento seleccionado
+                                this.currentDateStr = dateStr;
+                                this.showContextMenu(e.pageX, e.pageY);
+                            }
+                        }
+                    });
+
                     // Exponer calendario globalmente
                     window.calendar = this.calendar;
                 }
@@ -642,6 +837,21 @@ try {
                     DOM.contextMenu.style.display = 'block';
                     DOM.contextMenu.style.left = x + 'px';
                     DOM.contextMenu.style.top = y + 'px';
+
+                    // Mostrar/ocultar opciones según el contexto
+                    if (this.currentEvent) {
+                        // Click derecho en un evento
+                        if(DOM.contextNew) DOM.contextNew.style.display = 'none';
+                        if(DOM.contextHistory) DOM.contextHistory.style.display = 'flex';
+                        if(DOM.contextEdit) DOM.contextEdit.style.display = 'flex';
+                        if(DOM.contextDelete) DOM.contextDelete.style.display = 'flex';
+                    } else {
+                        // Click derecho en un espacio vacío
+                        if(DOM.contextNew) DOM.contextNew.style.display = 'flex';
+                        if(DOM.contextHistory) DOM.contextHistory.style.display = 'none';
+                        if(DOM.contextEdit) DOM.contextEdit.style.display = 'none';
+                        if(DOM.contextDelete) DOM.contextDelete.style.display = 'none';
+                    }
 
                     // Ajustar posición si sale de la ventana
                     const menuRect = DOM.contextMenu.getBoundingClientRect();
@@ -659,6 +869,22 @@ try {
 
                 hideContextMenu() {
                     DOM.contextMenu.style.display = 'none';
+                }
+
+                newAppointmentFromContext() {
+                    this.hideContextMenu();
+                    if (this.currentDateStr) {
+                        // Prellenar fecha y hora
+                        const dateParts = this.currentDateStr.split('T');
+                        document.querySelector('#newAppointmentModal input[name="fecha_cita"]').value = dateParts[0];
+                        if(dateParts[1]) {
+                            document.querySelector('#newAppointmentModal input[name="hora_cita"]').value = dateParts[1].substring(0,5);
+                        } else {
+                            document.querySelector('#newAppointmentModal input[name="hora_cita"]').value = '';
+                        }
+                    }
+                    const modal = new bootstrap.Modal(document.getElementById('newAppointmentModal'));
+                    modal.show();
                 }
 
                 editCurrentEvent() {
@@ -927,6 +1153,7 @@ try {
 
                 // Configurar menú contextual
                 if (DOM.contextEdit && DOM.contextDelete) {
+                    DOM.contextNew?.addEventListener('click', () => calendarManager.newAppointmentFromContext());
                     DOM.contextHistory?.addEventListener('click', () => calendarManager.viewPatientHistory()); // Bind history action
                     DOM.contextEdit.addEventListener('click', () => calendarManager.editCurrentEvent());
                     DOM.contextDelete.addEventListener('click', () => calendarManager.deleteCurrentEvent());

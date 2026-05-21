@@ -256,7 +256,7 @@ try {
                 </li>
                 <li class="nav-item">
                     <a href="../laboratory/index.php" class="nav-link">
-                        <i class="bi bi-virus nav-icon"></i>
+                        <i class="bi bi-flask nav-icon"></i>
                         <span class="nav-text">Laboratorio</span>
                     </a>
                 </li>

@@ -57,162 +57,355 @@ try {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informe de Laboratorio - <?php echo $orden['numero_orden']; ?></title>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    
+    <style>
+        :root {
+            --report-padding: 40px;
+            --report-border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            padding: 2rem 0;
+            color: #1e293b;
+        }
+
+        .report-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: var(--report-padding);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-header-premium {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .hospital-brand h1 {
+            color: var(--color-primary);
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hospital-brand p {
+            margin: 2px 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .report-title {
+            text-align: right;
+        }
+
+        .report-title h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+            color: #334155;
+        }
+
+        .report-title p {
+            margin: 2px 0;
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .patient-data-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid var(--report-border-color);
+        }
+
+        .data-item label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .data-item span {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .test-result-block {
+            margin-bottom: 35px;
+        }
+
+        .test-name-header {
+            background: #f1f5f9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--color-primary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .results-table-premium {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table-premium th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #64748b;
+            border-bottom: 1px solid var(--report-border-color);
+            font-weight: 600;
+        }
+
+        .results-table-premium td {
+            padding: 12px;
+            font-size: 14px;
+            border-bottom: 1px dotted var(--report-border-color);
+        }
+
+        .val-result {
+            font-weight: 700;
+        }
+
+        .flag-H { color: #ef4444; }
+        .flag-L { color: #3b82f6; }
+
+        .signatures-area {
+            margin-top: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            padding-top: 50px;
+            padding-bottom: 20px;
+        }
+
+        .sig-box {
+            text-align: center;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .report-footer {
+            border-top: 1px solid var(--report-border-color);
+            padding-top: 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .report-page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
-        <button onclick="window.print()"
-            style="background: #7c90db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-            Imprimir Informe
+    <div class="floating-actions no-print">
+        <button onclick="window.print()" class="action-btn" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+            <i class="bi bi-printer-fill" style="font-size: 1.2rem;"></i>
+        </button>
+        <button onclick="window.close()" class="action-btn secondary" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+            <i class="bi bi-x-lg"></i>
         </button>
     </div>
 
-    <header class="report-header">
-        <div class="hospital-info">
-            <h1>Centro Médico RS</h1>
-            <p>Laboratorio Clínico Especializado</p>
-            <p>Amatitlán, Guatemala | Tel: 6633-XXXX</p>
-        </div>
-        <img src="../../assets/img/Logo.png" alt="Logo" class="logo">
-    </header>
-
-    <div class="patient-info">
-        <div class="info-item">
-            <span class="info-label">Paciente</span>
-            <strong><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></strong>
-        </div>
-        <div class="info-item">
-            <span class="info-label">ID Paciente</span>
-            <?php echo $orden['id_paciente']; ?>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Edad / Género</span>
-            <?php echo $edad; ?> años / <?php echo $genero; ?>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Número de Orden</span>
-            #<?php echo $orden['numero_orden']; ?>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Fecha de Orden</span>
-            <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Médico Solicitante</span>
-            Dr. <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?>
-        </div>
-    </div>
-
-    <!-- Archivo de Resultados Adjunto -->
-    <?php if ($archivo_orden):
-        $file_url = "api/get_result_file.php?id=" . $archivo_orden['id_archivo'];
-        $mime_type = $archivo_orden['tipo_contenido'];
-        ?>
-            <div class="result-file-container">
-                <h3 style="color: #7c90db; font-size: 16px; margin-top: 0; margin-bottom: 15px; text-align: left;">
-                    <i class="bi bi-file-earmark-medical"></i> Archivo de Resultados Adjunto
-                </h3>
-
-                <?php if (strpos($mime_type, 'image') !== false): ?>
-                        <img src="<?php echo htmlspecialchars($file_url); ?>" class="result-img" alt="Resultado Adjunto">
-                <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
-                        <div class="pdf-link-container">
-                            <i class="bi bi-file-pdf text-danger" style="font-size: 24px;"></i>
-                            <p style="margin: 10px 0 0 0; font-weight: 600;">Se adjuntó un archivo PDF de resultados.</p>
-                            <a href="<?php echo htmlspecialchars($file_url); ?>" target="_blank" class="no-print"
-                                style="color: #7c90db; text-decoration: none; font-size: 13px;">
-                                Haga clic aquí para visualizar el PDF
-                            </a>
-                        </div>
-                <?php endif; ?>
+    <div class="report-page">
+        <header class="report-header-premium">
+            <div class="hospital-brand">
+                <h1>Centro Médico RS</h1>
+                <p>Excelencia en Servicios de Salud</p>
+                <p>Laboratorio Clínico Automatizado</p>
+                <p><i class="bi bi-geo-alt"></i> Amatitlán, Guatemala | <i class="bi bi-telephone"></i> 6633-XXXX</p>
             </div>
-    <?php endif; ?>
+            <div class="report-title">
+                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;">
+                <h2>INFORME DE RESULTADOS</h2>
+                <p>Orden #<?php echo $orden['numero_orden']; ?></p>
+            </div>
+        </header>
 
-    <?php foreach ($pruebas as $prueba): ?>
-            <section class="test-section">
-                <div class="test-header"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th width="40%">Parámetro</th>
-                            <th width="20%">Resultado</th>
-                            <th width="15%">Unidades</th>
-                            <th width="25%">Valores de Referencia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $stmt_res = $conn->prepare("
-                    SELECT rl.*, pp.nombre_parametro, pp.unidad_medida, 
-                           pp.valor_ref_hombre_min, pp.valor_ref_hombre_max,
-                           pp.valor_ref_mujer_min, pp.valor_ref_mujer_max,
-                           pp.valor_ref_pediatrico_min, pp.valor_ref_pediatrico_max
-                    FROM resultados_laboratorio rl
-                    JOIN parametros_pruebas pp ON rl.id_parametro = pp.id_parametro
-                    WHERE rl.id_orden_prueba = ?
-                    ORDER BY pp.orden_visualizacion
-                ");
-                        $stmt_res->execute([$prueba['id_orden_prueba']]);
-                        $resultados = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
+        <div class="patient-data-grid">
+            <div class="data-item">
+                <label>Paciente</label>
+                <span><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></span>
+            </div>
+            <div class="data-item">
+                <label>Edad / Género</label>
+                <span><?php echo $edad; ?> años / <?php echo $genero; ?></span>
+            </div>
+            <div class="data-item">
+                <label>Fecha de Emisión</label>
+                <span><?php echo date('d/m/Y H:i'); ?></span>
+            </div>
+            <div class="data-item">
+                <label>ID Paciente</label>
+                <span><?php echo $orden['id_paciente']; ?></span>
+            </div>
+            <div class="data-item">
+                <label>Médico Solicitante</label>
+                <span>Dr. <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></span>
+            </div>
+            <div class="data-item">
+                <label>Fecha de Toma</label>
+                <span><?php echo date('d/m/Y', strtotime($orden['fecha_orden'])); ?></span>
+            </div>
+        </div>
 
-                        foreach ($resultados as $res):
-                            // Range logic for display
-                            $min = 0;
-                            $max = 0;
-                            if ($edad <= 12) {
-                                $min = $res['valor_ref_pediatrico_min'];
-                                $max = $res['valor_ref_pediatrico_max'];
-                            } elseif ($genero === 'Masculino') {
-                                $min = $res['valor_ref_hombre_min'];
-                                $max = $res['valor_ref_hombre_max'];
-                            } else {
-                                $min = $res['valor_ref_mujer_min'];
-                                $max = $res['valor_ref_mujer_max'];
-                            }
-                            $ref_text = ($min !== null && $max !== null) ? "$min - $max" : "N/A";
+        <?php foreach ($pruebas as $prueba): ?>
+                <div class="test-result-block">
+                    <div class="test-name-header">
+                        <span><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></span>
+                        <span style="font-size: 11px; opacity: 0.7;"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span>
+                    </div>
+                    
+                    <table class="results-table-premium">
+                        <thead>
+                            <tr>
+                                <th width="40%">PARÁMETRO</th>
+                                <th width="20%">RESULTADO</th>
+                                <th width="15%">UNIDADES</th>
+                                <th width="25%">VALORES DE REFERENCIA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $stmt_res = $conn->prepare("
+                                SELECT rl.*, pp.nombre_parametro, pp.unidad_medida, 
+                                       pp.valor_ref_hombre_min, pp.valor_ref_hombre_max,
+                                       pp.valor_ref_mujer_min, pp.valor_ref_mujer_max,
+                                       pp.valor_ref_pediatrico_min, pp.valor_ref_pediatrico_max
+                                FROM resultados_laboratorio rl
+                                JOIN parametros_pruebas pp ON rl.id_parametro = pp.id_parametro
+                                WHERE rl.id_orden_prueba = ?
+                                ORDER BY pp.orden_visualizacion
+                            ");
+                            $stmt_res->execute([$prueba['id_orden_prueba']]);
+                            $resultados = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
-                            $flag_class = '';
-                            if ($res['fuera_rango'] === 'Alto')
-                                $flag_class = 'flag-H';
-                            elseif ($res['fuera_rango'] === 'Bajo')
-                                $flag_class = 'flag-L';
+                            foreach ($resultados as $res):
+                                $min = 0; $max = 0;
+                                if ($edad <= 12) {
+                                    $min = $res['valor_ref_pediatrico_min']; $max = $res['valor_ref_pediatrico_max'];
+                                } elseif ($genero === 'Masculino') {
+                                    $min = $res['valor_ref_hombre_min']; $max = $res['valor_ref_hombre_max'];
+                                } else {
+                                    $min = $res['valor_ref_mujer_min']; $max = $res['valor_ref_mujer_max'];
+                                }
+                                $ref_text = ($min !== null && $max !== null) ? "$min - $max" : "N/A";
+                                $flag_class = '';
+                                if ($res['fuera_rango'] === 'Alto') $flag_class = 'flag-H';
+                                elseif ($res['fuera_rango'] === 'Bajo') $flag_class = 'flag-L';
                             ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($res['nombre_parametro']); ?></td>
                                     <td>
-                                        <strong class="<?php echo $flag_class; ?>">
+                                        <span class="val-result <?php echo $flag_class; ?>">
                                             <?php echo htmlspecialchars($res['valor_resultado']); ?>
-                                        </strong>
+                                        </span>
                                         <?php if ($res['fuera_rango'] !== 'Normal'): ?>
-                                                <span
-                                                    class="<?php echo $flag_class; ?>">(<?php echo substr($res['fuera_rango'], 0, 1); ?>)</span>
+                                                <small class="<?php echo $flag_class; ?>" style="margin-left: 4px;">
+                                                    (<?php echo substr($res['fuera_rango'], 0, 1); ?>)
+                                                </small>
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($res['unidad_medida']); ?></td>
-                                    <td><small><?php echo $ref_text; ?></small></td>
+                                    <td><span style="font-size: 12px; color: #64748b;"><?php echo $ref_text; ?></span></td>
                                 </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </section>
-    <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+        <?php endforeach; ?>
 
-    <div class="signatures">
-        <div class="signature-box">Laboratorista Responsable</div>
-        <div class="signature-box">Sello de Laboratorio</div>
+        <?php if ($archivo_orden): ?>
+                <div class="no-print" style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
+                    <p style="margin: 0; font-size: 13px; font-weight: 600;">
+                        <i class="bi bi-paperclip"></i> Esta orden tiene archivos adjuntos que no se muestran en la versión impresa.
+                    </p>
+                </div>
+        <?php endif; ?>
+
+        <div class="signatures-area">
+            <div class="sig-box">
+                <div style="height: 60px;"></div>
+                Firma y Sello Laboratorista
+            </div>
+            <div class="sig-box">
+                <div style="height: 60px;"></div>
+                Sello de Validación
+            </div>
+        </div>
+
+        <footer class="report-footer">
+            <p>La interpretación de estos resultados debe ser realizada exclusivamente por un médico colegiado activo.</p>
+            <p><strong>Centro Médico RS</strong> - Tecnología al servicio de su salud.</p>
+        </footer>
     </div>
-
-    <footer class="footer">
-        Este documento es un informe de resultados de laboratorio clínico. <br>
-        La interpretación de estos resultados debe ser realizada por un médico profesional. <br>
-        Generado el <?php echo date('d/m/Y H:i:s'); ?>
-    </footer>
 </body>
-
 </html>

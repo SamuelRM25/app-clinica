@@ -88,6 +88,39 @@ try {
     $active_hospitalizations = 0;
     $pending_purchases = $pending_receipt;
 
+    // ============ REPORTE MENSUAL DE INSUMOS ============
+    $report_month = $_GET['report_month'] ?? date('Y-m');
+    $report_year = substr($report_month, 0, 4);
+    $report_month_num = substr($report_month, 5, 2);
+    $month_start = $report_month . '-01';
+    $month_end = date('Y-m-t', strtotime($month_start));
+
+    $stmt_monthly = $conn->prepare("
+        SELECT 
+            i.nom_medicamento,
+            i.presentacion_med,
+            i.casa_farmaceutica,
+            SUM(pi.quantity) as cantidad_total,
+            SUM(pi.quantity * pi.unit_cost) as costo_total,
+            COUNT(DISTINCT ph.id) as num_compras
+        FROM purchase_items pi
+        JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
+        JOIN inventario i ON pi.id = i.id_purchase_item
+        WHERE ph.purchase_date BETWEEN ? AND ?
+        AND i.id_hospital = ?
+        GROUP BY i.id_inventario, i.nom_medicamento, i.presentacion_med, i.casa_farmaceutica
+        ORDER BY costo_total DESC
+    ");
+    $stmt_monthly->execute([$month_start . ' 00:00:00', $month_end . ' 23:59:59', hospital_id()]);
+    $monthly_supplies = $stmt_monthly->fetchAll(PDO::FETCH_ASSOC);
+
+    $monthly_total_qty = 0;
+    $monthly_total_cost = 0;
+    foreach ($monthly_supplies as $ms) {
+        $monthly_total_qty += $ms['cantidad_total'];
+        $monthly_total_cost += $ms['costo_total'];
+    }
+
     // ============ INVENTARIO COMPLETO ============
 
     // Obtener todos los medicamentos para la tabla
@@ -132,6 +165,97 @@ try {
     <!-- SweetAlert2 -->
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
+
+    <style>
+        /* ===== ACTION BUTTONS GROUP ===== */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* ===== FILTER TABS ===== */
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            padding: 0.25rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-top: 1rem;
+        }
+        .filter-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.875rem;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            border-radius: calc(var(--radius-md) - 2px);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+        .filter-tab:hover {
+            background: rgba(var(--color-primary-rgb), 0.09);
+            color: var(--color-primary);
+        }
+        .filter-tab.active {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 2px 10px rgba(var(--color-primary-rgb), 0.3);
+        }
+        .filter-tab i { font-size: 0.85rem; }
+
+        /* ===== SEARCH CONTAINER ===== */
+        .search-container { padding: 1rem 0 0.5rem; }
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--color-text-secondary);
+            pointer-events: none;
+            font-size: 1rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.7rem 1rem 0.7rem 2.75rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
+            outline: none;
+        }
+        .search-input::placeholder { color: var(--color-text-secondary); }
+
+        /* ===== MEDICINE CARD ===== */
+        .medicine-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .medicine-card:hover { border-color: rgba(var(--color-primary-rgb), 0.4); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    </style>
 
 </head>
 
@@ -348,18 +472,26 @@ try {
                                     Descarga de Insumos
                                 </a>
                                 <button type="button" class="action-btn" style="background: var(--color-warning);"
-                                    data-bs-toggle="modal" data-bs-target="#insumosReportModal">
+                                    onclick="document.getElementById('insumosReportModal').classList.add('active')">
                                     <i class="bi bi-file-earmark-bar-graph"></i>
-                                    Reporte de Insumos
+                                    Reporte Diario
                                 </button>
+                                <button type="button" class="action-btn" style="background: var(--color-info);"
+                                    onclick="document.getElementById('insumosMensualModal').classList.add('active')">
+                                    <i class="bi bi-calendar-check"></i>
+                                    Reporte Mensual
+                                </button>
+                                <a href="print_inventory_cut.php" target="_blank" class="action-btn" style="background: var(--color-primary);">
+                                    <i class="bi bi-clipboard-check"></i>
+                                    Corte Inventario
+                                </a>
                         <?php endif; ?>
                         <?php if ($can_manage_inventory): ?>
                                 <a href="hospital_medications.php" class="action-btn" style="background: var(--color-primary);">
                                     <i class="bi bi-hospital"></i>
                                     Meds. Hospitalarios
                                 </a>
-                                <button type="button" class="action-btn" data-bs-toggle="modal"
-                                    data-bs-target="#addMedicineModal">
+                                <button type="button" class="action-btn" onclick="document.getElementById('addMedicineModal').classList.add('active')">
                                     <i class="bi bi-plus-circle"></i>
                                     Nuevo Medicamento
                                 </button>
@@ -614,15 +746,13 @@ try {
                                                         <?php if ($estado === 'Pendiente'): ?>
                                                                 <button type="button" class="btn-icon receive"
                                                                     onclick="openReceiveModal(<?php echo $item['id_inventario']; ?>, '<?php echo htmlspecialchars($item['nom_medicamento']); ?>', '<?php echo htmlspecialchars($item['codigo_barras'] ?? ''); ?>')"
-                                                                    data-bs-toggle="modal" data-bs-target="#receiveMedicineModal"
                                                                     title="Recibir producto">
                                                                     <i class="bi bi-box-arrow-in-down"></i>
                                                                 </button>
                                                         <?php else: ?>
                                                                 <?php if ($can_manage_inventory): ?>
                                                                         <button type="button" class="btn-icon edit"
-                                                                            data-id="<?php echo $item['id_inventario']; ?>" data-bs-toggle="modal"
-                                                                            data-bs-target="#editMedicineModal" title="Editar">
+                                                                            onclick="openEditModal(<?php echo $item['id_inventario']; ?>)" title="Editar">
                                                                             <i class="bi bi-pencil"></i>
                                                                         </button>
                                                                         <button type="button" class="btn-icon delete"
@@ -646,7 +776,7 @@ try {
                             <h4 class="text-muted mb-2">No hay medicamentos en el inventario</h4>
                             <p class="text-muted mb-3">Comience agregando nuevos medicamentos al sistema</p>
                             <?php if ($can_manage_inventory): ?>
-                                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
+                                    <button type="button" class="action-btn" onclick="document.getElementById('addMedicineModal').classList.add('active')">
                                         <i class="bi bi-plus-circle"></i>
                                         Agregar primer medicamento
                                     </button>
@@ -761,268 +891,262 @@ try {
     </div>
 
     <!-- Modal para agregar medicamento -->
-    <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        Agregar Medicamento
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="addMedicineForm" action="save_medicine.php" method="POST">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="codigo_barras" class="form-label">Código de Barras</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                                    <input type="text" class="form-control" id="codigo_barras" name="codigo_barras"
-                                        placeholder="Escanee o escriba...">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="nom_medicamento" class="form-label">Nombre del Medicamento</label>
-                                <input type="text" class="form-control" id="nom_medicamento" name="nom_medicamento"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="mol_medicamento" class="form-label">Molécula</label>
-                                <input type="text" class="form-control" id="mol_medicamento" name="mol_medicamento"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="presentacion_med" class="form-label">Presentación</label>
-                                <input type="text" class="form-control" id="presentacion_med" name="presentacion_med"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="casa_farmaceutica" class="form-label">Casa Farmacéutica</label>
-                                <input type="text" class="form-control" id="casa_farmaceutica" name="casa_farmaceutica"
-                                    required>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="cantidad_med" class="form-label">Stock Farmacia</label>
-                                <input type="number" class="form-control" id="cantidad_med" name="cantidad_med" min="0"
-                                    required>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="stock_hospital" class="form-label">Stock Hospital</label>
-                                <input type="number" class="form-control" id="stock_hospital" name="stock_hospital"
-                                    min="0" value="0" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="precio_compra" class="form-label">Precio Compra</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="precio_compra" name="precio_compra"
-                                        min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="precio_venta" class="form-label">Precio Venta</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="precio_venta" name="precio_venta"
-                                        min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="precio_hospital" class="form-label">Precio Hosp.</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="precio_hospital"
-                                        name="precio_hospital" min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="precio_medico" class="form-label">Precio Méd.</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="precio_medico" name="precio_medico"
-                                        min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="fecha_adquisicion" class="form-label">Fecha de Adquisición</label>
-                                <input type="date" class="form-control" id="fecha_adquisicion" name="fecha_adquisicion"
-                                    required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="fecha_vencimiento" class="form-label">Fecha de Vencimiento</label>
-                                <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento"
-                                    required>
+    <div class="custom-modal-overlay" id="addMedicineModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Agregar Medicamento
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <form id="addMedicineForm" action="save_medicine.php" method="POST">
+                <div class="custom-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="codigo_barras" class="form-label">Código de Barras</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                                <input type="text" class="form-control" id="codigo_barras" name="codigo_barras"
+                                    placeholder="Escanee o escriba...">
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label for="nom_medicamento" class="form-label">Nombre del Medicamento</label>
+                            <input type="text" class="form-control" id="nom_medicamento" name="nom_medicamento"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mol_medicamento" class="form-label">Molécula</label>
+                            <input type="text" class="form-control" id="mol_medicamento" name="mol_medicamento"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="presentacion_med" class="form-label">Presentación</label>
+                            <input type="text" class="form-control" id="presentacion_med" name="presentacion_med"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="casa_farmaceutica" class="form-label">Casa Farmacéutica</label>
+                            <input type="text" class="form-control" id="casa_farmaceutica" name="casa_farmaceutica"
+                                required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cantidad_med" class="form-label">Stock Farmacia</label>
+                            <input type="number" class="form-control" id="cantidad_med" name="cantidad_med" min="0"
+                                required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="stock_hospital" class="form-label">Stock Hospital</label>
+                            <input type="number" class="form-control" id="stock_hospital" name="stock_hospital"
+                                min="0" value="0" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="precio_compra" class="form-label">Precio Compra</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="precio_compra" name="precio_compra"
+                                    min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="precio_venta" class="form-label">Precio Venta</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="precio_venta" name="precio_venta"
+                                    min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="precio_hospital" class="form-label">Precio Hosp.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="precio_hospital"
+                                    name="precio_hospital" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="precio_medico" class="form-label">Precio Méd.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="precio_medico" name="precio_medico"
+                                    min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_adquisicion" class="form-label">Fecha de Adquisición</label>
+                            <input type="date" class="form-control" id="fecha_adquisicion" name="fecha_adquisicion"
+                                required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vencimiento" class="form-label">Fecha de Vencimiento</label>
+                            <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento"
+                                required>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-2"></i>
-                            Guardar Medicamento
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="custom-modal-footer">
+                    <button type="button" class="action-btn secondary" onclick="document.getElementById('addMedicineModal').classList.remove('active')">Cancelar</button>
+                    <button type="submit" class="action-btn primary">
+                        <i class="bi bi-save me-2"></i>
+                        Guardar Medicamento
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Modal para editar medicamento -->
-    <div class="modal fade" id="editMedicineModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-pencil me-2"></i>
-                        Editar Medicamento
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="editMedicineForm" action="update_medicine.php" method="POST">
-                    <input type="hidden" name="id_inventario" id="edit_id_inventario">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="edit_codigo_barras" class="form-label">Código de Barras</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                                    <input type="text" class="form-control" id="edit_codigo_barras"
-                                        name="codigo_barras">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_nom_medicamento" class="form-label">Nombre del Medicamento</label>
-                                <input type="text" class="form-control" id="edit_nom_medicamento" name="nom_medicamento"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_mol_medicamento" class="form-label">Molécula</label>
-                                <input type="text" class="form-control" id="edit_mol_medicamento" name="mol_medicamento"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_presentacion_med" class="form-label">Presentación</label>
-                                <input type="text" class="form-control" id="edit_presentacion_med"
-                                    name="presentacion_med" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_casa_farmaceutica" class="form-label">Casa Farmacéutica</label>
-                                <input type="text" class="form-control" id="edit_casa_farmaceutica"
-                                    name="casa_farmaceutica" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Stock Total</label>
-                                <input type="number" class="form-control bg-light" id="edit_total_stock" readonly>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="edit_cantidad_med" class="form-label">Stock Farmacia</label>
-                                <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med"
-                                    min="0" required oninput="updateStockDistribution('pharmacy')">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
-                                <input type="number" class="form-control" id="edit_stock_hospital" name="stock_hospital"
-                                    min="0" required oninput="updateStockDistribution('hospital')">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="edit_precio_compra" class="form-label">Precio Compra</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="edit_precio_compra"
-                                        name="precio_compra" min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="edit_precio_venta" class="form-label">Precio Venta</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="edit_precio_venta" name="precio_venta"
-                                        min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="edit_precio_hospital" class="form-label">Precio Hosp.</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="edit_precio_hospital"
-                                        name="precio_hospital" min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Q</span>
-                                    <input type="number" class="form-control" id="edit_precio_medico"
-                                        name="precio_medico" min="0" step="0.01" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_fecha_adquisicion" class="form-label">Fecha Adquisición</label>
-                                <input type="date" class="form-control" id="edit_fecha_adquisicion"
-                                    name="fecha_adquisicion" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="edit_fecha_vencimiento" class="form-label">Fecha Vencimiento</label>
-                                <input type="date" class="form-control" id="edit_fecha_vencimiento"
-                                    name="fecha_vencimiento" required>
+    <div class="custom-modal-overlay" id="editMedicineModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-pencil me-2"></i>
+                    Editar Medicamento
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <form id="editMedicineForm" action="update_medicine.php" method="POST">
+                <input type="hidden" name="id_inventario" id="edit_id_inventario">
+                <div class="custom-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_codigo_barras" class="form-label">Código de Barras</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                                <input type="text" class="form-control" id="edit_codigo_barras"
+                                    name="codigo_barras">
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label for="edit_nom_medicamento" class="form-label">Nombre del Medicamento</label>
+                            <input type="text" class="form-control" id="edit_nom_medicamento" name="nom_medicamento"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_mol_medicamento" class="form-label">Molécula</label>
+                            <input type="text" class="form-control" id="edit_mol_medicamento" name="mol_medicamento"
+                                required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_presentacion_med" class="form-label">Presentación</label>
+                            <input type="text" class="form-control" id="edit_presentacion_med"
+                                name="presentacion_med" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_casa_farmaceutica" class="form-label">Casa Farmacéutica</label>
+                            <input type="text" class="form-control" id="edit_casa_farmaceutica"
+                                name="casa_farmaceutica" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Stock Total</label>
+                            <input type="number" class="form-control bg-light" id="edit_total_stock" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_cantidad_med" class="form-label">Stock Farmacia</label>
+                            <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med"
+                                min="0" required oninput="updateStockDistribution('pharmacy')">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
+                            <input type="number" class="form-control" id="edit_stock_hospital" name="stock_hospital"
+                                min="0" required oninput="updateStockDistribution('hospital')">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_precio_compra" class="form-label">Precio Compra</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_compra"
+                                    name="precio_compra" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_precio_venta" class="form-label">Precio Venta</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_venta" name="precio_venta"
+                                    min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_precio_hospital" class="form-label">Precio Hosp.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_hospital"
+                                    name="precio_hospital" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_medico"
+                                    name="precio_medico" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_fecha_adquisicion" class="form-label">Fecha Adquisición</label>
+                            <input type="date" class="form-control" id="edit_fecha_adquisicion"
+                                name="fecha_adquisicion" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_fecha_vencimiento" class="form-label">Fecha Vencimiento</label>
+                            <input type="date" class="form-control" id="edit_fecha_vencimiento"
+                                name="fecha_vencimiento" required>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-2"></i>
-                            Actualizar Medicamento
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="custom-modal-footer">
+                    <button type="button" class="action-btn secondary" onclick="document.getElementById('editMedicineModal').classList.remove('active')">Cancelar</button>
+                    <button type="submit" class="action-btn primary">
+                        <i class="bi bi-save me-2"></i>
+                        Actualizar Medicamento
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Modal para recibir medicamento -->
-    <div class="modal fade" id="receiveMedicineModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-box-arrow-in-down me-2"></i>
-                        Recibir Medicamento
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="custom-modal-overlay" id="receiveMedicineModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-box-arrow-in-down me-2"></i>
+                    Recibir Medicamento
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Medicamento</label>
+                    <input type="text" class="form-control" id="receive_nom_medicamento" readonly>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Medicamento</label>
-                        <input type="text" class="form-control" id="receive_nom_medicamento" readonly>
+                <div class="mb-3">
+                    <label for="receive_codigo_barras" class="form-label">Código de Barras</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                        <input type="text" class="form-control" id="receive_codigo_barras"
+                            placeholder="Confirmar/Escanear">
                     </div>
-                    <div class="mb-3">
-                        <label for="receive_codigo_barras" class="form-label">Código de Barras</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                            <input type="text" class="form-control" id="receive_codigo_barras"
-                                placeholder="Confirmar/Escanear">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="receive_fecha_vencimiento" class="form-label">Fecha de Vencimiento</label>
-                        <input type="date" class="form-control" id="receive_fecha_vencimiento" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="receive_documento_referencia" class="form-label">Factura / Nota de Envío</label>
-                        <input type="text" class="form-control" id="receive_documento_referencia"
-                            placeholder="Opcional">
-                    </div>
-                    <input type="hidden" id="receive_id_inventario">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success" onclick="submitReceive()">
-                        <i class="bi bi-check-circle me-2"></i>
-                        Confirmar Recepción
-                    </button>
+                <div class="mb-3">
+                    <label for="receive_fecha_vencimiento" class="form-label">Fecha de Vencimiento</label>
+                    <input type="date" class="form-control" id="receive_fecha_vencimiento" required>
                 </div>
+                <div class="mb-3">
+                    <label for="receive_documento_referencia" class="form-label">Factura / Nota de Envío</label>
+                    <input type="text" class="form-control" id="receive_documento_referencia"
+                        placeholder="Opcional">
+                </div>
+                <input type="hidden" id="receive_id_inventario">
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary" onclick="document.getElementById('receiveMedicineModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn success" onclick="submitReceive()">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Confirmar Recepción
+                </button>
             </div>
         </div>
     </div>
@@ -1428,6 +1552,15 @@ try {
             // ==========================================================================
             // FUNCIONALIDADES GLOBALES DEL INVENTARIO
             // ==========================================================================
+            window.openEditModal = function(id) {
+                if (window.inventory && window.inventory.manager) {
+                    window.inventory.manager.loadMedicineData(id);
+                    document.getElementById('editMedicineModal').classList.add('active');
+                } else {
+                    console.error('Inventory manager not initialized');
+                }
+            };
+
             window.openReceiveModal = function (id, name, barcode) {
                 document.getElementById('receive_id_inventario').value = id;
                 document.getElementById('receive_nom_medicamento').value = name;
@@ -1442,7 +1575,7 @@ try {
                 defaultDate.setFullYear(defaultDate.getFullYear() + 1);
                 document.getElementById('receive_fecha_vencimiento').valueAsDate = defaultDate;
 
-                // Modales se inicializan automáticamente vía data-attributes
+                document.getElementById('receiveMedicineModal').classList.add('active');
             };
 
             window.submitReceive = function () {
@@ -1458,7 +1591,9 @@ try {
                 }
 
                 // Mostrar estado de carga
-                const btn = document.querySelector('#receiveMedicineModal .btn-success');
+                const btn = document.querySelector('#receiveMedicineModal .action-btn.success');
+                if (!btn) return;
+                
                 const originalHtml = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
@@ -1786,36 +1921,99 @@ try {
     </script>
 
     <!-- Insumos Report Modal -->
-    <div class="modal fade" id="insumosReportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning text-white">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reporte Insumos
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form action="report_insumos.php" method="GET" target="_blank">
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Fecha</label>
-                            <input type="date" name="date" class="form-control" value="<?php echo date('Y-m-d'); ?>"
-                                required>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Jornada</label>
-                            <select name="shift" class="form-select">
-                                <option value="morning">Mañana (08:00 AM - 05:00 PM)</option>
-                                <option value="night">Noche (05:00 PM - 08:00 AM)</option>
-                            </select>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-warning fw-bold text-white">
-                                <i class="bi bi-printer me-2"></i>Generar Reporte
-                            </button>
-                        </div>
-                    </form>
-                </div>
+    <div class="custom-modal-overlay" id="insumosReportModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i>Reporte Insumos
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body p-4">
+                <form action="report_insumos.php" method="GET" target="_blank">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Fecha</label>
+                        <input type="date" name="date" class="form-control" value="<?php echo date('Y-m-d'); ?>"
+                            required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Jornada</label>
+                        <select name="shift" class="form-select">
+                            <option value="morning">Mañana (08:00 AM - 05:00 PM)</option>
+                            <option value="night">Noche (05:00 PM - 08:00 AM)</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="action-btn primary fw-bold w-100">
+                            <i class="bi bi-printer me-2"></i>Generar Reporte
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte Mensual de Insumos Modal -->
+    <div class="custom-modal-overlay" id="insumosMensualModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-calendar-check me-2"></i>Reporte Mensual de Insumos
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body p-4">
+                <form method="GET" class="d-flex gap-3 align-items-end mb-4">
+                    <div class="form-group flex-grow-1">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Mes</label>
+                        <input type="month" name="report_month" class="form-control" value="<?php echo htmlspecialchars($report_month); ?>">
+                    </div>
+                    <button type="submit" class="action-btn">
+                        <i class="bi bi-search me-1"></i>Filtrar
+                    </button>
+                </form>
+
+                <?php if (count($monthly_supplies) > 0): ?>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Medicamento</th>
+                                    <th>Presentación</th>
+                                    <th>Casa Farm.</th>
+                                    <th class="text-center">Cant. Total</th>
+                                    <th class="text-center"># Compras</th>
+                                    <th class="text-end">Costo Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($monthly_supplies as $ms): ?>
+                                    <tr>
+                                        <td class="fw-semibold"><?php echo htmlspecialchars($ms['nom_medicamento']); ?></td>
+                                        <td class="text-muted small"><?php echo htmlspecialchars($ms['presentacion_med']); ?></td>
+                                        <td class="small"><?php echo htmlspecialchars($ms['casa_farmaceutica']); ?></td>
+                                        <td class="text-center fw-bold"><?php echo $ms['cantidad_total']; ?></td>
+                                        <td class="text-center"><?php echo $ms['num_compras']; ?></td>
+                                        <td class="text-end fw-bold text-primary">Q<?php echo number_format($ms['costo_total'], 2); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="3" class="text-end fw-bold">TOTALES</td>
+                                    <td class="text-center fw-bold"><?php echo $monthly_total_qty; ?></td>
+                                    <td></td>
+                                    <td class="text-end fw-bold text-success fs-5">Q<?php echo number_format($monthly_total_cost, 2); ?></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+                        <p>No hay compras registradas para <?php echo date('F Y', strtotime($month_start)); ?></p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

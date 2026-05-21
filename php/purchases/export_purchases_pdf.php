@@ -50,84 +50,263 @@ try {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
-    <title>Respaldo de Compras - PDF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Compras - Centro Médico RS</title>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    
+    <style>
+        :root {
+            --report-padding: 30px;
+            --report-border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            padding: 2rem 0;
+            color: #1e293b;
+        }
+
+        .report-page {
+            background: white;
+            width: 210mm; /* A4 Portrait */
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: var(--report-padding);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-header-premium {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .hospital-brand h1 {
+            color: var(--color-primary);
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hospital-brand p {
+            margin: 2px 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .report-title {
+            text-align: right;
+        }
+
+        .report-title h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            color: #334155;
+        }
+
+        .report-title p {
+            margin: 2px 0;
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .purchase-box {
+            background: #fff;
+            border: 1px solid var(--report-border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .purchase-header-box {
+            background: #f8fafc;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--report-border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .purchase-id {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .purchase-provider {
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .purchase-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .purchase-table th {
+            text-align: left;
+            padding: 8px 15px;
+            color: #64748b;
+            border-bottom: 1px solid var(--report-border-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .purchase-table td {
+            padding: 8px 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .purchase-footer-box {
+            padding: 10px 15px;
+            background: #fff;
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .purchase-total-val {
+            font-weight: 800;
+            color: var(--color-primary);
+        }
+
+        .report-footer {
+            border-top: 1px solid var(--report-border-color);
+            padding-top: 12px;
+            margin-top: auto;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        @media print {
+            @page {
+                size: portrait;
+                margin: 1cm;
+            }
+            body {
+                background: white;
+                padding: 0;
+            }
+            .report-page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="no-print"
-        style="background: #e9ecef; padding: 10px; margin-bottom: 20px; border-radius: 5px; text-align: right;">
-        <button onclick="window.print()"
-            style="background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            🖨️ Imprimir / Guardar como PDF
+    <div class="floating-actions no-print">
+        <button onclick="window.print()" class="action-btn" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+            <i class="bi bi-printer-fill" style="font-size: 1.2rem;"></i>
         </button>
-        <button onclick="window.close()"
-            style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
-            Cerrar
+        <button onclick="window.close()" class="action-btn secondary" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+            <i class="bi bi-x-lg"></i>
         </button>
     </div>
 
-    <div class="header">
-        <img src="../../assets/img/Logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
-        <h1>Centro Médico RS</h1>
-        <p>Respaldo de Compras Registradas</p>
-        <div style="font-size: 9pt; color: #666;">Generado el:
-            <?php echo date('d/m/Y H:i'); ?>
-        </div>
-    </div>
-
-    <?php foreach ($purchases as $id => $p): ?>
-        <div class="purchase-box">
-            <div class="purchase-header">
-                Compra #
-                <?php echo $id; ?> - Fecha:
-                <?php echo $p['date']; ?> - Proveedor:
-                <?php echo htmlspecialchars($p['provider']); ?>
+    <div class="report-page">
+        <header class="report-header-premium">
+            <div class="hospital-brand">
+                <h1>Centro Médico RS</h1>
+                <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
+                <p><i class="bi bi-person"></i> Generado por: <?php echo $_SESSION['nombre']; ?></p>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th style="width: 80px;">Cant.</th>
-                        <th style="width: 100px;">Costo U.</th>
-                        <th style="width: 100px;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($p['items'] as $item): ?>
+            <div class="report-title">
+                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;">
+                <h2>HISTORIAL DE COMPRAS</h2>
+                <p><?php echo date('d/m/Y H:i'); ?></p>
+            </div>
+        </header>
+
+        <?php foreach ($purchases as $id => $p): ?>
+            <div class="purchase-box">
+                <div class="purchase-header-box">
+                    <div>
+                        <span class="purchase-id">#CP-<?php echo str_pad($id, 5, '0', STR_PAD_LEFT); ?></span>
+                        <span class="mx-2 text-muted">|</span>
+                        <span class="purchase-provider"><?php echo htmlspecialchars($p['provider']); ?></span>
+                    </div>
+                    <div class="text-muted" style="font-size: 11px;">
+                        <i class="bi bi-calendar3 me-1"></i> <?php echo date('d/m/Y', strtotime($p['date'])); ?>
+                    </div>
+                </div>
+                <table class="purchase-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <?php echo htmlspecialchars($item['name']); ?>
-                            </td>
-                            <td>
-                                <?php echo $item['qty']; ?>
-                            </td>
-                            <td>Q
-                                <?php echo number_format($item['cost'], 2); ?>
-                            </td>
-                            <td>Q
-                                <?php echo number_format($item['total'], 2); ?>
-                            </td>
+                            <th>Producto / Medicamento</th>
+                            <th style="text-align: center;">Cantidad</th>
+                            <th style="text-align: right;">Costo U.</th>
+                            <th style="text-align: right;">Subtotal</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <div class="total-row">
-                Monto Total: Q
-                <?php echo number_format($p['total'], 2); ?> | Estado:
-                <?php echo $p['status']; ?> (
-                <?php echo $p['payment']; ?>)
+                    </thead>
+                    <tbody>
+                        <?php foreach ($p['items'] as $item): ?>
+                            <tr>
+                                <td><strong><?php echo htmlspecialchars($item['name']); ?></strong></td>
+                                <td style="text-align: center;"><?php echo $item['qty']; ?></td>
+                                <td style="text-align: right;">Q<?php echo number_format($item['cost'], 2); ?></td>
+                                <td style="text-align: right;">Q<?php echo number_format($item['total'], 2); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <div class="purchase-footer-box">
+                    <div>Estado: <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['status']; ?></span></div>
+                    <div>Pago: <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['payment']; ?></span></div>
+                    <div>Total Compra: <span class="purchase-total-val">Q<?php echo number_format($p['total'], 2); ?></span></div>
+                </div>
             </div>
-        </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
 
-    <script>
-        // window.onload = () => window.print();
-    </script>
+        <footer class="report-footer">
+            <p>Documento oficial de control de compras - Centro Médico RS</p>
+            <p>Generado el <?php echo date('d/m/Y H:i:s'); ?> - CMS v4.0</p>
+        </footer>
+    </div>
 </body>
+</html>
 
 </html>

@@ -67,8 +67,8 @@ try {
         // Insert charge
         $stmt = $conn->prepare("
             INSERT INTO cargos_hospitalarios 
-            (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, fecha_cargo, registrado_por, referencia_id, referencia_tabla)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, registrado_por, referencia_id, referencia_tabla)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->execute([
@@ -77,7 +77,6 @@ try {
             $descripcion,
             $cantidad,
             $precio_unitario,
-            $cantidad * $precio_unitario,
             $fecha_cargo,
             $registrado_por,
             $referencia_id,

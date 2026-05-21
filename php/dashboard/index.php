@@ -184,6 +184,95 @@ try {
     // Título de la página
     $page_title = "Dashboard - Centro Médico RS";
 
+    // ============ WIDGET SETTINGS ============
+    $hospital_id = $_SESSION['id_hospital'] ?? 1;
+    $stmt = $conn->prepare("SELECT widget_id, is_enabled FROM widget_settings WHERE id_hospital = ?");
+    $stmt->execute([$hospital_id]);
+    $widget_settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    // Default values if not set
+    $show_quick_actions = isset($widget_settings['widget-quick-actions']) ? (int)$widget_settings['widget-quick-actions'] : 1;
+    $show_stats         = isset($widget_settings['widget-stats']) ? (int)$widget_settings['widget-stats'] : 1;
+    $show_appointments  = isset($widget_settings['widget-appointments']) ? (int)$widget_settings['widget-appointments'] : 1;
+    $show_hospitalized  = isset($widget_settings['widget-hospitalized']) ? (int)$widget_settings['widget-hospitalized'] : 1;
+    $show_alerts        = isset($widget_settings['widget-alerts']) ? (int)$widget_settings['widget-alerts'] : 1;
+    $show_revenue       = isset($widget_settings['widget-revenue']) ? (int)$widget_settings['widget-revenue'] : 1;
+    $show_inventory     = isset($widget_settings['widget-inventory']) ? (int)$widget_settings['widget-inventory'] : 1;
+    $show_patients      = isset($widget_settings['widget-patients']) ? (int)$widget_settings['widget-patients'] : 1;
+    $show_calendar      = isset($widget_settings['widget-calendar']) ? (int)$widget_settings['widget-calendar'] : 1;
+    $show_labs          = isset($widget_settings['widget-labs']) ? (int)$widget_settings['widget-labs'] : 1;
+
+    // ============ DATA FOR ADDITIONAL WIDGETS ============
+    // 1. Revenue data
+    $revenue_ventas = 0;
+    $revenue_proc = 0;
+    $revenue_exams = 0;
+    $revenue_consults = 0;
+    $revenue_hosp = 0;
+    
+    try {
+        $stmt = $conn->prepare("SELECT SUM(total) FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND id_hospital = ?");
+        $stmt->execute([$hospital_id]);
+        $revenue_ventas = (float)$stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {}
+
+    try {
+        $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE MONTH(fecha_procedimiento) = MONTH(CURDATE()) AND YEAR(fecha_procedimiento) = YEAR(CURDATE())");
+        $stmt->execute();
+        $revenue_proc = (float)$stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {}
+
+    try {
+        $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE MONTH(fecha_examen) = MONTH(CURDATE()) AND YEAR(fecha_examen) = YEAR(CURDATE())");
+        $stmt->execute();
+        $revenue_exams = (float)$stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {}
+
+    try {
+        $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND YEAR(fecha_consulta) = YEAR(CURDATE())");
+        $stmt->execute();
+        $revenue_consults = (float)$stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {}
+
+    try {
+        $stmt = $conn->prepare("SELECT SUM(total_general) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE MONTH(e.fecha_alta) = MONTH(CURDATE()) AND YEAR(e.fecha_alta) = YEAR(CURDATE())");
+        $stmt->execute();
+        $revenue_hosp = (float)$stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {}
+
+    $total_monthly_revenue = $revenue_ventas + $revenue_proc + $revenue_exams + $revenue_consults + $revenue_hosp;
+
+    // 2. Patients widget data
+    $total_patients_count = 0;
+    $latest_patients = [];
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM pacientes WHERE id_hospital = ?");
+        $stmt->execute([$hospital_id]);
+        $total_patients_count = (int)$stmt->fetchColumn() ?: 0;
+
+        $stmt = $conn->prepare("SELECT id_paciente, nombre, apellido, nit, telefono, fecha_registro FROM pacientes WHERE id_hospital = ? ORDER BY id_paciente DESC LIMIT 5");
+        $stmt->execute([$hospital_id]);
+        $latest_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Exception $e) {}
+
+    // 3. Laboratory widget data
+    $pending_labs_count = 0;
+    $completed_labs_count = 0;
+    $latest_lab_orders = [];
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM ordenes_laboratorio WHERE estado = 'Pendiente' AND id_hospital = ?");
+        $stmt->execute([$hospital_id]);
+        $pending_labs_count = (int)$stmt->fetchColumn() ?: 0;
+
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM ordenes_laboratorio WHERE estado = 'Completada' AND id_hospital = ?");
+        $stmt->execute([$hospital_id]);
+        $completed_labs_count = (int)$stmt->fetchColumn() ?: 0;
+
+        $stmt = $conn->prepare("SELECT ol.id_orden, ol.numero_orden, ol.estado, ol.fecha_orden, p.nombre, p.apellido FROM ordenes_laboratorio ol JOIN pacientes p ON ol.id_paciente = p.id_paciente WHERE ol.id_hospital = ? ORDER BY ol.id_orden DESC LIMIT 5");
+        $stmt->execute([$hospital_id]);
+        $latest_lab_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Exception $e) {}
+
 } catch (Exception $e) {
     // Manejo de errores
     error_log("Error en dashboard: " . $e->getMessage());
@@ -221,9 +310,11 @@ try {
     <!-- Seguridad y Protección de Código -->
     <script src="../../assets/js/security.js"></script>
 
-    <!-- CSS Crítico (incrustado para máxima velocidad) -->
+    <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <!-- Theme Loader: aplica el tema guardado antes del primer paint -->
+    <?php include '../../includes/theme_head.php'; ?>
 </head>
 
 <body>
@@ -424,6 +515,12 @@ try {
                     <a href="../settings/index.php" class="nav-link">
                         <i class="bi bi-gear nav-icon"></i>
                         <span class="nav-text">Configuración</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="widgets_config.php" class="nav-link">
+                        <i class="bi bi-layout-three-columns nav-icon"></i>
+                        <span class="nav-text">Widgets</span>
                     </a>
                 </li>
             </ul>
@@ -681,10 +778,16 @@ try {
                 loading.style.display = 'block';
                 content.style.display = 'none';
 
-
-
                 fetch(`get_shift_cut_data.php?date=${date}&shift=${shift}`)
-                    .then(response => response.json())
+                    .then(async response => {
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            return response.json();
+                        } else {
+                            const text = await response.text();
+                            throw new Error("Respuesta no válida del servidor: " + text.substring(0, 100));
+                        }
+                    })
                     .then(data => {
                         if (data.success) {
                             const d = data.data;
@@ -919,7 +1022,7 @@ try {
             </div>
 
             <!-- Acciones Rápidas -->
-            <?php if ($user_type === 'user'): ?>
+            <?php if ($user_type === 'user' || $user_type === 'admin' && $show_quick_actions): ?>
                 <div class="stats-grid mb-4 animate-in delay-1" id="widget-quick-actions">
                     <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
                         style="text-decoration: none; border-left: 4px solid var(--color-success);">
@@ -997,7 +1100,7 @@ try {
             <?php endif; ?>
 
             <!-- Estadísticas principales -->
-            <?php if ($user_type === 'admin'): ?>
+            <?php if ($user_type === 'admin' && $show_stats): ?>
                 <div class="stats-grid" id="widget-stats">
                     <!-- Citas de hoy -->
                     <div class="stat-card animate-in delay-1">
@@ -1070,6 +1173,7 @@ try {
             <?php endif; ?>
 
             <!-- Sección de citas de hoy -->
+            <?php if ($show_appointments): ?>
             <section class="appointments-section animate-in delay-1" id="widget-appointments">
                 <div class="section-header">
                     <h3 class="section-title">
@@ -1148,8 +1252,9 @@ try {
                     </div>
                 <?php endif; ?>
             </section>
+            <?php endif; ?>
 
-            <?php if ($user_type === 'admin'): ?>
+            <?php if ($user_type === 'admin' && $show_hospitalized): ?>
                 <!-- Sección de Hospitalización -->
                 <section class="appointments-section animate-in delay-2" id="widget-hospitalized">
                     <div class="section-header">
@@ -1253,6 +1358,7 @@ try {
             <?php endif; ?>
 
             <!-- Panel de alertas -->
+            <?php if ($show_alerts): ?>
             <div class="alerts-grid animate-in delay-3" id="widget-alerts">
                 <!-- Medicamentos por caducar -->
                 <div class="alert-card">
@@ -1346,6 +1452,267 @@ try {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
+
+            <!-- ============ NEW WIDGETS ============ -->
+            
+            <!-- 1. WIDGET REVENUE (Ingresos del Mes) -->
+            <?php if ($show_revenue): ?>
+            <section class="appointments-section animate-in delay-3" id="widget-revenue">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-currency-dollar text-success section-title-icon"></i>
+                        Ingresos Generales del Mes (Estimado)
+                    </h3>
+                    <div class="badge bg-success p-2 fs-6">
+                        Total: Q<?php echo number_format($total_monthly_revenue, 2); ?>
+                    </div>
+                </div>
+                
+                <div class="row g-3 p-3">
+                    <div class="col-md-4">
+                        <div class="stat-card border-start border-success border-4 shadow-sm h-100 mb-0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title text-success">Ventas de Farmacia</div>
+                                    <div class="stat-value text-success" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_ventas, 2); ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-capsule"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card border-start border-primary border-4 shadow-sm h-100 mb-0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title text-primary">Consultas Médicas</div>
+                                    <div class="stat-value text-primary" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_consults, 2); ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card border-start border-warning border-4 shadow-sm h-100 mb-0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title text-warning">Procedimientos Menores</div>
+                                    <div class="stat-value text-warning" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_proc, 2); ?></div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-bandaid-fill"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <div class="stat-card border-start border-info border-4 shadow-sm h-100 mb-0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title text-info">Exámenes de Laboratorio</div>
+                                    <div class="stat-value text-info" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_exams, 2); ?></div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-droplet-fill"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <div class="stat-card border-start border-secondary border-4 shadow-sm h-100 mb-0">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title text-secondary">Cuentas de Hospitalización</div>
+                                    <div class="stat-value text-secondary" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_hosp, 2); ?></div>
+                                </div>
+                                <div class="stat-icon secondary">
+                                    <i class="bi bi-hospital"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3 p-2">
+                    <a href="../reports/index.php" class="text-primary text-decoration-none fw-bold">
+                        Ir al Centro de Analítica <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 2. WIDGET INVENTORY (Resumen de Inventario) -->
+            <?php if ($show_inventory): ?>
+            <section class="appointments-section animate-in delay-3" id="widget-inventory">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-box-seam text-info section-title-icon"></i>
+                        Monitoreo de Inventario
+                    </h3>
+                </div>
+                <div class="row g-3 p-3">
+                    <div class="col-md-4">
+                        <div class="stat-card text-center shadow-sm">
+                            <h4 class="text-muted">Total de Productos</h4>
+                            <div class="fs-2 fw-bold text-dark mt-2"><?php echo $total_medications; ?></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card text-center shadow-sm">
+                            <h4 class="text-muted">Próximos a Vencer</h4>
+                            <div class="fs-2 fw-bold text-warning mt-2"><?php echo count($expiring_medications); ?></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card text-center shadow-sm">
+                            <h4 class="text-muted">Stock Bajo</h4>
+                            <div class="fs-2 fw-bold text-danger mt-2"><?php echo count($low_stock_medications); ?></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-2 p-2">
+                    <a href="../inventory/index.php" class="text-primary text-decoration-none fw-bold">
+                        Gestionar Inventario <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 3. WIDGET PATIENTS (Pacientes Registrados) -->
+            <?php if ($show_patients): ?>
+            <section class="appointments-section animate-in delay-3" id="widget-patients">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-people text-primary section-title-icon"></i>
+                        Últimos Pacientes Registrados
+                    </h3>
+                    <div class="badge bg-primary p-2">
+                        Total en Sistema: <?php echo $total_patients_count; ?>
+                    </div>
+                </div>
+                <?php if (count($latest_patients) > 0): ?>
+                    <div class="table-responsive p-3">
+                        <table class="appointments-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre del Paciente</th>
+                                    <th>NIT</th>
+                                    <th>Teléfono</th>
+                                    <th>Registro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($latest_patients as $pat): ?>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="patient-avatar me-2" style="background: var(--color-primary); color: white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                                    <?php echo strtoupper(substr($pat['nombre'],0,1).substr($pat['apellido'],0,1)); ?>
+                                                </div>
+                                                <span class="fw-bold"><?php echo htmlspecialchars($pat['nombre'] . ' ' . $pat['apellido']); ?></span>
+                                            </div>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($pat['nit'] ?: 'C/F'); ?></td>
+                                        <td><?php echo htmlspecialchars($pat['telefono'] ?: 'No asignado'); ?></td>
+                                        <td><small class="text-muted"><?php echo date('d/m/Y', strtotime($pat['fecha_registro'])); ?></small></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state p-4">
+                        <p class="text-muted">No hay pacientes registrados aún.</p>
+                    </div>
+                <?php endif; ?>
+            </section>
+            <?php endif; ?>
+
+            <!-- 4. WIDGET CALENDAR (Calendario y Horarios) -->
+            <?php if ($show_calendar): ?>
+            <section class="appointments-section animate-in delay-3" id="widget-calendar">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-calendar3 text-primary section-title-icon"></i>
+                        Agenda Semanal de Citas
+                    </h3>
+                </div>
+                <div class="p-3">
+                    <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+                        <i class="bi bi-info-circle-fill fs-5 me-2"></i>
+                        <div>
+                            Visualización rápida del estado de citas semanales. Utilice el módulo principal para gestionar reconsultas de pacientes sin demoras en la respuesta del servidor.
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-1 p-2">
+                    <a href="../appointments/index.php" class="text-primary text-decoration-none fw-bold">
+                        Ir al Módulo de Citas <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- 5. WIDGET LABS (Órdenes de Laboratorio) -->
+            <?php if ($show_labs): ?>
+            <section class="appointments-section animate-in delay-3" id="widget-labs">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-droplet-half text-info section-title-icon"></i>
+                        Órdenes de Laboratorio Recientes
+                    </h3>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-warning text-dark p-2">Pendientes: <?php echo $pending_labs_count; ?></span>
+                        <span class="badge bg-success text-white p-2">Completadas: <?php echo $completed_labs_count; ?></span>
+                    </div>
+                </div>
+                <?php if (count($latest_lab_orders) > 0): ?>
+                    <div class="table-responsive p-3">
+                        <table class="appointments-table">
+                            <thead>
+                                <tr>
+                                    <th>Orden #</th>
+                                    <th>Paciente</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($latest_lab_orders as $lab): ?>
+                                    <?php
+                                    $lab_status_class = 'bg-warning';
+                                    if ($lab['estado'] === 'Completada') $lab_status_class = 'bg-success';
+                                    if ($lab['estado'] === 'Cancelada') $lab_status_class = 'bg-danger';
+                                    ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($lab['numero_orden']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($lab['nombre'] . ' ' . $lab['apellido']); ?></td>
+                                        <td>
+                                            <span class="badge <?php echo $lab_status_class; ?> text-white">
+                                                <?php echo htmlspecialchars($lab['estado']); ?>
+                                            </span>
+                                        </td>
+                                        <td><small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($lab['fecha_orden'])); ?></small></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state p-4">
+                        <p class="text-muted">No hay órdenes de laboratorio en el sistema.</p>
+                    </div>
+                <?php endif; ?>
+                <div class="text-center mt-1 p-2">
+                    <a href="../laboratory/index.php" class="text-primary text-decoration-none fw-bold">
+                        Ir al Módulo de Laboratorio <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </section>
+            <?php endif; ?>
         </main>
     </div>
 
@@ -3245,21 +3612,24 @@ try {
                     console.error('Error:', error);
                     Swal.fire('Error', 'Error al procesar el cobro', 'error');
                 });
-            function lockedModule(moduleName) {
-                Swal.fire({
-                    title: 'Módulo Bloqueado',
-                    text: 'El módulo "' + moduleName + '" no está incluido en su suscripción actual o no ha sido adquirido.',
-                    icon: 'lock',
-                    showCancelButton: true,
-                    confirmButtonText: 'Contactar Ventas',
-                    cancelButtonText: 'Cerrar',
-                    confirmButtonColor: '#0d6efd'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.open('https://wa.me/tu_numero_whatsapp', '_blank');
-                    }
-                });
-            }
+        }
+
+        function lockedModule(moduleName) {
+            Swal.fire({
+                title: 'Módulo Bloqueado',
+                text: 'El módulo "' + moduleName + '" no está incluido en su suscripción actual o no ha sido adquirido.',
+                icon: 'lock',
+                showCancelButton: true,
+                confirmButtonText: 'Contactar Ventas',
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#0d6efd'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open('https://wa.me/tu_numero_whatsapp', '_blank');
+                }
+            });
+        }
+    </script>
     <!-- Modal Configuración del Dashboard -->
     <div class="modal fade" id="dashboardConfigModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -3324,97 +3694,158 @@ try {
 
         // Apply widget visibility on load without reloading
         function applyWidgetVisibility() {
-            const config = JSON.parse(localStorage.getItem('dashboard-widgets') || '{}');
-            
-            const toggleWidget = (id, show) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = show !== false ? '' : 'none'; // Default true
+            const saved = localStorage.getItem('dashboard_widgets_config');
+            if (saved) {
+                const config = JSON.parse(saved);
+                for (const [id, visible] of Object.entries(config)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = visible ? '' : 'none';
+                    }
                 }
-            };
-
-            toggleWidget('widget-quick-actions', config['quick-actions']);
-            toggleWidget('widget-stats', config['stats']);
-            toggleWidget('widget-appointments', config['appointments']);
-            toggleWidget('widget-hospitalized', config['hospitalized']);
-            toggleWidget('widget-alerts', config['alerts']);
+            } else {
+                const legacy = JSON.parse(localStorage.getItem('dashboard-widgets') || '{}');
+                const toggleWidget = (id, show) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = show !== false ? '' : 'none';
+                    }
+                };
+                toggleWidget('widget-quick-actions', legacy['quick-actions']);
+                toggleWidget('widget-stats', legacy['stats']);
+                toggleWidget('widget-appointments', legacy['appointments']);
+                toggleWidget('widget-hospitalized', legacy['hospitalized']);
+                toggleWidget('widget-alerts', legacy['alerts']);
+            }
         }
 
         // Run on load
         document.addEventListener("DOMContentLoaded", applyWidgetVisibility);
 
         function openDashboardConfig() {
-            const config = JSON.parse(localStorage.getItem('dashboard-widgets') || '{}');
+            const widgets = [
+                { id: 'widget-quick-actions', name: 'Acciones Rápidas' },
+                { id: 'widget-stats', name: 'Estadísticas Principales' },
+                { id: 'widget-appointments', name: 'Citas de Hoy' },
+                { id: 'widget-hospitalized', name: 'Pacientes Hospitalizados' },
+                { id: 'widget-alerts', name: 'Panel de Alertas' },
+                { id: 'widget-revenue', name: 'Ingresos Mensuales' },
+                { id: 'widget-inventory', name: 'Monitoreo de Inventario' },
+                { id: 'widget-patients', name: 'Últimos Pacientes Registrados' },
+                { id: 'widget-calendar', name: 'Agenda Semanal' },
+                { id: 'widget-labs', name: 'Órdenes de Laboratorio' }
+            ];
             
-            document.getElementById('toggle-quick-actions').checked = config['quick-actions'] !== false;
-            document.getElementById('toggle-stats').checked = config['stats'] !== false;
-            document.getElementById('toggle-appointments').checked = config['appointments'] !== false;
-            document.getElementById('toggle-hospitalized').checked = config['hospitalized'] !== false;
-            document.getElementById('toggle-alerts').checked = config['alerts'] !== false;
+            let html = '<div class="text-start p-2" style="max-height: 400px; overflow-y: auto;">';
+            widgets.forEach(w => {
+                const el = document.getElementById(w.id);
+                if (el) {
+                    const isVisible = el.style.display !== 'none';
+                    html += `
+                    <div class="form-check form-switch mb-3">
+                         <input class="form-check-input widget-toggle fs-5" type="checkbox" role="switch" id="toggle-${w.id}" value="${w.id}" ${isVisible ? 'checked' : ''}>
+                         <label class="form-check-label ms-2 mt-1 fw-bold" for="toggle-${w.id}">${w.name}</label>
+                    </div>`;
+                }
+            });
+            html += '</div>';
 
-            // Para que detecte las cookies si no están en localstorage (ej la primera vez)
-            const getCookie = (name) => {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
-                return null;
-            }
-
-            document.getElementById('config-expiring-days').value = config['expiring-days'] || getCookie('config_expiring_days') || '180';
-            document.getElementById('config-low-stock').value = config['low-stock'] || getCookie('config_low_stock') || '5';
-
-            new bootstrap.Modal(document.getElementById('dashboardConfigModal')).show();
+            Swal.fire({
+                title: '<i class="bi bi-sliders text-primary me-2"></i>Personalizar Dashboard',
+                html: html,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-check-lg me-1"></i>Guardar Cambios',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: 'var(--color-primary)',
+                cancelButtonColor: 'var(--color-secondary)',
+                preConfirm: () => {
+                    const toggles = document.querySelectorAll('.widget-toggle');
+                    const config = {};
+                    toggles.forEach(t => {
+                        config[t.value] = t.checked;
+                    });
+                    return config;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const config = result.value;
+                    
+                    // Guardar en LocalStorage para actualización reactiva al instante
+                    localStorage.setItem('dashboard_widgets_config', JSON.stringify(config));
+                    
+                    // Sincronizar legacy config para backwards compatibility
+                    const legacy = {
+                        'quick-actions': config['widget-quick-actions'] !== false,
+                        'stats': config['widget-stats'] !== false,
+                        'appointments': config['widget-appointments'] !== false,
+                        'hospitalized': config['widget-hospitalized'] !== false,
+                        'alerts': config['widget-alerts'] !== false
+                    };
+                    localStorage.setItem('dashboard-widgets', JSON.stringify(legacy));
+                    
+                    applyWidgetVisibility();
+                    
+                    // Enviar al servidor mediante AJAX para persistencia en BD
+                    fetch('api/update_widget_visibility.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ config: config })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Guardado en el Servidor!',
+                                text: 'Tu dashboard personalizado se ha sincronizado correctamente.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            console.error('Error al guardar en BD:', data.error);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error de red:', err);
+                    });
+                }
+            });
         }
 
         function saveDashboardConfig() {
-            const config = {
-                'quick-actions': document.getElementById('toggle-quick-actions').checked,
-                'stats': document.getElementById('toggle-stats').checked,
-                'appointments': document.getElementById('toggle-appointments').checked,
-                'hospitalized': document.getElementById('toggle-hospitalized').checked,
-                'alerts': document.getElementById('toggle-alerts').checked,
-                'expiring-days': document.getElementById('config-expiring-days').value,
-                'low-stock': document.getElementById('config-low-stock').value
-            };
-
-            localStorage.setItem('dashboard-widgets', JSON.stringify(config));
-            
-            // Set Cookies for PHP rendering
-            let reloadNeeded = false;
-            const getCookie = (name) => {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
-                return null;
-            }
-
-            if(getCookie('config_expiring_days') !== config['expiring-days']) {
-                setCookie('config_expiring_days', config['expiring-days'], 365);
-                reloadNeeded = true;
-            }
-            if(getCookie('config_low_stock') !== config['low-stock']) {
-                setCookie('config_low_stock', config['low-stock'], 365);
-                reloadNeeded = true;
-            }
-
-            applyWidgetVisibility();
-
-            const modalEl = document.getElementById('dashboardConfigModal');
-            bootstrap.Modal.getInstance(modalEl).hide();
-
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Configuración guardada',
-                showConfirmButton: false,
-                timer: 1500
-            });
-
-            if (reloadNeeded) {
-                setTimeout(() => location.reload(), 1500);
-            }
+            // Keep this for backward compatibility if old buttons reference it
+            openDashboardConfig();
         }
+
+
+        // ==========================================
+        // Prevención de doble submit en formularios
+        // ==========================================
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.closest('.modal')) {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    if (btn.disabled) {
+                        e.preventDefault();
+                        return;
+                    }
+                    btn.disabled = true;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+                    
+                    // Fallback para restaurar el botón si la página no recarga
+                    setTimeout(() => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }, 10000);
+                }
+            }
+        });
     </script>
 </body>
 

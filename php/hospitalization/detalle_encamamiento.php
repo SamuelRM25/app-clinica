@@ -132,15 +132,14 @@ try {
                 // Charge is missing for this night
                 $stmt_add_night = $conn->prepare("
                     INSERT INTO cargos_hospitalarios 
-                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, fecha_cargo, fecha_aplicacion, registrado_por)
-                    VALUES (?, 'Habitación', ?, 1, ?, ?, NOW(), ?, ?)
+                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por)
+                    VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?)
                 ");
                 $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")";
                 $stmt_add_night->execute([
                     $id_cuenta,
                     $desc,
                     $encamamiento['tarifa_por_noche'],
-                    $encamamiento['tarifa_por_noche'], // subtotal (1 * tarifa)
                     $date_str,
                     $user_id
                 ]);
@@ -236,6 +235,141 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
+
+    <style>
+        /* ===== PATIENT HEADER CARD ===== */
+        .patient-header-card {
+            background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--color-primary-rgb), 0.75) 100%);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .patient-header-card::after {
+            content: '';
+            position: absolute;
+            top: -30%; right: -5%;
+            width: 220px; height: 220px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
+        .patient-id-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: rgba(255,255,255,0.2); padding: 0.3rem 0.85rem;
+            border-radius: 50px; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.75rem;
+        }
+        .patient-full-name { font-size: 1.75rem; font-weight: 800; margin: 0 0 0.25rem; }
+        .patient-info-pills { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+        .patient-info-pill {
+            display: flex; align-items: center; gap: 0.35rem;
+            background: rgba(255,255,255,0.15); padding: 0.3rem 0.75rem;
+            border-radius: 50px; font-size: 0.8rem;
+        }
+
+        /* ===== SECTION CARDS ===== */
+        .detail-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .detail-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+        .detail-card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .detail-card-title i { color: var(--color-primary); }
+        .detail-card-body { padding: 1.5rem; }
+
+        /* ===== VITALS TABLE ===== */
+        .vitals-table { width: 100%; border-collapse: collapse; }
+        .vitals-table th {
+            padding: 0.75rem 1rem;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .vitals-table td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+            font-size: 0.875rem;
+        }
+        .vitals-table tbody tr:last-child td { border-bottom: none; }
+        .vitals-table tbody tr:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+
+        /* ===== CHARGE ITEMS ===== */
+        .charge-group-title {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--color-text-secondary);
+            padding: 0.75rem 1rem;
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .charge-item-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            gap: 1rem;
+        }
+        .charge-item-row:last-child { border-bottom: none; }
+        .charge-item-name { font-size: 0.875rem; color: var(--color-text); font-weight: 500; }
+        .charge-item-meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 1px; }
+        .charge-item-price { font-weight: 700; color: var(--color-text); white-space: nowrap; }
+        .charge-item-delete {
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            background: rgba(var(--color-danger-rgb), 0.1); color: var(--color-danger);
+            border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .charge-item-delete:hover { background: var(--color-danger); color: white; }
+
+        /* ===== ACCOUNT SUMMARY ===== */
+        .account-summary-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+        }
+        .account-summary-row.total {
+            padding-top: 1rem; border-bottom: none;
+            font-size: 1.1rem; font-weight: 800;
+            color: var(--color-text);
+        }
+        .account-summary-row.total .amount { color: var(--color-primary); }
+        .account-summary-label { color: var(--color-text-secondary); }
+        .account-summary-amount { font-weight: 700; }
+
+        /* ===== ADD CHARGE FORM ===== */
+        .add-charge-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+        @media (max-width: 768px) { .add-charge-grid { grid-template-columns: 1fr; } }
+    </style>
+
     <style media="print">
         @page {
             size: portrait;
@@ -655,51 +789,48 @@ try {
 
 
                     <?php if ($cuenta): ?>
-                        <!-- Account Summary -->
-                        <div class="account-summary">
-                            <div class="summary-card">
-                                <div class="summary-label">Habitación</div>
-                                <div class="summary-value">Q<?php echo number_format($cuenta['subtotal_habitacion'], 2); ?>
+                        <!-- Account Summary Grid -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-card p-3 h-100">
+                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Estancia</div>
+                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_habitacion'], 2); ?></div>
                                 </div>
                             </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Medicamentos</div>
-                                <div class="summary-value">
-                                    Q<?php echo number_format($cuenta['subtotal_medicamentos'], 2); ?></div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Procedimientos</div>
-                                <div class="summary-value">
-                                    Q<?php echo number_format($cuenta['subtotal_procedimientos'], 2); ?></div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Laboratorios</div>
-                                <div class="summary-value">
-                                    Q<?php echo number_format($cuenta['subtotal_laboratorios'], 2); ?></div>
-                            </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Honorarios</div>
-                                <div class="summary-value">Q<?php echo number_format($cuenta['subtotal_honorarios'], 2); ?>
+                            <div class="col-md-3">
+                                <div class="stat-card p-3 h-100">
+                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Farmacia</div>
+                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_medicamentos'], 2); ?></div>
                                 </div>
                             </div>
-                            <div class="summary-card">
-                                <div class="summary-label">Otros</div>
-                                <div class="summary-value">Q<?php echo number_format($cuenta['subtotal_otros'], 2); ?></div>
+                            <div class="col-md-3">
+                                <div class="stat-card p-3 h-100">
+                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Procedimientos</div>
+                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_procedimientos'], 2); ?></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card p-3 h-100">
+                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Otros Cargos</div>
+                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_laboratorios'] + $cuenta['subtotal_honorarios'] + $cuenta['subtotal_otros'], 2); ?></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="summary-card total">
-                            <div class="summary-label">Total General</div>
-                            <div class="summary-value">Q<?php echo number_format($cuenta['total_general'], 2); ?></div>
-                        </div>
-                        <div class="summary-card" style="border-color: var(--color-success)">
-                            <div class="summary-label">Total Pagado</div>
-                            <div class="summary-value text-success">
-                                Q<?php echo number_format($cuenta['total_pagado'] ?? 0, 2); ?></div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Saldo Pendiente</div>
-                            <div class="summary-value">
-                                Q<?php echo number_format($cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0), 2); ?>
+
+                        <div class="stat-card p-4 mb-4" style="background: linear-gradient(135deg, var(--color-primary), #1e40af); color: white;">
+                            <div class="row align-items-center">
+                                <div class="col-md-4 text-center border-end border-white border-opacity-25">
+                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Total General</div>
+                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_general'], 2); ?></div>
+                                </div>
+                                <div class="col-md-4 text-center border-end border-white border-opacity-25">
+                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Pagos/Abonos</div>
+                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_pagado'] ?? 0, 2); ?></div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Saldo Pendiente</div>
+                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0), 2); ?></div>
+                                </div>
                             </div>
                         </div>
                     </div>

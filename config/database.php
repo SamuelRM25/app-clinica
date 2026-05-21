@@ -10,6 +10,9 @@ class Database {
     private $port = "3306";
     private $conn = null; // Inicializar a null
 
+    /**
+     * @return PDO
+     */
     public function getConnection() {
         try {
             if ($this->conn === null) {

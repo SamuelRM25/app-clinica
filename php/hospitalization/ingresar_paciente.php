@@ -37,11 +37,11 @@ try {
     ");
     $available_beds = $stmt_beds->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get doctors
+    // Get doctors (Only users with 'doc' role as requested)
     $stmt_docs = $conn->query("
         SELECT idUsuario, nombre, apellido, especialidad 
         FROM usuarios 
-        WHERE tipoUsuario IN ('admin', 'doc')
+        WHERE tipoUsuario = 'doc'
         ORDER BY nombre
     ");
     $doctors = $stmt_docs->fetchAll(PDO::FETCH_ASSOC);
@@ -73,6 +73,106 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
+
+    <style>
+        /* ===== FORM SECTIONS ===== */
+        .form-section {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+        .form-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0 0 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .form-section-title i { color: var(--color-primary); font-size: 1.15rem; }
+        .step-badge {
+            width: 28px; height: 28px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ===== FORM LABELS & INPUTS ===== */
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .form-control, .form-select {
+            padding: 0.7rem 0.875rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-family: var(--font-family);
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
+            outline: none;
+        }
+        textarea.form-control { resize: vertical; min-height: 90px; }
+
+        /* ===== BED SELECTION ===== */
+        .bed-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            background: var(--color-surface);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+        .bed-option:hover { border-color: var(--color-primary); background: rgba(var(--color-primary-rgb), 0.04); }
+        .bed-option input[type="radio"] { accent-color: var(--color-primary); width: 16px; height: 16px; }
+        .bed-option-name { font-weight: 700; font-size: 0.875rem; color: var(--color-text); }
+        .bed-option-meta { font-size: 0.75rem; color: var(--color-text-secondary); }
+        .bed-rate { font-weight: 700; color: var(--color-success); font-size: 0.875rem; margin-left: auto; }
+
+        /* Select2 custom theme for this page */
+        .select2-container--default .select2-selection--single {
+            padding: 0.65rem 0.875rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            height: auto;
+        }
+        .select2-container--default .select2-selection--single:focus { border-color: var(--color-primary); }
+        .select2-container--default .select2-selection--single .select2-selection__rendered { color: var(--color-text); line-height: 1.5; padding: 0; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { top: 50%; transform: translateY(-50%); }
+        .select2-dropdown { background: var(--color-card); border: 1.5px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+        .select2-container--default .select2-results__option { padding: 0.6rem 1rem; color: var(--color-text); }
+        .select2-container--default .select2-results__option--highlighted { background: rgba(var(--color-primary-rgb), 0.1); color: var(--color-primary); }
+        .select2-search--dropdown input { border: 1.5px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); padding: 0.5rem 0.75rem; }
+    </style>
 </head>
 
 <body>
@@ -110,13 +210,13 @@ try {
 
             <form id="ingresoForm" action="api/create_ingreso.php" method="POST">
                 <!-- Sección: Datos del Paciente -->
-                <div class="form-section">
-                    <h3 class="form-section-title">
-                        <i class="bi bi-person-vcard"></i>
+                <div class="stat-card p-4 mb-4 animate-in">
+                    <h3 class="section-title mb-4">
+                        <i class="bi bi-person-vcard text-primary me-2"></i>
                         Datos del Paciente
                     </h3>
 
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-md-12" id="search_paciente_div">
                             <label class="form-label">Buscar Paciente Existente</label>
                             <select class="form-select" id="paciente_select" name="id_paciente">
@@ -151,13 +251,13 @@ try {
                 </div>
 
                 <!-- Sección: Detalles del Ingreso -->
-                <div class="form-section">
-                    <h3 class="form-section-title">
-                        <i class="bi bi-clipboard-pulse"></i>
+                <div class="stat-card p-4 mb-4 animate-in delay-1">
+                    <h3 class="section-title mb-4">
+                        <i class="bi bi-clipboard-pulse text-success me-2"></i>
                         Detalles del Ingreso
                     </h3>
 
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-md-6">
                             <label class="form-label d-flex justify-content-between align-items-center">
                                 Fecha y Hora de Ingreso

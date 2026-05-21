@@ -22,7 +22,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
     <style>
         .search-container {
@@ -30,20 +30,22 @@ $page_title = "Buscar Paciente - Laboratorio";
             margin: 2rem auto;
         }
 
-        .search-box {
+        /* search-box styles now global — only keeping page-specific overrides */
+        .search-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-xl);
             padding: 2rem;
             margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
         }
 
         .patient-result {
-            background: var(--color-surface);
+            background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
             padding: 1.25rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             transition: all 0.2s ease;
             cursor: pointer;
         }
@@ -68,7 +70,7 @@ $page_title = "Buscar Paciente - Laboratorio";
 
         .patient-details {
             font-size: 0.85rem;
-            color: var(--color-text-light);
+            color: var(--color-text-secondary);
         }
     </style>
 </head>
@@ -105,15 +107,19 @@ $page_title = "Buscar Paciente - Laboratorio";
                     <p class="page-subtitle">Encuentre pacientes por nombre, DPI o expediente</p>
                 </div>
 
-                <div class="search-box">
+                <div class="search-card">
                     <div class="mb-3">
                         <label class="form-label">Buscar por nombre, DPI o expediente</label>
-                        <input type="text" id="searchInput" class="form-control"
-                            placeholder="Ingrese nombre, DPI o número de expediente..." autofocus>
+                        <div class="search-box" style="margin-top: 0.5rem;">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text" id="searchInput" class="form-control"
+                                placeholder="Ingrese nombre, DPI o número de expediente..." autofocus
+                                style="padding-left: 2.5rem; width: 100%;">
+                        </div>
                     </div>
                     <button class="action-btn w-100" onclick="searchPatients()">
                         <i class="bi bi-search"></i>
-                        Buscar
+                        Buscar Paciente
                     </button>
                 </div>
 

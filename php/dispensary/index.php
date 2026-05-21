@@ -126,6 +126,412 @@ try {
 
     <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+
+    <style>
+        :root {
+            --pos-sidebar-width: 400px;
+            --pos-grid-gap: 1.5rem;
+        }
+
+        .pos-container {
+            display: grid;
+            grid-template-columns: 1fr var(--pos-sidebar-width);
+            gap: var(--pos-grid-gap);
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .pos-container {
+                grid-template-columns: 1fr;
+            }
+            :root {
+                --pos-sidebar-width: 100%;
+            }
+        }
+
+        /* Search Area Enhancements */
+        .pos-selection-area {
+            background: var(--color-card);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-container {
+            position: relative;
+            z-index: 100;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: -1px;
+            backdrop-filter: blur(10px);
+            background: rgba(var(--color-card-rgb), 0.95);
+        }
+
+        .search-result-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: rgba(var(--color-primary-rgb), 0.05);
+            padding-left: 1.75rem;
+        }
+
+        /* Cart Area Enhancements */
+        .pos-cart-area {
+            background: var(--color-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .cart-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            background: rgba(var(--color-primary-rgb), 0.02);
+        }
+
+        .cart-items {
+            flex: 1;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .cart-footer {
+            padding: 1.5rem;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .cart-total {
+            background: var(--color-primary);
+            color: white;
+            padding: 1.25rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(var(--color-primary-rgb), 0.3);
+        }
+
+        .total-amount {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        /* Product Detail Card */
+        .selection-details {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cart-items-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+        }
+
+        .cart-items-table th {
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            font-weight: 700;
+        }
+
+        .cart-item-row {
+            background: var(--color-surface);
+            transition: transform 0.2s;
+        }
+
+        .cart-item-row:hover {
+            transform: scale(1.01);
+        }
+
+        .cart-item-row td {
+            padding: 1rem 0.75rem;
+            border-top: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .cart-item-row td:first-child {
+            border-left: 1px solid var(--color-border);
+            border-radius: var(--radius-md) 0 0 var(--radius-md);
+        }
+
+        .cart-item-row td:last-child {
+            border-right: 1px solid var(--color-border);
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        }
+
+        /* Mode Toggles */
+        .mode-toggles .btn {
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+
+        .mode-toggles .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--color-text-muted);
+            margin-bottom: 1rem;
+        }
+
+        /* ===== FORM INPUTS (POS) ===== */
+        .form-input {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-card);
+            color: var(--color-text);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
+            background: var(--color-card);
+        }
+
+        .form-input::placeholder {
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        .form-input[readonly] {
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+
+        select.form-input {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.875rem center;
+            padding-right: 2.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-label {
+            font-size: var(--font-size-xs);
+            font-weight: 700;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== SELECTION FORM ===== */
+        .selection-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Price prefix */
+        .selection-form .d-flex.align-items-center {
+            background: var(--color-card);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .selection-form .d-flex.align-items-center:focus-within {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
+        }
+
+        .selection-form .d-flex.align-items-center > span {
+            padding: 0.625rem 0.75rem;
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            font-weight: 700;
+            font-size: var(--font-size-sm);
+            border-right: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .selection-form .d-flex.align-items-center > input {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+        }
+
+        /* ===== ADD TO CART BUTTON ===== */
+        .add-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark, #0a58ca));
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(var(--color-primary-rgb), 0.3);
+            letter-spacing: 0.3px;
+        }
+
+        .add-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--color-primary-rgb), 0.4);
+            filter: brightness(1.05);
+        }
+
+        .add-button:active {
+            transform: translateY(0);
+        }
+
+        .add-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== CLIENT FORM (cart header) ===== */
+        .client-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        .client-form .row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .client-form .row .form-group {
+            flex: 1;
+        }
+
+        /* clear & checkout buttons */
+        .cart-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .clear-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--color-surface);
+            color: var(--color-danger);
+            border: 1.5px solid var(--color-danger);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-button:hover {
+            background: var(--color-danger);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .checkout-button {
+            flex: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.25rem;
+            background: linear-gradient(135deg, var(--color-success), #059669);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(var(--color-success-rgb), 0.3);
+            letter-spacing: 0.3px;
+        }
+
+        .checkout-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--color-success-rgb), 0.4);
+            filter: brightness(1.05);
+        }
+    </style>
 </head>
 
 <body>
@@ -340,30 +746,27 @@ try {
                         </div>
                     </div>
 
-                    <!-- Detalles de selección -->
-                    <div class="selection-details" id="selectionDetails">
+                    <div class="selection-details shadow-sm border-0" id="selectionDetails">
                         <div class="selected-product mb-4">
-                            <h4 class="selected-product-name mb-2" id="selectedProductName">---</h4>
-                            <p class="selected-product-details text-muted mb-3" id="selectedProductDetails">---</p>
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h4 class="selected-product-name fw-bold text-primary mb-1" id="selectedProductName">---</h4>
+                                    <p class="selected-product-details text-muted small" id="selectedProductDetails">---</p>
+                                </div>
+                                <div class="badge bg-primary-subtle text-primary border p-2" id="documentTypeDisplay">---</div>
+                            </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <div class="p-2 bg-light rounded text-center">
-                                        <div class="small text-muted">Disponible</div>
-                                        <div class="fw-bold text-primary fs-5" id="availableStock">0</div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <div class="stat-card p-3 text-center border">
+                                        <div class="small text-muted text-uppercase fw-bold mb-1">Stock Disponible</div>
+                                        <div class="h4 mb-0 fw-bold" id="availableStock">0</div>
                                     </div>
                                 </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-light rounded text-center">
-                                        <div class="small text-muted">Documento</div>
-                                        <div class="fw-bold text-info" id="documentType">---</div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="p-2 bg-light rounded text-center">
-                                        <div class="small text-muted">Fecha de Vencimiento</div>
-                                        <div class="fw-bold" id="expiryDate" style="color: var(--color-warning);">---
-                                        </div>
+                                <div class="col-md-6">
+                                    <div class="stat-card p-3 text-center border">
+                                        <div class="small text-muted text-uppercase fw-bold mb-1">Vencimiento</div>
+                                        <div class="h4 mb-0 fw-bold" id="expiryDate">---</div>
                                     </div>
                                 </div>
                             </div>
@@ -422,6 +825,20 @@ try {
                                     <option value="Tarjeta">Tarjeta</option>
                                     <option value="Transferencia">Transferencia</option>
                                 </select>
+                            </div>
+
+                            <div class="row mt-2" style="display: flex; gap: 10px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Tipo de Documento</label>
+                                    <select class="form-input" id="documentType">
+                                        <option value="Nota de Envío">Nota de Envío</option>
+                                        <option value="Factura">Factura</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">N° Correlativo</label>
+                                    <input type="text" class="form-input" id="documentNumber" placeholder="0001...">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -651,6 +1068,8 @@ try {
                 addToCartBtn: document.getElementById('addToCartBtn'),
                 clientName: document.getElementById('clientName'),
                 paymentMethod: document.getElementById('paymentMethod'),
+                documentType: document.getElementById('documentType'),
+                documentNumber: document.getElementById('documentNumber'),
                 emptyCart: document.getElementById('emptyCart'),
                 cartTable: document.getElementById('cartTable'),
                 cartItemsBody: document.getElementById('cartItemsBody'),
@@ -925,22 +1344,39 @@ try {
                             if (currentMode === 'special') price = parseFloat(item.precio_compra) || 0;
                             if (currentMode === 'transfer') price = 0;
 
-                            const expiryDate = item.fecha_vencimiento ? new Date(item.fecha_vencimiento).toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A';
+                            const expiryDateObj = item.fecha_vencimiento ? new Date(item.fecha_vencimiento) : null;
+                            const today = new Date();
+                            const daysToExpiry = expiryDateObj ? Math.floor((expiryDateObj - today) / (1000 * 60 * 60 * 24)) : 999;
+                            const expiryDate = expiryDateObj ? expiryDateObj.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A';
 
                             resultItem.innerHTML = `
-                                <div class="row g-0 align-items-center">
-                                    <div class="col-5">
-                                        <div style="font-weight: 600;">${item.nom_medicamento}</div>
-                                        <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
-                                            ${item.mol_medicamento} • ${item.presentacion_med}
-                                        </div>
-                                        <div class="${stockClass}" style="font-size: 0.75rem; font-weight: 600;">
-                                            ${stockAvailable} disp. ${currentMode === 'hospital' ? '(H)' : ''}
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded p-2" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="bi bi-capsule fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">${item.nom_medicamento}</div>
+                                                <div class="small text-muted">${item.mol_medicamento} • ${item.presentacion_med}</div>
+                                                <div class="${stockClass} small fw-bold mt-1">
+                                                    <i class="bi bi-box-seam me-1"></i> ${stockAvailable} disponibles
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-2 text-center fw-bold">Q${price.toFixed(2)}</div>
-                                    <div class="col-3 text-center small text-info">${item.document_number || (item.document_type || 'N/A')}</div>
-                                    <div class="col-2 text-end small text-muted">${expiryDate}</div>
+                                    <div class="col-2 text-center">
+                                        <div class="small text-muted">Precio</div>
+                                        <div class="fw-bold text-primary fs-5">Q${price.toFixed(2)}</div>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <div class="small text-muted">Lote/Doc</div>
+                                        <div class="badge bg-light text-dark border">${item.document_number || (item.document_type || 'N/A')}</div>
+                                    </div>
+                                    <div class="col-2 text-end">
+                                        <div class="small text-muted">Vence</div>
+                                        <div class="fw-bold ${daysToExpiry < 90 ? 'text-warning' : 'text-success'}">${expiryDate}</div>
+                                    </div>
                                 </div>
                             `;
 
@@ -967,8 +1403,9 @@ try {
                     DOM.availableStock.textContent = stock;
 
                     // Display document type
-                    if (DOM.documentType) {
-                        DOM.documentType.textContent = item.document_number || item.document_type || 'N/A';
+                    const docDisplay = document.getElementById('documentTypeDisplay');
+                    if (docDisplay) {
+                        docDisplay.textContent = item.document_number || item.document_type || 'N/A';
                     }
 
                     // Display expiry date
@@ -1006,6 +1443,11 @@ try {
 
                     // Mostrar detalles de selección
                     DOM.selectionDetails.style.display = 'block';
+
+                    // Mostrar formulario solo cuando hay producto seleccionado
+                    const form = document.getElementById('addToCartForm');
+                    if (form) form.style.display = 'block';
+
                     DOM.searchResults.style.display = 'none';
                     DOM.searchMedication.value = item.nom_medicamento;
 
@@ -1079,6 +1521,9 @@ try {
 
                     // Procesar venta
                     DOM.checkoutBtn.addEventListener('click', () => this.processSale());
+
+                    // Cotización
+                    DOM.quoteBtn.addEventListener('click', () => this.processQuote());
                 }
 
                 addToCart() {
@@ -1228,11 +1673,12 @@ try {
                         return;
                     }
 
-                    // Preparar datos de la venta
                     const saleData = {
                         nombre_cliente: DOM.clientName.value.trim(),
                         nit_cliente: document.getElementById('clientNIT').value.trim() || 'C/F',
                         tipo_pago: currentMode === 'transfer' ? 'Traslado' : DOM.paymentMethod.value,
+                        document_type: DOM.documentType ? DOM.documentType.value : '',
+                        document_number: DOM.documentNumber ? DOM.documentNumber.value.trim() : '',
                         total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
                         estado: currentMode === 'transfer' ? 'Pagado' : 'Pagado',
                         items: cartItems.map(item => ({
@@ -1244,7 +1690,6 @@ try {
                         }))
                     };
 
-                    // Mostrar carga
                     Swal.fire({
                         title: 'Procesando venta...',
                         text: 'Por favor espere',
@@ -1269,10 +1714,7 @@ try {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Abrir recibo en nueva pestaña
                                 window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
-
-                                // Recargar página
                                 setTimeout(() => {
                                     location.reload();
                                 }, 1000);
@@ -1286,9 +1728,33 @@ try {
                     }
                 }
 
+                processQuote() {
+                    if (cartItems.length === 0) {
+                        this.showAlert('El carrito está vacío', 'warning');
+                        return;
+                    }
+
+                    const quoteData = {
+                        clientName: DOM.clientName.value.trim() || 'C/F',
+                        clientNIT: document.getElementById('clientNIT').value.trim() || 'C/F',
+                        total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
+                        items: cartItems.map(item => ({
+                            nom_medicamento: item.name,
+                            presentacion_med: item.details,
+                            cantidad: item.quantity,
+                            precio_unitario: item.price
+                        }))
+                    };
+
+                    sessionStorage.setItem('quoteData', JSON.stringify(quoteData));
+                    window.open('print_quote.php', '_blank');
+                }
+
                 resetSelection() {
                     selectedItem = null;
                     DOM.selectionDetails.style.display = 'none';
+                    const form = document.getElementById('addToCartForm');
+                    if (form) form.style.display = 'none';
                     DOM.searchMedication.value = '';
                     DOM.searchResults.style.display = 'none';
                     DOM.unitPrice.value = '';
@@ -1404,27 +1870,34 @@ try {
 
                         loading.style.display = 'none';
 
-                        if (data.status === 'success' && data.sales.length > 0) {
-                            data.sales.forEach(sale => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td class="ps-4 small text-muted">${sale.hora}</td>
-                                    <td>
-                                        <div class="fw-bold">${sale.nombre_cliente}</div>
-                                        ${sale.tipo_pago ? `<span class="badge bg-light text-dark border">${sale.tipo_pago}</span>` : ''}
-                                    </td>
-                                    <td class="text-end fw-bold">Q${parseFloat(sale.total).toFixed(2)}</td>
-                                    <td class="text-center pe-4">
-                                        <button class="btn btn-light btn-sm shadow-sm" onclick="window.open('print_receipt.php?id=${sale.id_venta}', '_blank')">
-                                            <i class="bi bi-printer"></i>
-                                        </button>
-                                    </td>
-                                `;
-                                tbody.appendChild(row);
-                            });
-                        } else {
-                            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
-                        }
+                    if (data.status === 'success' && data.sales.length > 0) {
+                        let totalJornada = 0;
+                        data.sales.forEach(sale => {
+                            const total = parseFloat(sale.total) || 0;
+                            totalJornada += total;
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="ps-4 small text-muted">${sale.hora}</td>
+                                <td>
+                                    <div class="fw-bold">${sale.nombre_cliente}</div>
+                                    ${sale.tipo_pago ? `<span class="badge bg-light text-dark border">${sale.tipo_pago}</span>` : ''}
+                                </td>
+                                <td class="text-end fw-bold">Q${total.toFixed(2)}</td>
+                                <td class="text-center pe-4">
+                                    <button class="btn btn-light btn-sm shadow-sm" onclick="window.open('print_receipt.php?id=${sale.id_venta}', '_blank')">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                        const totalEl = document.getElementById('historyTotalSum');
+                        if (totalEl) totalEl.textContent = `Q${totalJornada.toFixed(2)}`;
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
+                        const totalEl = document.getElementById('historyTotalSum');
+                        if (totalEl) totalEl.textContent = 'Q0.00';
+                    }
                     } catch (error) {
                         console.error('Error loading history:', error);
                         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';

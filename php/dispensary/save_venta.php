@@ -41,15 +41,21 @@ try {
     $conn->beginTransaction();
 
     // Insert sale record
-    $stmt = $conn->prepare("INSERT INTO ventas (id_usuario, nombre_cliente, nit_cliente, tipo_pago, total, estado, fecha_venta) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO ventas (id_usuario, nombre_cliente, nit_cliente, document_identifier, tipo_pago, total, estado, fecha_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
     // Obtener la fecha y hora actual en la zona horaria de Guatemala
     $fecha_actual = date('Y-m-d H:i:s');
+
+    // Preparar identificador de documento
+    $doc_type = $data['document_type'] ?? '';
+    $doc_num = $data['document_number'] ?? '';
+    $doc_identifier = trim($doc_type . ' ' . $doc_num);
 
     $stmt->execute([
         $_SESSION['user_id'] ?? null,
         $data['nombre_cliente'],
         $data['nit_cliente'] ?? 'C/F',
+        $doc_identifier ?: null,
         $data['tipo_pago'],
         $data['total'],
         $data['estado'],

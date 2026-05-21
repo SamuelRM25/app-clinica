@@ -1,0 +1,258 @@
+/* 
+   style.css - Archivo CSS Global Principal 
+   Este archivo centraliza todos los estilos del sistema CMS.
+*/
+
+/* Importar estilos base y del dashboard */
+@import url('global_dashboard.css');
+
+/* Variables globales adicionales */
+:root {
+    --transition-speed: 0.3s;
+    --border-radius-lg: 1.25rem;
+    --border-radius-md: 0.75rem;
+}
+
+/* Estilos para modales consistentes */
+.modal-content {
+    border-radius: var(--border-radius-lg);
+    border: none;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 1.5rem;
+}
+
+/* Estilos para botones premium */
+.btn-premium {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    transition: all var(--transition-speed);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+    color: white;
+}
+
+/* Mejoras visuales para tablas */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+.data-table tr {
+    background: var(--color-surface);
+    transition: all 0.2s;
+}
+
+.data-table tr:hover {
+    transform: scale(1.005);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.data-table td, .data-table th {
+    padding: 1rem;
+    border: none;
+}
+
+.data-table th {
+    background: transparent;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+/* Estilos para la silueta humana */
+#human-body-map-container {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* ==========================================================================
+   FORM INPUTS — ESTILOS MEJORADOS GLOBALES
+   ========================================================================== */
+.form-control,
+.form-input,
+.form-select {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    padding: 0.625rem 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+
+.form-control:focus,
+.form-input:focus,
+.form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
+    outline: none;
+    background: var(--color-card);
+    color: var(--color-text);
+}
+
+.form-control::placeholder,
+.form-input::placeholder {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin-bottom: 0.375rem;
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Input group improvements */
+.input-group-text {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+/* ==========================================================================
+   PAGE HEADER — ESTÁNDAR GLOBAL
+   ========================================================================== */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.page-title i {
+    color: var(--color-primary);
+}
+
+.page-subtitle {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0.25rem 0 0 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   STATUS BADGES — SISTEMA DE ESTADOS
+   ========================================================================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 50px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.status-badge.activo,
+.status-badge.active,
+.status-badge.pagado {
+    background: rgba(var(--color-success-rgb), 0.12);
+    color: var(--color-success);
+}
+
+.status-badge.inactivo,
+.status-badge.inactive,
+.status-badge.cancelado,
+.status-badge.vencido {
+    background: rgba(var(--color-danger-rgb), 0.12);
+    color: var(--color-danger);
+}
+
+.status-badge.pendiente,
+.status-badge.pending,
+.status-badge.espera {
+    background: rgba(var(--color-warning-rgb), 0.12);
+    color: var(--color-warning);
+}
+
+.status-badge.info,
+.status-badge.en-proceso {
+    background: rgba(var(--color-info-rgb), 0.12);
+    color: var(--color-info);
+}
+
+/* ==========================================================================
+   DARK MODE — FORM & BADGE ADJUSTMENTS
+   ========================================================================== */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select {
+    background: var(--color-card-night);
+    border-color: var(--color-border-night);
+    color: var(--color-text-night);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus {
+    border-color: var(--color-primary-night);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    background: var(--color-card-night);
+    color: var(--color-text-night);
+}
+
+[data-theme="dark"] .input-group-text {
+    background: var(--color-surface-night);
+    border-color: var(--color-border-night);
+    color: var(--color-text-secondary-night);
+}

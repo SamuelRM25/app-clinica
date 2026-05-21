@@ -11,7 +11,7 @@ if (isset($_SESSION['user_id'])) {
 
 // Configuración inicial
 $page_title = "Login - Centro Médico RS";
-date_default_timezone_set('America/Mexico_City');
+date_default_timezone_set('America/Guatemala');
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -24,105 +24,303 @@ date_default_timezone_set('America/Mexico_City');
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/img/Logo.png">
 
-    <!-- Google Fonts - Inter para un diseño moderno y legible -->
+    <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Incluir estilos CSS -->
-    <?php include_once 'includes/header.php'; ?>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-primary-dark: #4f46e5;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-text: #1e293b;
+            --color-text-muted: #64748b;
+            --color-border: #e2e8f0;
+            --shadow-premium: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --color-primary: #818cf8;
+            --color-primary-dark: #6366f1;
+            --color-bg: #0f172a;
+            --color-surface: #1e293b;
+            --color-text: #f1f5f9;
+            --color-text-muted: #94a3b8;
+            --color-border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .background-blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: blob-float 20s infinite alternate;
+        }
+
+        .blob-1 { top: -100px; right: -100px; }
+        .blob-2 { bottom: -100px; left: -100px; animation-delay: -5s; }
+
+        @keyframes blob-float {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        .login-card {
+            background: var(--color-surface);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-premium);
+            border: 1px solid var(--color-border);
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-img {
+            width: 80px;
+            height: auto;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+
+        .login-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--color-primary), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-header p {
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--color-text-muted);
+            font-size: 1.1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            color: var(--color-text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .login-btn:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Animations */
+        .animate-up {
+            animation: slide-up 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes slide-up {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+        }
+
+        .theme-btn {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--color-text);
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-premium);
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn:hover {
+            transform: rotate(15deg) scale(1.1);
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Contenedor principal con efecto mármol -->
-    <div class="marble-container">
+    <div class="background-blob blob-1"></div>
+    <div class="background-blob blob-2"></div>
 
-        <!-- Encabezado con logo y control de tema -->
-        <header class="app-header">
-            <div class="logo-container">
-                <img src="assets/img/Logo.png" alt="Centro Médico RS" class="main-logo">
+    <div class="theme-toggle">
+        <button id="themeSwitch" class="theme-btn">
+            <i class="bi bi-sun sun-icon"></i>
+            <i class="bi bi-moon moon-icon" style="display: none;"></i>
+        </button>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card animate-up">
+            <div class="logo-section">
+                <img src="assets/img/Logo.png" alt="Logo" class="logo-img">
+                <div class="login-header">
+                    <h1>Centro Médico RS</h1>
+                    <p>Gestión Clínica Inteligente</p>
+                </div>
             </div>
 
-            <!-- Control de modo día/noche -->
-            <div class="theme-toggle">
-                <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema">
-                    <span class="theme-icon sun-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0 c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2 c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1 C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06 c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41 l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41 c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36 c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z" />
-                        </svg>
-                    </span>
-                    <span class="theme-icon moon-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z" />
-                        </svg>
-                    </span>
-                </button>
-            </div>
-        </header>
+            <form action="php/auth/login.php" method="POST">
+                <?php if (isset($_GET['error'])): ?>
+                    <div class="error-message">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <span>Usuario o contraseña incorrectos.</span>
+                    </div>
+                <?php endif; ?>
 
-        <!-- Tarjeta de login minimalista -->
-        <main class="login-main">
-            <div class="login-card">
-                <div class="card-header">
-                    <h3 class="welcome-title">Acceso al Sistema</h3>
-                    <p class="welcome-subtitle">Ingrese sus credenciales para continuar</p>
+                <div class="form-group animate-up delay-1">
+                    <label class="form-label" for="usuario">Usuario</label>
+                    <div class="input-wrapper">
+                        <i class="bi bi-person input-icon"></i>
+                        <input type="text" id="usuario" name="usuario" class="form-input" placeholder="Nombre de usuario" required>
+                    </div>
                 </div>
 
-                <form id="loginForm" class="login-form" action="php/auth/login.php" method="POST">
-                    <!-- Campo de usuario -->
-                    <div class="form-group">
-                        <div class="input-container">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12,4C9.79,4,8,5.79,8,8c0,1.13,0.5,2.14,1.28,2.85C7.17,11.6,6,13.18,6,15v2c0,0.55,0.45,1,1,1h10c0.55,0,1-0.45,1-1v-2 c0-1.82-1.17-3.4-2.72-4.15C15.5,10.14,16,9.13,16,8C16,5.79,14.21,4,12,4z M10,8c0-1.1,0.9-2,2-2s2,0.9,2,2s-0.9,2-2,2 S10,9.1,10,8z M12,13c-1.65,0-3,1.35-3,3v1h6v-1C15,14.35,13.65,13,12,13z" />
-                            </svg>
-                            <input type="text" id="usuario" name="usuario" class="form-input" required
-                                autocomplete="username" placeholder=" ">
-                            <label for="usuario" class="input-label">Usuario</label>
-                        </div>
+                <div class="form-group animate-up delay-1">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
                     </div>
+                </div>
 
-                    <!-- Campo de contraseña -->
-                    <div class="form-group">
-                        <div class="input-container">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M18,8h-1V6c0-2.76-2.24-5-5-5S7,3.24,7,6v2H6c-1.1,0-2,0.9-2,2v10c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V10C20,8.9,19.1,8,18,8z M9,6c0-1.66,1.34-3,3-3s3,1.34,3,3v2H9V6z M18,20H6V10h12V20z M12,17c1.1,0,2-0.9,2-2c0-1.1-0.9-2-2-2s-2,0.9-2,2 C10,16.1,10.9,17,12,17z" />
-                            </svg>
-                            <input type="password" id="password" name="password" class="form-input" required
-                                autocomplete="current-password" placeholder=" ">
-                            <label for="password" class="input-label">Contraseña</label>
-                            <button type="button" class="password-toggle" aria-label="Mostrar contraseña">
-                                <svg class="eye-icon" viewBox="0 0 24 24" fill="currentColor">
-                                    <path
-                                        d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                <button type="submit" class="login-btn animate-up delay-2">
+                    <span>Entrar al Sistema</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
 
-                    <!-- Mensaje de error -->
-                    <?php if (isset($_GET['error'])): ?>
-                        <div class="error-message" role="alert">
-                            <svg class="error-icon" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-                            </svg>
-                            <span>Usuario o contraseña incorrectos. Intente nuevamente.</span>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- Botón de envío -->
-                    <div class="form-group">
-                        <button type="submit" class="submit-btn" id="loginButton">
-                            <span class="btn-text">Iniciar Sesión</span>
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M10 17l5-5-5-5v10z" />
-                            </svg>
-                        </button>
-                    </div>
                 </form>
 
                 <!-- Información adicional -->

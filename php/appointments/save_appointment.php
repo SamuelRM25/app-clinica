@@ -26,12 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $num_cita = ($result['max_num'] ?? 0) + 1;
 
         // Prepare SQL statement
-        $sql = "INSERT INTO citas (nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, id_doctor) 
-                VALUES (:nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :id_doctor)";
+        $sql = "INSERT INTO citas (id_paciente, nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, id_doctor) 
+                VALUES (:id_paciente, :nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :id_doctor)";
 
         $stmt = $conn->prepare($sql);
 
         // Bind parameters
+        $id_paciente = !empty($_POST['id_paciente']) ? $_POST['id_paciente'] : null;
+        $stmt->bindParam(':id_paciente', $id_paciente);
         $stmt->bindParam(':nombre_pac', $_POST['nombre_pac']);
         $stmt->bindParam(':apellido_pac', $_POST['apellido_pac']);
         $stmt->bindParam(':num_cita', $num_cita);

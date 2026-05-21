@@ -21,6 +21,12 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <?php
+    $theme_head_path = __DIR__ . '/theme_head.php';
+    if (file_exists($theme_head_path)) {
+        include_once $theme_head_path;
+    }
+    ?>
 
 
 

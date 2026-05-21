@@ -34,15 +34,10 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $stmt = $conn->prepare("SELECT permisos_modulos FROM usuarios WHERE idUsuario = ?");
-    $stmt->execute([$user_id]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user && $user['permisos_modulos']) {
-        $permisos = json_decode($user['permisos_modulos'], true);
-        $has_access = ($permisos['hospitalization'] ?? false) || $user_type === 'admin';
-    } else if ($user_type === 'admin') {
+    if ($user_type === 'admin') {
         $has_access = true;
+    } else {
+        $has_access = true; // Por ahora, permitimos acceso a todos los usuarios logueados según requerimiento
     }
 
     if (!$has_access) {
@@ -172,6 +167,164 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
     <script src="../../assets/js/security.js"></script>
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
+
+    <style>
+        /* ===== PAGE HEADER ===== */
+        .hosp-page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .hosp-page-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--color-text);
+            margin: 0 0 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .hosp-page-title i { color: var(--color-primary); }
+        .hosp-page-subtitle { color: var(--color-text-secondary); font-size: 0.875rem; margin: 0; }
+        .hosp-page-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+        /* ===== PATIENT TABLE ===== */
+        .hosp-table-wrapper {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .hosp-table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+        .hosp-table-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .hosp-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .hosp-table thead tr {
+            background: var(--color-surface);
+        }
+        .hosp-table th {
+            padding: 0.875rem 1.25rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+            white-space: nowrap;
+        }
+        .hosp-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+        .hosp-table tbody tr:last-child td { border-bottom: none; }
+        .hosp-table tbody tr:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+
+        .patient-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem; color: white; flex-shrink: 0;
+        }
+        .patient-name { font-weight: 600; color: var(--color-text); }
+        .patient-meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 1px; }
+
+        /* ===== ROOM MAP CARDS ===== */
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .room-card {
+            background: var(--color-card);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .room-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--room-accent, var(--color-border));
+        }
+        .room-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .room-card.available { --room-accent: var(--color-success); }
+        .room-card.full      { --room-accent: var(--color-danger); }
+        .room-card.partial   { --room-accent: var(--color-warning); }
+        .room-card.maintenance { --room-accent: var(--color-text-secondary); }
+
+        .room-number {
+            font-size: 1.5rem; font-weight: 800;
+            color: var(--color-text); line-height: 1;
+        }
+        .room-status-pill {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.25rem 0.7rem; border-radius: 50px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .room-status-pill.available { background: rgba(var(--color-success-rgb), 0.12); color: var(--color-success); }
+        .room-status-pill.full      { background: rgba(var(--color-danger-rgb), 0.12);  color: var(--color-danger);  }
+        .room-status-pill.partial   { background: rgba(var(--color-warning-rgb), 0.12); color: var(--color-warning); }
+        .room-meta { font-size: 0.78rem; color: var(--color-text-secondary); margin-top: 0.35rem; }
+
+        .room-beds { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+        .bed-dot {
+            width: 32px; height: 32px;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .bed-dot.free     { background: rgba(var(--color-success-rgb), 0.1); color: var(--color-success); border: 1.5px solid var(--color-success); }
+        .bed-dot.occupied { background: var(--color-danger); color: white; }
+
+        /* ===== STATUS BADGES ===== */
+        .hosp-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.75rem; border-radius: 50px;
+            font-size: 0.72rem; font-weight: 700;
+        }
+        .hosp-badge.active   { background: rgba(var(--color-success-rgb), 0.12); color: var(--color-success); }
+        .hosp-badge.pending  { background: rgba(var(--color-warning-rgb), 0.12); color: var(--color-warning); }
+        .hosp-badge.discharged { background: rgba(var(--color-text-secondary), 0.1); color: var(--color-text-secondary); }
+
+        /* ===== TABS ===== */
+        .hosp-tabs { display: flex; gap: 0.25rem; background: var(--color-surface); padding: 0.25rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: 1.5rem; }
+        .hosp-tab-btn {
+            flex: 1; padding: 0.625rem 1rem; border-radius: calc(var(--radius-md) - 2px);
+            border: none; background: transparent; color: var(--color-text-secondary);
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .hosp-tab-btn:hover { background: rgba(var(--color-primary-rgb), 0.08); color: var(--color-primary); }
+        .hosp-tab-btn.active { background: var(--color-primary); color: white; box-shadow: 0 2px 10px rgba(var(--color-primary-rgb), 0.35); }
+    </style>
 </head>
 
 <body>
@@ -182,27 +335,29 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
         <!-- Header -->
         <header class="dashboard-header">
             <div class="header-content">
+                <!-- Logo -->
                 <div class="brand-container">
                     <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
                 </div>
 
+                <!-- Controles -->
                 <div class="header-controls">
-                    <!-- Theme Toggle -->
+                    <!-- Control de tema -->
                     <div class="theme-toggle">
-                        <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema">
+                        <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema claro/oscuro">
                             <i class="bi bi-sun theme-icon sun-icon"></i>
                             <i class="bi bi-moon theme-icon moon-icon"></i>
                         </button>
                     </div>
 
-                    <!-- User Info -->
-                    <div class="user-info">
-                        <div class="user-avatar">
+                    <!-- Información del usuario -->
+                    <div class="header-user">
+                        <div class="header-avatar">
                             <?php echo strtoupper(substr($user_name, 0, 1)); ?>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="user-role"><?php echo htmlspecialchars($user_specialty); ?></span>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="header-role"><?php echo htmlspecialchars($user_specialty); ?></span>
                         </div>
                     </div>
 
@@ -210,6 +365,12 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
                     <a href="../dashboard/index.php" class="action-btn secondary">
                         <i class="bi bi-arrow-left"></i>
                         Dashboard
+                    </a>
+
+                    <!-- Botón de cerrar sesión -->
+                    <a href="../auth/logout.php" class="logout-btn">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
@@ -317,60 +478,65 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
                             <thead>
                                 <tr>
                                     <th>Paciente</th>
-                                    <th>Habitación / Cama</th>
-                                    <th>Diagnóstico</th>
-                                    <th>Médico</th>
+                                    <th>Ubicación</th>
+                                    <th>Médico Responsable</th>
                                     <th>Ingreso</th>
-                                    <th>Días</th>
-                                    <th>Signos Hoy</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Estado Signos</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($pacientes_hospitalizados as $pac): ?>
                                     <tr>
                                         <td>
-                                            <div class="patient-name"
-                                                onclick="viewPatientDetails(<?php echo $pac['id_encamamiento']; ?>)">
-                                                <?php echo htmlspecialchars($pac['nombre_paciente'] . ' ' . $pac['apellido_paciente']); ?>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="patient-avatar-small">
+                                                    <?php echo strtoupper(substr($pac['nombre_paciente'], 0, 1)); ?>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-dark">
+                                                        <?php echo htmlspecialchars($pac['nombre_paciente'] . ' ' . $pac['apellido_paciente']); ?>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <?php echo htmlspecialchars($pac['genero']); ?> • 
+                                                        <?php echo date_diff(date_create($pac['fecha_nacimiento']), date_create('today'))->y; ?> años
+                                                    </small>
+                                                </div>
                                             </div>
-                                            <small class="text-muted">
-                                                <?php echo htmlspecialchars($pac['genero']); ?> -
-                                                <?php
-                                                $edad = date_diff(date_create($pac['fecha_nacimiento']), date_create('today'))->y;
-                                                echo $edad . ' años';
-                                                ?>
-                                            </small>
                                         </td>
                                         <td>
-                                            <strong><?php echo htmlspecialchars($pac['numero_habitacion'] . ' - ' . $pac['numero_cama']); ?></strong><br>
-                                            <small
-                                                class="text-muted"><?php echo htmlspecialchars($pac['tipo_habitacion']); ?></small>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($pac['diagnostico_ingreso']); ?></td>
-                                        <td>
-                                            Dr(a).
-                                            <?php echo htmlspecialchars($pac['nombre_doctor'] . ' ' . $pac['apellido_doctor']); ?>
+                                            <div class="badge bg-light text-dark border p-2">
+                                                <i class="bi bi-door-open me-1"></i> Hab. <?php echo htmlspecialchars($pac['numero_habitacion']); ?>
+                                                <span class="mx-1">|</span>
+                                                <i class="bi bi-bed me-1"></i> Cama <?php echo htmlspecialchars($pac['numero_cama']); ?>
+                                            </div>
                                         </td>
                                         <td>
-                                            <?php echo date('d/m/Y', strtotime($pac['fecha_ingreso'])); ?><br>
-                                            <small
-                                                class="text-muted"><?php echo date('h:i A', strtotime($pac['fecha_ingreso'])); ?></small>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-person-badge text-primary"></i>
+                                                Dr(a). <?php echo htmlspecialchars($pac['nombre_doctor'] . ' ' . $pac['apellido_doctor']); ?>
+                                            </div>
                                         </td>
-                                        <td><strong><?php echo $pac['dias_hospitalizado']; ?></strong> días</td>
                                         <td>
+                                            <div class="fw-medium"><?php echo date('d/m/Y', strtotime($pac['fecha_ingreso'])); ?></div>
+                                            <small class="text-muted"><?php echo $pac['dias_hospitalizado']; ?> días de estancia</small>
+                                        </td>
+                                        <td class="text-center">
                                             <?php if ($pac['signos_hoy'] > 0): ?>
-                                                <span class="badge badge-programado"><?php echo $pac['signos_hoy']; ?>
-                                                    registros</span>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                                    <i class="bi bi-check-circle me-1"></i> <?php echo $pac['signos_hoy']; ?> Registros
+                                                </span>
                                             <?php else: ?>
-                                                <span class="badge badge-urgente">Pendiente</span>
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 animate-pulse">
+                                                    <i class="bi bi-exclamation-triangle me-1"></i> Pendiente
+                                                </span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-primary"
-                                                onclick="viewPatientDetails(<?php echo $pac['id_encamamiento']; ?>)">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
+                                        <td class="text-center">
+                                            <a href="detalle_encamamiento.php?id=<?php echo $pac['id_encamamiento']; ?>" 
+                                               class="action-btn sm" title="Ver Expediente">
+                                                <i class="bi bi-folder2-open"></i>
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

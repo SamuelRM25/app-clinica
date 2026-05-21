@@ -166,51 +166,177 @@ $module_labels = [
 ];
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Panel Administrativo — ClinicApp</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="assets/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php include 'includes/theme_head.php'; ?>
 <style>
-  body { background:#0f172a; color:#e2e8f0; font-family:system-ui,sans-serif; min-height:100vh; }
-  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; }
-  .login-card { background:#1e293b; border:1px solid #334155; border-radius:1rem; padding:2.5rem; width:100%; max-width:400px; }
-  .login-card h2 { color:#3b82f6; font-weight:700; }
-  .sidebar { width:240px; background:#1e293b; min-height:100vh; position:fixed; top:0; left:0; border-right:1px solid #334155; padding:1.5rem 1rem; z-index:100; }
-  .sidebar .brand { color:#3b82f6; font-weight:700; font-size:1.1rem; padding:.5rem; margin-bottom:1.5rem; }
-  .sidebar .nav-link { color:#94a3b8; border-radius:.5rem; padding:.6rem .8rem; font-size:.9rem; }
-  .sidebar .nav-link:hover, .sidebar .nav-link.active { background:#334155; color:#e2e8f0; }
-  .main { margin-left:240px; padding:2rem; }
-  .stat-card { background:#1e293b; border:1px solid #334155; border-radius:.875rem; padding:1.5rem; }
-  .stat-card h6 { color:#94a3b8; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem; }
-  .stat-card .value { font-size:2rem; font-weight:700; color:#e2e8f0; }
-  .table-dark-custom { background:#1e293b; color:#e2e8f0; border-radius:.75rem; overflow:hidden; }
-  .table-dark-custom th { background:#334155; color:#94a3b8; font-size:.75rem; text-transform:uppercase; border:0; }
-  .table-dark-custom td { border-color:#334155; vertical-align:middle; }
-  .badge-mod { font-size:.7rem; padding:.25em .55em; border-radius:.3rem; background:#1d4ed8; color:#bfdbfe; margin:.1rem; display:inline-block; }
-  .badge-mod.active { background:#166534; color:#bbf7d0; }
-  .section-title { font-size:1.25rem; font-weight:700; color:#e2e8f0; margin-bottom:1rem; }
-  .form-control, .form-select { background:#0f172a; border-color:#334155; color:#e2e8f0; }
-  .form-control:focus, .form-select:focus { background:#0f172a; border-color:#3b82f6; color:#e2e8f0; box-shadow:0 0 0 .2rem rgba(59,130,246,.25); }
-  .card-dark { background:#1e293b; border:1px solid #334155; border-radius:.875rem; }
-  .tab-dark .nav-link { color:#94a3b8; border:0; border-bottom:2px solid transparent; border-radius:0; padding:.75rem 1rem; }
-  .tab-dark .nav-link.active { color:#3b82f6; border-bottom-color:#3b82f6; background:transparent; }
+  body { 
+    background-color: var(--color-bg); 
+    color: var(--color-text); 
+    font-family: var(--font-family);
+    transition: background-color var(--transition-base), color var(--transition-base); 
+    min-height: 100vh;
+  }
+  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; position: relative; z-index: 10; }
+  .login-card { 
+    background: rgba(var(--color-card-rgb), 0.7); 
+    border: 1px solid var(--color-border); 
+    border-radius: 1.25rem; 
+    padding: 2.5rem; 
+    width: 100%; 
+    max-width: 400px; 
+    box-shadow: var(--shadow-xl); 
+    backdrop-filter: blur(16px); 
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .login-card h2 { color: var(--color-primary); font-weight:700; }
+  
+  .sidebar-glass { 
+    width: var(--sidebar-width); 
+    background: rgba(var(--color-card-rgb), 0.7) !important; 
+    backdrop-filter: blur(16px) saturate(180%); 
+    -webkit-backdrop-filter: blur(16px) saturate(180%); 
+    border-right: 1px solid var(--color-border); 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1); 
+    padding: 1.5rem 1rem;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+  }
+  .sidebar-glass .brand { 
+    color: var(--color-primary); 
+    font-weight: 700; 
+    font-size: 1.2rem; 
+    padding: .5rem; 
+    margin-bottom: 2rem; 
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .sidebar-glass .nav-link { 
+    color: var(--color-text-secondary); 
+    border-radius: var(--radius-md); 
+    padding: .75rem 1rem; 
+    font-size: .95rem; 
+    font-weight: 500;
+    transition: all var(--transition-base);
+  }
+  .sidebar-glass .nav-link:hover {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+    transform: translateX(4px);
+  }
+  .sidebar-glass .nav-link.active { 
+    background: var(--color-primary); 
+    color: white; 
+    box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.2);
+  }
+  
+  .main-content-glass { 
+    margin-left: var(--sidebar-width); 
+    padding: var(--space-xl); 
+    min-height: 100vh; 
+    transition: all var(--transition-base); 
+  }
+  
+  .stat-card-glass { 
+    background: rgba(var(--color-card-rgb), 0.65); 
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px); 
+    border: 1px solid var(--color-border); 
+    border-radius: var(--radius-lg); 
+    padding: var(--space-lg); 
+    box-shadow: var(--shadow-md); 
+    transition: transform var(--transition-base), box-shadow var(--transition-base); 
+  }
+  .stat-card-glass:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px 0 rgba(var(--color-primary-rgb), 0.1);
+  }
+  .stat-card-glass h6 { color: var(--color-text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .stat-card-glass .value { font-size: 2rem; font-weight: 700; color: var(--color-text); }
+  
+  .badge-mod { 
+    font-size: .7rem; 
+    padding: .25em .55em; 
+    border-radius: .3rem; 
+    background: rgba(var(--color-primary-rgb), 0.1); 
+    color: var(--color-primary); 
+    margin: .1rem; 
+    display: inline-block; 
+    font-weight: 600;
+  }
+  .badge-mod.active { 
+    background: rgba(var(--color-success-rgb), 0.1); 
+    color: var(--color-success); 
+  }
+  
+  .section-title { font-size: 1.5rem; font-weight: 700; color: var(--color-text); margin-bottom: 1.5rem; }
+  
+  .card-dark-glass { 
+    background: rgba(var(--color-card-rgb), 0.65); 
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px); 
+    border: 1px solid var(--color-border); 
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem;
+  }
+  
+  .tab-dark .nav-link { 
+    color: var(--color-text-secondary); 
+    border: 0; 
+    border-bottom: 2px solid transparent; 
+    border-radius: 0; 
+    padding: .75rem 1rem; 
+    font-weight: 500;
+    transition: all var(--transition-base);
+  }
+  .tab-dark .nav-link.active { 
+    color: var(--color-primary); 
+    border-bottom-color: var(--color-primary); 
+    background: transparent; 
+  }
+
+  @media (max-width: 991.98px) {
+    .sidebar-glass { 
+      width: 100%; 
+      height: auto; 
+      position: relative; 
+      min-height: auto; 
+      border-right: none; 
+      border-bottom: 1px solid var(--color-border); 
+      padding: 1rem;
+    }
+    .main-content-glass { margin-left: 0; padding: var(--space-md); }
+  }
 </style>
 </head>
 <body>
 
 <?php if (!$logged_in): ?>
+<!-- Efecto de mármol animado -->
+<div class="marble-effect" style="opacity: 0.85;"></div>
 <!-- ═══════════════ LOGIN ═══════════════ -->
 <div class="login-wrap">
   <div class="login-card">
     <div class="text-center mb-4">
-      <div style="width:60px;height:60px;background:#1d4ed8;border-radius:1rem;display:flex;align-items:center;justify-content:center;font-size:1.75rem;margin:0 auto 1rem;">🏥</div>
+      <div style="width:60px;height:60px;background:var(--color-primary);border-radius:1.25rem;display:flex;align-items:center;justify-content:center;font-size:1.75rem;margin:0 auto 1rem;box-shadow: 0 8px 24px rgba(var(--color-primary-rgb), 0.25);">🏥</div>
       <h2>ClinicApp Admin</h2>
-      <p class="text-secondary small">Panel de Super Administrador</p>
+      <p class="text-secondary small">Panel de Súper Administrador</p>
     </div>
     <?php if (!empty($login_error)): ?>
       <div class="alert alert-danger py-2"><?php echo $login_error; ?></div>
@@ -219,23 +345,25 @@ $module_labels = [
       <input type="hidden" name="login_action" value="1">
       <div class="mb-3">
         <label class="form-label small text-secondary">Usuario</label>
-        <input type="text" name="admin_user" class="form-control" required autofocus>
+        <input type="text" name="admin_user" class="form-control" required autofocus placeholder="Nombre de usuario">
       </div>
       <div class="mb-4">
         <label class="form-label small text-secondary">Contraseña</label>
-        <input type="password" name="admin_pass" class="form-control" required>
+        <input type="password" name="admin_pass" class="form-control" required placeholder="••••••••">
       </div>
-      <button class="btn btn-primary w-100 fw-semibold">Iniciar Sesión</button>
+      <button class="btn btn-primary w-100 fw-semibold py-2">Iniciar Sesión</button>
     </form>
   </div>
 </div>
 
 <?php else: ?>
+<!-- Efecto de mármol animado -->
+<div class="marble-effect"></div>
 <!-- ═══════════════ PANEL ADMIN ═══════════════ -->
 <!-- Sidebar -->
-<div class="sidebar">
-  <div class="brand"><i class="bi bi-hospital me-2"></i>ClinicApp Admin</div>
-  <nav class="nav flex-column gap-1">
+<div class="sidebar sidebar-glass">
+  <div class="brand"><i class="bi bi-shield-lock me-2"></i>ClinicApp Admin</div>
+  <nav class="nav flex-column gap-2">
     <a href="#dashboard" class="nav-link active" onclick="showTab('dashboard',this)"><i class="bi bi-grid me-2"></i>Dashboard</a>
     <a href="#hospitals"  class="nav-link"        onclick="showTab('hospitals',this)"><i class="bi bi-building me-2"></i>Hospitales</a>
     <a href="#requests"   class="nav-link"        onclick="showTab('requests',this)">
@@ -246,13 +374,23 @@ $module_labels = [
       <?php endif; ?>
     </a>
   </nav>
-  <div class="mt-auto pt-4">
+  <div class="mt-auto pt-4 d-flex flex-column gap-3">
+    <!-- Theme Toggle -->
+    <div class="d-flex align-items-center justify-content-between px-2">
+      <span class="small text-secondary fw-semibold">Apariencia</span>
+      <div class="theme-toggle">
+        <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema claro/oscuro">
+          <i class="bi bi-sun theme-icon sun-icon"></i>
+          <i class="bi bi-moon theme-icon moon-icon"></i>
+        </button>
+      </div>
+    </div>
     <a href="?logout=1" class="nav-link text-danger"><i class="bi bi-box-arrow-left me-2"></i>Cerrar Sesión</a>
   </div>
 </div>
 
 <!-- Main -->
-<div class="main">
+<div class="main main-content-glass">
 
 <!-- ── TAB: Dashboard ── -->
 <div id="tab-dashboard">
@@ -264,25 +402,25 @@ $module_labels = [
   <h4 class="section-title mb-4">Resumen General</h4>
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card-glass">
         <h6>Hospitales</h6>
         <div class="value"><?php echo count($hospitales); ?></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card-glass">
         <h6>Solicitudes Pendientes</h6>
         <div class="value text-warning"><?php echo count($pend); ?></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card-glass">
         <h6>Activos</h6>
         <div class="value text-success"><?php echo count(array_filter($hospitales, fn($h)=>$h['estado_suscripcion']==='Activo')); ?></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card">
+      <div class="stat-card-glass">
         <h6>Vencidos / Inactivos</h6>
         <div class="value text-danger"><?php echo count(array_filter($hospitales, fn($h)=>in_array($h['estado_suscripcion'],['Vencido','Inactivo']))); ?></div>
       </div>
@@ -291,13 +429,13 @@ $module_labels = [
 
   <!-- Solicitudes recientes -->
   <?php if (count($pend) > 0): ?>
-  <div class="card-dark p-3">
+  <div class="card-dark-glass p-4 mb-4">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h6 class="fw-bold mb-0 text-warning"><i class="bi bi-bell-fill me-2"></i>Solicitudes Pendientes</h6>
       <button class="btn btn-sm btn-outline-primary" onclick="showTab('requests', document.querySelector('[onclick*=requests]'))">Ver todas</button>
     </div>
     <?php foreach ($pend as $s): ?>
-    <div class="d-flex align-items-center justify-content-between p-2 mb-1" style="background:#0f172a;border-radius:.5rem;">
+    <div class="d-flex align-items-center justify-content-between p-3 mb-2" style="background: rgba(var(--color-card-rgb), 0.4); border: 1px solid var(--color-border); border-radius:.5rem;">
       <div>
         <strong><?php echo htmlspecialchars($s['hospital_nombre']); ?></strong>
         <span class="text-secondary small ms-2"><?php echo $s['tipo_suscripcion']; ?></span>
@@ -320,52 +458,54 @@ $module_labels = [
     <button class="btn btn-primary btn-sm" onclick="openNewHospital()"><i class="bi bi-plus-lg me-1"></i>Nuevo Hospital</button>
   </div>
 
-  <table class="table table-dark-custom">
-    <thead>
-      <tr>
-        <th>Hospital</th><th>Código</th><th>Suscripción</th><th>Vencimiento</th><th>Módulos Activos</th><th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-    <?php foreach ($hospitales as $h): ?>
-      <tr>
-        <td class="fw-semibold"><?php echo htmlspecialchars($h['nombre']); ?></td>
-        <td><code class="text-info"><?php echo $h['codigo_hospital']; ?></code></td>
-        <td>
-          <?php
-          $c = match($h['estado_suscripcion']) {
-            'Activo' => 'success', 'Vencido' => 'warning', 'Inactivo' => 'danger', default => 'secondary'
-          };
-          ?>
-          <span class="badge bg-<?php echo $c; ?>"><?php echo $h['estado_suscripcion']; ?></span>
-          <span class="badge bg-secondary ms-1"><?php echo $h['tipo_suscripcion'] ?? '—'; ?></span>
-        </td>
-        <td class="small"><?php echo ($h['tipo_suscripcion']==='De por vida') ? '♾ Permanente' : ($h['fecha_vencimiento'] ?? '—'); ?></td>
-        <td>
-          <?php foreach ($h['modulos_activos'] as $m): ?>
-            <span class="badge-mod active"><?php echo $module_labels[$m] ?? $m; ?></span>
-          <?php endforeach; ?>
-        </td>
-        <td>
-          <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-primary" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>, <?php echo htmlspecialchars(json_encode($h), ENT_QUOTES); ?>)' title="Editar Hospital">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="openCreateUser(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Crear Usuario">
-              <i class="bi bi-person-plus"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-info" onclick="viewUsers(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Ver Usuarios">
-              <i class="bi bi-people"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Eliminar Hospital">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table data-table">
+      <thead>
+        <tr>
+          <th>Hospital</th><th>Código</th><th>Suscripción</th><th>Vencimiento</th><th>Módulos Activos</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($hospitales as $h): ?>
+        <tr>
+          <td class="fw-semibold"><?php echo htmlspecialchars($h['nombre']); ?></td>
+          <td><code class="text-info"><?php echo $h['codigo_hospital']; ?></code></td>
+          <td>
+            <?php
+            $c = match($h['estado_suscripcion']) {
+              'Activo' => 'success', 'Vencido' => 'warning', 'Inactivo' => 'danger', default => 'secondary'
+            };
+            ?>
+            <span class="status-badge <?php echo $c; ?>"><?php echo $h['estado_suscripcion']; ?></span>
+            <span class="badge bg-secondary ms-1"><?php echo $h['tipo_suscripcion'] ?? '—'; ?></span>
+          </td>
+          <td class="small"><?php echo ($h['tipo_suscripcion']==='De por vida') ? '♾ Permanente' : ($h['fecha_vencimiento'] ?? '—'); ?></td>
+          <td>
+            <?php foreach ($h['modulos_activos'] as $m): ?>
+              <span class="badge-mod active"><?php echo $module_labels[$m] ?? $m; ?></span>
+            <?php endforeach; ?>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-primary" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>, <?php echo htmlspecialchars(json_encode($h), ENT_QUOTES); ?>)' title="Editar Hospital">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-success" onclick="openCreateUser(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Crear Usuario">
+                <i class="bi bi-person-plus"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-info" onclick="viewUsers(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Ver Usuarios">
+                <i class="bi bi-people"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(<?php echo $h['id_hospital']; ?>, '<?php echo htmlspecialchars($h['nombre']); ?>')" title="Eliminar Hospital">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- ── TAB: Solicitudes ── -->
@@ -380,26 +520,27 @@ $module_labels = [
     <button class="btn btn-sm btn-secondary" onclick="filterReqs('')">Todas</button>
   </div>
 
-  <table class="table table-dark-custom" id="reqTable">
-    <thead><tr><th>Hospital</th><th>Módulos Solicitados</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
-    <tbody>
-    <?php foreach ($solicitudes as $s): ?>
-      <tr data-estado="<?php echo $s['estado']; ?>">
-        <td class="fw-semibold"><?php echo htmlspecialchars($s['hospital_nombre']); ?></td>
-        <td>
-          <?php foreach ($s['modulos_solicitados'] as $m): ?>
-            <span class="badge-mod"><?php echo $module_labels[$m] ?? $m; ?></span>
-          <?php endforeach; ?>
-        </td>
-        <td><span class="badge bg-info text-dark"><?php echo $s['tipo_suscripcion']; ?></span></td>
-        <td class="small text-secondary"><?php echo htmlspecialchars($s['mensaje'] ?? '—'); ?></td>
-        <td class="small"><?php echo date('d/m/Y H:i', strtotime($s['fecha_solicitud'])); ?></td>
-        <td>
-          <?php
-          $c2 = match($s['estado']) { 'Aprobada'=>'success','Rechazada'=>'danger',default=>'warning' };
-          echo "<span class='badge bg-{$c2}'>{$s['estado']}</span>";
-          ?>
-        </td>
+  <div class="table-responsive">
+    <table class="table data-table" id="reqTable">
+      <thead><tr><th>Hospital</th><th>Módulos Solicitados</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+      <?php foreach ($solicitudes as $s): ?>
+        <tr data-estado="<?php echo $s['estado']; ?>">
+          <td class="fw-semibold"><?php echo htmlspecialchars($s['hospital_nombre']); ?></td>
+          <td>
+            <?php foreach ($s['modulos_solicitados'] as $m): ?>
+              <span class="badge-mod"><?php echo $module_labels[$m] ?? $m; ?></span>
+            <?php endforeach; ?>
+          </td>
+          <td><span class="badge bg-info text-dark"><?php echo $s['tipo_suscripcion']; ?></span></td>
+          <td class="small text-secondary"><?php echo htmlspecialchars($s['mensaje'] ?? '—'); ?></td>
+          <td class="small"><?php echo date('d/m/Y H:i', strtotime($s['fecha_solicitud'])); ?></td>
+          <td>
+            <?php
+            $c2 = match($s['estado']) { 'Aprobada'=>'success','Rechazada'=>'danger',default=>'warning' };
+            echo "<span class='status-badge {$c2}'>{$s['estado']}</span>";
+            ?>
+          </td>
         <td>
           <?php if ($s['estado'] === 'Pendiente'): ?>
           <div class="d-flex gap-1">
@@ -423,10 +564,10 @@ $module_labels = [
 <!-- Aprobar Solicitud -->
 <div class="modal fade" id="approveModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
-      <div class="modal-header border-0">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title text-success fw-bold"><i class="bi bi-check2-circle me-2"></i>Aprobar Solicitud</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p class="text-secondary small">Hospital: <strong id="approveHospName" class="text-white"></strong></p>
@@ -441,7 +582,7 @@ $module_labels = [
           <textarea id="approveNota" class="form-control" rows="2" placeholder="Ej: Activado correctamente. Gracias por su preferencia."></textarea>
         </div>
       </div>
-      <div class="modal-footer border-0">
+      <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-success px-4 fw-semibold" onclick="submitApprove()"><i class="bi bi-check2-circle me-1"></i>Aprobar</button>
       </div>
@@ -452,10 +593,10 @@ $module_labels = [
 <!-- Editar Hospital -->
 <div class="modal fade" id="editHospModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
-      <div class="modal-header border-0">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title fw-bold text-primary" id="hospModalTitle"><i class="bi bi-pencil-square me-2"></i>Editar Hospital</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="editHospId">
@@ -497,7 +638,7 @@ $module_labels = [
           </div>
         </div>
       </div>
-      <div class="modal-footer border-0">
+      <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-primary px-4 fw-semibold" onclick="submitHosp()"><i class="bi bi-save me-1"></i>Guardar</button>
       </div>
@@ -508,10 +649,10 @@ $module_labels = [
 <!-- Crear Usuario -->
 <div class="modal fade" id="createUserModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
-      <div class="modal-header border-0">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title fw-bold text-success"><i class="bi bi-person-plus me-2"></i>Crear Nuevo Usuario</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="userHospId">
@@ -555,7 +696,7 @@ $module_labels = [
           </div>
         </div>
       </div>
-      <div class="modal-footer border-0">
+      <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-success px-4 fw-semibold" onclick="submitCreateUser()">Guardar Usuario</button>
       </div>
@@ -566,15 +707,15 @@ $module_labels = [
 <!-- Ver Usuarios -->
 <div class="modal fade" id="viewUsersModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
-      <div class="modal-header border-0">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title fw-bold text-info"><i class="bi bi-people me-2"></i>Usuarios del Hospital</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p class="text-secondary small">Lista de usuarios registrados en: <strong id="viewUsersHospName" class="text-white"></strong></p>
         <div class="table-responsive">
-          <table class="table table-dark table-hover border-secondary small mt-2">
+          <table class="table data-table border-secondary small mt-2">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -597,10 +738,10 @@ $module_labels = [
 <!-- Editar Usuario -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="background:#1e293b;border:1px solid #334155;border-radius:1rem;">
-      <div class="modal-header border-0">
+    <div class="modal-content">
+      <div class="modal-header">
         <h5 class="modal-title fw-bold text-warning"><i class="bi bi-pencil me-2"></i>Editar Usuario</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="editUserId">
@@ -644,7 +785,7 @@ $module_labels = [
           </div>
         </div>
       </div>
-      <div class="modal-footer border-0">
+      <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-warning px-4 fw-semibold" onclick="submitUpdateUser()">Guardar Cambios</button>
       </div>

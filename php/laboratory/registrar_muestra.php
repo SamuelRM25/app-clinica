@@ -43,21 +43,24 @@ try {
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <?php include '../../includes/theme_head.php'; ?>
 
     <style>
         .order-card {
-            background: var(--color-surface);
+            background: rgba(var(--color-card-rgb), 0.65);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
             border-color: var(--color-primary);
         }
 
@@ -65,18 +68,21 @@ try {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
         }
 
         .order-number {
             font-weight: 700;
             color: var(--color-primary);
-            font-size: 1.1rem;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
         }
 
         .patient-name {
             font-weight: 600;
             color: var(--color-text);
+            font-size: 1.05rem;
+            margin-top: 0.25rem;
         }
     </style>
 </head>
@@ -85,67 +91,117 @@ try {
     <div class="marble-effect"></div>
 
     <div class="dashboard-container">
+        <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
+                <!-- Logo -->
+                <div class="brand-container">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                </div>
+
+                <!-- Controles -->
                 <div class="header-controls">
+                    <!-- Control de tema -->
                     <div class="theme-toggle">
-                        <button id="themeSwitch" class="theme-btn">
+                        <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema claro/oscuro">
                             <i class="bi bi-sun theme-icon sun-icon"></i>
                             <i class="bi bi-moon theme-icon moon-icon"></i>
                         </button>
                     </div>
+
+                    <!-- Información del usuario -->
+                    <div class="header-user">
+                        <div class="header-avatar">
+                            <?php echo isset($_SESSION['nombre']) ? strtoupper(substr($_SESSION['nombre'], 0, 1)) : 'U'; ?>
+                        </div>
+                        <div class="header-details">
+                            <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
+                            <span class="header-role">Laboratorio</span>
+                        </div>
+                    </div>
+
+                    <!-- Back Button -->
                     <a href="index.php" class="action-btn secondary">
                         <i class="bi bi-arrow-left"></i>
                         Volver
+                    </a>
+
+                    <!-- Botón de cerrar sesión -->
+                    <a href="../auth/logout.php" class="logout-btn">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Salir</span>
                     </a>
                 </div>
             </div>
         </header>
 
         <main class="main-content">
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-droplet text-primary"></i>
-                    Registrar Recepción de Muestra
-                </h1>
-                <p class="page-subtitle">Marque las órdenes cuyas muestras han sido recibidas</p>
+            <div class="welcome-banner animate-in mb-4">
+                <h1>Recepcionar Muestras</h1>
+                <p>Marque las órdenes cuyas muestras biológicas han sido entregadas al laboratorio</p>
             </div>
 
-            <?php if (count($ordenes_pendientes) > 0): ?>
-                    <?php foreach ($ordenes_pendientes as $orden): ?>
-                            <div class="order-card">
-                                <div class="order-header">
-                                    <div>
-                                        <div class="order-number"><?php echo htmlspecialchars($orden['numero_orden']); ?></div>
-                                        <div class="patient-name">
-                                            <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+            <div class="row">
+                <div class="col-12 col-xl-8 mx-auto">
+                    <section class="calendar-section animate-in delay-1">
+                        <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                            <h3 class="section-title">
+                                <i class="bi bi-droplet section-title-icon"></i>
+                                Muestras Pendientes de Recepción
+                            </h3>
+                            <span class="badge bg-primary px-3 py-2 rounded-pill">
+                                <?php echo count($ordenes_pendientes); ?> Pendientes
+                            </span>
+                        </div>
+
+                        <?php if (count($ordenes_pendientes) > 0): ?>
+                            <div class="pe-2" style="max-height: 70vh; overflow-y: auto;">
+                                <?php foreach ($ordenes_pendientes as $orden): ?>
+                                    <div class="order-card animate-in">
+                                        <div class="order-header">
+                                            <div>
+                                                <div class="order-number">
+                                                    <i class="bi bi-hash"></i><?php echo htmlspecialchars($orden['numero_orden']); ?>
+                                                </div>
+                                                <div class="patient-name">
+                                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                                </div>
+                                                <?php if(!empty($orden['dpi'])): ?>
+                                                    <small class="text-muted d-block mt-1">
+                                                        <i class="bi bi-card-text me-1"></i>DPI: <?php echo htmlspecialchars($orden['dpi']); ?>
+                                                    </small>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded">
+                                                    <i class="bi bi-check2-all me-1"></i><?php echo $orden['num_pruebas']; ?> Pruebas
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-dashed">
+                                            <span class="text-muted small">
+                                                <i class="bi bi-calendar-event me-1"></i>
+                                                <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
+                                            </span>
+                                            <button class="action-btn"
+                                                onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
+                                                <i class="bi bi-droplet-half me-1"></i>
+                                                Registrar Muestra
+                                            </button>
                                         </div>
                                     </div>
-                                    <div>
-                                        <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?> pruebas</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar"></i>
-                                        <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
-                                    </small>
-                                    <button class="action-btn"
-                                        onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
-                                        <i class="bi bi-check-circle"></i>
-                                        Registrar Muestra
-                                    </button>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
-                    <?php endforeach; ?>
-            <?php else: ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox" style="font-size: 3rem; color: var(--color-text-muted);"></i>
-                        <h4 class="text-muted mt-3">No hay órdenes pendientes</h4>
-                        <p class="text-muted">Todas las muestras han sido registradas</p>
-                    </div>
-            <?php endif; ?>
+                        <?php else: ?>
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
+                                <h4 class="text-muted mt-3 fw-medium">No hay muestras pendientes</h4>
+                                <p class="text-muted small">Todas las muestras del día han sido recepcionadas correctamente.</p>
+                            </div>
+                        <?php endif; ?>
+                    </section>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -153,27 +209,33 @@ try {
     <script>
         function registerSample(orderId, orderNumber) {
             Swal.fire({
-                title: 'Registrar Muestra',
+                title: 'Registrar Recepción de Muestra',
                 html: `
                 <div class="text-start">
-                    <p>Orden: <strong>${orderNumber}</strong></p>
+                    <p class="mb-4">Vas a confirmar la recepción de muestras para la orden: <strong class="text-primary">${orderNumber}</strong></p>
                     <div class="mb-3">
-                        <label class="form-label">Fecha y hora de recepción</label>
+                        <label class="form-label fw-semibold text-muted">Fecha y hora de recepción</label>
                         <input type="datetime-local" id="fecha_recepcion" class="form-control" value="${new Date().toISOString().slice(0, 16)}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Adjuntar Orden Escaneada (Opcional)</label>
+                        <label class="form-label fw-semibold text-muted">Adjuntar Orden Escaneada (Opcional)</label>
                         <input type="file" id="archivo_orden" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Observaciones (opcional)</label>
-                        <textarea id="observaciones" class="form-control" rows="3" placeholder="Estado de la muestra, condiciones especiales..."></textarea>
+                        <label class="form-label fw-semibold text-muted">Observaciones (opcional)</label>
+                        <textarea id="observaciones" class="form-control" rows="3" placeholder="Ej. Tubo de ensayo rotulado, muestra de sangre en refrigeración..."></textarea>
                     </div>
                 </div>
             `,
                 showCancelButton: true,
-                confirmButtonText: 'Registrar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Confirmar Recepción',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: 'var(--color-primary, #6366f1)',
+                customClass: {
+                    popup: 'border-0 rounded-4 shadow-lg bg-card',
+                    confirmButton: 'action-btn px-4 py-2',
+                    cancelButton: 'action-btn secondary px-4 py-2'
+                },
                 preConfirm: () => {
                     return {
                         id_orden: orderId,
@@ -216,19 +278,6 @@ try {
                 }
             });
         }
-
-        // Theme JS
-        document.addEventListener('DOMContentLoaded', function () {
-            if (localStorage.getItem('dashboard-theme') === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-            document.getElementById('themeSwitch')?.addEventListener('click', () => {
-                const current = document.documentElement.getAttribute('data-theme');
-                const target = current === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', target);
-                localStorage.setItem('dashboard-theme', target);
-            });
-        });
     </script>
 </body>
 

@@ -127,11 +127,238 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-    <!-- CSS Crítico (mismo que el dashboard) -->
+    <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/style.css">
 
+    <style>
+        /* Premium custom styles for medical history to display elements horizontally and beautifully */
+        .patient-info-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg, 16px);
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .patient-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 0.25rem;
+        }
+        .patient-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .patient-meta span {
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem 2.5rem;
+            background: #f8f9fa;
+            padding: 1.25rem 1.5rem;
+            border-radius: var(--radius-md, 12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+        .info-label::after {
+            content: ":";
+        }
+        .info-value {
+            font-weight: 600;
+            color: #212529;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f1f3f5;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-icon:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
 
+        /* Appointments Timeline Styling */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #212529;
+            margin-bottom: 0;
+        }
+        .section-title-icon {
+            color: #0d6efd;
+        }
+        .action-btn {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        .consultation-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+            overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .consultation-card:hover {
+            border-color: rgba(13, 110, 253, 0.25);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+        }
+        .consultation-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            background: #ffffff;
+            cursor: pointer;
+            user-select: none;
+            gap: 1.5rem;
+        }
+        .consultation-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(13, 110, 253, 0.08);
+            color: #0d6efd;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .date-day {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .date-number {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+        .consultation-doctor {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-grow: 1;
+        }
+        .doctor-name {
+            font-weight: 600;
+            color: #212529;
+            font-size: 0.95rem;
+        }
+        .doctor-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            background: #f1f3f5;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .collapse-icon {
+            font-size: 1.2rem;
+            color: #adb5bd;
+            transition: transform 0.2s ease;
+        }
+        .collapse-icon.rotate-180 {
+            transform: rotate(180deg);
+        }
 
+        /* Consultation Content Box */
+        .consultation-content {
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            background: #fafbfe;
+            padding: 1.5rem;
+        }
+        .section-box {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            border-left: 4px solid #0d6efd;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.005);
+        }
+        .section-title-small {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0d6efd;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .section-content {
+            font-size: 0.95rem;
+            color: #333333;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 
 <body>
@@ -185,6 +412,9 @@ try {
             </div>
         </header>
 
+        <!-- Scripts adicionales para Mapa Corporal -->
+        <script src="../../assets/js/human_body_map.js"></script>
+
 
         <!-- Contenido Principal -->
         <main class="main-content">
@@ -219,9 +449,6 @@ try {
             <!-- Información del paciente -->
             <div class="patient-info-card animate-in delay-1">
                 <div class="patient-header">
-                    <div class="patient-avatar-large">
-                        <?php echo strtoupper(substr($patient['nombre'], 0, 1) . substr($patient['apellido'], 0, 1)); ?>
-                    </div>
                     <div class="patient-details">
                         <h2 class="patient-name">
                             <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>
@@ -274,9 +501,8 @@ try {
                         <i class="bi bi-clock-history section-title-icon"></i>
                         Historial de Consultas
                     </h3>
-                    <button type="button" class="action-btn" data-bs-toggle="modal"
-                        data-bs-target="#newMedicalRecordModal">
-                        <i class="bi bi-plus-lg"></i>
+                    <button type="button" class="action-btn" onclick="document.getElementById('newMedicalRecordModal').classList.add('active')">
+                        <i class="bi bi-plus-lg me-2"></i>
                         Nueva Consulta
                     </button>
                 </div>
@@ -435,6 +661,22 @@ try {
                                                             </div>
                                                         </div>
                                                     <?php endif; ?>
+
+                                                    <?php if (!empty($record['puntos_dolor'])): ?>
+                                                        <div class="section-box mt-4">
+                                                            <div class="section-title-small">
+                                                                <i class="bi bi-person-bounding-box"></i>
+                                                                Mapa de Dolor
+                                                            </div>
+                                                            <div class="section-content text-center">
+                                                                <div class="body-map-display" 
+                                                                     id="display_map_<?php echo $record['id_historial']; ?>" 
+                                                                     data-points='<?php echo $record['puntos_dolor']; ?>'
+                                                                     style="width: 200px; height: 350px; margin: 0 auto; background: rgba(0,0,0,0.02); border-radius: 1rem;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
 
@@ -508,201 +750,144 @@ try {
         </main>
     </div>
 
-    <!-- JavaScript Optimizado -->
     <!-- Modal para nuevo registro médico -->
-    <div class="modal fade" id="newMedicalRecordModal" tabindex="-1" aria-labelledby="newMedicalRecordModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content"
-                style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden;">
-                <div class="modal-header"
-                    style="border-bottom: 1px solid var(--color-border); padding: var(--space-lg);">
-                    <h5 class="modal-title" id="newMedicalRecordModalLabel"
-                        style="font-weight: 600; display: flex; align-items: center; gap: var(--space-sm);">
-                        <i class="bi bi-clipboard-plus text-primary"></i>
-                        Nuevo Registro Clínico
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST">
-                    <input type="hidden" name="id_paciente" value="<?php echo $patient_id; ?>">
-
-                    <div class="modal-body" style="padding: var(--space-lg); max-height: 70vh; overflow-y: auto;">
-                        <div class="row g-4">
-                            <!-- Información de la consulta -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <label for="motivo_consulta" class="form-label fw-semibold">Motivo de Consulta
-                                        *</label>
-                                    <textarea id="motivo_consulta" name="motivo_consulta" class="form-control" rows="3"
-                                        required placeholder="Describa el motivo de la visita..."></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="sintomas" class="form-label fw-semibold">Síntomas / Historia *</label>
-                                    <textarea id="sintomas" name="sintomas" class="form-control" rows="3" required
-                                        placeholder="Detalle los síntomas presentados..."></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="examen_fisico" class="form-label fw-semibold">Examen Físico</label>
-                                    <div class="row g-3">
-                                        <div class="col-md-7">
-                                            <textarea id="examen_fisico" name="examen_fisico" class="form-control" rows="8"
-                                                placeholder="Hallazgos del examen físico..."></textarea>
-                                            <input type="hidden" name="puntos_dolor" id="puntos_dolor">
-                                        </div>
-                                        <div class="col-md-5">
-                                            <div id="human-body-map-container" class="border rounded p-2 bg-white">
-                                                <!-- SVG se cargará aquí -->
-                                            </div>
+    <div class="custom-modal-overlay" id="newMedicalRecordModal">
+        <div class="custom-modal modal-xl">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-clipboard-plus text-primary me-2"></i>
+                    Nuevo Registro Clínico
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">&times;</button>
+            </div>
+            <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST">
+                <input type="hidden" name="id_paciente" value="<?php echo $patient_id; ?>">
+                
+                <div class="custom-modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <div class="row g-4">
+                        <!-- Información de la consulta -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="motivo_consulta" class="form-label fw-semibold">Motivo de Consulta *</label>
+                                <textarea id="motivo_consulta" name="motivo_consulta" class="form-control" rows="3" required placeholder="Describa el motivo de la visita..."></textarea>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="sintomas" class="form-label fw-semibold">Síntomas / Historia *</label>
+                                <textarea id="sintomas" name="sintomas" class="form-control" rows="3" required placeholder="Detalle los síntomas presentados..."></textarea>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="examen_fisico" class="form-label fw-semibold">Examen Físico y Zonas de Dolor</label>
+                                <div class="row g-3">
+                                    <div class="col-md-7">
+                                        <textarea id="examen_fisico" name="examen_fisico" class="form-control" rows="12" placeholder="Hallazgos del examen físico..."></textarea>
+                                        <input type="hidden" name="puntos_dolor" id="puntos_dolor">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div id="human-body-map-container" class="border rounded-3 p-3 bg-light shadow-sm">
+                                            <!-- SVG se cargará aquí -->
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Diagnóstico y Tratamiento -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <label for="diagnostico" class="form-label fw-semibold">Diagnóstico *</label>
-                                    <textarea id="diagnostico" name="diagnostico" class="form-control" rows="3" required
-                                        placeholder="Diagnóstico médico..."></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="tratamiento" class="form-label fw-semibold">Tratamiento *</label>
-                                    <textarea id="tratamiento" name="tratamiento" class="form-control" rows="3" required
-                                        placeholder="Plan de tratamiento..."></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="receta_medica" class="form-label fw-semibold">Receta Médica</label>
-                                    <textarea id="receta_medica" name="receta_medica" class="form-control" rows="3"
-                                        placeholder="Medicamentos y dosis..."></textarea>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <hr class="my-2" style="border-color: var(--color-border);">
-                            </div>
-
-                            <!-- Antecedentes -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <label for="antecedentes_personales" class="form-label fw-semibold">Antecedentes
-                                        Personales</label>
-                                    <textarea id="antecedentes_personales" name="antecedentes_personales"
-                                        class="form-control" rows="2"
-                                        placeholder="Alergias, cirugías, enfermedades previas..."></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <label for="antecedentes_familiares" class="form-label fw-semibold">Antecedentes
-                                        Familiares</label>
-                                    <textarea id="antecedentes_familiares" name="antecedentes_familiares"
-                                        class="form-control" rows="2"
-                                        placeholder="Enfermedades hereditarias..."></textarea>
-                                </div>
-                            </div>
-
-                            <!-- Exámenes -->
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <label for="examenes_realizados" class="form-label fw-semibold mb-0">Exámenes
-                                            Solicitados</label>
-                                    </div>
-                                    <select id="examenes_realizados" name="examenes_realizados[]" class="form-select select2-tests" multiple data-placeholder="Buscar pruebas de laboratorio...">
-                                        <?php 
-                                        $current_cat = '';
-                                        foreach ($all_tests as $test): 
-                                            if ($current_cat !== $test['categoria']):
-                                                if ($current_cat !== '') echo '</optgroup>';
-                                                $current_cat = $test['categoria'];
-                                                echo '<optgroup label="' . htmlspecialchars($current_cat) . '">';
-                                            endif;
-                                        ?>
-                                            <option value="<?php echo $test['id_prueba']; ?>">
-                                                <?php echo htmlspecialchars($test['nombre_prueba']); ?> (Q<?php echo number_format($test['precio'], 2); ?>)
-                                            </option>
-                                        <?php endforeach; if ($current_cat !== '') echo '</optgroup>'; ?>
-                                    </select>
-                                    <small class="text-muted mt-1 d-block">Las pruebas seleccionadas generarán una orden de laboratorio automáticamente.</small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-4">
-                                    <label for="resultados_examenes" class="form-label fw-semibold">Resultados
-                                        Importantes</label>
-                                    <textarea id="resultados_examenes" name="resultados_examenes" class="form-control"
-                                        rows="2"
-                                        placeholder="Valores críticos o hallazgos relevantes...">pendiente de recibir</textarea>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <hr class="my-2" style="border-color: var(--color-border);">
-                            </div>
-
-                            <!-- Próxima Cita -->
-                            <div class="col-md-4">
-                                <div class="form-group mb-4">
-                                    <label for="proxima_cita" class="form-label fw-semibold">Próxima Cita</label>
-                                    <input type="date" id="proxima_cita" name="proxima_cita" class="form-control">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-4">
-                                    <label for="hora_proxima_cita" class="form-label fw-semibold">Hora de Cita</label>
-                                    <input type="time" id="hora_proxima_cita" name="hora_proxima_cita"
-                                        class="form-control">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-4">
-                                    <label for="medico_responsable" class="form-label fw-semibold">Médico Responsable
-                                        *</label>
-                                    <select id="medico_responsable" name="medico_responsable" class="form-select"
-                                        required>
-                                        <option value="">Seleccionar Médico...</option>
-                                        <?php foreach ($doctors as $doctor): ?>
-                                            <option
-                                                value="<?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>"
-                                                <?php echo ($doctor['nombre'] . ' ' . $doctor['apellido'] === $user_name) ? 'selected' : ''; ?>>
-                                                Dr(a).
-                                                <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <input type="hidden" name="especialidad_medico"
-                                        value="<?php echo htmlspecialchars($user_specialty); ?>">
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="modal-footer"
-                        style="border-top: 1px solid var(--color-border); padding: var(--space-lg);">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
-                            style="border-radius: var(--radius-md);">Cancelar</button>
-                        <button type="submit" class="action-btn">
-                            <i class="bi bi-save me-1"></i>
-                            Guardar Registro
-                        </button>
+                        <!-- Diagnóstico y Tratamiento -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="diagnostico" class="form-label fw-semibold">Diagnóstico *</label>
+                                <textarea id="diagnostico" name="diagnostico" class="form-control" rows="3" required placeholder="Diagnóstico médico..."></textarea>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="tratamiento" class="form-label fw-semibold">Tratamiento *</label>
+                                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="3" required placeholder="Plan de tratamiento..."></textarea>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label for="receta_medica" class="form-label fw-semibold">Receta Médica</label>
+                                <textarea id="receta_medica" name="receta_medica" class="form-control" rows="3" placeholder="Medicamentos y dosis..."></textarea>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-4">
+                                        <label for="antecedentes_personales" class="form-label fw-semibold">Antecedentes Personales</label>
+                                        <textarea id="antecedentes_personales" name="antecedentes_personales" class="form-control" rows="2" placeholder="Alergias, cirugías..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-4">
+                                        <label for="antecedentes_familiares" class="form-label fw-semibold">Antecedentes Familiares</label>
+                                        <textarea id="antecedentes_familiares" name="antecedentes_familiares" class="form-control" rows="2" placeholder="Enfermedades hereditarias..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <hr class="my-2" style="border-color: var(--color-border);">
+                        </div>
+
+                        <!-- Exámenes y Próxima Cita -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label for="examenes_realizados" class="form-label fw-semibold">Exámenes Solicitados</label>
+                                <select id="examenes_realizados" name="examenes_realizados[]" class="form-select select2-tests" multiple data-placeholder="Buscar pruebas de laboratorio...">
+                                    <?php 
+                                    $current_cat = '';
+                                    foreach ($all_tests as $test): 
+                                        if ($current_cat !== $test['categoria']):
+                                            if ($current_cat !== '') echo '</optgroup>';
+                                            $current_cat = $test['categoria'];
+                                            echo '<optgroup label="' . htmlspecialchars($current_cat) . '">';
+                                        endif;
+                                    ?>
+                                        <option value="<?php echo $test['id_prueba']; ?>">
+                                            <?php echo htmlspecialchars($test['nombre_prueba']); ?> (Q<?php echo number_format($test['precio'], 2); ?>)
+                                        </option>
+                                    <?php endforeach; if ($current_cat !== '') echo '</optgroup>'; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label for="proxima_cita" class="form-label fw-semibold">Próxima Cita</label>
+                                <input type="date" id="proxima_cita" name="proxima_cita" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label for="medico_responsable" class="form-label fw-semibold">Médico Responsable *</label>
+                                <select id="medico_responsable" name="medico_responsable" class="form-select" required>
+                                    <?php foreach ($doctors as $doctor): ?>
+                                        <option value="<?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>" <?php echo ($doctor['nombre'] . ' ' . $doctor['apellido'] === $user_name) ? 'selected' : ''; ?>>
+                                            Dr(a). <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <div class="custom-modal-footer">
+                    <button type="button" class="action-btn secondary" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">Cancelar</button>
+                    <button type="submit" class="action-btn primary">
+                        <i class="bi bi-save me-2"></i>
+                        Guardar Registro
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Modal para Orden de Laboratorio (Iframe) -->
-    <div class="modal fade" id="labOrderModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw;">
-            <div class="modal-content" style="height: 90vh;">
-                <div class="modal-header">
-                    <h5 class="modal-title">Orden de Laboratorio</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <iframe id="labOrderFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
-                </div>
+    <div class="custom-modal-overlay" id="labOrderModal">
+        <div class="custom-modal modal-xl">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">Orden de Laboratorio</h5>
+                <button type="button" class="custom-modal-close" onclick="document.getElementById('labOrderModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body p-0" style="height: 80vh;">
+                <iframe id="labOrderFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
         </div>
     </div>
@@ -729,9 +914,8 @@ try {
             const patientId = <?php echo $patient_id; ?>;
             const frame = document.getElementById('labOrderFrame');
             frame.src = '../laboratory/crear_orden.php?id_paciente=' + patientId + '&embedded=1';
-            new bootstrap.Modal(document.getElementById('labOrderModal')).show();
+            document.getElementById('labOrderModal').classList.add('active');
         }
-    </script>
         // Dashboard Reingenierizado - Centro Médico RS
         (function () {
             'use strict';
@@ -838,6 +1022,8 @@ try {
                 }
 
                 applyState() {
+                    if (!DOM.sidebar) return; // FIX: Prevent error if sidebar doesn't exist
+                    
                     if (this.isCollapsed && !this.isMobile) {
                         DOM.sidebar.classList.add('collapsed');
                         if (DOM.sidebarToggleIcon) {
@@ -868,20 +1054,22 @@ try {
                 }
 
                 toggleMobile() {
+                    if (!DOM.sidebar) return;
                     const isShowing = DOM.sidebar.classList.toggle('show');
 
                     if (isShowing) {
-                        DOM.sidebarOverlay.classList.add('show');
+                        if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.add('show');
                         DOM.body.style.overflow = 'hidden';
                     } else {
-                        DOM.sidebarOverlay.classList.remove('show');
+                        if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.remove('show');
                         DOM.body.style.overflow = '';
                     }
                 }
 
                 closeMobile() {
+                    if (!DOM.sidebar) return;
                     DOM.sidebar.classList.remove('show');
-                    DOM.sidebarOverlay.classList.remove('show');
+                    if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.remove('show');
                     DOM.body.style.overflow = '';
                 }
 
@@ -938,6 +1126,21 @@ try {
                     this.setupClock();
                     this.setupAnimations();
                     this.setupCollapseIcons();
+                    this.initBodyMaps();
+                }
+
+                initBodyMaps() {
+                    const maps = document.querySelectorAll('.body-map-display');
+                    maps.forEach(map => {
+                        try {
+                            const points = JSON.parse(map.dataset.points || '[]');
+                            if (typeof HumanBodyMap !== 'undefined' && points.length > 0) {
+                                HumanBodyMap.render(map.id, points, { readOnly: true, size: 'small' });
+                            }
+                        } catch (e) {
+                            console.error('Error al cargar mapa corporal:', e);
+                        }
+                    });
                 }
 
                 setupGreeting() {

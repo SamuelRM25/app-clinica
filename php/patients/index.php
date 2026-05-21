@@ -132,6 +132,171 @@ try {
     <!-- CSS Crítico (mismo que el dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
+    <style>
+        /* ===== SEARCH & FILTER BAR ===== */
+        .search-and-filter-bar {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* search-input — inherits global .search-box but needs width:100% */
+        .search-input {
+            width: 100%;
+            padding: 0.625rem 1rem 0.625rem 2.5rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            transition: border-color 0.2s, box-shadow 0.2s, width 0.3s;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
+            background: var(--color-card);
+        }
+
+        .search-input::placeholder {
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        /* ===== SORT CONTROLS ===== */
+        .sort-controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sort-group {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 0.25rem;
+        }
+
+        .sort-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .sort-item:hover {
+            background: rgba(var(--color-primary-rgb), 0.08);
+            color: var(--color-primary);
+        }
+
+        .sort-item.active {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
+        }
+
+        /* ===== FILTER TAGS ===== */
+        .filters-scroll-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 0.25rem;
+        }
+
+        .filters-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+            min-width: max-content;
+        }
+
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.45rem 1rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: 50px;
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-tag:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(var(--color-primary-rgb), 0.05);
+            transform: translateY(-1px);
+        }
+
+        .filter-tag.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 3px 10px rgba(var(--color-primary-rgb), 0.3);
+        }
+
+        .filter-tag i {
+            font-size: 0.8rem;
+        }
+
+        /* ===== PATIENT TABLE AVATAR ===== */
+        .avatar-sm {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .bg-male   { background: linear-gradient(135deg, var(--color-primary), #3b82f6); }
+        .bg-female { background: linear-gradient(135deg, #f43f5e, #ec4899); }
+
+        /* Dark mode */
+        [data-theme="dark"] .search-and-filter-bar {
+            background: var(--color-card-night);
+            border-color: var(--color-border-night);
+        }
+
+        [data-theme="dark"] .search-input {
+            background: var(--color-surface-night);
+            border-color: var(--color-border-night);
+            color: var(--color-text-night);
+        }
+
+        [data-theme="dark"] .sort-group {
+            background: var(--color-surface-night);
+            border-color: var(--color-border-night);
+        }
+
+        [data-theme="dark"] .filter-tag {
+            background: var(--color-surface-night);
+            border-color: var(--color-border-night);
+            color: var(--color-text-secondary-night);
+        }
+    </style>
+
 </head>
 
 <body>
@@ -284,60 +449,62 @@ try {
             <section class="appointments-section animate-in delay-1">
                 <div class="section-header">
                     <h3 class="section-title">
-                        <i class="bi bi-search section-title-icon"></i>
-                        Buscar Pacientes
+                        <i class="bi bi-person-lines-fill section-title-icon"></i>
+                        Gestión de Pacientes
                     </h3>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="sort-controls">
-                            <span class="text-muted" style="font-size: 0.875rem; font-weight: 500;">Ordenar:</span>
-                            <a href="?sort=name"
-                                class="sort-btn <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>">
-                                <i class="bi bi-sort-alpha-down"></i>
-                                Alfabético
-                            </a>
-                            <a href="?sort=recent" class="sort-btn <?php echo $sort === 'recent' ? 'active' : ''; ?>">
-                                <i class="bi bi-clock-history"></i>
-                                Recientes
-                            </a>
+                    <button type="button" class="action-btn primary" id="newPatientButton">
+                        <i class="bi bi-person-plus"></i>
+                        Nuevo Paciente
+                    </button>
+                </div>
+
+                <div class="search-and-filter-bar mt-4">
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="search-box">
+                                <i class="bi bi-search search-icon"></i>
+                                <input type="text" id="searchInput" class="search-input"
+                                    placeholder="Buscar por nombre, DPI, teléfono o correo..."
+                                    aria-label="Buscar pacientes">
+                            </div>
                         </div>
-                        <button type="button" class="action-btn" id="newPatientButton">
-                            <i class="bi bi-person-plus"></i>
-                            Nuevo Paciente
-                        </button>
+                        <div class="col-lg-6 d-flex justify-content-lg-end align-items-center gap-3">
+                            <div class="sort-controls-wrapper">
+                                <span class="small fw-bold text-muted text-uppercase me-2">Ordenar:</span>
+                                <div class="sort-group">
+                                    <a href="?sort=name" class="sort-item <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>" title="Orden Alfabético">
+                                        <i class="bi bi-sort-alpha-down"></i>
+                                    </a>
+                                    <a href="?sort=recent" class="sort-item <?php echo $sort === 'recent' ? 'active' : ''; ?>" title="Más Recientes">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <div class="input-group" style="max-width: 500px;">
-                        <span class="input-icon">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" id="searchInput" class="form-input"
-                            placeholder="Buscar por nombre, apellido, teléfono o correo..."
-                            aria-label="Buscar pacientes">
+                    <div class="filters-scroll-container mt-3">
+                        <div class="filters-group" id="filtersContainer">
+                            <button type="button" class="filter-tag active" onclick="filterPatients('all')">
+                                <i class="bi bi-grid-fill me-1"></i> Todos
+                            </button>
+                            <button type="button" class="filter-tag" onclick="filterPatients('with_appointments')">
+                                <i class="bi bi-calendar-check me-1"></i> Con Citas
+                            </button>
+                            <button type="button" class="filter-tag" onclick="filterPatients('without_history')">
+                                <i class="bi bi-file-earmark-medical me-1"></i> Sin Historial
+                            </button>
+                            <button type="button" class="filter-tag" onclick="filterPatients('active_today')">
+                                <i class="bi bi-activity me-1"></i> Activos Hoy
+                            </button>
+                            <button type="button" class="filter-tag" onclick="filterPatients('male')">
+                                <i class="bi bi-gender-male me-1"></i> Masculino
+                            </button>
+                            <button type="button" class="filter-tag" onclick="filterPatients('female')">
+                                <i class="bi bi-gender-female me-1"></i> Femenino
+                            </button>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Filtros rápidos -->
-                <div class="filters-container mb-4" id="filtersContainer">
-                    <button type="button" class="filter-btn active" onclick="filterPatients('all')">
-                        Todos
-                    </button>
-                    <button type="button" class="filter-btn" onclick="filterPatients('with_appointments')">
-                        Con Citas
-                    </button>
-                    <button type="button" class="filter-btn" onclick="filterPatients('without_history')">
-                        Sin Historial
-                    </button>
-                    <button type="button" class="filter-btn" onclick="filterPatients('active_today')">
-                        Activos Hoy
-                    </button>
-                    <button type="button" class="filter-btn" onclick="filterPatients('male')">
-                        Masculino
-                    </button>
-                    <button type="button" class="filter-btn" onclick="filterPatients('female')">
-                        Femenino
-                    </button>
                 </div>
             </section>
 
@@ -392,10 +559,6 @@ try {
                                         data-notes="<?php echo htmlspecialchars($patient['notas'] ?? ''); ?>">
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <div
-                                                    class="avatar-sm me-3 <?php echo $patient['genero'] === 'Femenino' ? 'bg-female' : 'bg-male'; ?>">
-                                                    <?php echo strtoupper(substr($patient['nombre'], 0, 1) . substr($patient['apellido'], 0, 1)); ?>
-                                                </div>
                                                 <div>
                                                     <div class="fw-bold text-dark">
                                                         <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>

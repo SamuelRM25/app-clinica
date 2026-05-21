@@ -128,6 +128,293 @@ try {
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
+    <!-- Estilos de Personalización Propia y Premium para Ventas -->
+    <style>
+        /* ===== STATS CARDS GLOW EFFECTS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease !important;
+            border: 1px solid var(--color-border) !important;
+            background: var(--color-card) !important;
+            border-radius: var(--radius-lg) !important;
+            box-shadow: var(--shadow-sm) !important;
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-6px);
+        }
+        /* Neon/RGB glows on hover depending on active card color */
+        .stat-card:nth-child(1):hover {
+            border-color: rgba(var(--color-primary-rgb), 0.65) !important;
+            box-shadow: 0 12px 30px rgba(var(--color-primary-rgb), 0.18), 0 0 15px rgba(var(--color-primary-rgb), 0.08) !important;
+        }
+        .stat-card:nth-child(2):hover {
+            border-color: rgba(var(--color-success-rgb), 0.65) !important;
+            box-shadow: 0 12px 30px rgba(var(--color-success-rgb), 0.18), 0 0 15px rgba(var(--color-success-rgb), 0.08) !important;
+        }
+        .stat-card:nth-child(3):hover {
+            border-color: rgba(var(--color-info-rgb), 0.65) !important;
+            box-shadow: 0 12px 30px rgba(var(--color-info-rgb), 0.18), 0 0 15px rgba(var(--color-info-rgb), 0.08) !important;
+        }
+        .stat-card:nth-child(4):hover {
+            border-color: rgba(var(--color-warning-rgb), 0.65) !important;
+            box-shadow: 0 12px 30px rgba(var(--color-warning-rgb), 0.18), 0 0 15px rgba(var(--color-warning-rgb), 0.08) !important;
+        }
+
+        /* ===== SALES TABLE & STICKY HEADER ===== */
+        .sales-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: transparent;
+        }
+        .sales-table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--color-surface) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-bottom: 2px solid var(--color-border) !important;
+            padding: 1.1rem 1.25rem !important;
+            font-weight: 600;
+            color: var(--color-text-secondary) !important;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+        }
+        .sales-table td {
+            padding: 1.1rem 1.25rem !important;
+            border-bottom: 1px solid var(--color-border) !important;
+            color: var(--color-text);
+            background: transparent;
+            transition: background-color 0.2s ease;
+        }
+        .sales-table tbody tr:hover td {
+            background-color: rgba(var(--color-primary-rgb), 0.04) !important;
+        }
+
+        /* ===== GLOWING CRISTAL BADGES ===== */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem 0.8rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-width: 1px;
+            border-style: solid;
+            transition: all 0.3s ease;
+        }
+        .status-badge.pagado {
+            background: rgba(var(--color-success-rgb), 0.15) !important;
+            color: var(--color-success) !important;
+            border-color: rgba(var(--color-success-rgb), 0.35) !important;
+            box-shadow: 0 2px 10px rgba(var(--color-success-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .status-badge.pendiente {
+            background: rgba(var(--color-warning-rgb), 0.15) !important;
+            color: var(--color-warning) !important;
+            border-color: rgba(var(--color-warning-rgb), 0.35) !important;
+            box-shadow: 0 2px 10px rgba(var(--color-warning-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .status-badge.cancelado {
+            background: rgba(var(--color-danger-rgb), 0.15) !important;
+            color: var(--color-danger) !important;
+            border-color: rgba(var(--color-danger-rgb), 0.35) !important;
+            box-shadow: 0 2px 10px rgba(var(--color-danger-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        /* ===== SLIDING DRAWER BACKDROP & DRAWER ===== */
+        .sales-drawer-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1050;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.38s;
+        }
+        .sales-drawer-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .sales-drawer {
+            position: fixed;
+            top: 0;
+            right: -480px;
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: var(--color-card);
+            border-left: 1px solid var(--color-border);
+            box-shadow: -10px 0 35px rgba(0, 0, 0, 0.18);
+            z-index: 1051;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .sales-drawer-backdrop.open .sales-drawer {
+            transform: translateX(-480px);
+        }
+        [data-theme="dark"] .sales-drawer {
+            background: #0f172a; /* Dark background matching global system */
+        }
+        .sales-drawer-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sales-drawer-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            color: var(--color-text);
+            font-family: 'Inter', sans-serif;
+        }
+        .sales-drawer-close {
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            line-height: 1;
+            padding: 0 0.5rem;
+        }
+        .sales-drawer-close:hover {
+            color: var(--color-text);
+            transform: scale(1.1);
+        }
+        .sales-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        .sales-drawer-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 1rem;
+            background: rgba(var(--color-border-rgb), 0.1);
+        }
+
+        /* ===== INVOICE PREMIUM DESIGN ===== */
+        .invoice-wrapper {
+            font-family: 'Inter', sans-serif;
+            color: var(--color-text);
+        }
+        .invoice-header {
+            border-bottom: 2px dashed var(--color-border);
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .invoice-brand {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        .invoice-no {
+            font-family: monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+            background: rgba(var(--color-primary-rgb), 0.08);
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-sm);
+        }
+        .invoice-section-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(var(--color-border-rgb), 0.5);
+            padding-bottom: 0.25rem;
+        }
+        .invoice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .invoice-info-block p {
+            margin: 0;
+            font-size: 0.85rem;
+        }
+        .invoice-table {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        .invoice-table th {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--color-text-secondary);
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .invoice-table td {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(var(--color-border-rgb), 0.4);
+            font-size: 0.85rem;
+        }
+        .invoice-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 0;
+            border-top: 2px dashed var(--color-border);
+            margin-top: 1.5rem;
+        }
+        .invoice-total-label {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--color-text);
+        }
+        .invoice-total-val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--color-primary);
+        }
+
+        /* ===== PRINT STYLE FOR DRAWER ACCENT ===== */
+        @media print {
+            .sales-drawer-backdrop {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .sales-drawer {
+                max-width: 100%;
+                right: -100%;
+            }
+            .sales-drawer-backdrop.open .sales-drawer {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -455,106 +742,103 @@ try {
         </main>
     </div>
 
-    <!-- Modal para ver detalles de venta -->
-    <div class="modal fade" id="viewDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-receipt text-primary"></i>
-                        Detalles de Venta
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Sliding Right Drawer para detalles de venta -->
+    <div class="sales-drawer-backdrop" id="viewDetailsDrawerBackdrop">
+        <div class="sales-drawer">
+            <div class="sales-drawer-header">
+                <h5 class="sales-drawer-title">
+                    <i class="bi bi-receipt text-primary me-2"></i>
+                    Detalle de Venta
+                </h5>
+                <button type="button" class="sales-drawer-close" id="closeDrawerBtn">&times;</button>
+            </div>
+            <div class="sales-drawer-body">
+                <!-- Cargando -->
+                <div id="drawer-loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Cargando detalles de la venta...</p>
                 </div>
-                <div class="modal-body">
-                    <div id="modal-loading" class="text-center py-4">
-                        <div class="spinner-border text-primary"></div>
-                        <p class="mt-2 text-muted">Cargando detalles...</p>
-                    </div>
-                    <div id="modal-content" style="display: none;">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <p class="text-muted small mb-1">Cliente</p>
-                                <p class="fw-bold" id="modal-cliente">---</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="text-muted small mb-1">Fecha y Hora</p>
-                                <p class="fw-bold" id="modal-fecha">---</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="text-muted small mb-1">Método de Pago</p>
-                                <p class="fw-bold" id="modal-tipo-pago">---</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="text-muted small mb-1">Estado</p>
-                                <p class="fw-bold" id="modal-estado">---</p>
-                            </div>
-                        </div>
 
-                        <h6 class="fw-bold mb-3">Productos Adquiridos</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm" id="modal-items">
-                                <thead>
-                                    <tr>
-                                        <th>Medicamento</th>
-                                        <th>Presentación</th>
-                                        <th class="text-center">Cantidad</th>
-                                        <th class="text-end">Precio Unitario</th>
-                                        <th class="text-end">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Los ítems se cargarán dinámicamente -->
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4" class="text-end">Total:</th>
-                                        <th class="text-end" id="modal-total">---</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                <!-- Contenido Premium de Factura -->
+                <div id="drawer-content" class="invoice-wrapper" style="display: none;">
+                    <div class="invoice-header text-center">
+                        <div class="invoice-brand">CENTRO MÉDICO RS</div>
+                        <div class="text-muted small">Servicios de Salud Premium</div>
+                        <div class="invoice-no mt-2" id="drawer-sale-no">#VTA-00000</div>
+                    </div>
+
+                    <div class="invoice-grid">
+                        <div class="invoice-info-block">
+                            <div class="invoice-section-title">Cliente</div>
+                            <p class="fw-bold mb-1" id="drawer-cliente">---</p>
+                            <p class="small text-muted" id="drawer-fecha">---</p>
+                        </div>
+                        <div class="invoice-info-block text-end">
+                            <div class="invoice-section-title">Pago y Estado</div>
+                            <p class="fw-bold mb-1" id="drawer-tipo-pago">---</p>
+                            <div id="drawer-estado-badge" style="display: inline-block; margin-top: 0.25rem;">---</div>
                         </div>
                     </div>
+
+                    <div class="invoice-section-title">Productos Adquiridos</div>
+                    <div class="table-responsive">
+                        <table class="invoice-table" id="drawer-items">
+                            <thead>
+                                <tr>
+                                    <th class="text-start">Concepto</th>
+                                    <th class="text-center" style="width: 60px;">Cant.</th>
+                                    <th class="text-end" style="width: 90px;">Precio</th>
+                                    <th class="text-end" style="width: 100px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="invoice-total-row">
+                        <span class="invoice-total-label">Total a Pagar</span>
+                        <span class="invoice-total-val" id="drawer-total">Q0.00</span>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <a href="#" class="action-btn" id="modal-print-btn" target="_blank">
-                        <i class="bi bi-printer"></i>
-                        Imprimir Recibo
-                    </a>
-                </div>
+            </div>
+            <div class="sales-drawer-footer">
+                <button type="button" class="action-btn secondary w-100" id="closeDrawerBtn2">Cerrar</button>
+                <a href="#" class="action-btn primary w-100 text-center" id="drawer-print-btn" target="_blank">
+                    <i class="bi bi-printer me-2"></i>
+                    Imprimir Recibo
+                </a>
             </div>
         </div>
     </div>
 
     <!-- Modal para reporte por jornada -->
-    <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-file-earmark-bar-graph text-success"></i>
-                        Reporte por Jornada
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="custom-modal-overlay" id="reportModal">
+        <div class="custom-modal modal-sm">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-file-earmark-bar-graph text-success me-2"></i>
+                    Reporte por Jornada
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <p class="text-muted small mb-3">
+                    La jornada comprende desde las <strong>08:00 AM</strong> de la fecha seleccionada hasta las
+                    <strong>08:00 AM</strong> del día siguiente.
+                </p>
+                <div class="form-group mb-4">
+                    <label class="form-label">Seleccionar Fecha de Inicio</label>
+                    <input type="date" class="form-control" id="reportDate" value="<?php echo date('Y-m-d'); ?>">
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        La jornada comprende desde las <strong>08:00 AM</strong> de la fecha seleccionada hasta las
-                        <strong>08:00 AM</strong> del día siguiente.
-                    </p>
-                    <div class="form-group mb-4">
-                        <label class="form-label">Seleccionar Fecha de Inicio</label>
-                        <input type="date" class="form-control" id="reportDate" value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="action-btn success" id="btnGenerateReport">
-                        <i class="bi bi-file-earmark-pdf"></i>
-                        Generar Reporte
-                    </button>
-                </div>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary" onclick="document.getElementById('reportModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn success primary" id="btnGenerateReport">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>
+                    Generar Reporte
+                </button>
             </div>
         </div>
     </div>
@@ -669,6 +953,7 @@ try {
                     this.setupGreeting();
                     this.setupClock();
                     this.setupSalesHandlers();
+                    this.setupReturnHandlers();
                     this.setupAnimations();
                     this.setupReportGenerator();
                 }
@@ -708,20 +993,39 @@ try {
 
                             if (!saleId) return;
 
-                            // Mostrar modal
-                            const modal = new bootstrap.Modal(document.getElementById('viewDetailsModal'));
-                            modal.show();
+                            // Mostrar drawer
+                            const drawerBackdrop = document.getElementById('viewDetailsDrawerBackdrop');
+                            if (drawerBackdrop) {
+                                drawerBackdrop.classList.add('open');
+                            }
 
                             // Cargar datos de la venta
                             this.loadSaleDetails(saleId);
                         });
                     });
+
+                    // Eventos para cerrar drawer
+                    const closeBtns = [
+                        document.getElementById('closeDrawerBtn'),
+                        document.getElementById('closeDrawerBtn2'),
+                        document.getElementById('viewDetailsDrawerBackdrop')
+                    ];
+
+                    closeBtns.forEach(btn => {
+                        if (btn) {
+                            btn.addEventListener('click', (e) => {
+                                // Si es el backdrop, solo cerrar si hizo click directamente en él
+                                if (e.target === btn || btn.id !== 'viewDetailsDrawerBackdrop') {
+                                    document.getElementById('viewDetailsDrawerBackdrop').classList.remove('open');
+                                }
+                            });
+                        }
+                    });
                 }
 
                 async loadSaleDetails(saleId) {
-                    const loading = document.getElementById('modal-loading');
-                    const content = document.getElementById('modal-content');
-                    const modalBody = document.querySelector('#viewDetailsModal .modal-body');
+                    const loading = document.getElementById('drawer-loading');
+                    const content = document.getElementById('drawer-content');
 
                     // Mostrar loading
                     loading.style.display = 'block';
@@ -733,47 +1037,59 @@ try {
 
                         if (data.status === 'success') {
                             // Actualizar información principal
-                            document.getElementById('modal-cliente').textContent = data.venta.nombre_cliente || 'No especificado';
+                            document.getElementById('drawer-sale-no').textContent = `#VTA-${String(saleId).padStart(5, '0')}`;
+                            document.getElementById('drawer-cliente').textContent = data.venta.nombre_cliente || 'Consumidor Final';
 
                             // Formatear fecha
                             const fechaVenta = new Date(data.venta.fecha_venta);
                             const fechaFormateada = fechaVenta.toLocaleDateString('es-GT', {
                                 year: 'numeric',
-                                month: 'long',
+                                month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
                             });
-                            document.getElementById('modal-fecha').textContent = fechaFormateada;
+                            document.getElementById('drawer-fecha').textContent = fechaFormateada;
 
-                            document.getElementById('modal-tipo-pago').textContent = data.venta.tipo_pago || 'No especificado';
-                            document.getElementById('modal-estado').textContent = data.venta.estado || 'No especificado';
+                            document.getElementById('drawer-tipo-pago').textContent = data.venta.tipo_pago || 'Efectivo';
+                            
+                            // Estado de pago en badge brillante
+                            const estado = data.venta.estado || 'Pendiente';
+                            const estadoBadge = document.getElementById('drawer-estado-badge');
+                            if (estadoBadge) {
+                                estadoBadge.className = `status-badge ${estado.toLowerCase()}`;
+                                estadoBadge.textContent = estado;
+                            }
 
                             // Actualizar total
-                            document.getElementById('modal-total').textContent = `Q${parseFloat(data.venta.total || 0).toFixed(2)}`;
+                            document.getElementById('drawer-total').textContent = `Q${parseFloat(data.venta.total || 0).toFixed(2)}`;
 
                             // Actualizar enlace de impresión
-                            const printBtn = document.getElementById('modal-print-btn');
-                            printBtn.href = `../dispensary/print_receipt.php?id=${saleId}`;
+                            const printBtn = document.getElementById('drawer-print-btn');
+                            if (printBtn) {
+                                printBtn.href = `../dispensary/print_receipt.php?id=${saleId}`;
+                            }
 
                             // Actualizar tabla de ítems
-                            const itemsTable = document.querySelector('#modal-items tbody');
+                            const itemsTable = document.querySelector('#drawer-items tbody');
                             itemsTable.innerHTML = '';
 
                             if (data.items && data.items.length > 0) {
                                 data.items.forEach(item => {
                                     const row = document.createElement('tr');
                                     row.innerHTML = `
-                                    <td>${item.nom_medicamento || 'Producto'}</td>
-                                    <td>${item.presentacion_med || 'N/A'}</td>
-                                    <td class="text-center">${item.cantidad_vendida || 0}</td>
-                                    <td class="text-end">Q${parseFloat(item.precio_unitario || 0).toFixed(2)}</td>
-                                    <td class="text-end">Q${parseFloat(item.subtotal || 0).toFixed(2)}</td>
-                                `;
+                                        <td class="text-start">
+                                            <div class="fw-bold" style="color: var(--color-text);">${item.nom_medicamento || 'Producto'}</div>
+                                            <div class="text-muted small">${item.presentacion_med || 'N/A'}</div>
+                                        </td>
+                                        <td class="text-center">${item.cantidad_vendida || 0}</td>
+                                        <td class="text-end">Q${parseFloat(item.precio_unitario || 0).toFixed(2)}</td>
+                                        <td class="text-end fw-bold" style="color: var(--color-text);">Q${parseFloat(item.subtotal || 0).toFixed(2)}</td>
+                                    `;
                                     itemsTable.appendChild(row);
                                 });
                             } else {
-                                itemsTable.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay ítems registrados</td></tr>';
+                                itemsTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No hay ítems registrados</td></tr>';
                             }
 
                             // Mostrar contenido
@@ -785,11 +1101,11 @@ try {
                     } catch (error) {
                         console.error('Error:', error);
                         loading.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Error al cargar los detalles de la venta: ${error.message}
-                        </div>
-                    `;
+                            <div class="alert alert-danger mx-3 my-4" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Error al cargar detalles de la venta: ${error.message}
+                            </div>
+                        `;
                     }
                 }
 
@@ -833,12 +1149,60 @@ try {
                                 return;
                             }
 
-                            // Abrir reporte en nueva pestaña
                             window.open(`generate_shift_report.php?date=${date}`, '_blank');
-                            // Modal se cierra automáticamente si se usa el atributo data-bs-dismiss
                             window.location.reload();
                         });
                     }
+                }
+
+                setupReturnHandlers() {
+                    document.querySelectorAll('.return-sale').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const saleId = btn.getAttribute('data-id');
+                            if (!saleId) return;
+
+                            const result = await Swal.fire({
+                                title: '¿Devolver Venta?',
+                                text: 'Esta acción devolverá el stock al inventario y cambiará el estado a "Devuelto".',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#dc3545',
+                                cancelButtonColor: '#6b7280',
+                                confirmButtonText: 'Sí, devolver',
+                                cancelButtonText: 'Cancelar'
+                            });
+
+                            if (!result.isConfirmed) return;
+
+                            Swal.fire({
+                                title: 'Procesando...',
+                                didOpen: () => Swal.showLoading()
+                            });
+
+                            try {
+                                const response = await fetch('return_sale.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: `id_venta=${saleId}`
+                                });
+                                const data = await response.json();
+
+                                if (data.success) {
+                                    Swal.fire({
+                                        title: 'Listo',
+                                        text: 'Venta devuelta correctamente',
+                                        icon: 'success',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'No se pudo devolver la venta', 'error');
+                                }
+                            } catch (error) {
+                                Swal.fire('Error', 'Error de conexión', 'error');
+                            }
+                        });
+                    });
                 }
             }
 

@@ -127,7 +127,7 @@ try {
 } catch (Exception $e) {
     // Manejo de errores
     error_log("Error en dashboard de laboratorio: " . $e->getMessage());
-    die("Error al cargar el dashboard de laboratorio. Por favor, contacte al administrador.");
+    die("Error al cargar el dashboard de laboratorio: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -158,6 +158,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
 </head>
 
 <body>
@@ -396,7 +397,7 @@ try {
                                                                 class="text-muted"><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></small>
                                                         </td>
                                                         <td>
-                                                            <span class="badge bg-info"><?php echo $orden['num_pruebas']; ?></span>
+                                                             <span class="badge badge-info"><?php echo $orden['num_pruebas']; ?></span>
                                                         </td>
                                                         <td>
                                                             <?php
@@ -545,50 +546,42 @@ try {
     </div>
 
     <!-- Modal Devolución Laboratorio -->
-    <div class="modal fade" id="modalDevolucionLab" tabindex="-1" aria-hidden="true"
-        style="display: none; background: rgba(0,0,0,0.5); z-index: 1050; position: fixed; inset: 0;">
-        <div class="modal-dialog modal-dialog-centered"
-            style="margin: 1.75rem auto; max-width: 500px; background: var(--color-card); border-radius: var(--radius-lg); padding: var(--space-md);">
-            <div class="modal-content" style="border: none; background: transparent;">
-                <div class="modal-header"
-                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-sm); margin-bottom: var(--space-md);">
-                    <h5 class="modal-title fw-bold">Devolución de Orden <span id="lblNumOrdenDev"></span></h5>
-                    <button type="button" class="btn-close" onclick="cerrarModalDevolucion()"
-                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="formDevolucionLab">
-                        <input type="hidden" id="dev_id_orden" name="id_orden">
+    <div class="custom-modal-overlay" id="modalDevolucionLab">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-arrow-return-left text-danger"></i> Devolución de Orden <span id="lblNumOrdenDev"></span>
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="cerrarModalDevolucion()">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <form id="formDevolucionLab">
+                    <input type="hidden" id="dev_id_orden" name="id_orden">
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Seleccione Pruebas a Devolver</label>
-                            <div id="listaPruebasDevolucion"
-                                style="max-height: 150px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm);">
-                                <!-- Checkboxes generados dinámicamente -->
-                            </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Seleccione Pruebas a Devolver</label>
+                        <div id="listaPruebasDevolucion" class="custom-scrollbar"
+                            style="max-height: 150px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm);">
+                            <!-- Checkboxes generados dinámicamente -->
                         </div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="dev_monto" class="form-label fw-semibold">Monto a Devolver (Q)</label>
-                            <input type="number" step="0.01" min="0" class="form-control" id="dev_monto" name="monto"
-                                required
-                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md);">
-                        </div>
+                    <div class="mb-3">
+                        <label for="dev_monto" class="form-label fw-semibold">Monto a Devolver (Q)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="dev_monto" name="monto" required>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="dev_motivo" class="form-label fw-semibold">Motivo de Devolución</label>
-                            <textarea class="form-control" id="dev_motivo" name="motivo" rows="2" required
-                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md);"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer"
-                    style="display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md);">
-                    <button type="button" class="action-btn secondary"
-                        onclick="cerrarModalDevolucion()">Cancelar</button>
-                    <button type="button" class="action-btn bg-danger" onclick="procesarDevolucionLab()">Confirmar
-                        Devolución</button>
-                </div>
+                    <div class="mb-3">
+                        <label for="dev_motivo" class="form-label fw-semibold">Motivo de Devolución</label>
+                        <textarea class="form-control" id="dev_motivo" name="motivo" rows="2" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary" onclick="cerrarModalDevolucion()">Cancelar</button>
+                <button type="button" class="action-btn bg-danger text-white border-0" onclick="procesarDevolucionLab()">
+                    <i class="bi bi-check-circle"></i> Confirmar Devolución
+                </button>
             </div>
         </div>
     </div>
@@ -815,7 +808,7 @@ try {
 
             const contPruebas = document.getElementById('listaPruebasDevolucion');
             contPruebas.innerHTML = '<div class="text-center text-muted py-2"><i class="bi bi-arrow-clockwise spin"></i> Cargando pruebas...</div>';
-            document.getElementById('modalDevolucionLab').style.display = 'block';
+            document.getElementById('modalDevolucionLab').classList.add('active');
 
             // Cargar pruebas de la orden
             fetch(`api/get_order_details.php?id=${id_orden}`)
@@ -865,7 +858,7 @@ try {
         }
 
         function cerrarModalDevolucion() {
-            document.getElementById('modalDevolucionLab').style.display = 'none';
+            document.getElementById('modalDevolucionLab').classList.remove('active');
         }
 
         function procesarDevolucionLab() {

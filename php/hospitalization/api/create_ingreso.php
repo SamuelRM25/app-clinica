@@ -201,15 +201,14 @@ try {
 
             $stmt_cargo = $conn->prepare("
                 INSERT INTO cargos_hospitalarios 
-                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, fecha_cargo, fecha_aplicacion, registrado_por)
-                VALUES (?, 'Habitación', ?, 1, ?, ?, ?, ?, ?)
+                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por)
+                VALUES (?, 'Habitación', ?, 1, ?, ?, ?, ?)
             ");
 
             $stmt_cargo->execute([
                 $cuenta['id_cuenta'],
                 $descripcion_cargo,
                 $room_info['tarifa_por_noche'],
-                $room_info['tarifa_por_noche'], // subtotal (1 * tarifa)
                 $fecha_ingreso,
                 $fecha_cargo,
                 $created_by

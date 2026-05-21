@@ -83,114 +83,147 @@ try {
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1 style="margin:0">Orden #<?php echo htmlspecialchars($orden['numero_orden']); ?></h1>
-                <span class="badge <?php echo $orden['estado'] == 'Completada' ? 'bg-success' : 'bg-warning'; ?>">
-                    <?php echo $orden['estado']; ?>
-                </span>
-            </div>
-            <a href="index.php" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Volver
-            </a>
-        </div>
-
-        <div class="section">
-            <h3 class="section-title">Información del Paciente</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Paciente</label>
-                    <div style="font-size: 1.2rem">
-                        <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
-                    </div>
+    <div class="dashboard-container">
+        <!-- Header Superior -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="brand-container">
+                    <img src="../../assets/img/Logo.png" alt="Logo" class="brand-logo">
                 </div>
-                <div class="info-item">
-                    <label>Fecha de Nacimiento</label>
-                    <div><?php echo date('d/m/Y', strtotime($orden['fecha_nacimiento'])); ?></div>
-                </div>
-                <div class="info-item">
-                    <label>Doctor Solicitante</label>
-                    <div>
-                        <?php echo $orden['doctor_nombre'] ? "Dr. {$orden['doctor_nombre']} {$orden['doctor_apellido']}" : 'N/A'; ?>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <label>Fecha de Orden</label>
-                    <div><?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3 class="section-title">Pruebas Solicitadas</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Prueba</th>
-                        <th>Estado</th>
-                        <th>Precio</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $total = 0;
-                    foreach ($pruebas as $prueba):
-                        $precio = isset($prueba['precio']) ? $prueba['precio'] : 0;
-                        $total += $precio;
-                        ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></td>
-                            <td><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></td>
-                            <td><?php echo $prueba['estado']; ?></td>
-                            <td><?php echo 'Q' . number_format($precio, 2); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-                <tfoot>
-                    <tr style="background-color: #f8f9fa; font-weight: bold;">
-                        <td colspan="3" style="text-align: right;">TOTAL:</td>
-                        <td><?php echo 'Q' . number_format($total, 2); ?></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <?php if (!empty($orden['observaciones'])): ?>
-            <div class="section">
-                <h3 class="section-title">Observaciones</h3>
-                <p><?php echo nl2br(htmlspecialchars($orden['observaciones'])); ?></p>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($orden['archivo_resultados'])): ?>
-            <div class="section">
-                <h3 class="section-title">Resultados Adjuntos</h3>
-                <div class="file-attachment">
-                    <i class="bi bi-file-earmark-pdf" style="font-size: 2rem; color: var(--color-danger)"></i>
-                    <div>
-                        <div><strong>Archivo de Resultados</strong></div>
-                        <small class="text-muted">Adjunto procesado</small>
-                    </div>
-                    <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank" class="btn"
-                        style="margin-left: auto;">
-                        <i class="bi bi-download"></i> Ver/Descargar
+                <div class="header-controls">
+                    <a href="index.php" class="action-btn secondary">
+                        <i class="bi bi-arrow-left"></i> Volver a Órdenes
                     </a>
                 </div>
-
-                <?php
-                $ext = pathinfo($orden['archivo_resultados'], PATHINFO_EXTENSION);
-                if (in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif'])):
-                    ?>
-                    <div style="margin-top: 1rem; text-align: center;">
-                        <img src="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>"
-                            style="max-width: 100%; border-radius: 0.5rem; border: 1px solid #dee2e6;">
-                    </div>
-                <?php endif; ?>
             </div>
-        <?php endif; ?>
+        </header>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                        Orden #<?php echo htmlspecialchars($orden['numero_orden']); ?>
+                        <span class="badge <?php echo $orden['estado'] == 'Completada' ? 'bg-success' : 'bg-warning'; ?>" style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: var(--radius-full);">
+                            <?php echo $orden['estado']; ?>
+                        </span>
+                    </h1>
+                    <p class="page-subtitle">Detalles de la orden de laboratorio</p>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="content-section h-100" style="margin:0;">
+                        <h3 class="section-title"><i class="bi bi-person section-title-icon text-primary"></i> Información del Paciente</h3>
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted" style="width: 40%;">Paciente</td>
+                                        <td class="fw-bold fs-5 text-dark"><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Fecha de Nacimiento</td>
+                                        <td class="fw-medium text-dark"><?php echo date('d/m/Y', strtotime($orden['fecha_nacimiento'])); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Doctor Solicitante</td>
+                                        <td class="fw-medium text-dark">
+                                            <?php echo $orden['doctor_nombre'] ? "Dr. {$orden['doctor_nombre']} {$orden['doctor_apellido']}" : 'N/A'; ?>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Fecha de Orden</td>
+                                        <td class="fw-medium text-dark"><?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="content-section h-100" style="margin:0;">
+                        <h3 class="section-title"><i class="bi bi-list-check section-title-icon text-info"></i> Pruebas Solicitadas</h3>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Prueba</th>
+                                        <th>Estado</th>
+                                        <th class="text-end">Precio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $total = 0;
+                                    foreach ($pruebas as $prueba):
+                                        $precio = isset($prueba['precio']) ? $prueba['precio'] : 0;
+                                        $total += $precio;
+                                        ?>
+                                        <tr>
+                                            <td><span class="badge bg-light text-dark border"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span></td>
+                                            <td><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></td>
+                                            <td>
+                                                <span class="badge bg-secondary"><?php echo $prueba['estado']; ?></span>
+                                            </td>
+                                            <td class="text-end fw-medium"><?php echo 'Q' . number_format($precio, 2); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background-color: var(--color-bg);">
+                                        <td colspan="3" class="text-end fw-bold">TOTAL:</td>
+                                        <td class="text-end fw-bold text-primary fs-5"><?php echo 'Q' . number_format($total, 2); ?></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (!empty($orden['observaciones'])): ?>
+                <div class="content-section mb-4">
+                    <h3 class="section-title"><i class="bi bi-journal-text section-title-icon text-warning"></i> Observaciones</h3>
+                    <div class="p-3 bg-light rounded" style="border-left: 4px solid var(--color-warning);">
+                        <p class="mb-0 text-dark"><?php echo nl2br(htmlspecialchars($orden['observaciones'])); ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($orden['archivo_resultados'])): ?>
+                <div class="content-section mb-4">
+                    <h3 class="section-title"><i class="bi bi-paperclip section-title-icon text-success"></i> Resultados Adjuntos</h3>
+                    
+                    <div class="d-flex align-items-center p-3 border rounded mb-3 bg-light">
+                        <div class="me-3">
+                            <i class="bi bi-file-earmark-pdf" style="font-size: 2.5rem; color: var(--color-danger)"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark fs-5">Archivo de Resultados</div>
+                            <div class="text-muted small">Adjunto procesado por el laboratorio</div>
+                        </div>
+                        <div>
+                            <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank" class="action-btn">
+                                <i class="bi bi-download me-2"></i> Ver / Descargar
+                            </a>
+                        </div>
+                    </div>
+
+                    <?php
+                    $ext = pathinfo($orden['archivo_resultados'], PATHINFO_EXTENSION);
+                    if (in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif'])):
+                        ?>
+                        <div class="text-center mt-4">
+                            <img src="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>"
+                                class="img-fluid rounded shadow-sm border" style="max-height: 500px;">
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </main>
     </div>
 </body>
-
 </html>
