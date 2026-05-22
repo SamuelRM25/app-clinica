@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     hora_proxima_cita = :hora_proxima_cita,
                     medico_responsable = :medico_responsable,
                     especialidad_medico = :especialidad_medico
-                WHERE id_historial = :id_historial";
+                WHERE id_historial = :id_historial AND id_hospital = :id_hospital";
 
         $stmt = $conn->prepare($sql);
 
@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt->bindParam(':medico_responsable', $_POST['medico_responsable']);
         $stmt->bindParam(':especialidad_medico', $_POST['especialidad_medico']);
+        $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
         // Execute the statement
         if ($stmt->execute()) {
@@ -75,14 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // If a next appointment date is set, update or create an appointment record
             if (!empty($proxima_cita)) {
                 // Get the patient information for the appointment
-                $patientStmt = $conn->prepare("SELECT nombre, apellido, telefono FROM pacientes WHERE id_paciente = :id_paciente");
+                $patientStmt = $conn->prepare("SELECT nombre, apellido, telefono FROM pacientes WHERE id_paciente = :id_paciente AND id_hospital = :id_hospital");
                 $patientStmt->bindParam(':id_paciente', $_POST['id_paciente']);
+                $patientStmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
                 $patientStmt->execute();
                 $patient = $patientStmt->fetch(PDO::FETCH_ASSOC);
 
                 // Check if an appointment already exists for this medical record
-                $checkStmt = $conn->prepare("SELECT id_cita FROM citas WHERE historial_id = :historial_id");
+                $checkStmt = $conn->prepare("SELECT id_cita FROM citas WHERE historial_id = :historial_id AND id_hospital = :id_hospital");
                 $checkStmt->bindParam(':historial_id', $_POST['id_historial']);
+                $checkStmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
                 $checkStmt->execute();
                 $existingAppointment = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -100,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         fecha_cita = :fecha_cita,
                         hora_cita = :hora_cita,
                         telefono = :telefono
-                        WHERE id_cita = :id_cita";
+                        WHERE id_cita = :id_cita AND id_hospital = :id_hospital";
 
                     $appointmentStmt = $conn->prepare($appointmentSql);
                     $appointmentStmt->bindParam(':nombre_pac', $patient['nombre']);
@@ -109,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $appointmentStmt->bindParam(':hora_cita', $horaCita);
                     $appointmentStmt->bindParam(':telefono', $patient['telefono']);
                     $appointmentStmt->bindParam(':id_cita', $existingAppointment['id_cita']);
+                    $appointmentStmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
                     if ($appointmentStmt->execute()) {
                         $_SESSION['message'] .= " y se ha actualizado la próxima cita para el " . date('d/m/Y', strtotime($proxima_cita));
@@ -120,15 +124,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } else {
                     // Get the next appointment number
-                    $numCitaStmt = $conn->query("SELECT MAX(num_cita) as max_num FROM citas");
+                    $numCitaStmt = $conn->prepare("SELECT MAX(num_cita) as max_num FROM citas WHERE id_hospital = ?");
+                    $numCitaStmt->execute([$id_hospital]);
                     $numCitaResult = $numCitaStmt->fetch(PDO::FETCH_ASSOC);
                     $numCita = ($numCitaResult['max_num'] ?? 0) + 1;
 
                     // Create new appointment
                     $appointmentSql = "INSERT INTO citas (
-                        nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, historial_id
+                        nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, historial_id, id_hospital
                     ) VALUES (
-                        :nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :historial_id
+                        :nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :historial_id, :id_hospital
                     )";
 
                     $appointmentStmt = $conn->prepare($appointmentSql);
@@ -139,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $appointmentStmt->bindParam(':hora_cita', $horaCita);
                     $appointmentStmt->bindParam(':telefono', $patient['telefono']);
                     $appointmentStmt->bindParam(':historial_id', $_POST['id_historial']);
+                    $appointmentStmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
                     if ($appointmentStmt->execute()) {
                         $_SESSION['message'] .= " y se ha programado la próxima cita para el " . date('d/m/Y', strtotime($proxima_cita));

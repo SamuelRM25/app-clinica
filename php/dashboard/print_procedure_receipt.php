@@ -23,9 +23,9 @@ try {
     $stmt = $conn->prepare("
         SELECT p.*
         FROM procedimientos_menores p
-        WHERE p.id_procedimiento = ?
+        WHERE p.id_procedimiento = ? AND p.id_hospital = ?
     ");
-    $stmt->execute([$id_proc]);
+    $stmt->execute([$id_proc, $_SESSION['id_hospital'] ?? 0]);
     $proc = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$proc)

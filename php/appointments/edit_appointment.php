@@ -18,9 +18,10 @@ $id_cita = $_GET['id'];
 $database = new Database();
 $conn = $database->getConnection();
 
-// Fetch doctors for the dropdown
-$stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre, apellido");
-$stmtDocs->execute();
+$id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+$stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY nombre, apellido");
+$stmtDocs->execute([$id_hospital]);
 $doctors = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission
@@ -37,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 hora_cita = :hora_cita,
                 telefono = :telefono,
                 id_doctor = :id_doctor
-                WHERE id_cita = :id_cita";
+                WHERE id_cita = :id_cita AND id_hospital = :id_hospital";
 
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':nombre_pac', $_POST['nombre_pac']);
@@ -47,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':telefono', $_POST['telefono']);
         $stmt->bindParam(':id_doctor', $_POST['id_doctor']);
         $stmt->bindParam(':id_cita', $id_cita);
+        $stmt->bindParam(':id_hospital', $id_hospital);
 
         if ($stmt->execute()) {
             $_SESSION['appointment_message'] = "Cita actualizada correctamente";
@@ -63,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get appointment data
 try {
-    $stmt = $conn->prepare("SELECT * FROM citas WHERE id_cita = :id_cita");
+    $stmt = $conn->prepare("SELECT * FROM citas WHERE id_cita = :id_cita AND id_hospital = :id_hospital");
     $stmt->bindParam(':id_cita', $id_cita);
+    $stmt->bindParam(':id_hospital', $id_hospital);
     $stmt->execute();
 
     if ($stmt->rowCount() === 0) {

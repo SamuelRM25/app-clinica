@@ -20,13 +20,15 @@ try {
     $conn = $database->getConnection();
 
     // Query from inventario and join with compras if id_purchase_item exists
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT i.precio_venta as inv_price, c.precio_venta as comp_price 
         FROM inventario i
         LEFT JOIN compras c ON i.id_purchase_item = c.id_compras
-        WHERE i.id_inventario = ?
+        WHERE i.id_inventario = ? AND i.id_hospital = ?
     ");
-    $stmt->execute([$_GET['id_inventario']]);
+    $stmt->execute([$_GET['id_inventario'], $id_hospital]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($result) {

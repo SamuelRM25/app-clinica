@@ -20,15 +20,17 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT c.*, p.nombre as p_nom, p.apellido as p_ape, 
                d.nombre as d_nom, d.apellido as d_ape
         FROM cobros c
         JOIN pacientes p ON c.paciente_cobro = p.id_paciente
         LEFT JOIN usuarios d ON c.id_doctor = d.idUsuario
-        WHERE c.in_cobro = ?
+        WHERE c.in_cobro = ? AND c.id_hospital = ?
     ");
-    $stmt->execute([$id_cobro]);
+    $stmt->execute([$id_cobro, $id_hospital]);
     $cobro = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cobro)

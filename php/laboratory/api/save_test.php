@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 if ($_SESSION['tipoUsuario'] !== 'admin' && $_SESSION['user_id'] != 7) {
     echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
@@ -23,6 +24,7 @@ $precio = (float) ($_POST['precio'] ?? 0);
 $muestra = $_POST['muestra_requerida'] ?? ''; // Fixed mapping
 $tiempo = (int) ($_POST['tiempo_procesamiento_horas'] ?? 0); // Fixed mapping
 $notas = $_POST['descripcion'] ?? ''; // Map description to notas
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if (empty($nombre) || empty($codigo)) {
     echo json_encode(['success' => false, 'message' => 'El nombre y el código son obligatorios']);
@@ -38,24 +40,24 @@ try {
         $stmt = $conn->prepare("
             UPDATE catalogo_pruebas 
             SET nombre_prueba = ?, codigo_prueba = ?, categoria = ?, precio = ?, muestra_requerida = ?, tiempo_procesamiento_horas = ?, notas = ?
-            WHERE id_prueba = ?
+            WHERE id_prueba = ? AND id_hospital = ?
         ");
-        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas, $id_prueba]);
+        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas, $id_prueba, $id_hospital]);
         $message = 'Prueba actualizada correctamente';
     } else {
         // Create - Check for duplicate code first
-        $checkStmt = $conn->prepare("SELECT id_prueba FROM catalogo_pruebas WHERE codigo_prueba = ?");
-        $checkStmt->execute([$codigo]);
+        $checkStmt = $conn->prepare("SELECT id_prueba FROM catalogo_pruebas WHERE codigo_prueba = ? AND id_hospital = ?");
+        $checkStmt->execute([$codigo, $id_hospital]);
         if ($checkStmt->fetch()) {
             echo json_encode(['success' => false, 'message' => 'Ya existe una prueba con el código ' . $codigo]);
             exit;
         }
 
         $stmt = $conn->prepare("
-            INSERT INTO catalogo_pruebas (nombre_prueba, codigo_prueba, categoria, precio, muestra_requerida, tiempo_procesamiento_horas, notas)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO catalogo_pruebas (nombre_prueba, codigo_prueba, categoria, precio, muestra_requerida, tiempo_procesamiento_horas, notas, id_hospital)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas]);
+        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas, $id_hospital]);
         $message = 'Prueba creada correctamente';
     }
 

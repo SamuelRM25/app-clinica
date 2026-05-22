@@ -21,6 +21,7 @@ try {
     $conn = $database->getConnection();
 
     $date = $_GET['date'];
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     // Definir jornada: 8:00 AM del día seleccionado hasta 8:00 AM del día siguiente
     // Jornada 1: 08:00 AM a 05:00 PM (17:00)
@@ -36,11 +37,13 @@ try {
                 p.usuario 
             FROM procedimientos_menores p
             WHERE p.fecha_procedimiento >= :start_dt AND p.fecha_procedimiento < :end_dt
+            AND p.id_hospital = :id_hospital
             ORDER BY p.fecha_procedimiento ASC";
 
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':start_dt', $start_datetime);
     $stmt->bindParam(':end_dt', $end_datetime);
+    $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
     $stmt->execute();
 
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);

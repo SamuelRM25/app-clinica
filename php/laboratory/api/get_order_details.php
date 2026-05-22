@@ -22,13 +22,16 @@ try {
     $conn = $db->getConnection();
 
     // Obtener detalles de la orden
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT op.id_orden_prueba, cp.nombre_prueba, cp.precio, op.estado 
         FROM orden_pruebas op
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE op.id_orden = ?
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $pruebas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

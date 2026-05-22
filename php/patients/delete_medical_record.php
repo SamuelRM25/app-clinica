@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -23,8 +23,8 @@ try {
     $conn = $database->getConnection();
 
     // First, get the patient ID for the redirect
-    $stmt = $conn->prepare("SELECT id_paciente FROM historial_clinico WHERE id_historial = ?");
-    $stmt->execute([$data['id']]);
+    $stmt = $conn->prepare("SELECT id_paciente FROM historial_clinico WHERE id_historial = ? AND id_hospital = ?");
+    $stmt->execute([$data['id'], $id_hospital]);
     $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$record) {
@@ -33,8 +33,8 @@ try {
     }
 
     // Delete the record
-    $stmt = $conn->prepare("DELETE FROM historial_clinico WHERE id_historial = ?");
-    if ($stmt->execute([$data['id']])) {
+    $stmt = $conn->prepare("DELETE FROM historial_clinico WHERE id_historial = ? AND id_hospital = ?");
+    if ($stmt->execute([$data['id'], $id_hospital])) {
         echo json_encode(['status' => 'success', 'message' => 'Registro eliminado correctamente']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Error al eliminar el registro']);

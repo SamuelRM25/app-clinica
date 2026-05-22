@@ -4,6 +4,8 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
 verify_session();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -30,9 +32,9 @@ try {
             p.telefono
         FROM historial_clinico h
         JOIN pacientes p ON h.id_paciente = p.id_paciente
-        WHERE h.id_historial = ?
+        WHERE h.id_historial = ? AND h.id_hospital = ?
     ");
-    $stmt->execute([$id_historial]);
+    $stmt->execute([$id_historial, $id_hospital]);
     $receta = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$receta) {

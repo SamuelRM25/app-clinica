@@ -8,6 +8,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = hospital_id();
 
 verify_session();
 
@@ -23,9 +24,9 @@ try {
     $stmt = $conn->prepare("
         SELECT *
         FROM examenes_realizados
-        WHERE id_examen_realizado = ?
+        WHERE id_examen_realizado = ? AND id_hospital = ?
     ");
-    $stmt->execute([$id_examen]);
+    $stmt->execute([$id_examen, $id_hospital]);
     $orden = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$orden)

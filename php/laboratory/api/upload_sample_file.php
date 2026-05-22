@@ -3,6 +3,7 @@
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 verify_session();
 
@@ -16,14 +17,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id_orden = $_POST['id_orden'] ?? null;
 $notas = $_POST['notas'] ?? '';
 
-if (!$id_orden) {
-    echo json_encode(['success' => false, 'message' => 'Falta el ID de la orden']);
-    exit;
-}
+    if (!$id_orden) {
+        echo json_encode(['success' => false, 'message' => 'Faltan parámetros requeridos']);
+        exit;
+    }
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
+
+    $id_hospital = hospital_id();
+
+    $stmt_hosp = $conn->prepare("SELECT id_orden FROM ordenes_laboratorio WHERE id_orden = ? AND id_hospital = ?");
+    $stmt_hosp->execute([$id_orden, $id_hospital]);
+    if (!$stmt_hosp->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'Orden no encontrada o no pertenece a este hospital']);
+        exit;
+    }
 
     if (!isset($_FILES['archivo_muestra'])) {
         echo json_encode(['success' => false, 'message' => 'No se recibieron archivos']);
@@ -67,10 +77,10 @@ try {
             // Insert into archivos_resultados_laboratorio with categoria 'ORDEN_FISICA'
             $stmt = $conn->prepare("
                 INSERT INTO archivos_resultados_laboratorio 
-                (id_orden, categoria, nombre_archivo, tipo_contenido, tamano, contenido, notas) 
-                VALUES (?, 'ORDEN_FISICA', ?, ?, ?, ?, ?)
+                (id_orden, categoria, nombre_archivo, tipo_contenido, tamano, contenido, notas, id_hospital) 
+                VALUES (?, 'ORDEN_FISICA', ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$id_orden, $fileName, $fileType, $fileSize, $content, $notas]);
+            $stmt->execute([$id_orden, $fileName, $fileType, $fileSize, $content, $notas, $id_hospital]);
             
             $uploadedCount++;
 
@@ -86,9 +96,9 @@ try {
         $stmt = $conn->prepare("
             UPDATE ordenes_laboratorio 
             SET estado = 'Muestra_Recibida', fecha_muestra_recibida = NOW()
-            WHERE id_orden = ? AND estado = 'Pendiente'
+            WHERE id_orden = ? AND estado = 'Pendiente' AND id_hospital = ?
         ");
-        $stmt->execute([$id_orden]);
+        $stmt->execute([$id_orden, $id_hospital]);
 
         $conn->commit();
         echo json_encode([

@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -25,8 +25,8 @@ try {
     $conn = $database->getConnection();
 
     // Get test details
-    $stmt = $conn->prepare("SELECT * FROM catalogo_pruebas WHERE id_prueba = ?");
-    $stmt->execute([$id_prueba]);
+    $stmt = $conn->prepare("SELECT * FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
+    $stmt->execute([$id_prueba, $id_hospital]);
     $prueba = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$prueba) {
@@ -35,8 +35,8 @@ try {
     }
 
     // Get current parameters
-    $stmt = $conn->prepare("SELECT * FROM parametros_pruebas WHERE id_prueba = ? ORDER BY orden_visualizacion, id_parametro");
-    $stmt->execute([$id_prueba]);
+    $stmt = $conn->prepare("SELECT * FROM parametros_pruebas WHERE id_prueba = ? AND id_hospital = ? ORDER BY orden_visualizacion, id_parametro");
+    $stmt->execute([$id_prueba, $id_hospital]);
     $parametros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Count parameters

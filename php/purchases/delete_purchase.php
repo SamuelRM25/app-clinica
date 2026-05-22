@@ -12,10 +12,11 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     try {
         $database = new Database();
         $conn = $database->getConnection();
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
         // Prepare and execute the delete statement
-        $stmt = $conn->prepare("DELETE FROM compras WHERE id_compras = ?");
-        $result = $stmt->execute([$_GET['id']]);
+        $stmt = $conn->prepare("DELETE FROM compras WHERE id_compras = ? AND id_hospital = ?");
+        $result = $stmt->execute([$_GET['id'], $id_hospital]);
 
         if ($result) {
             $_SESSION['purchase_message'] = 'Compra eliminada correctamente';

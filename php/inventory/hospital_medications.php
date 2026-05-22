@@ -15,7 +15,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -32,7 +32,7 @@ try {
     $can_manage_inventory = ($user_type === 'admin' || in_array($user_id, [1, 6]));
 
     // Obtener los medicamentos de hospitalización
-    $stmt = $conn->query("
+    $stmt = $conn->prepare("
         SELECT 
             ch.id_cargo, 
             ch.descripcion as cargo_descripcion, 
@@ -49,13 +49,15 @@ try {
         JOIN pacientes p ON e.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON ch.registrado_por = u.idUsuario
         LEFT JOIN inventario i ON ch.referencia_id = i.id_inventario AND ch.referencia_tabla = 'inventario'
-        WHERE ch.tipo_cargo IN ('Medicamento', 'Insumo') AND ch.cancelado = 0
+        WHERE ch.tipo_cargo IN ('Medicamento', 'Insumo') AND ch.cancelado = 0 AND ch.id_hospital = ?
         ORDER BY ch.fecha_cargo DESC
     ");
+    $stmt->execute([$id_hospital]);
     $hospital_meds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener catalogo de inventario para el modal
-    $stmt_inv = $conn->query("SELECT id_inventario, nom_medicamento, presentacion_med, stock_hospital FROM inventario ORDER BY nom_medicamento ASC");
+    $stmt_inv = $conn->prepare("SELECT id_inventario, nom_medicamento, presentacion_med, stock_hospital FROM inventario WHERE id_hospital = ? ORDER BY nom_medicamento ASC");
+    $stmt_inv->execute([$id_hospital]);
     $inventory_list = $stmt_inv->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Medicamentos Hospitalarios - Inventario";

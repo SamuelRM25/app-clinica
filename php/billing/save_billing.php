@@ -42,25 +42,23 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    // 1. Si no hay ID de paciente, intentar crearlo o buscarlo por nombre
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     if (empty($paciente_id)) {
-        // Separar nombre y apellido si es posible
         $parts = explode(' ', $paciente_nombre, 2);
         $nombre = $parts[0];
         $apellido = isset($parts[1]) ? $parts[1] : '';
 
-        // Crear paciente básico
-        $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro) VALUES (?, ?, NOW())");
-        $stmtP->execute([$nombre, $apellido]);
+        $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro, id_hospital) VALUES (?, ?, NOW(), ?)");
+        $stmtP->execute([$nombre, $apellido, $id_hospital]);
         $paciente_id = $conn->lastInsertId();
     }
 
-    // 2. Insertar el cobro
     $tipo_pago = !empty($data['tipo_pago']) ? $data['tipo_pago'] : 'Efectivo';
 
     $stmt = $conn->prepare("
-        INSERT INTO cobros (paciente_cobro, cantidad_consulta, fecha_consulta, id_doctor, tipo_consulta, tipo_pago) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO cobros (paciente_cobro, cantidad_consulta, fecha_consulta, id_doctor, tipo_consulta, tipo_pago, id_hospital) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
@@ -69,7 +67,8 @@ try {
         $fecha,
         $id_doctor,
         $tipo_consulta,
-        $tipo_pago
+        $tipo_pago,
+        $id_hospital
     ]);
 
     echo json_encode([

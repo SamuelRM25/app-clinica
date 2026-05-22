@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -19,8 +19,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $stmt = $conn->prepare("SELECT * FROM historial_clinico WHERE id_historial = ?");
-    $stmt->execute([$_GET['id']]);
+    $stmt = $conn->prepare("SELECT * FROM historial_clinico WHERE id_historial = ? AND id_hospital = ?");
+    $stmt->execute([$_GET['id'], $id_hospital]);
     $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($record) {

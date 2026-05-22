@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
                                 precio_hospital = ?,
                                 precio_medico = ?,
                                 stock_hospital = ?
-                                WHERE id_inventario = ?");
+                                WHERE id_inventario = ? AND id_hospital = ?");
 
         $result = $stmt->execute([
             $_POST['codigo_barras'] ?? null,
@@ -43,13 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
             $_POST['precio_hospital'] ?? 0.00,
             $_POST['precio_medico'] ?? 0.00,
             $_POST['stock_hospital'] ?? 0,
-            $_POST['id_inventario']
+            $_POST['id_inventario'],
+            $id_hospital
         ]);
 
         if ($result) {
             // Requerimiento 4: Actualizar unit_cost en purchase_items si el inventario se actualiza
-            $stmt_pi = $conn->prepare("SELECT id_purchase_item FROM inventario WHERE id_inventario = ?");
-            $stmt_pi->execute([$_POST['id_inventario']]);
+            $stmt_pi = $conn->prepare("SELECT id_purchase_item FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+            $stmt_pi->execute([$_POST['id_inventario'], $id_hospital]);
             $inv_row = $stmt_pi->fetch(PDO::FETCH_ASSOC);
 
             if ($inv_row && !empty($inv_row['id_purchase_item'])) {

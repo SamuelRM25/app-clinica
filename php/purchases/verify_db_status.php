@@ -3,6 +3,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
@@ -12,7 +13,7 @@ try {
 
     // Check purchase_headers
     try {
-        $conn->query("SELECT 1 FROM purchase_headers LIMIT 1");
+        $conn->prepare("SELECT 1 FROM purchase_headers WHERE id_hospital = ? LIMIT 1")->execute([$id_hospital]);
         $results['purchase_headers'] = "OK";
     } catch (Exception $e) {
         $results['purchase_headers'] = "Missing or Error: " . $e->getMessage();
@@ -20,7 +21,7 @@ try {
 
     // Check purchase_items
     try {
-        $conn->query("SELECT 1 FROM purchase_items LIMIT 1");
+        $conn->prepare("SELECT 1 FROM purchase_items WHERE id_hospital = ? LIMIT 1")->execute([$id_hospital]);
         $results['purchase_items'] = "OK";
     } catch (Exception $e) {
         $results['purchase_items'] = "Missing or Error: " . $e->getMessage();

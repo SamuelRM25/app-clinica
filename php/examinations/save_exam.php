@@ -32,15 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = $database->getConnection();
 
         // Usar solo los campos que existen en la tabla
+        $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
         $stmt = $conn->prepare(
-            "INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, fecha_examen, usuario) 
-             VALUES (:id_paciente, :nombre_paciente, :tipo_examen, :cobro, :fecha_examen, :usuario)"
+            "INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, fecha_examen, usuario, id_hospital) 
+             VALUES (:id_paciente, :nombre_paciente, :tipo_examen, :cobro, :fecha_examen, :usuario, :id_hospital)"
         );
 
-        // Combinar todos los exámenes en un solo texto
         $examen_texto = implode(', ', $examenes_filtrados);
-
-        // Obtener la fecha y hora actual en la zona horaria de Guatemala
         $fecha_actual = date('Y-m-d H:i:s');
 
         $stmt->bindParam(':id_paciente', $id_paciente);
@@ -49,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':cobro', $cobro);
         $stmt->bindParam(':fecha_examen', $fecha_actual);
         $stmt->bindParam(':usuario', $_SESSION['nombre']);
+        $stmt->bindParam(':id_hospital', $id_hospital);
 
         $stmt->execute();
 

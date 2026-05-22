@@ -14,6 +14,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -47,8 +48,8 @@ try {
     // ============ CONSULTAS ESTADÍSTICAS ============
 
     // Obtener Pacientes (para Cobros y Laboratorio)
-    $stmt = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes ORDER BY nombre");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT id_paciente, CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes WHERE id_hospital = ? ORDER BY nombre");
+    $stmt->execute([$id_hospital]);
     $pacientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener Doctores (para Cobros y Laboratorio)
@@ -57,7 +58,8 @@ try {
     $doctores = $stmtDoc->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener Catálogo de Pruebas (para Laboratorio)
-    $stmtCat = $conn->query("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, precio FROM catalogo_pruebas ORDER BY categoria, nombre_prueba");
+    $stmtCat = $conn->prepare("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, precio FROM catalogo_pruebas WHERE id_hospital = ? ORDER BY categoria, nombre_prueba");
+    $stmtCat->execute([$id_hospital]);
     $catalogo = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
     $pruebas_por_categoria = [];
@@ -66,8 +68,8 @@ try {
     }
 
     // 1. Citas de hoy
-    $params = $is_doctor ? [$today, $user_id] : [$today];
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ?" . $doctor_filter);
+    $params = $is_doctor ? [$today, $id_hospital, $user_id] : [$today, $id_hospital];
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ? AND id_hospital = ?" . $doctor_filter);
     $stmt->execute($params);
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
@@ -75,30 +77,30 @@ try {
     $current_year = date('Y');
     $year_start = $current_year . '-01-01';
     $year_end = $current_year . '-12-31';
-    $year_params = $is_doctor ? [$year_start, $year_end, $user_id] : [$year_start, $year_end];
+    $year_params = $is_doctor ? [$year_start, $year_end, $id_hospital, $user_id] : [$year_start, $year_end, $id_hospital];
 
     $stmt = $conn->prepare("
         SELECT COUNT(DISTINCT CONCAT(nombre_pac, ' ', apellido_pac)) as count 
         FROM citas 
-        WHERE fecha_cita BETWEEN ? AND ?" . $doctor_filter
+        WHERE fecha_cita BETWEEN ? AND ? AND id_hospital = ?" . $doctor_filter
     );
     $stmt->execute($year_params);
     $year_patients = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 3. Citas pendientes (futuras)
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita > ?" . $doctor_filter);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita > ? AND id_hospital = ?" . $doctor_filter);
     $stmt->execute($params);
     $pending_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 4. Consultas del mes actual
     $month_start = date('Y-m-01');
     $month_end = date('Y-m-t');
-    $month_params = $is_doctor ? [$month_start, $month_end, $user_id] : [$month_start, $month_end];
+    $month_params = $is_doctor ? [$month_start, $month_end, $id_hospital, $user_id] : [$month_start, $month_end, $id_hospital];
 
     $stmt = $conn->prepare("
         SELECT COUNT(*) as count 
         FROM citas 
-        WHERE fecha_cita BETWEEN ? AND ?" . $doctor_filter
+        WHERE fecha_cita BETWEEN ? AND ? AND id_hospital = ?" . $doctor_filter
     );
     $stmt->execute($month_params);
     $month_consultations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
@@ -107,22 +109,22 @@ try {
     $stmt = $conn->prepare("
         SELECT id_cita, nombre_pac, apellido_pac, hora_cita, telefono 
         FROM citas 
-        WHERE fecha_cita = ?" . $doctor_filter . "
+        WHERE fecha_cita = ? AND id_hospital = ?" . $doctor_filter . "
         ORDER BY hora_cita
     ");
     $stmt->execute($params);
     $todays_appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 6. Total de citas en el sistema
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // ============ INVENTARIO ============
 
     // 7. Medicamentos en inventario
-    $stmt = $conn->prepare("SELECT SUM(cantidad_med) as total FROM inventario WHERE cantidad_med > 0");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT SUM(cantidad_med) as total FROM inventario WHERE cantidad_med > 0 AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_medications = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 8. Medicamentos próximos a caducar (Configurable)
@@ -131,10 +133,10 @@ try {
     $stmt = $conn->prepare("
         SELECT id_inventario, nom_medicamento, fecha_vencimiento, cantidad_med 
         FROM inventario 
-        WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0
+        WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0 AND id_hospital = ?
         ORDER BY fecha_vencimiento ASC
     ");
-    $stmt->execute([$today, $next_month]);
+    $stmt->execute([$today, $next_month, $id_hospital]);
     $expiring_medications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 9. Medicamentos con stock bajo (Configurable)
@@ -142,22 +144,22 @@ try {
     $stmt = $conn->prepare("
         SELECT id_inventario, nom_medicamento, cantidad_med 
         FROM inventario 
-        WHERE cantidad_med > 0 AND cantidad_med <= ?
+        WHERE cantidad_med > 0 AND cantidad_med <= ? AND id_hospital = ?
         ORDER BY cantidad_med ASC
     ");
-    $stmt->execute([$low_stock_limit]);
+    $stmt->execute([$low_stock_limit, $id_hospital]);
     $low_stock_medications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 10. Compras pendientes
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pending_purchases = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // ============ HOSPITALIZACIÓN ============
 
     // 11. Hospitalizaciones Activas
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $active_hospitalizations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 12. Camas Disponibles
@@ -174,11 +176,11 @@ try {
         JOIN camas c ON e.id_cama = c.id_cama
         JOIN habitaciones hab ON c.id_habitacion = hab.id_habitacion
         JOIN habitaciones h ON c.id_habitacion = h.id_habitacion 
-        WHERE e.estado = 'Activo'
+        WHERE e.estado = 'Activo' AND e.id_hospital = ?
         ORDER BY e.fecha_ingreso DESC
         LIMIT 5
     ");
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
@@ -217,26 +219,26 @@ try {
     } catch (\Exception $e) {}
 
     try {
-        $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE MONTH(fecha_procedimiento) = MONTH(CURDATE()) AND YEAR(fecha_procedimiento) = YEAR(CURDATE())");
-        $stmt->execute();
+        $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE MONTH(fecha_procedimiento) = MONTH(CURDATE()) AND YEAR(fecha_procedimiento) = YEAR(CURDATE()) AND id_hospital = ?");
+        $stmt->execute([$id_hospital]);
         $revenue_proc = (float)$stmt->fetchColumn() ?: 0;
     } catch (\Exception $e) {}
 
     try {
-        $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE MONTH(fecha_examen) = MONTH(CURDATE()) AND YEAR(fecha_examen) = YEAR(CURDATE())");
-        $stmt->execute();
+        $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE MONTH(fecha_examen) = MONTH(CURDATE()) AND YEAR(fecha_examen) = YEAR(CURDATE()) AND id_hospital = ?");
+        $stmt->execute([$id_hospital]);
         $revenue_exams = (float)$stmt->fetchColumn() ?: 0;
     } catch (\Exception $e) {}
 
     try {
-        $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND YEAR(fecha_consulta) = YEAR(CURDATE())");
-        $stmt->execute();
+        $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND YEAR(fecha_consulta) = YEAR(CURDATE()) AND id_hospital = ?");
+        $stmt->execute([$id_hospital]);
         $revenue_consults = (float)$stmt->fetchColumn() ?: 0;
     } catch (\Exception $e) {}
 
     try {
-        $stmt = $conn->prepare("SELECT SUM(total_general) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE MONTH(e.fecha_alta) = MONTH(CURDATE()) AND YEAR(e.fecha_alta) = YEAR(CURDATE())");
-        $stmt->execute();
+        $stmt = $conn->prepare("SELECT SUM(total_general) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE MONTH(e.fecha_alta) = MONTH(CURDATE()) AND YEAR(e.fecha_alta) = YEAR(CURDATE()) AND e.id_hospital = ?");
+        $stmt->execute([$id_hospital]);
         $revenue_hosp = (float)$stmt->fetchColumn() ?: 0;
     } catch (\Exception $e) {}
 

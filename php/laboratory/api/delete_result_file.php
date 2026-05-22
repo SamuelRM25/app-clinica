@@ -26,17 +26,18 @@ try {
     $conn = $database->getConnection();
 
     // Verify if file exists
-    $stmt = $conn->prepare("SELECT id_archivo FROM archivos_resultados_laboratorio WHERE id_archivo = ?");
-    $stmt->execute([$id_archivo]);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("SELECT id_archivo FROM archivos_resultados_laboratorio WHERE id_archivo = ? AND id_hospital = ?");
+    $stmt->execute([$id_archivo, $id_hospital]);
     
     if ($stmt->rowCount() === 0) {
         echo json_encode(['success' => false, 'message' => 'Archivo no encontrado']);
         exit;
     }
 
-    // Delete file
-    $stmt = $conn->prepare("DELETE FROM archivos_resultados_laboratorio WHERE id_archivo = ?");
-    $stmt->execute([$id_archivo]);
+    $stmt = $conn->prepare("DELETE FROM archivos_resultados_laboratorio WHERE id_archivo = ? AND id_hospital = ?");
+    $stmt->execute([$id_archivo, $id_hospital]);
 
     echo json_encode(['success' => true, 'message' => 'Archivo eliminado correctamente']);
 

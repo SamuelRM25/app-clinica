@@ -26,6 +26,7 @@ try {
     $payment_date = $_POST['payment_date'] ?? date('Y-m-d');
     $payment_method = $_POST['payment_method'] ?? 'Efectivo';
     $notes = $_POST['notes'] ?? '';
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     if (!$purchase_id || $amount <= 0) {
         throw new Exception("Datos inválidos");
@@ -34,8 +35,8 @@ try {
     $conn->beginTransaction();
 
     // 1. Get current purchase info
-    $stmt = $conn->prepare("SELECT total_amount, paid_amount FROM purchase_headers WHERE id = ? FOR UPDATE");
-    $stmt->execute([$purchase_id]);
+    $stmt = $conn->prepare("SELECT total_amount, paid_amount FROM purchase_headers WHERE id = ? AND id_hospital = ? FOR UPDATE");
+    $stmt->execute([$purchase_id, $id_hospital]);
     $purchase = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$purchase) {
@@ -50,8 +51,8 @@ try {
     // }
 
     // 2. Insert payment record
-    $stmtInsert = $conn->prepare("INSERT INTO purchase_payments (purchase_header_id, amount, payment_date, payment_method, notes) VALUES (?, ?, ?, ?, ?)");
-    $stmtInsert->execute([$purchase_id, $amount, $payment_date, $payment_method, $notes]);
+    $stmtInsert = $conn->prepare("INSERT INTO purchase_payments (purchase_header_id, amount, payment_date, payment_method, notes, id_hospital) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmtInsert->execute([$purchase_id, $amount, $payment_date, $payment_method, $notes, $id_hospital]);
 
     // 3. Update purchase header status and paid amount
     $payment_status = 'Pendiente';
@@ -61,8 +62,8 @@ try {
         $payment_status = 'Parcial';
     }
 
-    $stmtUpdate = $conn->prepare("UPDATE purchase_headers SET paid_amount = ?, payment_status = ? WHERE id = ?");
-    $stmtUpdate->execute([$new_paid_amount, $payment_status, $purchase_id]);
+    $stmtUpdate = $conn->prepare("UPDATE purchase_headers SET paid_amount = ?, payment_status = ? WHERE id = ? AND id_hospital = ?");
+    $stmtUpdate->execute([$new_paid_amount, $payment_status, $purchase_id, $id_hospital]);
 
     $conn->commit();
 

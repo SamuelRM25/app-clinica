@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if (!isset($_SESSION['user_id'])) {
     die("No autorizado");
@@ -20,9 +20,11 @@ try {
         FROM inventario i
         LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
         LEFT JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
+        WHERE i.id_hospital = ?
         ORDER BY i.nom_medicamento ASC
     ";
-    $stmt = $conn->query($query);
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$id_hospital]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     die("Error: " . $e->getMessage());

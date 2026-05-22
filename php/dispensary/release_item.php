@@ -4,6 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 header('Content-Type: application/json');
 
@@ -16,12 +17,12 @@ try {
     $conn = $database->getConnection();
 
     if ($id_inventario) {
-        $stmt = $conn->prepare("DELETE FROM reservas_inventario WHERE id_inventario = ? AND session_id = ?");
-        $stmt->execute([$id_inventario, $session_id]);
+        $stmt = $conn->prepare("DELETE FROM reservas_inventario WHERE id_inventario = ? AND session_id = ? AND id_hospital = ?");
+        $stmt->execute([$id_inventario, $session_id, $id_hospital]);
     } else {
         // Clear all for this session
-        $stmt = $conn->prepare("DELETE FROM reservas_inventario WHERE session_id = ?");
-        $stmt->execute([$session_id]);
+        $stmt = $conn->prepare("DELETE FROM reservas_inventario WHERE session_id = ? AND id_hospital = ?");
+        $stmt->execute([$session_id, $id_hospital]);
     }
 
     echo json_encode(['status' => 'success']);

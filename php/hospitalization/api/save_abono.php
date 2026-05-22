@@ -2,6 +2,7 @@
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -20,6 +21,7 @@ if (!$id_encamamiento || $monto <= 0) {
 }
 
 try {
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -42,8 +44,8 @@ try {
     }
 
     // Get cuenta ID
-    $stmt = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-    $stmt->execute([$id_encamamiento]);
+    $stmt = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+    $stmt->execute([$id_encamamiento, $id_hospital]);
     $cuenta = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cuenta)
@@ -52,20 +54,20 @@ try {
 
     // Insert Abono
     $stmtIns = $conn->prepare("
-        INSERT INTO abonos_hospitalarios (id_cuenta, monto, metodo_pago, notas, registrado_por, fecha_abono)
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO abonos_hospitalarios (id_cuenta, monto, metodo_pago, notas, registrado_por, fecha_abono, id_hospital)
+        VALUES (?, ?, ?, ?, ?, NOW(), ?)
     ");
-    $stmtIns->execute([$id_cuenta, $monto, $metodo_pago, $notas, $user_id]);
+    $stmtIns->execute([$id_cuenta, $monto, $metodo_pago, $notas, $user_id, $id_hospital]);
     $id_abono = $conn->lastInsertId();
 
     // Update Totals
     $stmtUpd = $conn->prepare("
         UPDATE cuenta_hospitalaria 
-        SET total_pagado = (SELECT COALESCE(SUM(monto),0) FROM abonos_hospitalarios WHERE id_cuenta = ?),
-            monto_pagado = (SELECT COALESCE(SUM(monto),0) FROM abonos_hospitalarios WHERE id_cuenta = ?)
-        WHERE id_cuenta = ?
+        SET total_pagado = (SELECT COALESCE(SUM(monto),0) FROM abonos_hospitalarios WHERE id_cuenta = ? AND id_hospital = ?),
+            monto_pagado = (SELECT COALESCE(SUM(monto),0) FROM abonos_hospitalarios WHERE id_cuenta = ? AND id_hospital = ?)
+        WHERE id_cuenta = ? AND id_hospital = ?
     ");
-    $stmtUpd->execute([$id_cuenta, $id_cuenta, $id_cuenta]);
+    $stmtUpd->execute([$id_cuenta, $id_hospital, $id_cuenta, $id_hospital, $id_cuenta, $id_hospital]);
 
     echo json_encode([
         'status' => 'success',

@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 header('Content-Type: application/json');
 
@@ -32,8 +32,8 @@ try {
     $conn->beginTransaction();
 
     // 1. Get linked purchase item ID
-    $stmtGet = $conn->prepare("SELECT id_purchase_item FROM inventario WHERE id_inventario = ?");
-    $stmtGet->execute([$id]);
+    $stmtGet = $conn->prepare("SELECT id_purchase_item FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtGet->execute([$id, $id_hospital]);
     $row = $stmtGet->fetch(PDO::FETCH_ASSOC);
     $purchaseItemId = $row['id_purchase_item'] ?? null;
 
@@ -47,20 +47,21 @@ try {
         $params[] = $barcode;
     }
 
-    $sqlInv .= " WHERE id_inventario = ?";
+    $sqlInv .= " WHERE id_inventario = ? AND id_hospital = ?";
     $params[] = $id;
+    $params[] = $id_hospital;
 
     $stmtUpdateInv = $conn->prepare($sqlInv);
     $stmtUpdateInv->execute($params);
 
     // 3. Update Purchase Item Status if linked
     if ($purchaseItemId) {
-        $stmtUpdateItem = $conn->prepare("UPDATE purchase_items SET status = 'Recibido' WHERE id = ?");
-        $stmtUpdateItem->execute([$purchaseItemId]);
+        $stmtUpdateItem = $conn->prepare("UPDATE purchase_items SET status = 'Recibido' WHERE id = ? AND id_hospital = ?");
+        $stmtUpdateItem->execute([$purchaseItemId, $id_hospital]);
 
         // Check if all items in that purchase are received
-        $stmtCheck = $conn->prepare("SELECT purchase_header_id FROM purchase_items WHERE id = ?");
-        $stmtCheck->execute([$purchaseItemId]);
+        $stmtCheck = $conn->prepare("SELECT purchase_header_id FROM purchase_items WHERE id = ? AND id_hospital = ?");
+        $stmtCheck->execute([$purchaseItemId, $id_hospital]);
         $headerId = $stmtCheck->fetchColumn();
 
         if ($headerId) {

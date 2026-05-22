@@ -38,9 +38,11 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     // Obtener total de registros
-    $stmt_count = $conn->query("SELECT COUNT(*) as total FROM procedimientos_menores");
+    $stmt_count = $conn->prepare("SELECT COUNT(*) as total FROM procedimientos_menores WHERE id_hospital = ?");
+    $stmt_count->execute([$id_hospital]);
     $total_registros = $stmt_count->fetch(PDO::FETCH_ASSOC)['total'];
     $total_paginas = ceil($total_registros / $limit);
 
@@ -48,24 +50,25 @@ try {
     $stmt = $conn->prepare("
         SELECT id_procedimiento, nombre_paciente, procedimiento, cobro, fecha_procedimiento 
         FROM procedimientos_menores 
+        WHERE id_hospital = ?
         ORDER BY fecha_procedimiento DESC 
         LIMIT :limit OFFSET :offset
     ");
     $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $procedimientos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Estadísticas adicionales
     $today = date('Y-m-d');
-    $stmt_today = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ?");
-    $stmt_today->execute([$today]);
+    $stmt_today = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ? AND id_hospital = ?");
+    $stmt_today->execute([$today, $id_hospital]);
     $today_revenue = $stmt_today->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     $week_start = date('Y-m-d', strtotime('monday this week'));
     $week_end = date('Y-m-d', strtotime('sunday this week'));
-    $stmt_week = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ?");
-    $stmt_week->execute([$week_start, $week_end]);
+    $stmt_week = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_week->execute([$week_start, $week_end, $id_hospital]);
     $week_revenue = $stmt_week->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 } catch (Exception $e) {

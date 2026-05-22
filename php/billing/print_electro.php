@@ -22,15 +22,17 @@ try {
 
     // Try finding in electrocardiogramas first, if not try cobros with type 'Electrocardiograma'
     // But since save_electro.php inserts into electrocardiogramas, we look there.
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT e.*, p.nombre as p_nom, p.apellido as p_ape,
                d.nombre as d_nom, d.apellido as d_ape
         FROM electrocardiogramas e
         JOIN pacientes p ON e.id_paciente = p.id_paciente
         LEFT JOIN usuarios d ON e.id_doctor = d.idUsuario
-        WHERE e.id_electro = ?
+        WHERE e.id_electro = ? AND e.id_hospital = ?
     ");
-    $stmt->execute([$id_electro]);
+    $stmt->execute([$id_electro, $id_hospital]);
     $electro = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$electro)

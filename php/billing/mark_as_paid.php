@@ -24,8 +24,10 @@ try {
     $conn = $database->getConnection();
 
     // Update billing status
-    $stmt = $conn->prepare("UPDATE cobros SET estado = 'Pagado' WHERE in_cobro = ?");
-    $stmt->execute([$data['id']]);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("UPDATE cobros SET estado = 'Pagado' WHERE in_cobro = ? AND id_hospital = ?");
+    $stmt->execute([$data['id'], $id_hospital]);
 
     if ($stmt->rowCount() === 0) {
         echo json_encode(['status' => 'error', 'message' => 'Cobro no encontrado o ya está marcado como pagado']);

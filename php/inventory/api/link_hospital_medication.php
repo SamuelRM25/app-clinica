@@ -38,8 +38,10 @@ try {
     $conn->beginTransaction();
     
     // 1. Verificar el cargo hospitalario
-    $stmt = $conn->prepare("SELECT id_cargo, referencia_id FROM cargos_hospitalarios WHERE id_cargo = ? FOR UPDATE");
-    $stmt->execute([$id_cargo]);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("SELECT id_cargo, referencia_id FROM cargos_hospitalarios WHERE id_cargo = ? AND id_hospital = ? FOR UPDATE");
+    $stmt->execute([$id_cargo, $id_hospital]);
     $cargo = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$cargo) {
@@ -51,8 +53,8 @@ try {
     }
     
     // 2. Verificar inventario y stock
-    $stmt = $conn->prepare("SELECT nom_medicamento, stock_hospital FROM inventario WHERE id_inventario = ? FOR UPDATE");
-    $stmt->execute([$id_inventario]);
+    $stmt = $conn->prepare("SELECT nom_medicamento, stock_hospital FROM inventario WHERE id_inventario = ? AND id_hospital = ? FOR UPDATE");
+    $stmt->execute([$id_inventario, $id_hospital]);
     $inv = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$inv) {
@@ -64,12 +66,11 @@ try {
     }
     
     // 3. Descontar del inventario (stock_hospital)
-    $stmt = $conn->prepare("UPDATE inventario SET stock_hospital = stock_hospital - ? WHERE id_inventario = ?");
-    $stmt->execute([$cantidad, $id_inventario]);
-    
-    // 4. Actualizar el cargo hospitalario
-    $stmt = $conn->prepare("UPDATE cargos_hospitalarios SET referencia_id = ?, referencia_tabla = 'inventario' WHERE id_cargo = ?");
-    $stmt->execute([$id_inventario, $id_cargo]);
+    $stmt = $conn->prepare("UPDATE inventario SET stock_hospital = stock_hospital - ? WHERE id_inventario = ? AND id_hospital = ?");
+    $stmt->execute([$cantidad, $id_inventario, $id_hospital]);
+
+    $stmt = $conn->prepare("UPDATE cargos_hospitalarios SET referencia_id = ?, referencia_tabla = 'inventario' WHERE id_cargo = ? AND id_hospital = ?");
+    $stmt->execute([$id_inventario, $id_cargo, $id_hospital]);
     
     // Confirmar transacción
     $conn->commit();

@@ -37,60 +37,57 @@ try {
     // ============ CONSULTAS ESTADÍSTICAS PARA EXÁMENES ============
 
     // 1. Exámenes de hoy
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $today = date('Y-m-d');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) = ? AND id_hospital = ?");
+    $stmt->execute([$today, $id_hospital]);
     $today_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
-    // 2. Ingresos de hoy
-    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) = ? AND id_hospital = ?");
+    $stmt->execute([$today, $id_hospital]);
     $today_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-    // 3. Exámenes de esta semana
     $week_start = date('Y-m-d', strtotime('monday this week'));
     $week_end = date('Y-m-d', strtotime('sunday this week'));
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
-    $stmt->execute([$week_start, $week_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$week_start, $week_end, $id_hospital]);
     $week_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
-    // 4. Ingresos de esta semana
-    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
-    $stmt->execute([$week_start, $week_end]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$week_start, $week_end, $id_hospital]);
     $week_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-    // 5. Exámenes del mes actual
     $month_start = date('Y-m-01');
     $month_end = date('Y-m-t');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ?");
-    $stmt->execute([$month_start, $month_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE DATE(fecha_examen) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$month_start, $month_end, $id_hospital]);
     $month_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
-    // 6. Total de exámenes en el sistema
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM examenes_realizados WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_exams = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
-    // 7. Exámenes recientes (últimos 5)
     $stmt = $conn->prepare("
         SELECT id_examen_realizado, nombre_paciente, tipo_examen, cobro, fecha_examen 
         FROM examenes_realizados 
+        WHERE id_hospital = ?
         ORDER BY fecha_examen DESC 
         LIMIT 5
     ");
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $recent_exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 8. Obtener pacientes para el select
     $stmt_patients = $conn->prepare("
         SELECT id_paciente, 
                CONCAT(nombre, ' ', apellido) as nombre_completo,
                telefono,
                fecha_nacimiento
         FROM pacientes 
+        WHERE id_hospital = ?
         ORDER BY nombre_completo ASC
     ");
-    $stmt_patients->execute();
+    $stmt_patients->execute([$id_hospital]);
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página

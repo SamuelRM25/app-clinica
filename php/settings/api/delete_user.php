@@ -27,8 +27,10 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $stmt = $conn->prepare("DELETE FROM usuarios WHERE idUsuario = ?");
-    $stmt->execute([$idUsuario]);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("DELETE FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
+    $stmt->execute([$idUsuario, $id_hospital]);
 
     echo json_encode(['success' => true, 'message' => 'Usuario eliminado correctamente']);
 

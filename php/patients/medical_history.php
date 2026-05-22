@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -36,9 +36,9 @@ try {
                            MAX(h.fecha_consulta) as ultima_consulta
                            FROM pacientes p
                            LEFT JOIN historial_clinico h ON p.id_paciente = h.id_paciente
-                           WHERE p.id_paciente = ?
-                           GROUP BY p.id_paciente");
-    $stmt->execute([$patient_id]);
+                            WHERE p.id_paciente = ? AND p.id_hospital = ?
+                            GROUP BY p.id_paciente");
+    $stmt->execute([$patient_id, $id_hospital]);
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$patient) {
@@ -54,18 +54,19 @@ try {
                            u.apellido as doctor_apellido
                            FROM historial_clinico h
                            LEFT JOIN usuarios u ON h.medico_responsable = CONCAT(u.nombre, ' ', u.apellido)
-                           WHERE h.id_paciente = ? 
-                           ORDER BY h.fecha_consulta DESC, h.id_historial DESC");
-    $stmt->execute([$patient_id]);
+                            WHERE h.id_paciente = ? AND h.id_hospital = ? 
+                            ORDER BY h.fecha_consulta DESC, h.id_historial DESC");
+    $stmt->execute([$patient_id, $id_hospital]);
     $medical_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener total de pacientes para la barra lateral
-    $stmtSummary = $conn->query("SELECT COUNT(*) as total FROM pacientes");
+    $stmtSummary = $conn->prepare("SELECT COUNT(*) as total FROM pacientes WHERE id_hospital = ?");
+    $stmtSummary->execute([$id_hospital]);
     $total_patients = $stmtSummary->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Obtener lista de doctores para el modal de nueva consulta
-    $stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido, especialidad FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre, apellido");
-    $stmtDocs->execute();
+    $stmtDocs = $conn->prepare("SELECT idUsuario, nombre, apellido, especialidad FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY nombre, apellido");
+    $stmtDocs->execute([$id_hospital]);
     $doctors = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener resultados de laboratorio con archivos adjuntos
@@ -75,10 +76,10 @@ try {
         FROM ordenes_laboratorio ol
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE ol.id_paciente = ? AND op.archivo_resultados IS NOT NULL
+        WHERE ol.id_paciente = ? AND op.archivo_resultados IS NOT NULL AND ol.id_hospital = ?
         ORDER BY ol.fecha_orden DESC
     ");
-    $stmtLab->execute([$patient_id]);
+    $stmtLab->execute([$patient_id, $id_hospital]);
     $lab_results = $stmtLab->fetchAll(PDO::FETCH_ASSOC);
 
     // Calcular edad del paciente
@@ -90,7 +91,8 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Obtener catálogo completo de pruebas para Select2
-    $stmtCat = $conn->query("SELECT id_prueba, nombre_prueba, categoria, precio FROM catalogo_pruebas ORDER BY categoria, nombre_prueba");
+    $stmtCat = $conn->prepare("SELECT id_prueba, nombre_prueba, categoria, precio FROM catalogo_pruebas WHERE id_hospital = ? ORDER BY categoria, nombre_prueba");
+    $stmtCat->execute([$id_hospital]);
     $all_tests = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Historial Clínico - " . $patient['nombre'] . " " . $patient['apellido'] . " - Centro Médico Herrera Sáenz";

@@ -33,6 +33,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Administrador';
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     // Verificar permisos (solo admin puede acceder a compras)
     if ($user_type !== 'admin') {
@@ -45,29 +46,29 @@ try {
     $current_month = date('Y-m');
 
     // 1. Compras del mes actual
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE_FORMAT(purchase_date, '%Y-%m') = ?");
-    $stmt->execute([$current_month]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE_FORMAT(purchase_date, '%Y-%m') = ? AND id_hospital = ?");
+    $stmt->execute([$current_month, $id_hospital]);
     $month_stats = $stmt->fetch(PDO::FETCH_ASSOC);
     $month_purchases = $month_stats['count'] ?? 0;
     $month_total = $month_stats['total'] ?? 0;
 
     // 2. Compras pendientes de pago
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as balance FROM purchase_headers WHERE (total_amount - COALESCE(paid_amount, 0)) > 0");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as balance FROM purchase_headers WHERE (total_amount - COALESCE(paid_amount, 0)) > 0 AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pending_stats = $stmt->fetch(PDO::FETCH_ASSOC);
     $pending_count = $pending_stats['count'] ?? 0;
     $total_balance = $pending_stats['balance'] ?? 0;
 
     // 3. Compras del día
-    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE(purchase_date) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total FROM purchase_headers WHERE DATE(purchase_date) = ? AND id_hospital = ?");
+    $stmt->execute([$today, $id_hospital]);
     $today_stats = $stmt->fetch(PDO::FETCH_ASSOC);
     $today_purchases = $today_stats['count'] ?? 0;
     $today_total = $today_stats['total'] ?? 0;
 
     // 4. Proveedores con más compras
-    $stmt = $conn->prepare("SELECT provider_name, COUNT(*) as count, SUM(total_amount) as total FROM purchase_headers GROUP BY provider_name ORDER BY total DESC LIMIT 5");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT provider_name, COUNT(*) as count, SUM(total_amount) as total FROM purchase_headers WHERE id_hospital = ? GROUP BY provider_name ORDER BY total DESC LIMIT 5");
+    $stmt->execute([$id_hospital]);
     $top_providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 5. Últimas compras
@@ -75,20 +76,21 @@ try {
                            (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance,
                            (SELECT COUNT(*) FROM purchase_items WHERE purchase_header_id = ph.id) as items_count
                            FROM purchase_headers ph 
+                           WHERE ph.id_hospital = ?
                            ORDER BY ph.purchase_date DESC, ph.created_at DESC 
                            LIMIT 10");
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $recent_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 6. Compras por confirmar (en inventario como pendientes)
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pending_inventory = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 7. Compras antiguas (de la tabla anterior)
     try {
-        $stmt_old = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_compra), 0) as total FROM compras");
-        $stmt_old->execute();
+        $stmt_old = $conn->prepare("SELECT COUNT(*) as count, COALESCE(SUM(total_compra), 0) as total FROM compras WHERE id_hospital = ?");
+        $stmt_old->execute([$id_hospital]);
         $old_stats = $stmt_old->fetch(PDO::FETCH_ASSOC);
         $old_purchases = $old_stats['count'] ?? 0;
         $old_total = $old_stats['total'] ?? 0;
@@ -441,8 +443,9 @@ try {
                                (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance
                                FROM purchase_headers ph 
                                WHERE (ph.total_amount - COALESCE(ph.paid_amount, 0)) > 0
+                               AND ph.id_hospital = ?
                                ORDER BY ph.purchase_date ASC");
-                        $stmt_pending->execute();
+                        $stmt_pending->execute([$id_hospital]);
                         $pending_purchases = $stmt_pending->fetchAll(PDO::FETCH_ASSOC);
                     } catch (Exception $e) {
                         $pending_purchases = [];
@@ -539,8 +542,8 @@ try {
 
                     <?php
                     try {
-                        $stmt_old = $conn->prepare("SELECT * FROM compras ORDER BY fecha_compra DESC LIMIT 50");
-                        $stmt_old->execute();
+                        $stmt_old = $conn->prepare("SELECT * FROM compras WHERE id_hospital = ? ORDER BY fecha_compra DESC LIMIT 50");
+                        $stmt_old->execute([$id_hospital]);
                         $old_purchases_list = $stmt_old->fetchAll(PDO::FETCH_ASSOC);
                     } catch (Exception $e) {
                         $old_purchases_list = [];

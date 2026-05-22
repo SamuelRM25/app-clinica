@@ -12,6 +12,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
@@ -30,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->beginTransaction();
 
         // 1. Verificar stock actual
-        $stmt = $conn->prepare("SELECT cantidad_med FROM inventario WHERE id_inventario = ? FOR UPDATE");
-        $stmt->execute([$id_inventario]);
+        $stmt = $conn->prepare("SELECT cantidad_med FROM inventario WHERE id_inventario = ? AND id_hospital = ? FOR UPDATE");
+        $stmt->execute([$id_inventario, $id_hospital]);
         $current_stock = $stmt->fetchColumn();
 
         if ($current_stock === false) {
@@ -44,12 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 2. Rebajar stock
         $new_stock = $current_stock - $cantidad;
-        $stmt = $conn->prepare("UPDATE inventario SET cantidad_med = ? WHERE id_inventario = ?");
-        $stmt->execute([$new_stock, $id_inventario]);
+        $stmt = $conn->prepare("UPDATE inventario SET cantidad_med = ? WHERE id_inventario = ? AND id_hospital = ?");
+        $stmt->execute([$new_stock, $id_inventario, $id_hospital]);
 
         // 3. Registrar en tabla insumos
-        $stmt = $conn->prepare("INSERT INTO insumos (id_inventario, cantidad, precio_venta, id_usuario) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$id_inventario, $cantidad, $precio_venta, $user_id]);
+        $stmt = $conn->prepare("INSERT INTO insumos (id_inventario, cantidad, precio_venta, id_usuario, id_hospital) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$id_inventario, $cantidad, $precio_venta, $user_id, $id_hospital]);
 
         $conn->commit();
         echo json_encode(['status' => 'success', 'message' => 'Insumo registrado correctamente']);

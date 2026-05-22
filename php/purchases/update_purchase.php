@@ -8,29 +8,30 @@ require_once '../../includes/multitenant.php';
 
 verify_session();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_compras'])) {
-    try {
-        $database = new Database();
-        $conn = $database->getConnection();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_compras'])) {
+        try {
+            $database = new Database();
+            $conn = $database->getConnection();
+            $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
-        // Start transaction
-        $conn->beginTransaction();
+            // Start transaction
+            $conn->beginTransaction();
 
-        // Calculate total from quantity and price
-        $total = $_POST['cantidad_compra'] * $_POST['precio_unidad'];
+            // Calculate total from quantity and price
+            $total = $_POST['cantidad_compra'] * $_POST['precio_unidad'];
 
-        // Determine estado_compra based on abono
-        $abono = $_POST['abono_compra'];
-        if ($abono <= 0) {
-            $estado = 'Pendiente';
-        } elseif ($abono < $total) {
-            $estado = 'Abonado';
-        } else {
-            $estado = 'Completo';
-        }
+            // Determine estado_compra based on abono
+            $abono = $_POST['abono_compra'];
+            if ($abono <= 0) {
+                $estado = 'Pendiente';
+            } elseif ($abono < $total) {
+                $estado = 'Abonado';
+            } else {
+                $estado = 'Completo';
+            }
 
-        // Update purchase record
-        $stmt = $conn->prepare("UPDATE compras SET nombre_compra = ?, presentacion_compra = ?, molecula_compra = ?, casa_compra = ?, cantidad_compra = ?, precio_unidad = ?, precio_venta = ?, fecha_compra = ?, abono_compra = ?, total_compra = ?, tipo_pago = ?, estado_compra = ? WHERE id_compras = ?");
+            // Update purchase record
+            $stmt = $conn->prepare("UPDATE compras SET nombre_compra = ?, presentacion_compra = ?, molecula_compra = ?, casa_compra = ?, cantidad_compra = ?, precio_unidad = ?, precio_venta = ?, fecha_compra = ?, abono_compra = ?, total_compra = ?, tipo_pago = ?, estado_compra = ? WHERE id_compras = ? AND id_hospital = ?");
 
         $result = $stmt->execute([
             $_POST['nombre_compra'],
@@ -45,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_compras'])) {
             $total,
             $_POST['tipo_pago'],
             $estado,
-            $_POST['id_compras']
+            $_POST['id_compras'],
+            $id_hospital
         ]);
 
         if ($result) {
@@ -55,14 +57,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_compras'])) {
                                          AND mol_medicamento = ? 
                                          AND presentacion_med = ? 
                                          AND casa_farmaceutica = ? 
-                                         AND fecha_adquisicion = ?");
+                                         AND fecha_adquisicion = ? 
+                                         AND id_hospital = ?");
 
             $stmt_check->execute([
                 $_POST['nombre_compra'],
                 $_POST['molecula_compra'],
                 $_POST['presentacion_compra'],
                 $_POST['casa_compra'],
-                $_POST['fecha_compra']
+                $_POST['fecha_compra'],
+                $id_hospital
             ]);
 
             $inventory_item = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -71,11 +75,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_compras'])) {
                 // Update existing inventory item
                 $stmt_update = $conn->prepare("UPDATE inventario 
                                               SET cantidad_med = ? 
-                                              WHERE id_inventario = ?");
+                                              WHERE id_inventario = ? AND id_hospital = ?");
 
                 $stmt_update->execute([
                     $_POST['cantidad_compra'],
-                    $inventory_item['id_inventario']
+                    $inventory_item['id_inventario'],
+                    $id_hospital
                 ]);
             }
 

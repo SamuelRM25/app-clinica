@@ -9,11 +9,13 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../../config/database.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $start = $_GET['start'] ?? date('Y-m-01');
     $end = $_GET['end'] ?? date('Y-m-d');
 
@@ -38,10 +40,11 @@ try {
         LEFT JOIN cuenta_hospitalaria ch ON e.id_encamamiento = ch.id_encamamiento
         WHERE e.estado IN ('Alta_Medica', 'Alta_Administrativa')
         AND e.fecha_alta BETWEEN ? AND ?
+        AND e.id_hospital = ?
         ORDER BY e.fecha_alta DESC
     ");
 
-    $stmt->execute([$start_datetime, $end_datetime]);
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $report = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

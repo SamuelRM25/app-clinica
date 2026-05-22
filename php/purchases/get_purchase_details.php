@@ -18,20 +18,21 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-try {
-    $database = new Database();
-    $conn = $database->getConnection();
+    try {
+        $database = new Database();
+        $conn = $database->getConnection();
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
-    $stmt = $conn->prepare("SELECT * FROM purchase_headers WHERE id = ?");
-    $stmt->execute([$_GET['id']]);
-    $header = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $conn->prepare("SELECT * FROM purchase_headers WHERE id = ? AND id_hospital = ?");
+        $stmt->execute([$_GET['id'], $id_hospital]);
+        $header = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$header) {
-        throw new Exception('Compra no encontrada');
-    }
+        if (!$header) {
+            throw new Exception('Compra no encontrada');
+        }
 
-    $stmtItems = $conn->prepare("SELECT * FROM purchase_items WHERE purchase_header_id = ?");
-    $stmtItems->execute([$_GET['id']]);
+        $stmtItems = $conn->prepare("SELECT * FROM purchase_items WHERE purchase_header_id = ? AND id_hospital = ?");
+        $stmtItems->execute([$_GET['id'], $id_hospital]);
     $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

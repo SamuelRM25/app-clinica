@@ -27,6 +27,7 @@ date_default_timezone_set('America/Guatemala');
 $user_name = $_SESSION['nombre'];
 $user_type = $_SESSION['tipoUsuario'];
 $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     // Conectar a la base de datos
@@ -34,8 +35,8 @@ try {
     $conn = $database->getConnection();
 
     // Obtener total de registros para paginación
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ventas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ventas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Obtener todas las ventas con paginación
@@ -59,25 +60,30 @@ try {
         SELECT v.*, u.nombre as vendedor_nombre, u.apellido as vendedor_apellido
         FROM ventas v
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
+        WHERE v.id_hospital = ?
         ORDER BY v.fecha_venta DESC 
         LIMIT $limit_int OFFSET $offset_int
     ");
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Calcular estadísticas rápidas
-    $stmt = $conn->query("SELECT SUM(total) as total_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE() AND estado = 'Pagado'");
+    $stmt = $conn->prepare("SELECT SUM(total) as total_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE() AND estado = 'Pagado' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['total_hoy'] ?? 0;
 
-    $stmt = $conn->query("SELECT COUNT(*) as ventas_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE()");
+    $stmt = $conn->prepare("SELECT COUNT(*) as ventas_hoy FROM ventas WHERE DATE(fecha_venta) = CURDATE() AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $ventas_hoy = $stmt->fetch(PDO::FETCH_ASSOC)['ventas_hoy'] ?? 0;
 
     // Obtener ventas del mes
-    $stmt = $conn->query("SELECT SUM(total) as total_mes FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND estado = 'Pagado'");
+    $stmt = $conn->prepare("SELECT SUM(total) as total_mes FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND estado = 'Pagado' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_mes = $stmt->fetch(PDO::FETCH_ASSOC)['total_mes'] ?? 0;
 
     // Obtener ventas pendientes
-    $stmt = $conn->query("SELECT COUNT(*) as pendientes FROM ventas WHERE estado = 'Pendiente'");
+    $stmt = $conn->prepare("SELECT COUNT(*) as pendientes FROM ventas WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['pendientes'] ?? 0;
 
     // Título de la página

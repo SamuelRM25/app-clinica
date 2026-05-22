@@ -45,35 +45,37 @@ try {
 
     // ============ CÁLCULO DE MÉTRICAS ============
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // 1. Total de pacientes atendidos
-    $stmt = $conn->prepare("SELECT COUNT(DISTINCT historial_id) FROM citas WHERE fecha_cita BETWEEN ? AND ?");
-    $stmt->execute([$start_time, $end_time]);
+    $stmt = $conn->prepare("SELECT COUNT(DISTINCT historial_id) FROM citas WHERE fecha_cita BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_time, $end_time, $id_hospital]);
     $total_patients = $stmt->fetchColumn() ?: 0;
 
     // 2. Procedimientos menores
-    $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ?");
-    $stmt->execute([$start_time, $end_time]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_time, $end_time, $id_hospital]);
     $total_procedures = $stmt->fetchColumn() ?: 0;
 
     // 3. Exámenes realizados
-    $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ?");
-    $stmt->execute([$start_time, $end_time]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_time, $end_time, $id_hospital]);
     $total_exams = $stmt->fetchColumn() ?: 0;
 
     // 4. Compras de medicamentos
-    $stmt = $conn->prepare("SELECT SUM(total_amount) FROM purchase_headers WHERE purchase_date BETWEEN ? AND ?");
-    $stmt->execute([$date, date('Y-m-d', strtotime($date . ' +1 day'))]);
+    $stmt = $conn->prepare("SELECT SUM(total_amount) FROM purchase_headers WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$date, date('Y-m-d', strtotime($date . ' +1 day')), $id_hospital]);
     $total_purchases = $stmt->fetchColumn() ?: 0;
 
     // 5. Ventas de medicamentos
-    $stmt = $conn->prepare("SELECT SUM(total) FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
-    $stmt->execute([$start_time, $end_time]);
+    $stmt = $conn->prepare("SELECT SUM(total) FROM ventas WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_time, $end_time, $id_hospital]);
     $total_sales = $stmt->fetchColumn() ?: 0;
 
     // 6. Cobros de consultas
     // Updated to use strict shift range
-    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ?");
-    $stmt->execute([$start_time, $end_time]);
+    $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_time, $end_time, $id_hospital]);
     $total_billings = $stmt->fetchColumn() ?: 0;
 
     // 7. Ingresos totales
@@ -127,23 +129,23 @@ try {
     // ============ CONSULTAS ADICIONALES PARA EL DASHBOARD ============
 
     // Citas de hoy
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ?");
-    $stmt->execute([date('Y-m-d')]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ? AND id_hospital = ?");
+    $stmt->execute([date('Y-m-d'), $id_hospital]);
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Total de citas en el sistema
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Hospitalizaciones Activas
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $active_hospitalizations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Compras pendientes
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pending_purchases = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Preparar mensaje para WhatsApp

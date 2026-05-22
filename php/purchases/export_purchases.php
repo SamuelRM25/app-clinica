@@ -47,6 +47,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // Query unificado para Respaldo (Headers + Items)
     $query = "SELECT 
                 ph.id as compra_id, ph.purchase_date, ph.provider_name, ph.document_type, ph.document_number, 
@@ -55,9 +57,11 @@ try {
                 pi.quantity, pi.unit_cost, pi.sale_price, pi.subtotal as subtotal_item, pi.status as item_status
               FROM purchase_headers ph
               JOIN purchase_items pi ON ph.id = pi.purchase_header_id
+              WHERE ph.id_hospital = ?
               ORDER BY ph.id DESC, pi.id ASC";
 
-    $stmt = $conn->query($query);
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$id_hospital]);
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, array(

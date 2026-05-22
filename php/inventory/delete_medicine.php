@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -14,8 +14,8 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         $conn = $database->getConnection();
 
         // Prepare and execute the delete statement
-        $stmt = $conn->prepare("DELETE FROM inventario WHERE id_inventario = ?");
-        $result = $stmt->execute([$_GET['id']]);
+        $stmt = $conn->prepare("DELETE FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+        $result = $stmt->execute([$_GET['id'], $id_hospital]);
 
         if ($result) {
             $_SESSION['inventory_message'] = 'Medicamento eliminado correctamente';

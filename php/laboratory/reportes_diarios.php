@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 verify_session();
 
@@ -30,9 +30,9 @@ try {
         FROM ordenes_laboratorio o
         LEFT JOIN orden_detalles od ON o.id_orden = od.id_orden
         LEFT JOIN catalogo_pruebas cp ON od.id_prueba = cp.id_prueba
-        WHERE DATE(o.fecha_orden) = ?
+        WHERE DATE(o.fecha_orden) = ? AND o.id_hospital = ?
     ");
-    $stmt->execute([$fecha]);
+    $stmt->execute([$fecha, $id_hospital]);
     $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Get orders for the day
@@ -42,11 +42,11 @@ try {
         FROM ordenes_laboratorio o
         JOIN pacientes p ON o.id_paciente = p.id_paciente
         LEFT JOIN orden_detalles od ON o.id_orden = od.id_orden
-        WHERE DATE(o.fecha_orden) = ?
+        WHERE DATE(o.fecha_orden) = ? AND o.id_hospital = ?
         GROUP BY o.id_orden
         ORDER BY o.fecha_orden DESC
     ");
-    $stmt->execute([$fecha]);
+    $stmt->execute([$fecha, $id_hospital]);
     $ordenes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Reporte Diario - Laboratorio";

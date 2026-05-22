@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 header('Content-Type: application/json');
 
@@ -34,8 +34,8 @@ try {
     // But requirement is "solicitar clave", implying maybe another user.
     // Let's check against ALL admin users.
 
-    $stmt = $conn->prepare("SELECT password FROM usuarios WHERE tipoUsuario = 'admin'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT password FROM usuarios WHERE tipoUsuario = 'admin' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $authorized = false;

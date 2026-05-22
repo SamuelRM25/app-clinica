@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -19,9 +19,9 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             SELECT i.*, pi.unit_cost as precio_compra_original
             FROM inventario i
             LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
-            WHERE i.id_inventario = ?
+            WHERE i.id_inventario = ? AND i.id_hospital = ?
         ");
-        $stmt->execute([$_GET['id']]);
+        $stmt->execute([$_GET['id'], $id_hospital]);
         $medicine = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($medicine) {

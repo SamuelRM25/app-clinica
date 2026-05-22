@@ -8,6 +8,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = hospital_id();
 
 verify_session();
 
@@ -26,9 +27,9 @@ try {
         FROM ordenes_laboratorio o
         JOIN pacientes p ON o.id_paciente = p.id_paciente
         LEFT JOIN usuarios d ON o.id_doctor = d.idUsuario
-        WHERE o.id_orden = ?
+        WHERE o.id_orden = ? AND o.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $orden = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$orden)
@@ -38,10 +39,11 @@ try {
     $stmtD = $conn->prepare("
         SELECT cp.nombre_prueba, cp.precio
         FROM orden_pruebas op
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE op.id_orden = ?
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmtD->execute([$id_orden]);
+    $stmtD->execute([$id_orden, $id_hospital]);
     $detalles = $stmtD->fetchAll(PDO::FETCH_ASSOC);
 
     $total = 0;

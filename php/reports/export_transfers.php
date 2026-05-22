@@ -32,6 +32,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     $stmt_transfers = $conn->prepare("
         SELECT 
             i.nom_medicamento,
@@ -46,9 +48,10 @@ try {
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
         WHERE v.tipo_pago = 'Traslado'
         AND v.fecha_venta BETWEEN ? AND ?
+        AND v.id_hospital = ?
         ORDER BY v.fecha_venta DESC
     ");
-    $stmt_transfers->execute([$start_datetime, $end_datetime]);
+    $stmt_transfers->execute([$start_datetime, $end_datetime, $id_hospital]);
     $transfers_data = $stmt_transfers->fetchAll(PDO::FETCH_ASSOC);
 
     $total_transfers_amount = 0;

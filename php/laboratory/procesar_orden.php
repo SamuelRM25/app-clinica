@@ -13,7 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -43,9 +43,9 @@ try {
         FROM ordenes_laboratorio ol
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON ol.id_doctor = u.idUsuario
-        WHERE ol.id_orden = ?
+        WHERE ol.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $orden = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$orden) {
@@ -57,10 +57,11 @@ try {
     $stmt = $conn->prepare("
         SELECT op.*, cp.nombre_prueba, cp.codigo_prueba
         FROM orden_pruebas op
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE op.id_orden = ?
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $pruebas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Calculate patient age for reference values
@@ -68,8 +69,13 @@ try {
     $genero = $orden['genero'];
 
     // 3. Get all global result files for this order, separated by category
-    $stmt_archivos = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? ORDER BY id_archivo ASC");
-    $stmt_archivos->execute([$id_orden]);
+    $stmt_archivos = $conn->prepare("
+        SELECT arl.* FROM archivos_resultados_laboratorio arl
+        JOIN ordenes_laboratorio ol ON arl.id_orden = ol.id_orden
+        WHERE arl.id_orden = ? AND ol.id_hospital = ?
+        ORDER BY arl.id_archivo ASC
+    ");
+    $stmt_archivos->execute([$id_orden, $id_hospital]);
     $todos_archivos = $stmt_archivos->fetchAll(PDO::FETCH_ASSOC);
 
     $archivos_resultados = array_filter($todos_archivos, function ($a) {

@@ -14,7 +14,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 
@@ -31,7 +31,8 @@ try {
     $conn = $database->getConnection();
 
     // Obtener inventario para la búsqueda
-    $stmt = $conn->query("SELECT id_inventario, nom_medicamento, mol_medicamento, presentacion_med, cantidad_med, precio_venta FROM inventario WHERE cantidad_med > 0 ORDER BY nom_medicamento ASC");
+    $stmt = $conn->prepare("SELECT id_inventario, nom_medicamento, mol_medicamento, presentacion_med, cantidad_med, precio_venta FROM inventario WHERE cantidad_med > 0 AND id_hospital = ? ORDER BY nom_medicamento ASC");
+    $stmt->execute([$id_hospital]);
     $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {

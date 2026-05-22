@@ -20,14 +20,16 @@ try {
     $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
     $fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-t');
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT c.*, p.nombre, p.apellido 
         FROM cobros c
         JOIN pacientes p ON c.id_paciente = p.id_paciente
-        WHERE c.fecha_consulta BETWEEN ? AND ?
+        WHERE c.fecha_consulta BETWEEN ? AND ? AND c.id_hospital = ?
         ORDER BY c.fecha_consulta DESC
     ");
-    $stmt->execute([$fecha_inicio, $fecha_fin]);
+    $stmt->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     header('Content-Type: text/csv; charset=utf-8');

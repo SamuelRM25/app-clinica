@@ -5,6 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if (!isset($_SESSION['user_id'])) {
     die("Acceso no autorizado");
@@ -34,11 +35,11 @@ try {
             FROM insumos i
             JOIN inventario inv ON i.id_inventario = inv.id_inventario
             JOIN usuarios u ON i.id_usuario = u.idUsuario
-            WHERE i.fecha BETWEEN ? AND ?
+            WHERE i.fecha BETWEEN ? AND ? AND inv.id_hospital = ?
             ORDER BY i.fecha ASC";
 
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$start, $end]);
+    $stmt->execute([$start, $end, $id_hospital]);
     $insumos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $total = 0;

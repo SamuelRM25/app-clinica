@@ -2,6 +2,7 @@
 // hospitalization/api/search_medications.php
 session_start();
 require_once '../../../config/database.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 header('Content-Type: application/json');
 
@@ -18,6 +19,7 @@ if (strlen($search) < 2) {
 }
 
 try {
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -28,11 +30,12 @@ try {
         WHERE (nom_medicamento LIKE ? OR mol_medicamento LIKE ? OR codigo_barras LIKE ?) 
         AND estado = 'Disponible'
         AND stock_hospital > 0
+        AND id_hospital = ?
         LIMIT 20
     ");
 
     $term = "%$search%";
-    $stmt->execute([$term, $term, $term]);
+    $stmt->execute([$term, $term, $term, $id_hospital]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode($results);

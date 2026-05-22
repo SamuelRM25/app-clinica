@@ -28,35 +28,34 @@ try {
         exit;
     }
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     if (empty($idUsuario)) {
-        // Create new user
         if (empty($password)) {
             echo json_encode(['success' => false, 'message' => 'La contraseña es obligatoria para nuevos usuarios']);
             exit;
         }
 
-        // Check if username exists
-        $stmt_check = $conn->prepare("SELECT idUsuario FROM usuarios WHERE usuario = ?");
-        $stmt_check->execute([$usuario]);
+        $stmt_check = $conn->prepare("SELECT idUsuario FROM usuarios WHERE usuario = ? AND id_hospital = ?");
+        $stmt_check->execute([$usuario, $id_hospital]);
         if ($stmt_check->fetch()) {
             echo json_encode(['success' => false, 'message' => 'El nombre de usuario ya existe']);
             exit;
         }
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, email, clinica) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico RS']);
+        $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, email, clinica, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico RS', $id_hospital]);
         
         echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
     } else {
-        // Update existing user
         if (!empty($password)) {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, password = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ?");
-            $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario]);
+            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, password = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
+            $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
         } else {
-            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ?");
-            $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario]);
+            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
+            $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
         }
         
         echo json_encode(['success' => true, 'message' => 'Usuario actualizado correctamente']);

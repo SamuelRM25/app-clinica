@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 // Set timezone
 date_default_timezone_set('America/Guatemala');
@@ -42,14 +42,14 @@ try {
 
     // 1. Generate unique order number
     $today = date('Ymd');
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE()");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] + 1;
     $numero_orden = "LAB-" . $today . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
 
     // 2. Check if patient is hospitalized
-    $stmt_hosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' LIMIT 1");
-    $stmt_hosp->execute([$data['id_paciente']]);
+    $stmt_hosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ? LIMIT 1");
+    $stmt_hosp->execute([$data['id_paciente'], $id_hospital]);
     $hosp = $stmt_hosp->fetch(PDO::FETCH_ASSOC);
     $id_encamamiento = $hosp ? $hosp['id_encamamiento'] : null;
 
@@ -58,8 +58,8 @@ try {
         INSERT INTO ordenes_laboratorio (
             numero_orden, id_paciente, id_doctor, id_encamamiento, 
             prioridad, observaciones, 
-            estado, fecha_orden
-        ) VALUES (?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW())
+            estado, fecha_orden, id_hospital
+        ) VALUES (?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW(), ?)
     ");
 
     $stmt->execute([
@@ -67,7 +67,8 @@ try {
         $data['id_paciente'],
         $data['id_doctor'],
         $id_encamamiento,
-        $data['observaciones'] ?? ''
+        $data['observaciones'] ?? '',
+        $id_hospital
     ]);
 
     $id_orden = $conn->lastInsertId();
@@ -102,10 +103,10 @@ try {
     // 5. Billing Integration (if hospitalized)
     if ($id_encamamiento) {
         $stmt_cargo = $conn->prepare("
-            INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por)
+            INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por, id_hospital)
             VALUES (
                 (SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND estado_pago = 'Pendiente' LIMIT 1),
-                'Laboratorio', ?, ?, NOW(), ?
+                'Laboratorio', ?, ?, NOW(), ?, ?
             )
         ");
 
@@ -116,7 +117,8 @@ try {
                 $id_encamamiento,
                 "Laboratorio: " . $item['nombre'] . " (Orden #" . $numero_orden . ")",
                 $item['precio'],
-                $user_id
+                $user_id,
+                $id_hospital
             ]);
         }
     }
@@ -132,14 +134,14 @@ try {
         }
 
         // Get patient name
-        $stmt_p = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ?");
-        $stmt_p->execute([$data['id_paciente']]);
+        $stmt_p = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+        $stmt_p->execute([$data['id_paciente'], $id_hospital]);
         $paciente_data = $stmt_p->fetch(PDO::FETCH_ASSOC);
         $nombre_paciente_full = $paciente_data['nombre'] ?? 'Paciente Desconocido';
 
         $stmt_bill = $conn->prepare("
-            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
+            VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
         ");
         $descripcion_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres);
         $stmt_bill->execute([
@@ -148,7 +150,8 @@ try {
             $nombre_paciente_full,
             $descripcion_bill,
             $total_order,
-            $tipo_pago
+            $tipo_pago,
+            $id_hospital
         ]);
         $id_pago = $conn->lastInsertId();
     }

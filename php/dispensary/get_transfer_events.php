@@ -21,13 +21,15 @@ try {
     $start = $_GET['start'] ?? date('Y-m-01');
     $end = $_GET['end'] ?? date('Y-m-t');
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $sql = "SELECT id_venta as id, nombre_cliente as title, fecha_venta as start, total as total
             FROM ventas 
-            WHERE tipo_pago = 'Traslado' AND fecha_venta BETWEEN ? AND ?
+            WHERE tipo_pago = 'Traslado' AND fecha_venta BETWEEN ? AND ? AND id_hospital = ?
             ORDER BY fecha_venta ASC";
 
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$start, $end]);
+    $stmt->execute([$start, $end, $id_hospital]);
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Format for FullCalendar

@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 verify_session();
 
@@ -23,18 +23,21 @@ try {
     }
 
     // Obtener doctores para el selector
-    $doctors = $conn->query("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY apellido")->fetchAll();
+    $stmt = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY apellido");
+    $stmt->execute([$id_hospital]);
+    $doctors = $stmt->fetchAll();
 
     // Pre-seleccionar paciente si viene en URL
     $preselected_patient = null;
     if (isset($_GET['id_paciente'])) {
-        $stmt = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_paciente = ?");
-        $stmt->execute([$_GET['id_paciente']]);
+        $stmt = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+        $stmt->execute([$_GET['id_paciente'], $id_hospital]);
         $preselected_patient = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     // Obtener todos los pacientes para el buscador (si no hay preseleccionado)
-    $stmt = $conn->query("SELECT id_paciente, nombre, apellido FROM pacientes ORDER BY nombre, apellido");
+    $stmt = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_hospital = ? ORDER BY nombre, apellido");
+    $stmt->execute([$id_hospital]);
     $all_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Nueva Orden de Laboratorio";

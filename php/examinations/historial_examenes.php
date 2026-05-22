@@ -40,17 +40,21 @@ try {
     $offset = ($page > 1) ? ($page - 1) * $limit : 0;
 
     // Obtener total de registros
-    $stmt_count = $conn->query("SELECT COUNT(*) as total FROM examenes_realizados");
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt_count = $conn->prepare("SELECT COUNT(*) as total FROM examenes_realizados WHERE id_hospital = ?");
+    $stmt_count->execute([$id_hospital]);
     $total_registros = $stmt_count->fetch(PDO::FETCH_ASSOC)['total'];
     $total_paginas = ceil($total_registros / $limit);
 
-    // Obtener exámenes paginados
     $stmt = $conn->prepare("
         SELECT id_examen_realizado, nombre_paciente, tipo_examen, cobro, fecha_examen 
         FROM examenes_realizados 
+        WHERE id_hospital = ?
         ORDER BY fecha_examen DESC 
         LIMIT :limit OFFSET :offset
     ");
+    $stmt->bindParam(1, $id_hospital, PDO::PARAM_INT);
     $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();

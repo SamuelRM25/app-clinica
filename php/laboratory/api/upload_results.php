@@ -3,6 +3,7 @@
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 verify_session();
 
@@ -16,14 +17,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id_orden = $_POST['id_orden'] ?? null;
 $notas = $_POST['notas'] ?? '';
 
-if (!$id_orden) {
-    echo json_encode(['success' => false, 'message' => 'Faltan parámetros requeridos']);
-    exit;
-}
+    if (!$id_orden) {
+        echo json_encode(['success' => false, 'message' => 'Faltan parámetros requeridos']);
+        exit;
+    }
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
+
+    $id_hospital = hospital_id();
+
+    $stmt_hosp = $conn->prepare("SELECT id_orden FROM ordenes_laboratorio WHERE id_orden = ? AND id_hospital = ?");
+    $stmt_hosp->execute([$id_orden, $id_hospital]);
+    if (!$stmt_hosp->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'Orden no encontrada o no pertenece a este hospital']);
+        exit;
+    }
 
     if (isset($_FILES['archivo_resultado'])) {
         $files = $_FILES['archivo_resultado'];
@@ -64,10 +74,10 @@ try {
                 // Insert with explicit categoria 'RESULTADO'
                 $stmt = $conn->prepare("
                     INSERT INTO archivos_resultados_laboratorio 
-                    (id_orden, categoria, nombre_archivo, tipo_contenido, tamano, contenido, notas) 
-                    VALUES (?, 'RESULTADO', ?, ?, ?, ?, ?)
+                    (id_orden, categoria, nombre_archivo, tipo_contenido, tamano, contenido, notas, id_hospital) 
+                    VALUES (?, 'RESULTADO', ?, ?, ?, ?, ?, ?)
                 ");
-                $stmt->execute([$id_orden, $fileName, $fileType, $fileSize, $content, $notas]);
+                $stmt->execute([$id_orden, $fileName, $fileType, $fileSize, $content, $notas, $id_hospital]);
                 $uploadedCount++;
 
                 // Clean up

@@ -26,28 +26,30 @@ try {
 
     $header = $data['header'];
     $items = $data['items'];
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     $conn->beginTransaction();
 
     // 1. Insert Header
-    $stmt = $conn->prepare("INSERT INTO purchase_headers (document_type, document_number, provider_name, purchase_date, total_amount, status, created_by) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)");
+    $stmt = $conn->prepare("INSERT INTO purchase_headers (document_type, document_number, provider_name, purchase_date, total_amount, status, created_by, id_hospital) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?)");
     $stmt->execute([
         $header['document_type'],
         $header['document_number'],
         $header['provider_name'],
         $header['purchase_date'],
         $header['total_amount'],
-        $_SESSION['user_id']
+        $_SESSION['user_id'],
+        $id_hospital
     ]);
     $headerId = $conn->lastInsertId();
 
     // 2. Insert Items and Inventory
-    $stmtItem = $conn->prepare("INSERT INTO purchase_items (purchase_header_id, product_name, presentation, molecule, pharmaceutical_house, quantity, unit_cost, sale_price, subtotal, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente')");
+    $stmtItem = $conn->prepare("INSERT INTO purchase_items (purchase_header_id, product_name, presentation, molecule, pharmaceutical_house, quantity, unit_cost, sale_price, subtotal, status, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?)");
 
     // Insert into inventory
     // Using correct column names from schema: nom_medicamento, presentacion_med, mol_medicamento, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento
     // Added: precio_venta, estado, id_purchase_item
-    $stmtInv = $conn->prepare("INSERT INTO inventario (nom_medicamento, presentacion_med, mol_medicamento, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento, precio_venta, estado, id_purchase_item) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?)");
+    $stmtInv = $conn->prepare("INSERT INTO inventario (nom_medicamento, presentacion_med, mol_medicamento, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento, precio_venta, estado, id_purchase_item, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?, ?)");
 
     foreach ($items as $item) {
         // Insert Purchase Item
@@ -60,7 +62,8 @@ try {
             $item['qty'],
             $item['cost'],
             $item['sale_price'],
-            $item['subtotal']
+            $item['subtotal'],
+            $id_hospital
         ]);
         $itemId = $conn->lastInsertId();
 
@@ -75,7 +78,8 @@ try {
             $header['purchase_date'], // fecha_adquisicion
             $header['purchase_date'], // fecha_vencimiento (placeholder)
             $item['sale_price'],
-            $itemId
+            $itemId,
+            $id_hospital
         ]);
     }
 

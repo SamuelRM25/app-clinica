@@ -20,6 +20,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT a.*, 
                p.nombre as p_nom, p.apellido as p_ape,
@@ -30,9 +32,9 @@ try {
         JOIN encamamientos e ON c.id_encamamiento = e.id_encamamiento
         JOIN pacientes p ON e.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON a.registrado_por = u.idUsuario
-        WHERE a.id_abono = ?
+        WHERE a.id_abono = ? AND e.id_hospital = ?
     ");
-    $stmt->execute([$id_abono]);
+    $stmt->execute([$id_abono, $id_hospital]);
     $abono = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$abono)

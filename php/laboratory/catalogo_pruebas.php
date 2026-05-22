@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -20,13 +20,15 @@ try {
     $conn = $database->getConnection();
 
     // Fetch all tests with their parameter count
-    $stmt = $conn->query("
+    $stmt = $conn->prepare("
         SELECT cp.*, COUNT(pp.id_parametro) as num_parametros
         FROM catalogo_pruebas cp
         LEFT JOIN parametros_pruebas pp ON cp.id_prueba = pp.id_prueba
+        WHERE cp.id_hospital = ?
         GROUP BY cp.id_prueba
         ORDER BY cp.categoria, cp.nombre_prueba
     ");
+    $stmt->execute([$id_hospital]);
     $catalogo = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Group by category for the UI

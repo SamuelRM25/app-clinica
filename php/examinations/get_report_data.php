@@ -35,6 +35,8 @@ try {
     $end_datetime = $date . ' 17:00:00';
 
     // Verificar si la columna usuario existe o usar un valor por defecto si falla
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $sql = "SELECT 
                 e.nombre_paciente, 
                 e.tipo_examen, 
@@ -42,12 +44,13 @@ try {
                 e.fecha_examen,
                 e.usuario 
             FROM examenes_realizados e
-            WHERE e.fecha_examen >= :start_dt AND e.fecha_examen < :end_dt
+            WHERE e.fecha_examen >= :start_dt AND e.fecha_examen < :end_dt AND e.id_hospital = :id_hospital
             ORDER BY e.fecha_examen ASC";
 
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':start_dt', $start_datetime);
     $stmt->bindParam(':end_dt', $end_datetime);
+    $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
     $stmt->execute();
 
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);

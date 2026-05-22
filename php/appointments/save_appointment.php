@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -21,13 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Get the next appointment number
-        $stmt = $conn->query("SELECT MAX(num_cita) as max_num FROM citas");
+        $stmt = $conn->prepare("SELECT MAX(num_cita) as max_num FROM citas WHERE id_hospital = ?");
+        $stmt->execute([$id_hospital]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         $num_cita = ($result['max_num'] ?? 0) + 1;
 
         // Prepare SQL statement
-        $sql = "INSERT INTO citas (id_paciente, nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, id_doctor) 
-                VALUES (:id_paciente, :nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :id_doctor)";
+        $sql = "INSERT INTO citas (id_paciente, nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, id_doctor, id_hospital) 
+                VALUES (:id_paciente, :nombre_pac, :apellido_pac, :num_cita, :fecha_cita, :hora_cita, :telefono, :id_doctor, :id_hospital)";
 
         $stmt = $conn->prepare($sql);
 
@@ -41,11 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':hora_cita', $_POST['hora_cita']);
         $stmt->bindParam(':telefono', $_POST['telefono']);
         $stmt->bindParam(':id_doctor', $_POST['id_doctor']);
+        $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             // Check if patient exists
-            $checkPatient = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ?");
-            $checkPatient->execute([$_POST['nombre_pac'], $_POST['apellido_pac']]);
+            $checkPatient = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
+            $checkPatient->execute([$_POST['nombre_pac'], $_POST['apellido_pac'], $id_hospital]);
             $patientExists = $checkPatient->fetch() ? true : false;
 
             echo json_encode([

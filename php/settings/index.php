@@ -17,13 +17,15 @@ if ($_SESSION['tipoUsuario'] !== 'admin') {
 
 $user_name = $_SESSION['nombre'];
 $user_role = $_SESSION['tipoUsuario'];
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
     // Obtener información actual de la clínica
-    $stmt = $conn->query("SELECT * FROM configuracion_sistema LIMIT 1");
+    $stmt = $conn->prepare("SELECT * FROM configuracion_sistema WHERE id_hospital = ? LIMIT 1");
+    $stmt->execute([$id_hospital]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
         'nombre_clinica' => 'Centro Médico RS',
         'direccion' => 'Ciudad de Guatemala',
@@ -33,7 +35,8 @@ try {
     ];
 
     // Obtener lista de usuarios
-    $stmt_users = $conn->query("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, email FROM usuarios ORDER BY nombre");
+    $stmt_users = $conn->prepare("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, email FROM usuarios WHERE id_hospital = ? ORDER BY nombre");
+    $stmt_users->execute([$id_hospital]);
     $users = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {

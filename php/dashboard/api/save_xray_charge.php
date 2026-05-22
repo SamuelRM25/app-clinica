@@ -9,12 +9,13 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    // Validate required fields
     if (empty($_POST['patient_id']) || empty($_POST['amount']) || empty($_POST['xray_type'])) {
         throw new Exception("Datos incompletos");
     }
@@ -24,16 +25,17 @@ try {
     $xray_type = $_POST['xray_type'];
     $amount = $_POST['amount'];
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-    // Insert into rayos_x
-    $stmt = $conn->prepare("INSERT INTO rayos_x (id_paciente, nombre_paciente, tipo_estudio, cobro, tipo_pago, usuario, fecha_estudio) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+    $stmt = $conn->prepare("INSERT INTO rayos_x (id_paciente, nombre_paciente, tipo_estudio, cobro, tipo_pago, usuario, fecha_estudio, id_hospital) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)");
     $stmt->execute([
         $patient_id,
         $patient_name,
         $xray_type,
         $amount,
         $tipo_pago,
-        $_SESSION['nombre'] ?? 'System'
+        $_SESSION['nombre'] ?? 'System',
+        $id_hospital
     ]);
 
     echo json_encode(['success' => true]);

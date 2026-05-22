@@ -19,7 +19,7 @@ require_once '../../includes/module_guard.php';
 
 check_module_access('inventory');
 
-
+$hosp_id = hospital_id();
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -43,43 +43,48 @@ try {
     // ============ ESTADÍSTICAS DEL INVENTARIO ============
 
     // 1. Total de items en inventario
-    $stmt = $conn->query("SELECT COUNT(*) as count FROM inventario");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE id_hospital = ?");
+    $stmt->execute([$hosp_id]);
     $total_items = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 2. Items agotados (stock = 0)
-    $stmt = $conn->query("SELECT COUNT(*) as count FROM inventario WHERE cantidad_med = 0");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE cantidad_med = 0 AND id_hospital = ?");
+    $stmt->execute([$hosp_id]);
     $out_of_stock = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 3. Items con stock bajo (< 10 unidades)
-    $stmt = $conn->query("SELECT COUNT(*) as count FROM inventario WHERE cantidad_med > 0 AND cantidad_med <= 10");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE cantidad_med > 0 AND cantidad_med <= 10 AND id_hospital = ?");
+    $stmt->execute([$hosp_id]);
     $low_stock = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 4. Items próximos a caducar (6 meses)
     $today = date('Y-m-d');
     $next_month = date('Y-m-d', strtotime('+6 months'));
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0");
-    $stmt->execute([$today, $next_month]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0 AND id_hospital = ?");
+    $stmt->execute([$today, $next_month, $hosp_id]);
     $expiring_soon = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 5. Items vencidos
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE fecha_vencimiento < ? AND cantidad_med > 0");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE fecha_vencimiento < ? AND cantidad_med > 0 AND id_hospital = ?");
+    $stmt->execute([$today, $hosp_id]);
     $expired = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 6. Items pendientes de recepción
-    $stmt = $conn->query("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$hosp_id]);
     $pending_receipt = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 7. Valor total del inventario en base a precio de compra y precio de venta
     // Se utiliza COALESCE con purchase_items para los medicamentos que tienen precio_compra en 0
-    $stmt = $conn->query("
+    $stmt = $conn->prepare("
         SELECT 
             SUM(i.cantidad_med * COALESCE(NULLIF(i.precio_compra, 0), p.unit_cost, 0)) as total_valor_compra, 
             SUM(i.cantidad_med * i.precio_venta) as total_valor_venta 
         FROM inventario i
         LEFT JOIN purchase_items p ON i.id_purchase_item = p.id
-        WHERE i.cantidad_med > 0
+        WHERE i.id_hospital = ? AND i.cantidad_med > 0
     ");
+    $stmt->execute([$hosp_id]);
     $result_val = $stmt->fetch(PDO::FETCH_ASSOC);
     $total_value = $result_val['total_valor_compra'] ?? 0;
     $total_value_venta = $result_val['total_valor_venta'] ?? 0;
@@ -124,7 +129,8 @@ try {
     // ============ INVENTARIO COMPLETO ============
 
     // Obtener todos los medicamentos para la tabla
-    $stmt = $conn->query("SELECT * FROM inventario ORDER BY fecha_vencimiento ASC");
+    $stmt = $conn->prepare("SELECT * FROM inventario WHERE id_hospital = ? ORDER BY fecha_vencimiento ASC");
+    $stmt->execute([$hosp_id]);
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
@@ -801,11 +807,11 @@ try {
                     $stmt = $conn->prepare("
                         SELECT id_inventario, nom_medicamento, fecha_vencimiento, cantidad_med 
                         FROM inventario 
-                        WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0
+                        WHERE fecha_vencimiento BETWEEN ? AND ? AND cantidad_med > 0 AND id_hospital = ?
                         ORDER BY fecha_vencimiento ASC
                         LIMIT 5
                     ");
-                    $stmt->execute([$today, $next_month]);
+                    $stmt->execute([$today, $next_month, $hosp_id]);
                     $expiring_medications = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     ?>
 
@@ -853,13 +859,14 @@ try {
 
                     <?php
                     // Obtener medicamentos con stock bajo
-                    $stmt = $conn->query("
+                    $stmt = $conn->prepare("
                         SELECT id_inventario, nom_medicamento, cantidad_med 
                         FROM inventario 
-                        WHERE cantidad_med > 0 AND cantidad_med <= 10
+                        WHERE cantidad_med > 0 AND cantidad_med <= 10 AND id_hospital = ?
                         ORDER BY cantidad_med ASC
                         LIMIT 5
                     ");
+                    $stmt->execute([$hosp_id]);
                     $low_stock_medications = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     ?>
 

@@ -20,23 +20,23 @@ try {
     $conn = $database->getConnection();
 
     // Get sale data
-    $stmt = $conn->prepare("SELECT * FROM ventas WHERE id_venta = ?");
-    $stmt->execute([$_GET['id']]);
-    $venta = $stmt->fetch(PDO::FETCH_ASSOC);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("SELECT * FROM ventas WHERE id_venta = ? AND id_hospital = ?");
+    $stmt->execute([$_GET['id'], $id_hospital]);
 
     if (!$venta) {
         echo json_encode(['status' => 'error', 'message' => 'Venta no encontrada']);
         exit;
     }
 
-    // Get sale items
     $stmt = $conn->prepare("
         SELECT dv.*, i.nom_medicamento, i.mol_medicamento, i.presentacion_med, i.casa_farmaceutica
         FROM detalle_ventas dv
         JOIN inventario i ON dv.id_inventario = i.id_inventario
-        WHERE dv.id_venta = ?
+        WHERE dv.id_venta = ? AND i.id_hospital = ?
     ");
-    $stmt->execute([$_GET['id']]);
+    $stmt->execute([$_GET['id'], $id_hospital]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(['status' => 'success', 'venta' => $venta, 'items' => $items]);

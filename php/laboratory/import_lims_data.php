@@ -13,7 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Set timezone
 date_default_timezone_set('America/Guatemala');
@@ -95,8 +95,8 @@ try {
                 $stmt_test = $conn->prepare("
                     INSERT INTO catalogo_pruebas 
                     (codigo_prueba, nombre_prueba, abreviatura, muestra_requerida, 
-                     metodo_toma, precio, requiere_ayuno, horas_ayuno, categoria, estado)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Activo')
+                     metodo_toma, precio, requiere_ayuno, horas_ayuno, categoria, estado, id_hospital)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Activo', ?)
                 ");
 
                 $stmt_test->execute([
@@ -108,7 +108,8 @@ try {
                     $precio,
                     $requiere_ayuno,
                     $horas_ayuno,
-                    $categoria
+                    $categoria,
+                    $id_hospital
                 ]);
 
                 $id_prueba = $conn->lastInsertId();
@@ -128,8 +129,8 @@ try {
                  valor_ref_hombre_min, valor_ref_hombre_max,
                  valor_ref_mujer_min, valor_ref_mujer_max,
                  valor_ref_pediatrico_min, valor_ref_pediatrico_max,
-                 tipo_dato, valores_normales, orden_visualizacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 tipo_dato, valores_normales, orden_visualizacion, id_hospital)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt_param->execute([
@@ -144,7 +145,8 @@ try {
                 $ref_values['pediatrico_max'],
                 $tipo_dato,
                 $ref_values['texto_completo'],
-                1
+                1,
+                $id_hospital
             ]);
 
             $imported_params++;

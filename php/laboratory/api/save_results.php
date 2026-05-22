@@ -4,8 +4,11 @@ header('Content-Type: application/json');
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 verify_session();
+
+$id_hospital = hospital_id();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Método no permitido']);
@@ -25,13 +28,14 @@ try {
     $conn = $database->getConnection();
 
     // Get patient info for range calculation
+
     $stmt = $conn->prepare("
         SELECT p.genero, p.fecha_nacimiento 
         FROM ordenes_laboratorio ol 
         JOIN pacientes p ON ol.id_paciente = p.id_paciente 
-        WHERE ol.id_orden = ?
+        WHERE ol.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
     $genero = $patient['genero'];
     $edad = date_diff(date_create($patient['fecha_nacimiento']), date_create('today'))->y;
@@ -52,7 +56,12 @@ try {
         procesado_por = VALUES(procesado_por)
     ");
 
-    $stmt_status = $conn->prepare("UPDATE orden_pruebas SET estado = 'En_Proceso' WHERE id_orden_prueba = ?");
+    $stmt_status = $conn->prepare("
+        UPDATE orden_pruebas op
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+        SET op.estado = 'En_Proceso'
+        WHERE op.id_orden_prueba = ? AND ol.id_hospital = ?
+    ");
 
     foreach ($results_data as $id_orden_prueba => $params) {
         foreach ($params as $id_parametro => $valor) {
@@ -100,12 +109,12 @@ try {
         }
 
         // Update test status
-        $stmt_status->execute([$id_orden_prueba]);
+        $stmt_status->execute([$id_orden_prueba, $id_hospital]);
     }
 
     // Update order status if it was Muestra_Recibida
-    $stmt = $conn->prepare("UPDATE ordenes_laboratorio SET estado = 'En_Proceso' WHERE id_orden = ? AND estado = 'Muestra_Recibida'");
-    $stmt->execute([$id_orden]);
+    $stmt = $conn->prepare("UPDATE ordenes_laboratorio SET estado = 'En_Proceso' WHERE id_orden = ? AND estado = 'Muestra_Recibida' AND id_hospital = ?");
+    $stmt->execute([$id_orden, $id_hospital]);
 
     // Start file upload handling
     if (isset($_FILES['archivo_resultados']) && $_FILES['archivo_resultados']['error'] === UPLOAD_ERR_OK) {
@@ -125,8 +134,8 @@ try {
             if (move_uploaded_file($_FILES['archivo_resultados']['tmp_name'], $targetPath)) {
                 // Save relative path to DB
                 $dbPath = '../../uploads/results/' . $newFileName;
-                $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ?");
-                $stmt_file->execute([$dbPath, $id_orden]);
+                $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ? AND id_hospital = ?");
+                $stmt_file->execute([$dbPath, $id_orden, $id_hospital]);
             }
         }
     }

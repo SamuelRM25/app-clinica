@@ -2,6 +2,7 @@
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 header('Content-Type: application/json');
 
@@ -19,6 +20,7 @@ if ($id_cargo <= 0 || $id_encamamiento <= 0) {
 }
 
 try {
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $db = new Database();
     $conn = $db->getConnection();
 
@@ -26,8 +28,8 @@ try {
     $conn->beginTransaction();
 
     // 1. Obtener la cuenta hospitalaria de este encamamiento
-    $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-    $stmt_cuenta->execute([$id_encamamiento]);
+    $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+    $stmt_cuenta->execute([$id_encamamiento, $id_hospital]);
     $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
 
     if (!$cuenta) {
@@ -37,8 +39,8 @@ try {
     $id_cuenta = $cuenta['id_cuenta'];
 
     // 2. Marcar el cargo como cancelado
-    $stmt_delete = $conn->prepare("UPDATE cargos_hospitalarios SET cancelado = 1 WHERE id_cargo = ? AND id_cuenta = ?");
-    $stmt_delete->execute([$id_cargo, $id_cuenta]);
+    $stmt_delete = $conn->prepare("UPDATE cargos_hospitalarios SET cancelado = 1 WHERE id_cargo = ? AND id_cuenta = ? AND id_hospital = ?");
+    $stmt_delete->execute([$id_cargo, $id_cuenta, $id_hospital]);
 
     if ($stmt_delete->rowCount() === 0) {
         throw new Exception("Cargo no encontrado o ya eliminado.");

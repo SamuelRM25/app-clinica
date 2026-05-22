@@ -16,6 +16,7 @@ require_once '../../includes/module_guard.php';
 
 check_module_access('hospitalization');
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -50,11 +51,13 @@ try {
     // ====================================
 
     // Total de camas
-    $stmt_total_beds = $conn->query("SELECT COUNT(*) as total FROM camas");
+    $stmt_total_beds = $conn->prepare("SELECT COUNT(*) as total FROM camas WHERE id_hospital = ?");
+    $stmt_total_beds->execute([$id_hospital]);
     $total_beds = $stmt_total_beds->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Camas ocupadas
-    $stmt_occupied = $conn->query("SELECT COUNT(*) as total FROM camas WHERE estado = 'Ocupada'");
+    $stmt_occupied = $conn->prepare("SELECT COUNT(*) as total FROM camas WHERE estado = 'Ocupada' AND id_hospital = ?");
+    $stmt_occupied->execute([$id_hospital]);
     $camas_ocupadas = $stmt_occupied->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Camas disponibles
@@ -64,29 +67,32 @@ try {
     $porcentaje_ocupacion = $total_beds > 0 ? round(($camas_ocupadas / $total_beds) * 100, 1) : 0;
 
     // Total pacientes activos (hospitalizados)
-    $stmt_active = $conn->query("SELECT COUNT(*) as total FROM encamamientos WHERE estado = 'Activo'");
+    $stmt_active = $conn->prepare("SELECT COUNT(*) as total FROM encamamientos WHERE estado = 'Activo' AND id_hospital = ?");
+    $stmt_active->execute([$id_hospital]);
     $pacientes_activos = $stmt_active->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Ingresos hoy
-    $stmt_today = $conn->prepare("SELECT COUNT(*) as total FROM encamamientos WHERE DATE(fecha_ingreso) = CURDATE()");
-    $stmt_today->execute();
+    $stmt_today = $conn->prepare("SELECT COUNT(*) as total FROM encamamientos WHERE DATE(fecha_ingreso) = CURDATE() AND id_hospital = ?");
+    $stmt_today->execute([$id_hospital]);
     $ingresos_hoy = $stmt_today->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Altas hoy
-    $stmt_altas = $conn->prepare("SELECT COUNT(*) as total FROM encamamientos WHERE DATE(fecha_alta) = CURDATE() AND estado IN ('Alta_Medica', 'Alta_Administrativa')");
-    $stmt_altas->execute();
+    $stmt_altas = $conn->prepare("SELECT COUNT(*) as total FROM encamamientos WHERE DATE(fecha_alta) = CURDATE() AND estado IN ('Alta_Medica', 'Alta_Administrativa') AND id_hospital = ?");
+    $stmt_altas->execute([$id_hospital]);
     $altas_hoy = $stmt_altas->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Estancia promedio (últimos 30 días)
-    $stmt_estancia = $conn->query("
+    $stmt_estancia = $conn->prepare("
         SELECT AVG(DATEDIFF(COALESCE(fecha_alta, NOW()), fecha_ingreso)) as promedio
         FROM encamamientos
         WHERE fecha_ingreso >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        AND id_hospital = ?
     ");
+    $stmt_estancia->execute([$id_hospital]);
     $estancia_promedio = round($stmt_estancia->fetch(PDO::FETCH_ASSOC)['promedio'] ?? 0, 1);
 
     // Lista de habitaciones con estado
-    $stmt_rooms = $conn->query("
+    $stmt_rooms = $conn->prepare("
         SELECT 
             h.id_habitacion,
             h.numero_habitacion,
@@ -99,13 +105,15 @@ try {
             h.estado as estado_habitacion
         FROM habitaciones h
         LEFT JOIN camas c ON h.id_habitacion = c.id_habitacion
+        WHERE h.id_hospital = ?
         GROUP BY h.id_habitacion
         ORDER BY h.piso, h.numero_habitacion
     ");
+    $stmt_rooms->execute([$id_hospital]);
     $habitaciones = $stmt_rooms->fetchAll(PDO::FETCH_ASSOC);
 
     // Pacientes actualmente hospitalizados
-    $stmt_patients = $conn->query("
+    $stmt_patients = $conn->prepare("
         SELECT 
             e.id_encamamiento,
             e.id_paciente,
@@ -128,9 +136,10 @@ try {
         INNER JOIN camas c ON e.id_cama = c.id_cama
         INNER JOIN habitaciones hab ON c.id_habitacion = hab.id_habitacion
         LEFT JOIN usuarios u ON e.id_doctor = u.idUsuario
-        WHERE e.estado = 'Activo'
+        WHERE e.estado = 'Activo' AND e.id_hospital = ?
         ORDER BY e.fecha_ingreso DESC
     ");
+    $stmt_patients->execute([$id_hospital]);
     $pacientes_hospitalizados = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
@@ -595,8 +604,8 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
                             </div>
                             <div class="room-beds">
                                 <?php
-                                $stmt_beds = $conn->prepare("SELECT numero_cama, estado FROM camas WHERE id_habitacion = ? ORDER BY numero_cama");
-                                $stmt_beds->execute([$hab['id_habitacion']]);
+                                $stmt_beds = $conn->prepare("SELECT numero_cama, estado FROM camas WHERE id_habitacion = ? AND id_hospital = ? ORDER BY numero_cama");
+                                $stmt_beds->execute([$hab['id_habitacion'], $id_hospital]);
                                 $beds = $stmt_beds->fetchAll(PDO::FETCH_ASSOC);
 
                                 foreach ($beds as $bed):

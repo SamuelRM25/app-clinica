@@ -20,17 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Verificar duplicados
-        $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ?");
-        $checkStmt->execute([$_POST['nombre'], $_POST['apellido']]);
+        $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+        $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
+        $checkStmt->execute([$_POST['nombre'], $_POST['apellido'], $id_hospital]);
         if ($checkStmt->fetch()) {
             echo json_encode(['status' => 'error', 'message' => 'El paciente ya existe']);
             exit;
         }
 
-        // Insertar nuevo paciente
         $stmt = $conn->prepare("
-            INSERT INTO pacientes (nombre, apellido, fecha_nacimiento, genero, direccion, telefono) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO pacientes (nombre, apellido, fecha_nacimiento, genero, direccion, telefono, id_hospital) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->execute([
@@ -39,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['fecha_nacimiento'] ?? null,
             $_POST['genero'],
             $_POST['direccion'] ?? null,
-            $_POST['telefono'] ?? null
+            $_POST['telefono'] ?? null,
+            $id_hospital
         ]);
 
         echo json_encode(['status' => 'success', 'message' => 'Paciente registrado correctamente']);

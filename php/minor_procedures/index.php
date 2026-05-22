@@ -33,52 +33,54 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     // ============ CONSULTAS ESTADÍSTICAS ============
 
     // 1. Procedimientos de hoy
     $today = date('Y-m-d');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ? AND id_hospital = ?");
+    $stmt->execute([$today, $id_hospital]);
     $today_procedures = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 2. Ingresos de hoy
-    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ?");
-    $stmt->execute([$today]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) = ? AND id_hospital = ?");
+    $stmt->execute([$today, $id_hospital]);
     $today_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 3. Procedimientos de esta semana
     $week_start = date('Y-m-d', strtotime('monday this week'));
     $week_end = date('Y-m-d', strtotime('sunday this week'));
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ?");
-    $stmt->execute([$week_start, $week_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$week_start, $week_end, $id_hospital]);
     $week_procedures = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 4. Ingresos de esta semana
-    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ?");
-    $stmt->execute([$week_start, $week_end]);
+    $stmt = $conn->prepare("SELECT SUM(cobro) as total FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$week_start, $week_end, $id_hospital]);
     $week_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 5. Procedimientos del mes actual
     $month_start = date('Y-m-01');
     $month_end = date('Y-m-t');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ?");
-    $stmt->execute([$month_start, $month_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE DATE(fecha_procedimiento) BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$month_start, $month_end, $id_hospital]);
     $month_procedures = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 6. Total de procedimientos en el sistema
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM procedimientos_menores WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_procedures = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 7. Procedimientos recientes (últimos 5)
     $stmt = $conn->prepare("
         SELECT id_procedimiento, nombre_paciente, procedimiento, cobro, fecha_procedimiento 
         FROM procedimientos_menores 
+        WHERE id_hospital = ?
         ORDER BY fecha_procedimiento DESC 
         LIMIT 5
     ");
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $recent_procedures = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 8. Obtener pacientes para el select
@@ -88,9 +90,10 @@ try {
                telefono,
                fecha_nacimiento
         FROM pacientes 
+        WHERE id_hospital = ?
         ORDER BY nombre_completo ASC
     ");
-    $stmt_patients->execute();
+    $stmt_patients->execute([$id_hospital]);
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página

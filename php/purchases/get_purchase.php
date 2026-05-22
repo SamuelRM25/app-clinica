@@ -14,9 +14,10 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     try {
         $database = new Database();
         $conn = $database->getConnection();
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
-        $stmt = $conn->prepare("SELECT * FROM compras WHERE id_compras = ?");
-        $stmt->execute([$_GET['id']]);
+        $stmt = $conn->prepare("SELECT * FROM compras WHERE id_compras = ? AND id_hospital = ?");
+        $stmt->execute([$_GET['id'], $id_hospital]);
         $purchase = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($purchase) {

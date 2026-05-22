@@ -16,53 +16,55 @@ if (isset($_GET['shift_report']) && $_GET['shift_report'] == 1 && isset($_GET['s
     exit;
 }
 
-// Manejar solicitud de detalles de venta individual
-if (isset($_GET['id'])) {
-    $id_venta = intval($_GET['id']);
+    // Manejar solicitud de detalles de venta individual
+    if (isset($_GET['id'])) {
+        $id_venta = intval($_GET['id']);
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
-    try {
-        $database = new Database();
-        $conn = $database->getConnection();
+        try {
+            $database = new Database();
+            $conn = $database->getConnection();
 
-        // Obtener datos de la venta
-        $stmt = $conn->prepare("
-            SELECT v.id_venta, v.fecha_venta, v.nombre_cliente, v.tipo_pago, v.total, v.estado,
-                   u.nombre as nombre_vendedor, u.apellido as apellido_vendedor
-            FROM ventas v
-            LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
-            WHERE v.id_venta = ?
-        ");
-        $stmt->execute([$id_venta]);
-        $venta = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($venta) {
-            // Obtener items de la venta
+            // Obtener datos de la venta
             $stmt = $conn->prepare("
-                SELECT dv.*, i.nom_medicamento, i.presentacion_med
-                FROM detalle_ventas dv
-                JOIN inventario i ON dv.id_inventario = i.id_inventario
-                WHERE dv.id_venta = ?
+                SELECT v.id_venta, v.fecha_venta, v.nombre_cliente, v.tipo_pago, v.total, v.estado,
+                       u.nombre as nombre_vendedor, u.apellido as apellido_vendedor
+                FROM ventas v
+                LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
+                WHERE v.id_venta = ? AND v.id_hospital = ?
             ");
-            $stmt->execute([$id_venta]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->execute([$id_venta, $id_hospital]);
+            $venta = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            echo json_encode([
-                'status' => 'success',
-                'venta' => $venta,
-                'items' => $items
-            ]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Venta no encontrada']);
+            if ($venta) {
+                // Obtener items de la venta
+                $stmt = $conn->prepare("
+                    SELECT dv.*, i.nom_medicamento, i.presentacion_med
+                    FROM detalle_ventas dv
+                    JOIN inventario i ON dv.id_inventario = i.id_inventario
+                    WHERE dv.id_venta = ?
+                ");
+                $stmt->execute([$id_venta]);
+                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                echo json_encode([
+                    'status' => 'success',
+                    'venta' => $venta,
+                    'items' => $items
+                ]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Venta no encontrada']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        exit;
     }
-    exit;
-}
 
 function generate_shift_report($shift_date)
 {
     try {
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
         $database = new Database();
         $conn = $database->getConnection();
 
@@ -76,10 +78,10 @@ function generate_shift_report($shift_date)
                    u.nombre as nombre_vendedor, u.apellido as apellido_vendedor
             FROM ventas v
             LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
-            WHERE v.fecha_venta >= ? AND v.fecha_venta < ?
+            WHERE v.fecha_venta >= ? AND v.fecha_venta < ? AND v.id_hospital = ?
             ORDER BY v.fecha_venta
         ");
-        $stmt->execute([$start_date, $end_date]);
+        $stmt->execute([$start_date, $end_date, $id_hospital]);
         $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Obtener detalles de cada venta

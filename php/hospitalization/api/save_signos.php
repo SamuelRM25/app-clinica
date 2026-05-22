@@ -6,6 +6,7 @@ session_start();
 header('Content-Type: application/json');
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
@@ -36,12 +37,14 @@ try {
     
     $database = new Database();
     $conn = $database->getConnection();
+
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     
     $stmt = $conn->prepare("
         INSERT INTO signos_vitales 
         (id_encamamiento, fecha_registro, temperatura, presion_sistolica, presion_diastolica,
-         pulso, frecuencia_respiratoria, saturacion_oxigeno, glucometria, notas, registrado_por)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         pulso, frecuencia_respiratoria, saturacion_oxigeno, glucometria, notas, registrado_por, id_hospital)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
     $stmt->execute([
@@ -55,7 +58,8 @@ try {
         $saturacion_oxigeno,
         $glucometria,
         $notas,
-        $registrado_por
+        $registrado_por,
+        $id_hospital
     ]);
     
     echo json_encode([

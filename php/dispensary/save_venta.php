@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -41,7 +41,7 @@ try {
     $conn->beginTransaction();
 
     // Insert sale record
-    $stmt = $conn->prepare("INSERT INTO ventas (id_usuario, nombre_cliente, nit_cliente, document_identifier, tipo_pago, total, estado, fecha_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO ventas (id_usuario, nombre_cliente, nit_cliente, document_identifier, tipo_pago, total, estado, fecha_venta, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     // Obtener la fecha y hora actual en la zona horaria de Guatemala
     $fecha_actual = date('Y-m-d H:i:s');
@@ -59,7 +59,8 @@ try {
         $data['tipo_pago'],
         $data['total'],
         $data['estado'],
-        $fecha_actual
+        $fecha_actual,
+        $id_hospital
     ]);
 
     $id_venta = $conn->lastInsertId();
@@ -86,8 +87,8 @@ try {
     }
 
     // Clear reservations for this session (since cart is now processed)
-    $stmt_res = $conn->prepare("DELETE FROM reservas_inventario WHERE session_id = ?");
-    $stmt_res->execute([session_id()]);
+    $stmt_res = $conn->prepare("DELETE FROM reservas_inventario WHERE session_id = ? AND id_hospital = ?");
+    $stmt_res->execute([session_id(), $id_hospital]);
 
     // Commit transaction
     $conn->commit();

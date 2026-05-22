@@ -18,25 +18,27 @@ try {
     $conn->beginTransaction();
 
     // 1. Mark all tests in this order as Validada
-    $stmt = $conn->prepare("
-        UPDATE orden_pruebas 
-        SET estado = 'Validada', fecha_validada = NOW(), validado_por = ?
-        WHERE id_orden = ?
-    ");
-    $stmt->execute([$_SESSION['user_id'], $id_orden]);
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-    // 2. Mark all results for these tests as valid
+    $stmt = $conn->prepare("
+        UPDATE orden_pruebas op
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+        SET op.estado = 'Validada', op.fecha_validada = NOW(), op.validado_por = ?
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
+    ");
+    $stmt->execute([$_SESSION['user_id'], $id_orden, $id_hospital]);
+
     $stmt = $conn->prepare("
         UPDATE resultados_laboratorio rl
         JOIN orden_pruebas op ON rl.id_orden_prueba = op.id_orden_prueba
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         SET rl.validado = 1, rl.validado_por = ?, rl.fecha_validacion = NOW()
-        WHERE op.id_orden = ?
+        WHERE ol.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$_SESSION['user_id'], $id_orden]);
+    $stmt->execute([$_SESSION['user_id'], $id_orden, $id_hospital]);
 
-    // 3. Update overall order status to Completada (or Validada based on schema)
-    $stmt = $conn->prepare("UPDATE ordenes_laboratorio SET estado = 'Completada' WHERE id_orden = ?");
-    $stmt->execute([$id_orden]);
+    $stmt = $conn->prepare("UPDATE ordenes_laboratorio SET estado = 'Completada' WHERE id_orden = ? AND id_hospital = ?");
+    $stmt->execute([$id_orden, $id_hospital]);
 
     $conn->commit();
 

@@ -25,6 +25,8 @@ try {
     $start_datetime = $start_date . ' 00:00:00';
     $end_datetime = $end_date . ' 23:59:59';
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $sql = "
         SELECT 
             i.id_inventario,
@@ -40,9 +42,10 @@ try {
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
         WHERE v.tipo_pago = 'Traslado'
         AND v.fecha_venta BETWEEN ? AND ?
+        AND v.id_hospital = ?
     ";
 
-    $params = [$start_datetime, $end_datetime];
+    $params = [$start_datetime, $end_datetime, $id_hospital];
 
     if ($search !== '') {
         $sql .= " AND (i.nom_medicamento LIKE ? OR i.mol_medicamento LIKE ? OR i.codigo_barras LIKE ?)";

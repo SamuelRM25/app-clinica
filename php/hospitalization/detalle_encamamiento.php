@@ -5,6 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -25,8 +26,8 @@ try {
 
     // Auto-populate session username if missing (for already logged-in users)
     if (!isset($_SESSION['usuario'])) {
-        $stmt_u = $conn->prepare("SELECT usuario FROM usuarios WHERE idUsuario = ?");
-        $stmt_u->execute([$user_id]);
+        $stmt_u = $conn->prepare("SELECT usuario FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
+        $stmt_u->execute([$user_id, $id_hospital]);
         $u_row = $stmt_u->fetch(PDO::FETCH_ASSOC);
         if ($u_row) {
             $_SESSION['usuario'] = $u_row['usuario'];
@@ -56,9 +57,9 @@ try {
         INNER JOIN camas c ON e.id_cama = c.id_cama
         INNER JOIN habitaciones hab ON c.id_habitacion = hab.id_habitacion
         LEFT JOIN usuarios u ON e.id_doctor = u.idUsuario
-        WHERE e.id_encamamiento = ?
+        WHERE e.id_encamamiento = ? AND e.id_hospital = ?
     ");
-    $stmt_enc->execute([$id_encamamiento]);
+    $stmt_enc->execute([$id_encamamiento, $id_hospital]);
     $encamamiento = $stmt_enc->fetch(PDO::FETCH_ASSOC);
 
     if (!$encamamiento) {
@@ -75,11 +76,11 @@ try {
         SELECT sv.*, u.nombre as registrado_nombre, u.apellido as registrado_apellido
         FROM signos_vitales sv
         LEFT JOIN usuarios u ON sv.registrado_por = u.idUsuario
-        WHERE sv.id_encamamiento = ?
+        WHERE sv.id_encamamiento = ? AND sv.id_hospital = ?
         ORDER BY sv.fecha_registro DESC
         LIMIT 20
     ");
-    $stmt_signos->execute([$id_encamamiento]);
+    $stmt_signos->execute([$id_encamamiento, $id_hospital]);
     $signos_vitales = $stmt_signos->fetchAll(PDO::FETCH_ASSOC);
 
     // Fetch medical evolutions
@@ -87,17 +88,17 @@ try {
         SELECT em.*, u.nombre as doctor_nombre, u.apellido as doctor_apellido
         FROM evoluciones_medicas em
         INNER JOIN usuarios u ON em.id_doctor = u.idUsuario
-        WHERE em.id_encamamiento = ?
+        WHERE em.id_encamamiento = ? AND em.id_hospital = ?
         ORDER BY em.fecha_evolucion DESC
     ");
-    $stmt_evol->execute([$id_encamamiento]);
+    $stmt_evol->execute([$id_encamamiento, $id_hospital]);
     $evoluciones = $stmt_evol->fetchAll(PDO::FETCH_ASSOC);
 
     // Fetch hospital account
     $stmt_cuenta = $conn->prepare("
-        SELECT * FROM cuenta_hospitalaria WHERE id_encamamiento = ?
+        SELECT * FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?
     ");
-    $stmt_cuenta->execute([$id_encamamiento]);
+    $stmt_cuenta->execute([$id_encamamiento, $id_hospital]);
     $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
 
     if ($cuenta) {
@@ -107,9 +108,9 @@ try {
         // Get all existing room charges dates for this account
         $stmt_existing_nights = $conn->prepare("
             SELECT fecha_aplicacion FROM cargos_hospitalarios 
-            WHERE id_cuenta = ? AND tipo_cargo = 'Habitación'
+            WHERE id_cuenta = ? AND tipo_cargo = 'Habitación' AND id_hospital = ?
         ");
-        $stmt_existing_nights->execute([$id_cuenta]);
+        $stmt_existing_nights->execute([$id_cuenta, $id_hospital]);
         $existing_nights = $stmt_existing_nights->fetchAll(PDO::FETCH_COLUMN);
 
         $fecha_ingreso = new DateTime($encamamiento['fecha_ingreso']);
@@ -132,8 +133,8 @@ try {
                 // Charge is missing for this night
                 $stmt_add_night = $conn->prepare("
                     INSERT INTO cargos_hospitalarios 
-                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por)
-                    VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?)
+                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
+                    VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?, ?)
                 ");
                 $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")";
                 $stmt_add_night->execute([
@@ -141,7 +142,8 @@ try {
                     $desc,
                     $encamamiento['tarifa_por_noche'],
                     $date_str,
-                    $user_id
+                    $user_id,
+                    $id_hospital
                 ]);
                 $added_any = true;
             }
@@ -173,10 +175,10 @@ try {
             SELECT ch.*, u.nombre as registrado_nombre
             FROM cargos_hospitalarios ch
             LEFT JOIN usuarios u ON ch.registrado_por = u.idUsuario
-            WHERE ch.id_cuenta = ? AND ch.cancelado = FALSE
+            WHERE ch.id_cuenta = ? AND ch.cancelado = FALSE AND ch.id_hospital = ?
             ORDER BY ch.fecha_cargo DESC
         ");
-        $stmt_cargos->execute([$id_cuenta]);
+        $stmt_cargos->execute([$id_cuenta, $id_hospital]);
         $cargos = $stmt_cargos->fetchAll(PDO::FETCH_ASSOC);
 
         // Group charges by type
@@ -202,10 +204,10 @@ try {
             SELECT a.*, u.nombre as u_nombre, u.apellido as u_apellido
             FROM abonos_hospitalarios a
             LEFT JOIN usuarios u ON a.registrado_por = u.idUsuario
-            WHERE a.id_cuenta = ?
+            WHERE a.id_cuenta = ? AND a.id_hospital = ?
             ORDER BY a.fecha_abono DESC
         ");
-        $stmt_abonos->execute([$id_cuenta]);
+        $stmt_abonos->execute([$id_cuenta, $id_hospital]);
         $abonos = $stmt_abonos->fetchAll(PDO::FETCH_ASSOC);
 
     } else {

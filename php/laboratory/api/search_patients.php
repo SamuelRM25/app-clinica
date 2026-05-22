@@ -24,6 +24,8 @@ try {
     }
     
     // Search patients by name or apellido
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+    
     $stmt = $conn->prepare("
         SELECT 
             id_paciente,
@@ -35,14 +37,13 @@ try {
             telefono
         FROM pacientes 
         WHERE 
-            nombre LIKE ? OR 
-            apellido LIKE ?
+            (nombre LIKE ? OR apellido LIKE ?) AND id_hospital = ?
         ORDER BY apellido, nombre
         LIMIT 20
     ");
     
     $searchTerm = "%{$search}%";
-    $stmt->execute([$searchTerm, $searchTerm]);
+    $stmt->execute([$searchTerm, $searchTerm, $id_hospital]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Format results for display

@@ -12,6 +12,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->query("
         SELECT c.*, 
                u.nombre as doc_nombre, u.apellido as doc_apellido,
@@ -19,6 +21,7 @@ try {
         FROM citas c
         LEFT JOIN usuarios u ON c.id_doctor = u.idUsuario
         LEFT JOIN pacientes p ON (c.nombre_pac = p.nombre AND c.apellido_pac = p.apellido)
+        WHERE c.id_hospital = $id_hospital
     ");
 
     $events = [];

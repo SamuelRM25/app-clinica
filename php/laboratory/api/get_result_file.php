@@ -17,13 +17,14 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     if ($id_archivo) {
-        $stmt = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_archivo = ?");
-        $stmt->execute([$id_archivo]);
+        $stmt = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_archivo = ? AND id_hospital = ?");
+        $stmt->execute([$id_archivo, $id_hospital]);
     } else {
-        // Get the latest file for this order
-        $stmt = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? ORDER BY id_archivo DESC LIMIT 1");
-        $stmt->execute([$id_orden]);
+        $stmt = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? AND id_hospital = ? ORDER BY id_archivo DESC LIMIT 1");
+        $stmt->execute([$id_orden, $id_hospital]);
     }
 
     $file = $stmt->fetch(PDO::FETCH_ASSOC);

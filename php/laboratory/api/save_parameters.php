@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 if ($_SESSION['tipoUsuario'] !== 'admin' && $_SESSION['user_id'] != 7) {
     echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $id_prueba = $_POST['id_prueba'] ?? null;
 $params = $_POST['params'] ?? [];
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if (!$id_prueba) {
     echo json_encode(['success' => false, 'message' => 'ID de prueba no proporcionado']);
@@ -28,9 +30,9 @@ try {
     $conn = $database->getConnection();
     $conn->beginTransaction();
 
-    // 1. Delete existing parameters for this test
-    $stmt = $conn->prepare("DELETE FROM parametros_pruebas WHERE id_prueba = ?");
-    $stmt->execute([$id_prueba]);
+    // 1. Delete existing parameters for this test and hospital
+    $stmt = $conn->prepare("DELETE FROM parametros_pruebas WHERE id_prueba = ? AND id_hospital = ?");
+    $stmt->execute([$id_prueba, $id_hospital]);
 
     // 2. Insert new parameters
     $stmt = $conn->prepare("
@@ -39,8 +41,8 @@ try {
             valor_ref_hombre_min, valor_ref_hombre_max,
             valor_ref_mujer_min, valor_ref_mujer_max,
             valor_ref_pediatrico_min, valor_ref_pediatrico_max,
-            orden_visualizacion
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            orden_visualizacion, id_hospital
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     foreach ($params as $idx => $param) {
@@ -55,7 +57,8 @@ try {
             $param['m_max'] !== '' ? $param['m_max'] : null,
             $param['p_min'] !== '' ? $param['p_min'] : null,
             $param['p_max'] !== '' ? $param['p_max'] : null,
-            $idx
+            $idx,
+            $id_hospital
         ]);
     }
 

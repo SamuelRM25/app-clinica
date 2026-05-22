@@ -31,14 +31,15 @@ try {
         $end_datetime = date('Y-m-d', strtotime($date . ' +1 day')) . ' 07:59:59';
     }
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
     $methods = ['Efectivo', 'Tarjeta', 'Transferencia'];
 
-    // Helper to get detailed data (totals and individual rows)
-    $getDetailedData = function ($conn, $table, $column_amount, $column_date, $start, $end, $column_pago = 'tipo_pago', $extra_where = '', $select_extras = '', $joins = '') use ($methods, $shift, $date) {
+    $getDetailedData = function ($conn, $table, $column_amount, $column_date, $start, $end, $column_pago = 'tipo_pago', $extra_where = '', $select_extras = '', $joins = '') use ($methods, $shift, $date, $id_hospital) {
         $breakdown = [];
         $total = 0;
 
-        // 1. Calculate Breakdown
+        $hospital_filter = " AND $table.id_hospital = $id_hospital";
+
         foreach ($methods as $method) {
             $sql = "SELECT SUM($column_amount) FROM $table $joins WHERE $column_pago = ?";
             $params = [$method];
@@ -51,6 +52,7 @@ try {
                 $params[] = $start;
                 $params[] = $end;
             }
+            $sql .= $hospital_filter;
             if ($extra_where)
                 $sql .= " AND $extra_where";
 
@@ -61,7 +63,6 @@ try {
             $total += $val;
         }
 
-        // 2. Fetch Individual Rows
         $sql_rows = "SELECT $column_date as hora, $column_amount as monto, $column_pago as tipo_pago $select_extras FROM $table $joins WHERE ";
         $params_rows = [];
         if ($shift === 'morning') {
@@ -71,6 +72,7 @@ try {
             $sql_rows .= "$column_date BETWEEN ? AND ?";
             $params_rows = [$start, $end];
         }
+        $sql_rows .= $hospital_filter;
         if ($extra_where)
             $sql_rows .= " AND $extra_where";
         $sql_rows .= " ORDER BY $column_date ASC";
@@ -79,7 +81,6 @@ try {
         $stmt_rows->execute($params_rows);
         $rows = $stmt_rows->fetchAll(PDO::FETCH_ASSOC);
 
-        // Format hora to HH:MM
         foreach ($rows as &$row) {
             if (isset($row['hora'])) {
                 $row['hora'] = date('H:i', strtotime($row['hora']));
@@ -129,17 +130,17 @@ try {
     $doc_query = "SELECT DISTINCT u.idUsuario, u.nombre, u.apellido 
                   FROM cobros c
                   JOIN usuarios u ON c.id_doctor = u.idUsuario
-                  WHERE c.fecha_consulta BETWEEN ? AND ?";
+                  WHERE c.fecha_consulta BETWEEN ? AND ? AND c.id_hospital = ?";
     $stmt_docs = $conn->prepare($doc_query);
-    $stmt_docs->execute([$start_datetime, $end_datetime]);
+    $stmt_docs->execute([$start_datetime, $end_datetime, $id_hospital]);
     $doctors = $stmt_docs->fetchAll(PDO::FETCH_ASSOC);
     $by_doctor = [];
     foreach ($doctors as $doc) {
         $doc_breakdown = [];
         $doc_total = 0;
         foreach ($methods as $method) {
-            $q = "SELECT SUM(cantidad_consulta) FROM cobros WHERE id_doctor = ? AND tipo_pago = ? AND fecha_consulta BETWEEN ? AND ?";
-            $p = [$doc['idUsuario'], $method, $start_datetime, $end_datetime];
+            $q = "SELECT SUM(cantidad_consulta) FROM cobros WHERE id_doctor = ? AND tipo_pago = ? AND fecha_consulta BETWEEN ? AND ? AND id_hospital = ?";
+            $p = [$doc['idUsuario'], $method, $start_datetime, $end_datetime, $id_hospital];
             $stmt = $conn->prepare($q);
             $stmt->execute($p);
             $v = (float) ($stmt->fetchColumn() ?: 0);

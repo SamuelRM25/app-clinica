@@ -5,6 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 date_default_timezone_set('America/Guatemala');
@@ -19,7 +20,7 @@ try {
     $conn = $database->getConnection();
 
     // Get available beds grouped by room
-    $stmt_beds = $conn->query("
+    $stmt_beds = $conn->prepare("
         SELECT 
             c.id_cama,
             c.numero_cama,
@@ -33,25 +34,30 @@ try {
         FROM camas c
         INNER JOIN habitaciones h ON c.id_habitacion = h.id_habitacion
         WHERE c.estado = 'Disponible' AND h.estado != 'Mantenimiento'
+        AND c.id_hospital = ? AND h.id_hospital = ?
         ORDER BY h.piso, h.numero_habitacion, c.numero_cama
     ");
+    $stmt_beds->execute([$id_hospital, $id_hospital]);
     $available_beds = $stmt_beds->fetchAll(PDO::FETCH_ASSOC);
 
     // Get doctors (Only users with 'doc' role as requested)
-    $stmt_docs = $conn->query("
+    $stmt_docs = $conn->prepare("
         SELECT idUsuario, nombre, apellido, especialidad 
         FROM usuarios 
-        WHERE tipoUsuario = 'doc'
+        WHERE tipoUsuario = 'doc' AND id_hospital = ?
         ORDER BY nombre
     ");
+    $stmt_docs->execute([$id_hospital]);
     $doctors = $stmt_docs->fetchAll(PDO::FETCH_ASSOC);
 
     // Get patients for search
-    $stmt_patients = $conn->query("
+    $stmt_patients = $conn->prepare("
         SELECT id_paciente, nombre, apellido, fecha_nacimiento, genero
         FROM pacientes
+        WHERE id_hospital = ?
         ORDER BY nombre, apellido
     ");
+    $stmt_patients->execute([$id_hospital]);
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {

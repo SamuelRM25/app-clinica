@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -24,12 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Update the 'notas' column in the 'pacientes' table
-        $sql = "UPDATE pacientes SET notas = :nota WHERE id_paciente = :id_paciente";
+        $sql = "UPDATE pacientes SET notas = :nota WHERE id_paciente = :id_paciente AND id_hospital = :id_hospital";
 
         $stmt = $conn->prepare($sql);
 
         $stmt->bindParam(':id_paciente', $id_paciente);
         $stmt->bindParam(':nota', $nota);
+        $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $_SESSION['message'] = "Nota flotante actualizada correctamente";

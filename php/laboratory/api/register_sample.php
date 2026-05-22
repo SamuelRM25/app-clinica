@@ -3,10 +3,13 @@
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 header('Content-Type: application/json');
 
 verify_session();
+
+$id_hospital = hospital_id();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Método no permitido']);
@@ -25,14 +28,19 @@ try {
         throw new Exception('ID de orden no proporcionado');
     }
 
-    // Update order status to Muestra_Recibida
+    $stmt_verify = $conn->prepare("SELECT id_orden FROM ordenes_laboratorio WHERE id_orden = ? AND id_hospital = ?");
+    $stmt_verify->execute([$id_orden, $id_hospital]);
+    if (!$stmt_verify->fetch()) {
+        throw new Exception('Orden no encontrada o no pertenece a este hospital');
+    }
+
     $stmt = $conn->prepare("
         UPDATE ordenes_laboratorio 
         SET estado = 'Muestra_Recibida',
             fecha_muestra_recibida = ?
-        WHERE id_orden = ?
+        WHERE id_orden = ? AND id_hospital = ?
     ");
-    $stmt->execute([$fecha_recepcion, $id_orden]);
+    $stmt->execute([$fecha_recepcion, $id_orden, $id_hospital]);
 
     // Handle file upload if present
     if (isset($_FILES['archivo_orden']) && $_FILES['archivo_orden']['error'] === UPLOAD_ERR_OK) {
@@ -51,8 +59,8 @@ try {
         if (in_array($extension, $allowedExts)) {
             if (move_uploaded_file($_FILES['archivo_orden']['tmp_name'], $targetPath)) {
                 $dbPath = '../../uploads/results/' . $newFileName;
-                $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ?");
-                $stmt_file->execute([$dbPath, $id_orden]);
+                $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ? AND id_hospital = ?");
+                $stmt_file->execute([$dbPath, $id_orden, $id_hospital]);
             }
         }
     }
@@ -60,10 +68,10 @@ try {
     // Log the action if observations were provided
     if ($observaciones) {
         $stmt = $conn->prepare("
-            INSERT INTO orden_logs (id_orden, accion, observaciones, id_usuario, fecha)
-            VALUES (?, 'Muestra Recibida', ?, ?, NOW())
+            INSERT INTO orden_logs (id_orden, accion, observaciones, id_usuario, fecha, id_hospital)
+            VALUES (?, 'Muestra Recibida', ?, ?, NOW(), ?)
         ");
-        $stmt->execute([$id_orden, $observaciones, $_SESSION['idUsuario']]);
+        $stmt->execute([$id_orden, $observaciones, $_SESSION['idUsuario'], $id_hospital]);
     }
 
     echo json_encode([

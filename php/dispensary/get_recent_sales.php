@@ -44,11 +44,13 @@ try {
 
     $type = $_GET['type'] ?? '';
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $sql = "SELECT id_venta, nombre_cliente, total, DATE_FORMAT(fecha_venta, '%H:%i') as hora, tipo_pago 
             FROM ventas 
-            WHERE fecha_venta BETWEEN ? AND ?";
+            WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?";
 
-    $params = [$start_datetime, $end_datetime];
+    $params = [$start_datetime, $end_datetime, $id_hospital];
 
     if (!empty($type)) {
         $sql .= " AND tipo_pago = ?";

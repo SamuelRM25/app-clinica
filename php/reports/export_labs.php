@@ -38,6 +38,8 @@ try {
 
     // ============ CÁLCULO DE MÉTRICAS ============
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     $stmt_labs_detail = $conn->prepare("
         SELECT 
             p.nombre as paciente_nombre,
@@ -52,9 +54,10 @@ try {
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         WHERE ol.fecha_orden BETWEEN ? AND ?
         AND op.estado != 'Devuelto'
+        AND ol.id_hospital = ?
         ORDER BY ol.fecha_orden DESC
     ");
-    $stmt_labs_detail->execute([$start_datetime, $end_datetime]);
+    $stmt_labs_detail->execute([$start_datetime, $end_datetime, $id_hospital]);
     $labs_detail_data = $stmt_labs_detail->fetchAll(PDO::FETCH_ASSOC);
 
     $total_labs_report = 0;

@@ -64,12 +64,14 @@ try {
 
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // Preparar la consulta para insertar
     $stmt = $conn->prepare(
         "INSERT INTO procedimientos_menores 
-        (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, tipo_pago, usuario) 
+        (id_paciente, nombre_paciente, procedimiento, cobro, fecha_procedimiento, tipo_pago, usuario, id_hospital) 
         VALUES 
-        (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :tipo_pago, :usuario)"
+        (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :fecha_procedimiento, :tipo_pago, :usuario, :id_hospital)"
     );
 
     $stmt->bindParam(':id_paciente', $id_paciente);
@@ -79,6 +81,7 @@ try {
     $stmt->bindParam(':fecha_procedimiento', $fecha_procedimiento);
     $stmt->bindParam(':tipo_pago', $tipo_pago);
     $stmt->bindParam(':usuario', $_SESSION['nombre']);
+    $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
     $stmt->execute();
 

@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -32,8 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 1. DUPLICATE CHECK
         // If it's an update, we only check for duplicates that ARE NOT the current patient
         if (!$id_paciente) {
-            $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ?");
-            $checkStmt->execute([$nombre, $apellido]);
+            $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
+            $checkStmt->execute([$nombre, $apellido, $id_hospital]);
             $existingPatient = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingPatient && !isset($_POST['confirm_action'])) {
@@ -56,9 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     direccion = ?,
                     telefono = ?,
                     correo = ?
-                WHERE id_paciente = ?
+                WHERE id_paciente = ? AND id_hospital = ?
             ");
-            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo, $id_paciente]);
+            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo, $id_paciente, $id_hospital]);
 
             $_SESSION['message'] = "Paciente actualizado correctamente";
             $_SESSION['message_type'] = "success";
@@ -74,10 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     genero, 
                     direccion, 
                     telefono, 
-                    correo
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    correo,
+                    id_hospital
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo]);
+            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo, $id_hospital]);
             $id_paciente = $conn->lastInsertId();
 
             $_SESSION['message'] = "Paciente agregado correctamente";

@@ -63,21 +63,24 @@ try {
         SELECT COUNT(*) as total 
         FROM ordenes_laboratorio 
         WHERE fecha_orden BETWEEN ? AND ?
+          AND id_hospital = ?
     ");
-    $stmt->execute([$month_start, $month_end]);
+    $stmt->execute([$month_start, $month_end, hospital_id()]);
     $ordenes_mes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 6. Pruebas más solicitadas (top 5) - Usando fecha de la orden
-    $stmt = $conn->query("
+    $stmt = $conn->prepare("
         SELECT cp.nombre_prueba, COUNT(op.id_orden_prueba) as cantidad
         FROM orden_pruebas op
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
         JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         WHERE MONTH(ol.fecha_orden) = MONTH(CURDATE())
+          AND ol.id_hospital = ?
         GROUP BY cp.id_prueba
         ORDER BY cantidad DESC
         LIMIT 5
     ");
+    $stmt->execute([hospital_id()]);
     $pruebas_populares = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 7. Órdenes recientes
@@ -116,9 +119,10 @@ try {
         SELECT COUNT(*) as total
         FROM ordenes_laboratorio 
         WHERE estado = 'Pendiente' 
-        AND DATE(fecha_orden) <= ?
+          AND DATE(fecha_orden) <= ?
+          AND id_hospital = ?
     ");
-    $stmt->execute([$two_days_ago]);
+    $stmt->execute([$two_days_ago, hospital_id()]);
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Título de la página

@@ -15,6 +15,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("ID inválido");
 }
 $id_us = $_GET['id'];
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
@@ -24,9 +25,9 @@ try {
         SELECT u.*, p.nombre as p_nom, p.apellido as p_ape
         FROM ultrasonidos u
         JOIN pacientes p ON u.id_paciente = p.id_paciente
-        WHERE u.id_ultrasonido = ?
+        WHERE u.id_ultrasonido = ? AND u.id_hospital = ?
     ");
-    $stmt->execute([$id_us]);
+    $stmt->execute([$id_us, $id_hospital]);
     $us = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$us)

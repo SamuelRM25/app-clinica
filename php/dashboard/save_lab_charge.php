@@ -28,15 +28,17 @@ try {
     $amount = $_POST['amount'];
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
 
-    // Insert into examenes_realizados
-    $stmt = $conn->prepare("INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, tipo_pago, usuario) VALUES (?, ?, ?, ?, ?, ?)");
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("INSERT INTO examenes_realizados (id_paciente, nombre_paciente, tipo_examen, cobro, tipo_pago, usuario, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $patient_id,
         $patient_name,
         $exam_type,
         $amount,
         $tipo_pago,
-        $_SESSION['nombre'] ?? 'System'
+        $_SESSION['nombre'] ?? 'System',
+        $id_hospital
     ]);
 
     // Optional: Could update order status here if needed (e.g., to 'Completada' or 'Pagada')

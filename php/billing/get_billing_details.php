@@ -25,13 +25,15 @@ try {
     $conn = $database->getConnection();
 
     // Get billing data with patient name
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente 
         FROM cobros c
         JOIN pacientes p ON c.paciente_cobro = p.id_paciente
-        WHERE c.in_cobro = ?
+        WHERE c.in_cobro = ? AND c.id_hospital = ?
     ");
-    $stmt->execute([$id_cobro]);
+    $stmt->execute([$id_cobro, $id_hospital]);
     $cobro = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cobro) {

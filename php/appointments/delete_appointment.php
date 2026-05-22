@@ -21,8 +21,9 @@ if (isset($data['id'])) {
         }
 
         // Prepare and execute the delete statement
-        $stmt = $conn->prepare("DELETE FROM citas WHERE id_cita = ?");
-        $result = $stmt->execute([$data['id']]);
+        $id_hospital = $_SESSION['id_hospital'] ?? 0;
+        $stmt = $conn->prepare("DELETE FROM citas WHERE id_cita = ? AND id_hospital = ?");
+        $result = $stmt->execute([$data['id'], $id_hospital]);
 
         if ($result) {
             echo json_encode(['status' => 'success', 'message' => 'Cita eliminada correctamente']);

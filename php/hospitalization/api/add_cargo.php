@@ -6,6 +6,7 @@ session_start();
 header('Content-Type: application/json');
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
@@ -37,6 +38,7 @@ try {
     }
 
     $registrado_por = $_SESSION['user_id'];
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $fecha_cargo = date('Y-m-d H:i:s');
 
     $conn->beginTransaction();
@@ -49,8 +51,8 @@ try {
         $precio_unitario = floatval($cargo_data['precio_unitario']);
 
         // Get id_cuenta for this encamamiento
-        $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-        $stmt_cuenta->execute([$id_encamamiento]);
+        $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+        $stmt_cuenta->execute([$id_encamamiento, $id_hospital]);
         $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
 
         if (!$cuenta) {
@@ -67,8 +69,8 @@ try {
         // Insert charge
         $stmt = $conn->prepare("
             INSERT INTO cargos_hospitalarios 
-            (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, registrado_por, referencia_id, referencia_tabla)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, registrado_por, referencia_id, referencia_tabla, id_hospital)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->execute([
@@ -80,7 +82,8 @@ try {
             $fecha_cargo,
             $registrado_por,
             $referencia_id,
-            $referencia_tabla
+            $referencia_tabla,
+            $id_hospital
         ]);
 
         // Deduct from inventory if it's a medication or supply with linkage
@@ -88,9 +91,9 @@ try {
             $stmt_deduct = $conn->prepare("
                 UPDATE inventario 
                 SET stock_hospital = stock_hospital - ? 
-                WHERE id_inventario = ? AND stock_hospital >= ?
+                WHERE id_inventario = ? AND stock_hospital >= ? AND id_hospital = ?
             ");
-            $stmt_deduct->execute([$cantidad, $id_inventario, $cantidad]);
+            $stmt_deduct->execute([$cantidad, $id_inventario, $cantidad, $id_hospital]);
 
             if ($stmt_deduct->rowCount() === 0) {
                 // Optional: We could throw an exception if stock is insufficient, 

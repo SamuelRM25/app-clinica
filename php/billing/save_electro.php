@@ -35,7 +35,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    // Ensure table exists
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $conn->exec("CREATE TABLE IF NOT EXISTS electrocardiogramas (
         id_electro INT AUTO_INCREMENT PRIMARY KEY,
         id_paciente INT NULL,
@@ -45,22 +46,22 @@ try {
         estado_pago VARCHAR(50) DEFAULT 'Pagado',
         tipo_pago VARCHAR(50) DEFAULT 'Efectivo',
         observaciones TEXT NULL,
+        id_hospital INT DEFAULT 0,
         FOREIGN KEY (id_paciente) REFERENCES pacientes(id_paciente) ON DELETE SET NULL
     )");
 
-    // Create patient if needed
     if (empty($paciente_id) && !empty($paciente_nombre)) {
         $parts = explode(' ', $paciente_nombre, 2);
         $nombre = $parts[0];
         $apellido = isset($parts[1]) ? $parts[1] : '';
-        $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro) VALUES (?, ?, NOW())");
-        $stmtP->execute([$nombre, $apellido]);
+        $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro, id_hospital) VALUES (?, ?, NOW(), ?)");
+        $stmtP->execute([$nombre, $apellido, $id_hospital]);
         $paciente_id = $conn->lastInsertId();
     }
 
     $stmt = $conn->prepare("
-        INSERT INTO electrocardiogramas (id_paciente, id_doctor, precio, fecha_estudio, estado_pago, tipo_pago) 
-        VALUES (?, ?, ?, ?, 'Pagado', ?)
+        INSERT INTO electrocardiogramas (id_paciente, id_doctor, precio, fecha_estudio, estado_pago, tipo_pago, id_hospital) 
+        VALUES (?, ?, ?, ?, 'Pagado', ?, ?)
     ");
 
     $stmt->execute([
@@ -68,7 +69,8 @@ try {
         $id_doctor,
         $cantidad,
         $fecha . ' ' . date('H:i:s'),
-        $tipo_pago
+        $tipo_pago,
+        $id_hospital
     ]);
 
     echo json_encode([

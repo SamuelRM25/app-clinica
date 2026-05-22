@@ -4,6 +4,8 @@ session_start();
 header('Content-Type: application/json');
 
 require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sesión no válida']);
@@ -22,27 +24,25 @@ try {
     $patient_id = $_POST['patient_id'] ?? null;
     $procedure = $_POST['procedure'] ?? null;
     $amount = $_POST['amount'] ?? 0;
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-    // Validar datos
     if (!$patient_id || !$procedure || !$amount) {
         throw new Exception('Faltan datos requeridos');
     }
 
-    // Obtener nombre del paciente
-    $stmt = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes WHERE id_paciente = ?");
-    $stmt->execute([$patient_id]);
+    $stmt = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre_completo FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+    $stmt->execute([$patient_id, $id_hospital]);
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$patient) {
         throw new Exception('Paciente no encontrado');
     }
 
-    // Insertar en procedimientos_menores
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
     $stmt = $conn->prepare("
         INSERT INTO procedimientos_menores 
-        (id_paciente, nombre_paciente, procedimiento, cobro, tipo_pago, usuario, fecha_procedimiento) 
-        VALUES (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :tipo_pago, :usuario, NOW())
+        (id_paciente, nombre_paciente, procedimiento, cobro, tipo_pago, usuario, fecha_procedimiento, id_hospital) 
+        VALUES (:id_paciente, :nombre_paciente, :procedimiento, :cobro, :tipo_pago, :usuario, NOW(), :id_hospital)
     ");
 
     $result = $stmt->execute([
@@ -51,7 +51,8 @@ try {
         ':procedimiento' => $procedure,
         ':cobro' => $amount,
         ':tipo_pago' => $tipo_pago,
-        ':usuario' => $_SESSION['usuario'] ?? 'system'
+        ':usuario' => $_SESSION['usuario'] ?? 'system',
+        ':id_hospital' => $id_hospital
     ]);
 
     if ($result) {

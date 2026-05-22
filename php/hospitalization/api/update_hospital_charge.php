@@ -5,6 +5,7 @@ header('Content-Type: application/json');
 
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 // Check session
 if (!isset($_SESSION['user_id'])) {
@@ -27,10 +28,12 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // Auto-populate session username if missing
     if (!isset($_SESSION['usuario'])) {
-        $stmt_u = $conn->prepare("SELECT usuario FROM usuarios WHERE idUsuario = ?");
-        $stmt_u->execute([$_SESSION['user_id']]);
+        $stmt_u = $conn->prepare("SELECT usuario FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
+        $stmt_u->execute([$_SESSION['user_id'], $id_hospital]);
         $u_row = $stmt_u->fetch(PDO::FETCH_ASSOC);
         if ($u_row) {
             $_SESSION['usuario'] = $u_row['usuario'];
@@ -50,8 +53,8 @@ try {
     $conn->beginTransaction();
 
     // 1. Get account ID before update
-    $stmt_get_acc = $conn->prepare("SELECT id_cuenta FROM cargos_hospitalarios WHERE id_cargo = ?");
-    $stmt_get_acc->execute([$id_cargo]);
+    $stmt_get_acc = $conn->prepare("SELECT id_cuenta FROM cargos_hospitalarios WHERE id_cargo = ? AND id_hospital = ?");
+    $stmt_get_acc->execute([$id_cargo, $id_hospital]);
     $cargo_info = $stmt_get_acc->fetch(PDO::FETCH_ASSOC);
 
     if (!$cargo_info) {
@@ -64,9 +67,9 @@ try {
     $stmt_update = $conn->prepare("
         UPDATE cargos_hospitalarios 
         SET descripcion = ?, cantidad = ?, precio_unitario = ?
-        WHERE id_cargo = ?
+        WHERE id_cargo = ? AND id_hospital = ?
     ");
-    $stmt_update->execute([$descripcion, $cantidad, $precio_unitario, $id_cargo]);
+    $stmt_update->execute([$descripcion, $cantidad, $precio_unitario, $id_cargo, $id_hospital]);
 
     // 3. Recalculate account totals (copied logic from detalle_encamamiento.php)
     $stmt_sync = $conn->prepare("

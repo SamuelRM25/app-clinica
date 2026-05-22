@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -22,8 +22,8 @@ try {
     $conn = $database->getConnection();
 
     // Buscar al paciente por nombre y apellido
-    $stmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ?");
-    $stmt->execute([$nombre, $apellido]);
+    $stmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
+    $stmt->execute([$nombre, $apellido, $id_hospital]);
     $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($paciente) {

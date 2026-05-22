@@ -30,26 +30,27 @@ try {
     $conn->beginTransaction();
 
     // 1. Actualizar estado de las pruebas a "Devuelto"
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt_verify = $conn->prepare("SELECT id_orden FROM ordenes_laboratorio WHERE id_orden = ? AND id_hospital = ?");
+    $stmt_verify->execute([$id_orden, $id_hospital]);
+    if (!$stmt_verify->fetch()) {
+        echo json_encode(['status' => 'error', 'message' => 'Orden no encontrada o no pertenece a este hospital']);
+        exit;
+    }
+
     $placeholders = str_repeat('?,', count($pruebas_devueltas) - 1) . '?';
-    $stmt_update_pruebas = $conn->prepare("UPDATE orden_pruebas SET estado = 'Devuelto' WHERE id_orden = ? AND id_orden_prueba IN ($placeholders)");
-    $params = array_merge([$id_orden], $pruebas_devueltas);
+    $stmt_update_pruebas = $conn->prepare("UPDATE orden_pruebas op JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden SET op.estado = 'Devuelto' WHERE ol.id_hospital = ? AND op.id_orden = ? AND op.id_orden_prueba IN ($placeholders)");
+    $params = array_merge([$id_hospital, $id_orden], $pruebas_devueltas);
     $stmt_update_pruebas->execute($params);
 
-    // 2. Registrar el movimiento negativo en la caja (en la tabla que CMHS use para ingresos de lab). 
-    // Lo más probables es examenes_realizados y en la caja chica/turnos.
-    // Insertamos una entrada de devolución en el flujo de caja diario o simplemente dejamos el registro en una tabla de devoluciones si existe.
-    // Como requerimiento, es registrar un monto negativo devuelto.
-    // Verificamos si existe la tabla devoluciones, si no, lo registramos como cobro negativo en donde aplique.
-
-    // Insert en una tabla de auditoria simple o examenes_realizados con cobro negativo.
     $stmt_devolucion = $conn->prepare("
-        INSERT INTO examenes_realizados (id_paciente, id_doctor, examen, fecha, hora, cobro, idUsuario) 
-        SELECT id_paciente, id_doctor, CONCAT('Devolución: ', ?), CURDATE(), CURTIME(), ?, ?
-        FROM ordenes_laboratorio WHERE id_orden = ?
+        INSERT INTO examenes_realizados (id_paciente, id_doctor, examen, fecha, hora, cobro, idUsuario, id_hospital) 
+        SELECT id_paciente, id_doctor, CONCAT('Devolución: ', ?), CURDATE(), CURTIME(), ?, ?, ?
+        FROM ordenes_laboratorio WHERE id_orden = ? AND id_hospital = ?
     ");
-    // El cobro devuelto entra como valor negativo.
     $monto_negativo = -$monto;
-    $stmt_devolucion->execute([$motivo, $monto_negativo, $_SESSION['user_id'], $id_orden]);
+    $stmt_devolucion->execute([$motivo, $monto_negativo, $_SESSION['user_id'], $id_hospital, $id_orden, $id_hospital]);
 
     $conn->commit();
     echo json_encode(['status' => 'success', 'message' => 'Devolución procesada correctamente.']);

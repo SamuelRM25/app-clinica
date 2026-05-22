@@ -8,6 +8,7 @@ session_start();
 header('Content-Type: application/json');
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 // Verify session
 if (!isset($_SESSION['user_id'])) {
@@ -16,6 +17,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 date_default_timezone_set('America/Guatemala');
+
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $is_retrasado = isset($_POST['is_retrasado']) && $_POST['is_retrasado'] == '1';
@@ -71,8 +74,8 @@ try {
     $conn->beginTransaction();
 
     // Verify bed is available
-    $stmt_check_bed = $conn->prepare("SELECT estado FROM camas WHERE id_cama = ?");
-    $stmt_check_bed->execute([$id_cama]);
+    $stmt_check_bed = $conn->prepare("SELECT estado FROM camas WHERE id_cama = ? AND id_hospital = ?");
+    $stmt_check_bed->execute([$id_cama, $id_hospital]);
     $bed = $stmt_check_bed->fetch(PDO::FETCH_ASSOC);
 
     if (!$bed || $bed['estado'] !== 'Disponible') {
@@ -85,16 +88,16 @@ try {
         $apellido = trim($_POST['referido_apellido'] ?? '');
 
         $stmt_new_pac = $conn->prepare("
-            INSERT INTO pacientes (nombre, apellido, fecha_nacimiento, genero, direccion) 
-            VALUES (?, ?, '1900-01-01', 'Masculino', 'Referente Externo')
+            INSERT INTO pacientes (nombre, apellido, fecha_nacimiento, genero, direccion, id_hospital) 
+            VALUES (?, ?, '1900-01-01', 'Masculino', 'Referente Externo', ?)
         ");
-        $stmt_new_pac->execute([$nombre, $apellido]);
+        $stmt_new_pac->execute([$nombre, $apellido, $id_hospital]);
         $id_paciente = $conn->lastInsertId();
     }
 
     // Verificar que el paciente existe
-    $stmt_patient = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_paciente = ?");
-    $stmt_patient->execute([$id_paciente]);
+    $stmt_patient = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+    $stmt_patient->execute([$id_paciente, $id_hospital]);
     $patient = $stmt_patient->fetch();
 
     if (!$patient) {
@@ -103,15 +106,15 @@ try {
 
     // Verificar si el paciente tiene un registro en historial_clinico
     // Si no existe, crear uno mínimo para satisfacer la restricción de clave foránea
-    $stmt_check_historial = $conn->prepare("SELECT id_paciente FROM historial_clinico WHERE id_paciente = ? LIMIT 1");
-    $stmt_check_historial->execute([$id_paciente]);
+    $stmt_check_historial = $conn->prepare("SELECT id_paciente FROM historial_clinico WHERE id_paciente = ? AND id_hospital = ? LIMIT 1");
+    $stmt_check_historial->execute([$id_paciente, $id_hospital]);
 
     if (!$stmt_check_historial->fetch()) {
         // Crear registro mínimo en historial_clinico
         $stmt_create_historial = $conn->prepare("
             INSERT INTO historial_clinico 
-            (id_paciente, fecha_consulta, motivo_consulta, sintomas, diagnostico, tratamiento, medico_responsable) 
-            VALUES (?, NOW(), ?, '', ?, '', ?)
+            (id_paciente, fecha_consulta, motivo_consulta, sintomas, diagnostico, tratamiento, medico_responsable, id_hospital) 
+            VALUES (?, NOW(), ?, '', ?, '', ?, ?)
         ");
         // For medico_responsable, we'll use the user ID as a placeholder if a name isn't available.
         // If 'medico_responsable' is expected to be a name, you might need to fetch the user's name from the 'users' table.
@@ -120,13 +123,14 @@ try {
             $id_paciente,
             $motivo_ingreso,
             $diagnostico_ingreso ?? 'Ingreso hospitalario',
-            'Sistema' // Using 'Sistema' as created_by_name is not defined and this is a minimal record.
+            'Sistema', // Using 'Sistema' as created_by_name is not defined and this is a minimal record.
+            $id_hospital
         ]);
     }
 
     // Check if patient already has an active admission
-    $stmt_check_active = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo'");
-    $stmt_check_active->execute([$id_paciente]);
+    $stmt_check_active = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ?");
+    $stmt_check_active->execute([$id_paciente, $id_hospital]);
     if ($stmt_check_active->fetch()) {
         throw new Exception("El paciente ya tiene un encamamiento activo");
     }
@@ -136,8 +140,8 @@ try {
     $stmt_insert = $conn->prepare("
         INSERT INTO encamamientos 
         (id_paciente, id_cama, id_doctor, fecha_ingreso, fecha_alta, motivo_ingreso, 
-         diagnostico_ingreso, tipo_ingreso, notas_ingreso, estado, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         diagnostico_ingreso, tipo_ingreso, notas_ingreso, estado, created_by, id_hospital)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     $stmt_insert->execute([
@@ -151,7 +155,8 @@ try {
         $tipo_ingreso,
         $notas_ingreso,
         $estado_inicial,
-        $created_by
+        $created_by,
+        $id_hospital
     ]);
 
     $id_encamamiento = $conn->lastInsertId();
@@ -161,23 +166,23 @@ try {
 
     // Verify bed status
     $target_bed_status = $is_retrasado ? 'Disponible' : 'Ocupada';
-    $stmt_verify_bed = $conn->prepare("SELECT estado FROM camas WHERE id_cama = ?");
-    $stmt_verify_bed->execute([$id_cama]);
+    $stmt_verify_bed = $conn->prepare("SELECT estado FROM camas WHERE id_cama = ? AND id_hospital = ?");
+    $stmt_verify_bed->execute([$id_cama, $id_hospital]);
     $updated_bed = $stmt_verify_bed->fetch(PDO::FETCH_ASSOC);
 
     if ($updated_bed['estado'] !== $target_bed_status) {
         // Manual override if trigger didn't set expected status
-        $stmt_update_bed = $conn->prepare("UPDATE camas SET estado = ? WHERE id_cama = ?");
-        $stmt_update_bed->execute([$target_bed_status, $id_cama]);
+        $stmt_update_bed = $conn->prepare("UPDATE camas SET estado = ? WHERE id_cama = ? AND id_hospital = ?");
+        $stmt_update_bed->execute([$target_bed_status, $id_cama, $id_hospital]);
     }
 
     // Verify cuenta was created by trigger
-    $stmt_verify_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-    $stmt_verify_cuenta->execute([$id_encamamiento]);
+    $stmt_verify_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+    $stmt_verify_cuenta->execute([$id_encamamiento, $id_hospital]);
     if (!$stmt_verify_cuenta->fetch()) {
         // Trigger didn't fire, create manually
-        $stmt_create_cuenta = $conn->prepare("INSERT INTO cuenta_hospitalaria (id_encamamiento) VALUES (?)");
-        $stmt_create_cuenta->execute([$id_encamamiento]);
+        $stmt_create_cuenta = $conn->prepare("INSERT INTO cuenta_hospitalaria (id_encamamiento, id_hospital) VALUES (?, ?)");
+        $stmt_create_cuenta->execute([$id_encamamiento, $id_hospital]);
     }
 
     // Register first room charge (admission day)
@@ -185,14 +190,14 @@ try {
         SELECT h.tarifa_por_noche, h.numero_habitacion, c.numero_cama
         FROM camas c
         INNER JOIN habitaciones h ON c.id_habitacion = h.id_habitacion
-        WHERE c.id_cama = ?
+        WHERE c.id_cama = ? AND c.id_hospital = ? AND h.id_hospital = ?
     ");
-    $stmt_room_info->execute([$id_cama]);
+    $stmt_room_info->execute([$id_cama, $id_hospital, $id_hospital]);
     $room_info = $stmt_room_info->fetch(PDO::FETCH_ASSOC);
 
     if ($room_info) {
-        $stmt_cuenta_id = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ?");
-        $stmt_cuenta_id->execute([$id_encamamiento]);
+        $stmt_cuenta_id = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+        $stmt_cuenta_id->execute([$id_encamamiento, $id_hospital]);
         $cuenta = $stmt_cuenta_id->fetch(PDO::FETCH_ASSOC);
 
         if ($cuenta) {
@@ -201,8 +206,8 @@ try {
 
             $stmt_cargo = $conn->prepare("
                 INSERT INTO cargos_hospitalarios 
-                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por)
-                VALUES (?, 'Habitación', ?, 1, ?, ?, ?, ?)
+                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
+                VALUES (?, 'Habitación', ?, 1, ?, ?, ?, ?, ?)
             ");
 
             $stmt_cargo->execute([
@@ -211,7 +216,8 @@ try {
                 $room_info['tarifa_por_noche'],
                 $fecha_ingreso,
                 $fecha_cargo,
-                $created_by
+                $created_by,
+                $id_hospital
             ]);
         }
     }

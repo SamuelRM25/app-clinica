@@ -6,7 +6,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -31,11 +31,12 @@ try {
         FROM ventas v
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
         WHERE v.fecha_venta >= ? AND v.fecha_venta < ?
+        AND v.id_hospital = ?
         ORDER BY v.fecha_venta ASC
     ";
 
     $stmt = $conn->prepare($query);
-    $stmt->execute([$start_date, $end_date]);
+    $stmt->execute([$start_date, $end_date, $id_hospital]);
     $ventas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Calcular totales

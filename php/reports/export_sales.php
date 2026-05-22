@@ -29,6 +29,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // Consulta principal
     $stmt = $conn->prepare("
         SELECT 
@@ -45,11 +47,12 @@ try {
         AND v.tipo_pago != 'Traslado'
         AND dv.precio_unitario > 0
         AND COALESCE(pi.unit_cost, 0) > 0
+        AND v.id_hospital = ?
         GROUP BY i.id_inventario, i.nom_medicamento, i.codigo_barras
         ORDER BY total_venta DESC
     ");
 
-    $stmt->execute([$start_datetime, $end_datetime]);
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Totales

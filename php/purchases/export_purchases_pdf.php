@@ -15,6 +15,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
     // Obtener compras con sus items
     $query = "SELECT 
                 ph.id as compra_id, ph.purchase_date, ph.provider_name, ph.total_amount, 
@@ -22,9 +24,11 @@ try {
                 pi.product_name, pi.quantity, pi.unit_cost, pi.subtotal as item_total
               FROM purchase_headers ph
               JOIN purchase_items pi ON ph.id = pi.purchase_header_id
+              WHERE ph.id_hospital = ?
               ORDER BY ph.id DESC, pi.id ASC";
 
-    $stmt = $conn->query($query);
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$id_hospital]);
     $purchases = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $id = $row['compra_id'];

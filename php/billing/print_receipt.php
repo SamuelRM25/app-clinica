@@ -30,14 +30,16 @@ try {
     $conn = $database->getConnection();
 
     // Obtener datos del cobro con información del paciente
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente, 
                p.id_paciente, p.fecha_nacimiento, p.genero, p.telefono, p.direccion
         FROM cobros c
         JOIN pacientes p ON c.paciente_cobro = p.id_paciente
-        WHERE c.in_cobro = ?
+        WHERE c.in_cobro = ? AND c.id_hospital = ?
     ");
-    $stmt->execute([$id_cobro]);
+    $stmt->execute([$id_cobro, $id_hospital]);
     $cobro = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$cobro) {

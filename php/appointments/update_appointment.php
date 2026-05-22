@@ -28,11 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 hora_cita = :hora_cita, 
                 telefono = :telefono, 
                 id_doctor = :id_doctor
-                WHERE id_cita = :id_cita";
+                WHERE id_cita = :id_cita AND id_hospital = :id_hospital";
 
         $stmt = $conn->prepare($sql);
 
-        // Bind parameters
         $stmt->bindParam(':nombre_pac', $_POST['nombre_pac']);
         $stmt->bindParam(':apellido_pac', $_POST['apellido_pac']);
         $stmt->bindParam(':fecha_cita', $_POST['fecha_cita']);
@@ -40,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':telefono', $_POST['telefono']);
         $stmt->bindParam(':id_doctor', $_POST['id_doctor']);
         $stmt->bindParam(':id_cita', $_POST['id_cita']);
+        $stmt->bindParam(':id_hospital', $_SESSION['id_hospital']);
 
         if ($stmt->execute()) {
             echo json_encode([

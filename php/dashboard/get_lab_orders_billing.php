@@ -17,8 +17,8 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    // Fetch pending orders (or orders that haven't been fully billed - assuming 'Pendiente' or 'Muestra_Recibida' are billable states)
-    // Adjusting query to get relevant details
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $query = "
         SELECT 
             ol.id_orden, 
@@ -32,14 +32,13 @@ try {
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE ol.estado NOT IN ('Cancelada') 
-        -- Optional: Add check if already billed if tracking exists, for now assuming we list active orders
+        WHERE ol.estado NOT IN ('Cancelada') AND ol.id_hospital = ?
         GROUP BY ol.id_orden
         ORDER BY ol.fecha_orden DESC
     ";
 
     $stmt = $conn->prepare($query);
-    $stmt->execute();
+    $stmt->execute([$id_hospital]);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(['success' => true, 'orders' => $orders]);

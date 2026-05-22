@@ -6,6 +6,7 @@ session_start();
 header('Content-Type: application/json');
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+require_once __DIR__ . '/../../../includes/multitenant.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
@@ -28,6 +29,8 @@ try {
     
     $database = new Database();
     $conn = $database->getConnection();
+
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     
     // Start transaction
     $conn->beginTransaction();
@@ -39,13 +42,14 @@ try {
             fecha_alta = NOW(),
             diagnostico_egreso = ?,
             notas_alta = ?
-        WHERE id_encamamiento = ?
+        WHERE id_encamamiento = ? AND id_hospital = ?
     ");
     
     $stmt->execute([
         $diagnostico_egreso,
         $notas_alta,
-        $id_encamamiento
+        $id_encamamiento,
+        $id_hospital
     ]);
     
     // Trigger will automatically set bed status to 'Disponible'
@@ -53,9 +57,9 @@ try {
     $stmt_verify = $conn->prepare("
         SELECT c.estado FROM camas c
         INNER JOIN encamamientos e ON c.id_cama = e.id_cama
-        WHERE e.id_encamamiento = ?
+        WHERE e.id_encamamiento = ? AND e.id_hospital = ?
     ");
-    $stmt_verify->execute([$id_encamamiento]);
+    $stmt_verify->execute([$id_encamamiento, $id_hospital]);
     $bed = $stmt_verify->fetch(PDO::FETCH_ASSOC);
     
     if ($bed && $bed['estado'] !== 'Disponible') {
@@ -64,9 +68,9 @@ try {
             UPDATE camas c
             INNER JOIN encamamientos e ON c.id_cama = e.id_cama
             SET c.estado = 'Disponible'
-            WHERE e.id_encamamiento = ?
+            WHERE e.id_encamamiento = ? AND e.id_hospital = ?
         ");
-        $stmt_update_bed->execute([$id_encamamiento]);
+        $stmt_update_bed->execute([$id_encamamiento, $id_hospital]);
     }
     
     $conn->commit();

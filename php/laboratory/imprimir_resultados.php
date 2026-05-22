@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 verify_session();
 
@@ -25,9 +25,9 @@ try {
         FROM ordenes_laboratorio ol
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON ol.id_doctor = u.idUsuario
-        WHERE ol.id_orden = ? AND ol.estado = 'Completada'
+        WHERE ol.id_orden = ? AND ol.estado = 'Completada' AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $orden = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$orden) {

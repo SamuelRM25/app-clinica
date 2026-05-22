@@ -16,13 +16,10 @@ try {
     $conn = $database->getConnection();
 
     $id_paciente = $_GET['id_paciente'];
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-    // Contar citas pasadas que ya ocurrieron (fecha < hoy o (fecha = hoy y hora < ahora) o simplemente todas las registradas)
-    // Asumiremos que cualquier registro en 'citas' cuenta, o quizás solo las que tienen diagnóstico o están marcadas como completadas.
-    // Dado el esquema simple, contaremos todas las citas anteriores.
-
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM citas WHERE id_paciente = ?");
-    $stmt->execute([$id_paciente]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM citas WHERE id_paciente = ? AND id_hospital = ?");
+    $stmt->execute([$id_paciente, $id_hospital]);
     $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     echo json_encode([

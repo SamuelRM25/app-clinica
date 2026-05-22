@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -29,7 +29,8 @@ try {
     $conn = $database->getConnection();
 
     // Solo medicamentos con stock
-    $stmt = $conn->query("SELECT * FROM inventario WHERE cantidad_med > 0 ORDER BY nom_medicamento");
+    $stmt = $conn->prepare("SELECT * FROM inventario WHERE cantidad_med > 0 AND id_hospital = ? ORDER BY nom_medicamento");
+    $stmt->execute([$id_hospital]);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, array(
             $row['nom_medicamento'],

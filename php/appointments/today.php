@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -20,10 +20,10 @@ try {
         SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente, p.nombre, p.apellido
         FROM citas c
         LEFT JOIN pacientes p ON c.paciente_cita = p.id_paciente
-        WHERE DATE(c.fecha_cita) = ?
+        WHERE DATE(c.fecha_cita) = ? AND c.id_hospital = ?
         ORDER BY c.hora_cita ASC
     ");
-    $stmt->execute([$today]);
+    $stmt->execute([$today, $id_hospital]);
     $citas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Citas Programadas para Hoy";

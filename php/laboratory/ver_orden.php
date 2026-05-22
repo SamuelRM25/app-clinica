@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = hospital_id();
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -34,9 +34,9 @@ try {
         FROM ordenes_laboratorio ol
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         LEFT JOIN usuarios u ON ol.id_doctor = u.idUsuario
-        WHERE ol.id_orden = ?
+        WHERE ol.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $orden = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$orden) {
@@ -47,10 +47,11 @@ try {
     $stmt = $conn->prepare("
         SELECT op.*, cp.nombre_prueba, cp.codigo_prueba, cp.precio
         FROM orden_pruebas op
+        JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
-        WHERE op.id_orden = ?
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $pruebas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener resultados si existen
@@ -58,9 +59,10 @@ try {
     $stmt = $conn->prepare("
         SELECT rl.* FROM resultados_laboratorio rl
         INNER JOIN orden_pruebas op ON rl.id_orden_prueba = op.id_orden_prueba
-        WHERE op.id_orden = ?
+        INNER JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+        WHERE op.id_orden = ? AND ol.id_hospital = ?
     ");
-    $stmt->execute([$id_orden]);
+    $stmt->execute([$id_orden, $id_hospital]);
     $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Ver Orden #" . $orden['numero_orden'];

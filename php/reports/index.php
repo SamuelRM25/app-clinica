@@ -33,6 +33,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
     // Obtener fechas para filtros (predeterminado: mes actual)
     // Obtener fecha para filtro (predeterminado: hoy) - Filtro por Día (Turno)
@@ -54,36 +55,36 @@ try {
     $today = date('Y-m-d');
 
     // 1. Citas de hoy
-    $params = $is_doctor ? [$today, $user_id] : [$today];
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ?" . $doctor_filter);
+    $params = $is_doctor ? [$today, $id_hospital, $user_id] : [$today, $id_hospital];
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE fecha_cita = ? AND id_hospital = ?" . $doctor_filter);
     $stmt->execute($params);
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 2. Total de citas en el sistema
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM citas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 3. Hospitalizaciones Activas
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM encamamientos WHERE estado = 'Activo' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $active_hospitalizations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 4. Compras pendientes
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente'");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $pending_purchases = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // ============ CÁLCULO DE MÉTRICAS DE REPORTES ============
 
     // 1. Ventas de medicamentos
-    $stmt_sales = $conn->prepare("SELECT SUM(total) as total_sales FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
-    $stmt_sales->execute([$start_datetime, $end_datetime]);
+    $stmt_sales = $conn->prepare("SELECT SUM(total) as total_sales FROM ventas WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_sales->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_sales_meds = $stmt_sales->fetch(PDO::FETCH_ASSOC)['total_sales'] ?? 0;
 
     // 2. Compras de medicamentos
-    $stmt_purchases = $conn->prepare("SELECT SUM(total_amount) as total_purchases FROM purchase_headers WHERE purchase_date BETWEEN ? AND ?");
-    $stmt_purchases->execute([$fecha_inicio, $fecha_fin]);
+    $stmt_purchases = $conn->prepare("SELECT SUM(total_amount) as total_purchases FROM purchase_headers WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_purchases->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_purchases_meds = $stmt_purchases->fetch(PDO::FETCH_ASSOC)['total_purchases'] ?? 0;
 
     // 3. Cálculo de Ganancia Real
@@ -98,26 +99,27 @@ try {
         WHERE v.fecha_venta BETWEEN ? AND ?
         AND v.tipo_pago != 'Traslado'
         AND dv.precio_unitario > 0
+        AND v.id_hospital = ?
     ");
-    $stmt_actual_profit->execute([$start_datetime, $end_datetime]);
+    $stmt_actual_profit->execute([$start_datetime, $end_datetime, $id_hospital]);
     $profit_data = $stmt_actual_profit->fetch(PDO::FETCH_ASSOC);
     $sales_revenue = $profit_data['revenue'] ?? 0;
     $sales_cost = $profit_data['cost'] ?? 0;
     $actual_sales_margin = $sales_revenue - $sales_cost;
 
     // 4. Procedimientos menores
-    $stmt_proc = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ?");
-    $stmt_proc->execute([$start_datetime, $end_datetime]);
+    $stmt_proc = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_proc->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_procedures = $stmt_proc->fetchColumn() ?: 0;
 
     // 5. Exámenes realizados
-    $stmt_exams = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ?");
-    $stmt_exams->execute([$start_datetime, $end_datetime]);
+    $stmt_exams = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_exams->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_exams_revenue = $stmt_exams->fetchColumn() ?: 0;
 
     // 6. Cobros de consultas
-    $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ?");
-    $stmt_billings->execute([$fecha_inicio, $fecha_fin]);
+    $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_billings->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_billings = $stmt_billings->fetchColumn() ?: 0;
 
     // 6.b Hospitalizaciones (Cuentas de encamamientos dados de alta)
@@ -126,8 +128,9 @@ try {
         FROM cuenta_hospitalaria ch 
         JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento 
         WHERE e.fecha_alta BETWEEN ? AND ?
+        AND e.id_hospital = ?
     ");
-    $stmt_hosp->execute([$start_datetime, $end_datetime]);
+    $stmt_hosp->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_hospitalization = $stmt_hosp->fetchColumn() ?: 0;
 
     // 7. Ingresos brutos totales
@@ -146,10 +149,11 @@ try {
         SELECT DATE(fecha_venta) as fecha, SUM(total) as total 
         FROM ventas 
         WHERE fecha_venta >= DATE_SUB(?, INTERVAL 30 DAY)
+        AND id_hospital = ?
         GROUP BY DATE(fecha_venta)
         ORDER BY fecha ASC
     ");
-    $stmt_trend->execute([$end_datetime]);
+    $stmt_trend->execute([$end_datetime, $id_hospital]);
     $sales_trend_data = $stmt_trend->fetchAll(PDO::FETCH_ASSOC);
 
     // B. Distribución de Ingresos por Categoría
@@ -170,30 +174,35 @@ try {
         WHERE v.fecha_venta BETWEEN ? AND ?
         AND v.tipo_pago != 'Traslado'
         AND dv.precio_unitario > 0
+        AND v.id_hospital = ?
         GROUP BY i.id_inventario
         ORDER BY total_vendido DESC
         LIMIT 5
     ");
-    $stmt_top_meds->execute([$start_datetime, $end_datetime]);
+    $stmt_top_meds->execute([$start_datetime, $end_datetime, $id_hospital]);
     $top_meds_data = $stmt_top_meds->fetchAll(PDO::FETCH_ASSOC);
 
     // ============ MÉTRICAS ADICIONALES ============
 
     // Total de pacientes registrados
-    $total_pacientes = $conn->query("SELECT COUNT(*) FROM pacientes")->fetchColumn();
+    $total_pacientes = $conn->prepare("SELECT COUNT(*) FROM pacientes WHERE id_hospital = ?");
+    $total_pacientes->execute([$id_hospital]);
+    $total_pacientes = $total_pacientes->fetchColumn();
 
     // Citas en el período
-    $stmt_citas = $conn->prepare("SELECT COUNT(*) FROM citas WHERE fecha_cita BETWEEN ? AND ?");
-    $stmt_citas->execute([$start_datetime, $end_datetime]);
+    $stmt_citas = $conn->prepare("SELECT COUNT(*) FROM citas WHERE fecha_cita BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_citas->execute([$start_datetime, $end_datetime, $id_hospital]);
     $citas_count = $stmt_citas->fetchColumn();
 
     // Exámenes realizados en el período (conteo)
-    $stmt_examenes_count = $conn->prepare("SELECT COUNT(*) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ?");
-    $stmt_examenes_count->execute([$start_datetime, $end_datetime]);
+    $stmt_examenes_count = $conn->prepare("SELECT COUNT(*) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_examenes_count->execute([$start_datetime, $end_datetime, $id_hospital]);
     $examenes_count = $stmt_examenes_count->fetchColumn();
 
     // Medicamentos en stock
-    $total_medicamentos = $conn->query("SELECT COUNT(*) FROM inventario WHERE cantidad_med > 0")->fetchColumn();
+    $total_medicamentos = $conn->prepare("SELECT COUNT(*) FROM inventario WHERE cantidad_med > 0 AND id_hospital = ?");
+    $total_medicamentos->execute([$id_hospital]);
+    $total_medicamentos = $total_medicamentos->fetchColumn();
 
     // Título de la página
     $page_title = "Reportes - Centro Médico RS";
@@ -223,11 +232,12 @@ try {
         AND v.tipo_pago != 'Traslado'
         AND dv.precio_unitario > 0
         AND COALESCE(pi.unit_cost, 0) > 0
+        AND v.id_hospital = ?
         GROUP BY i.id_inventario, i.nom_medicamento, i.codigo_barras
         ORDER BY total_venta DESC
     ");
 
-    $stmt_profitability->execute([$profit_start_datetime, $profit_end_datetime]);
+    $stmt_profitability->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
     $profitability_data = $stmt_profitability->fetchAll(PDO::FETCH_ASSOC);
 
     // Calcular totales generales del reporte
@@ -259,6 +269,9 @@ try {
         $labs_where = "AND ol.fecha_orden <= ?";
         $labs_params = [date('Y-m-t 23:59:59', strtotime($labs_end_month . '-01'))];
     }
+
+    $labs_where .= ($labs_where ? " AND" : "WHERE") . " ol.id_hospital = ?";
+    $labs_params[] = $id_hospital;
 
     $stmt_labs_detail = $conn->prepare("
         SELECT 
@@ -338,9 +351,10 @@ try {
             LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
             WHERE v.tipo_pago = 'Traslado'
             AND v.fecha_venta BETWEEN ? AND ?
+            AND v.id_hospital = ?
             ORDER BY v.fecha_venta DESC
         ");
-        $stmt_transfers->execute([$profit_start_datetime, $profit_end_datetime]);
+        $stmt_transfers->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
         $raw_transfers = $stmt_transfers->fetchAll(PDO::FETCH_ASSOC);
 
         $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1045,10 +1059,11 @@ try {
                                                     SELECT fecha_procedimiento, nombre_paciente, cobro 
                                                     FROM procedimientos_menores 
                                                     WHERE fecha_procedimiento BETWEEN ? AND ? 
+                                                    AND id_hospital = ?
                                                     ORDER BY fecha_procedimiento DESC 
                                                     LIMIT 5
                                                 ");
-                                        $stmt->execute([$start_datetime, $end_datetime]);
+                                        $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
                                         $hasProc = false;
                                         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                             $hasProc = true;
@@ -1099,10 +1114,11 @@ try {
                                                     SELECT fecha_examen, nombre_paciente, cobro 
                                                     FROM examenes_realizados 
                                                     WHERE fecha_examen BETWEEN ? AND ? 
+                                                    AND id_hospital = ?
                                                     ORDER BY fecha_examen DESC 
                                                     LIMIT 5
                                                 ");
-                                        $stmt->execute([$start_datetime, $end_datetime]);
+                                        $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
                                         $hasExam = false;
                                         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                             $hasExam = true;

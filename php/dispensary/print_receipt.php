@@ -13,7 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -34,9 +34,9 @@ try {
         SELECT v.*, u.nombre as Cajero
         FROM ventas v
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
-        WHERE v.id_venta = ?
+        WHERE v.id_venta = ? AND v.id_hospital = ?
     ");
-    $stmt->execute([$id_venta]);
+    $stmt->execute([$id_venta, $id_hospital]);
     $venta = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$venta) {
@@ -51,9 +51,9 @@ try {
         SELECT dv.*, i.nom_medicamento, i.mol_medicamento, i.presentacion_med
         FROM detalle_ventas dv
         JOIN inventario i ON dv.id_inventario = i.id_inventario
-        WHERE dv.id_venta = ?
+        WHERE dv.id_venta = ? AND dv.id_hospital = ?
     ");
-    $stmt->execute([$id_venta]);
+    $stmt->execute([$id_venta, $id_hospital]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Información del usuario
@@ -62,15 +62,15 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Estadísticas adicionales
-    $stmt = $conn->prepare("SELECT COUNT(*) as total_ventas FROM ventas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as total_ventas FROM ventas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_ventas = $stmt->fetch(PDO::FETCH_ASSOC)['total_ventas'] ?? 0;
 
     // Ventas del mes
     $month_start = date('Y-m-01');
     $month_end = date('Y-m-t');
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ventas WHERE fecha_venta BETWEEN ? AND ?");
-    $stmt->execute([$month_start, $month_end]);
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ventas WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$month_start, $month_end, $id_hospital]);
     $month_sales = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página

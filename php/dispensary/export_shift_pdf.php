@@ -38,14 +38,16 @@ try {
         }
     }
 
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
     $stmt = $conn->prepare("
         SELECT v.*, u.nombre as cajero_name
         FROM ventas v
         LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
-        WHERE v.fecha_venta BETWEEN ? AND ?
+        WHERE v.fecha_venta BETWEEN ? AND ? AND v.id_hospital = ?
         ORDER BY v.fecha_venta ASC
     ");
-    $stmt->execute([$start_datetime, $end_datetime]);
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Calculate totals by payment method

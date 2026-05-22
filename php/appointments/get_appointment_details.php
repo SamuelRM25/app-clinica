@@ -21,8 +21,11 @@ try {
 
     $id_cita = $_GET['id'];
 
-    $stmt = $conn->prepare("SELECT * FROM citas WHERE id_cita = :id_cita");
+    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+
+    $stmt = $conn->prepare("SELECT * FROM citas WHERE id_cita = :id_cita AND id_hospital = :id_hospital");
     $stmt->bindParam(':id_cita', $id_cita);
+    $stmt->bindParam(':id_hospital', $id_hospital);
     $stmt->execute();
 
     // Obtener la cita
