@@ -3,8 +3,11 @@
 session_start();
 require_once __DIR__ . '/config/hospital.php';
 
+error_log("INDEX DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESSION['user_id'] ?? 'not set'));
+
 // Verificar si el usuario ya está autenticado
 if (isset($_SESSION['user_id'])) {
+    error_log("INDEX DEBUG: Already authenticated. Redirecting to php/dashboard/index.php");
     header("Location: php/dashboard/index.php");
     exit;
 }
@@ -268,6 +271,69 @@ date_default_timezone_set('America/Guatemala');
         .theme-btn:hover {
             transform: rotate(15deg) scale(1.1);
         }
+
+        /* Theme toggle display rules */
+        [data-theme="light"] .sun-icon { display: block; }
+        [data-theme="light"] .moon-icon { display: none; }
+        [data-theme="dark"] .sun-icon { display: none; }
+        [data-theme="dark"] .moon-icon { display: block; }
+
+        /* Password Toggle */
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0;
+            transition: color 0.2s ease;
+            z-index: 5;
+        }
+
+        .password-toggle:hover {
+            color: var(--color-primary);
+        }
+
+        .password-toggle:focus {
+            outline: none;
+        }
+
+        /* Loading Indicator */
+        .loading-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
@@ -278,11 +344,11 @@ date_default_timezone_set('America/Guatemala');
     <div class="theme-toggle">
         <button id="themeSwitch" class="theme-btn">
             <i class="bi bi-sun sun-icon"></i>
-            <i class="bi bi-moon moon-icon" style="display: none;"></i>
+            <i class="bi bi-moon moon-icon"></i>
         </button>
     </div>
 
-    <div class="login-container">
+    <main class="login-container">
         <div class="login-card animate-up">
             <div class="logo-section">
                 <img src="assets/img/Logo.png" alt="Logo" class="logo-img">
@@ -292,7 +358,7 @@ date_default_timezone_set('America/Guatemala');
                 </div>
             </div>
 
-            <form action="php/auth/login.php" method="POST">
+            <form id="loginForm" action="php/auth/login.php" method="POST">
                 <?php if (isset($_GET['error'])): ?>
                     <div class="error-message">
                         <i class="bi bi-exclamation-circle"></i>
@@ -312,29 +378,33 @@ date_default_timezone_set('America/Guatemala');
                     <label class="form-label" for="password">Contraseña</label>
                     <div class="input-wrapper">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
+                        <input type="password" id="password" name="password" class="form-input" style="padding-right: 2.75rem;" placeholder="••••••••" required>
+                        <button type="button" class="password-toggle">
+                            <svg class="eye-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <button type="submit" class="login-btn animate-up delay-2">
+                <button type="submit" id="loginButton" class="login-btn animate-up delay-2">
                     <span>Entrar al Sistema</span>
                     <i class="bi bi-arrow-right"></i>
                 </button>
 
-                </form>
+            </form>
 
-                <!-- Información adicional -->
-                <div class="card-footer">
-                    <p class="copyright">© <?php echo date('Y'); ?> RS SOLUTIONS</p>
-                </div>
+            <!-- Información adicional -->
+            <div class="card-footer">
+                <p class="copyright">© <?php echo date('Y'); ?> RS SOLUTIONS</p>
             </div>
-        </main>
+        </div>
 
         <!-- Indicador de carga sutil -->
         <div class="loading-indicator" id="loadingIndicator">
             <div class="spinner"></div>
         </div>
-    </div>
+    </main>
 
     <!-- Estilos CSS integrados para mejor rendimiento -->
     <link rel="stylesheet" href="assets/css/global_dashboard.css">
@@ -459,7 +529,7 @@ date_default_timezone_set('America/Guatemala');
                     errorElement.appendChild(errorText);
 
                     // Insertar antes del botón de submit
-                    const submitBtn = document.querySelector('.submit-btn');
+                    const submitBtn = document.querySelector('.login-btn');
                     submitBtn.parentElement.parentElement.insertBefore(errorElement, submitBtn.parentElement);
                 }
 

@@ -10,7 +10,7 @@ function sanitize_input($data)
 function verify_session()
 {
     if (!isset($_SESSION['user_id'])) {
-        header("Location: /cmhs/index.php");
+        header("Location: ../../index.php");
         exit();
     }
 }

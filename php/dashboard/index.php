@@ -3,8 +3,11 @@
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
+error_log("DASHBOARD DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESSION['user_id'] ?? 'not set'));
+
 // Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
+    error_log("DASHBOARD DEBUG: Session not set. Redirecting to index.php");
     header("Location: ../../index.php");
     exit;
 }

@@ -43,6 +43,7 @@ function get_hospital_config($conn, $hospital_id = null) {
     if ($hospital) {
         // SEGURIDAD: Verificar que si hay una sesión, coincida con este hospital
         if (isset($_SESSION['id_hospital']) && $_SESSION['id_hospital'] != $hospital['id_hospital']) {
+            error_log("SECURITY DESTROY: session id_hospital (" . $_SESSION['id_hospital'] . ") != hospital id (" . $hospital['id_hospital'] . ")");
             session_destroy();
             header("Location: /index.php?err=security");
             exit;

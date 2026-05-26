@@ -1,8 +1,8 @@
 <IfModule lsapi_module>
-    php_value session.cookie_path "/base/"
+    php_value session.cookie_path "/"
     php_value session.name "CLINICA_BASE"
 </IfModule>
 <IfModule mod_php.c>
-    php_value session.cookie_path "/base/"
+    php_value session.cookie_path "/"
     php_value session.name "CLINICA_BASE"
 </IfModule>
