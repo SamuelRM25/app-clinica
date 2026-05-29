@@ -4,7 +4,10 @@
     php_value session.cookie_httponly "1"
     php_value session.use_strict_mode "1"
     php_value session.cookie_samesite "Lax"
-    # Descomentar la siguiente línea SOLO si el sitio se sirve sobre HTTPS:
+    php_value session.gc_maxlifetime 28800
+    php_value display_errors Off
+    php_value expose_php Off
+    # Descomentar SOLO si el sitio se sirve sobre HTTPS:
     # php_value session.cookie_secure "1"
 </IfModule>
 <IfModule mod_php.c>
@@ -13,7 +16,10 @@
     php_value session.cookie_httponly "1"
     php_value session.use_strict_mode "1"
     php_value session.cookie_samesite "Lax"
-    # Descomentar la siguiente línea SOLO si el sitio se sirve sobre HTTPS:
+    php_value session.gc_maxlifetime 28800
+    php_value display_errors Off
+    php_value expose_php Off
+    # Descomentar SOLO si el sitio se sirve sobre HTTPS:
     # php_value session.cookie_secure "1"
 </IfModule>
 <IfModule mod_headers.c>

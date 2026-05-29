@@ -33,6 +33,14 @@ try {
 
     $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
+    if (!empty($password)) {
+        $passErrors = validate_password_strength($password);
+        if (!empty($passErrors)) {
+            echo json_encode(['success' => false, 'message' => 'La contraseña no cumple los requisitos: ' . implode(', ', $passErrors)]);
+            exit;
+        }
+    }
+
     if (empty($idUsuario)) {
         if (empty($password)) {
             echo json_encode(['success' => false, 'message' => 'La contraseña es obligatoria para nuevos usuarios']);

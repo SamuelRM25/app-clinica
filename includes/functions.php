@@ -290,4 +290,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+function validate_password_strength($password)
+{
+    $errors = [];
+    if (strlen($password) < 8) {
+        $errors[] = 'Mínimo 8 caracteres';
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'Al menos una mayúscula';
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'Al menos una minúscula';
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = 'Al menos un número';
+    }
+    return $errors;
+}
+
 ?>
