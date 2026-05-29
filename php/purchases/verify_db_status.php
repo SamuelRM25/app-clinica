@@ -1,7 +1,10 @@
 <?php
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+
+verify_session();
 
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 

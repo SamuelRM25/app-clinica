@@ -77,6 +77,14 @@ function verify_session()
         exit();
     }
 
+    // Verify id_hospital is set and valid
+    if (empty($_SESSION['id_hospital'])) {
+        session_unset();
+        session_destroy();
+        header("Location: ../../index.php?error=session_invalid");
+        exit();
+    }
+
     // Session idle timeout: 2 hours (7200 seconds)
     $idle_timeout = 7200;
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $idle_timeout)) {
