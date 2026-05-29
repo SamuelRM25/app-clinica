@@ -10,7 +10,7 @@ $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 verify_session();
 
 // Only admins can manage the catalog
-if ($_SESSION['tipoUsuario'] !== 'admin' && $_SESSION['user_id'] != 7) {
+if ($_SESSION['tipoUsuario'] !== 'admin') {
     header("Location: index.php");
     exit;
 }

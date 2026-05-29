@@ -6,7 +6,7 @@ require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
 
-if ($_SESSION['tipoUsuario'] !== 'admin' && $_SESSION['user_id'] != 7) {
+if ($_SESSION['tipoUsuario'] !== 'admin') {
     echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
     exit;
 }
