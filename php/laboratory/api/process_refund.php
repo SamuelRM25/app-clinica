@@ -23,6 +23,12 @@ if ($id_orden <= 0 || $monto <= 0 || empty($motivo) || empty($pruebas_devueltas)
 }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $db = new Database();
     $conn = $db->getConnection();
 

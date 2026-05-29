@@ -44,7 +44,8 @@ try {
     $user_name = $_SESSION['nombre'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en print_billing: " . $e->getMessage());
+    die("Error al generar el recibo.");
 }
 ?>
 <!DOCTYPE html>
@@ -54,7 +55,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo #
-        <?php echo $id_cobro; ?>
+        <?php echo htmlspecialchars($id_cobro); ?>
     </title>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>

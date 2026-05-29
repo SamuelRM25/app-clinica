@@ -23,6 +23,12 @@ $notas = $_POST['notas'] ?? '';
     }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -53,9 +59,18 @@ try {
                 $fileNameCmps = explode(".", $fileName);
                 $fileExtension = strtolower(end($fileNameCmps));
                 $allowedfileExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+                $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
 
                 if (!in_array($fileExtension, $allowedfileExtensions)) {
-                    continue; // Skip invalid files instead of throwing error
+                    continue;
+                }
+
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $fileTmpPath);
+                finfo_close($finfo);
+
+                if (!in_array($mimeType, $allowedMimeTypes)) {
+                    continue;
                 }
 
                 // Compression logic for images

@@ -34,6 +34,12 @@ if (!$id_paciente || empty($pruebas_ids)) {
 }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $database = new Database();
     $conn = $database->getConnection();
     $conn->beginTransaction();

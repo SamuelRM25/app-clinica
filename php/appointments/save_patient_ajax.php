@@ -10,6 +10,7 @@ verify_session();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();
@@ -19,13 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Nombre, apellido y género son obligatorios");
         }
 
-        // Verificar duplicados
+        // Verificar duplicados (incluye fecha_nacimiento)
         $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-        $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
-        $checkStmt->execute([$_POST['nombre'], $_POST['apellido'], $id_hospital]);
-        if ($checkStmt->fetch()) {
-            echo json_encode(['status' => 'error', 'message' => 'El paciente ya existe']);
+        $checkStmt = $conn->prepare("SELECT id_paciente, nombre, apellido FROM pacientes WHERE nombre = ? AND apellido = ? AND fecha_nacimiento = ? AND id_hospital = ?");
+        $checkStmt->execute([$_POST['nombre'], $_POST['apellido'], $_POST['fecha_nacimiento'] ?? null, $id_hospital]);
+        $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        if ($existing) {
+            echo json_encode(['status' => 'exists', 'message' => 'El paciente ya existe', 'existing_id' => $existing['id_paciente']]);
             exit;
         }
 

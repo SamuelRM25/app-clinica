@@ -56,8 +56,8 @@ try {
     $pacientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener Doctores (para Cobros y Laboratorio)
-    $stmtDoc = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' ORDER BY nombre");
-    $stmtDoc->execute();
+    $stmtDoc = $conn->prepare("SELECT idUsuario, nombre, apellido FROM usuarios WHERE tipoUsuario = 'doc' AND id_hospital = ? ORDER BY nombre");
+    $stmtDoc->execute([$id_hospital]);
     $doctores = $stmtDoc->fetchAll(PDO::FETCH_ASSOC);
 
     // Obtener Catálogo de Pruebas (para Laboratorio)
@@ -166,8 +166,8 @@ try {
     $active_hospitalizations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // 12. Camas Disponibles
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM camas");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM camas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
     $total_beds = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
     $available_beds_count = $total_beds - $active_hospitalizations;
 
@@ -283,6 +283,9 @@ try {
     error_log("Error en dashboard: " . $e->getMessage());
     die("Error al cargar el dashboard. Por favor, contacte al administrador.");
 }
+
+// Código de autorización para corte de turno (configurable vía variable de entorno)
+$shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -291,7 +294,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Dashboard del Centro Médico RS - Sistema de gestión médica">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -312,6 +315,7 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <!-- Seguridad y Protección de Código -->
     <script src="../../assets/js/security.js"></script>
 
@@ -699,6 +703,37 @@ try {
         </div>
 
         <script>
+            // Escape HTML to prevent XSS in dynamically rendered content
+            function escHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // Get CSRF token from meta tag
+            function csrfToken() {
+                return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            }
+
+            // Wrapper for POST fetch that includes CSRF token
+            function apiPost(url, body) {
+                const csrf = csrfToken();
+                if (body instanceof URLSearchParams) {
+                    body.append('csrf_token', csrf);
+                    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+                } else if (body instanceof FormData) {
+                    body.append('csrf_token', csrf);
+                    return fetch(url, { method: 'POST', body });
+                } else {
+                    return fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                        body: JSON.stringify(body)
+                    });
+                }
+            }
+
             // Funciones para el Corte de Turno
             function openPharmacyModal() {
                 const pharmacyData = window.currentShiftData?.pharmacy;
@@ -723,10 +758,10 @@ try {
                     pharmacyData.details.forEach(item => {
                         html += `
                             <tr>
-                                <td>${item.hora}</td>
-                                <td class="fw-medium">${item.cliente || 'Consumidor Final'}</td>
-                                <td><small class="text-muted">${item.detalle || 'Varios'}</small></td>
-                                <td><span class="badge bg-light text-dark border">${item.tipo_pago}</span></td>
+                                <td>${escHtml(item.hora)}</td>
+                                <td class="fw-medium">${escHtml(item.cliente || 'Consumidor Final')}</td>
+                                <td><small class="text-muted">${escHtml(item.detalle || 'Varios')}</small></td>
+                                <td><span class="badge bg-light text-dark border">${escHtml(item.tipo_pago)}</span></td>
                                 <td class="text-end fw-bold">Q${parseFloat(item.monto).toFixed(2)}</td>
                             </tr>
                         `;
@@ -755,7 +790,7 @@ try {
                     }
                 });
 
-                if (code === 'cmhs') {
+                if (code === '<?php echo $shift_auth_code; ?>') {
                     openShiftCutModal();
                 } else if (code) {
                     Swal.fire({
@@ -826,12 +861,12 @@ try {
                                     const mConfig = methodConfig[item.tipo_pago] || { color: 'text-secondary', icon: 'bi-circle' };
                                     html += `
                                             <tr>
-                                                <td>${item.hora}</td>
+                                                <td>${escHtml(item.hora)}</td>
                                                 <td>
-                                                    <div class="fw-medium">${item.paciente || item.cliente || 'Desconocido'}</div>
-                                                    ${item.detalle ? `<div class="text-muted mt-1" style="font-size: 0.75rem;"><i class="bi bi-box-seam me-1"></i>${item.detalle}</div>` : ''}
+                                                    <div class="fw-medium">${escHtml(item.paciente || item.cliente || 'Desconocido')}</div>
+                                                    ${item.detalle ? `<div class="text-muted mt-1" style="font-size: 0.75rem;"><i class="bi bi-box-seam me-1"></i>${escHtml(item.detalle)}</div>` : ''}
                                                 </td>
-                                                <td><i class="bi ${mConfig.icon} ${mConfig.color}"></i> ${item.tipo_pago}</td>
+                                                <td><i class="bi ${mConfig.icon} ${mConfig.color}"></i> ${escHtml(item.tipo_pago)}</td>
                                                 <td class="text-end fw-bold">Q${parseFloat(item.monto || item.cobro || 0).toFixed(2)}</td>
                                             </tr>`;
                                 });
@@ -942,7 +977,7 @@ try {
                                     d.consultations.by_doctor.forEach(doc => {
                                         breakdownHtml += `
                                                 <tr>
-                                                    <td><i class="bi bi-person-badge fs-6 me-2 text-muted"></i>${doc.doctor}</td>
+                                                    <td><i class="bi bi-person-badge fs-6 me-2 text-muted"></i>${escHtml(doc.doctor)}</td>
                                                     <td class="text-end">Q${(doc.breakdown.Efectivo || 0).toFixed(2)}</td>
                                                     <td class="text-end">Q${(doc.breakdown.Tarjeta || 0).toFixed(2)}</td>
                                                     <td class="text-end">Q${(doc.breakdown.Transferencia || 0).toFixed(2)}</td>
@@ -2467,11 +2502,7 @@ try {
                             saveBtn.disabled = true;
 
                             try {
-                                const response = await fetch('../billing/save_billing.php', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: new URLSearchParams(new FormData(form))
-                                });
+                                const response = await apiPost('../billing/save_billing.php', new URLSearchParams(new FormData(form)));
                                 const result = await response.json();
                                 if (result.status === 'success') {
                                     Swal.fire({
@@ -2539,11 +2570,7 @@ try {
                             saveBtn.disabled = true;
 
                             try {
-                                const response = await fetch('api/save_electro.php', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: new URLSearchParams(new FormData(form))
-                                });
+                                const response = await apiPost('api/save_electro.php', new URLSearchParams(new FormData(form)));
                                 const result = await response.json();
                                 if (result.status === 'success') {
                                     Swal.fire({
@@ -2714,11 +2741,7 @@ try {
                             saveBtn.disabled = true;
 
                             try {
-                                const response = await fetch('../laboratory/save_order.php', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(data)
-                                });
+                                const response = await apiPost('../laboratory/save_order.php', data);
                                 const result = await response.json();
                                 if (result.status === 'success') {
                                     Swal.fire({
@@ -2877,10 +2900,7 @@ try {
                             // My implementation uses ID to fetch name from DB
 
                             try {
-                                const response = await fetch('api/save_us_charge.php', {
-                                    method: 'POST',
-                                    body: formData
-                                });
+                                const response = await apiPost('api/save_us_charge.php', formData);
                                 const result = await response.json();
                                 if (result.status === 'success') {
                                     Swal.fire({
@@ -2948,10 +2968,7 @@ try {
                             const formData = new FormData(form);
 
                             try {
-                                const response = await fetch('api/save_rx_charge.php', {
-                                    method: 'POST',
-                                    body: formData
-                                });
+                                const response = await apiPost('api/save_rx_charge.php', formData);
                                 const result = await response.json();
                                 if (result.status === 'success') {
                                     Swal.fire({
@@ -3134,6 +3151,14 @@ try {
 
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>
+    <!-- Auto-refresh dashboard cada 60s -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            location.reload();
+        }, 60000);
+    });
+    </script>
     <!-- Modal Cobro Procedimientos -->
     <div class="modal fade" id="procedureBillingModal" tabindex="-1">
         <div class="modal-dialog">
@@ -3598,10 +3623,7 @@ try {
 
             const formData = new FormData(form);
 
-            fetch('api/save_procedure_charge.php', {
-                method: 'POST',
-                body: formData
-            })
+            apiPost('api/save_procedure_charge.php', formData)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
@@ -3791,13 +3813,7 @@ try {
                     applyWidgetVisibility();
                     
                     // Enviar al servidor mediante AJAX para persistencia en BD
-                    fetch('api/update_widget_visibility.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ config: config })
-                    })
+                    apiPost('api/update_widget_visibility.php', { config: config })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {

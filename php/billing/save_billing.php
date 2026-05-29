@@ -25,6 +25,13 @@ if (!empty($_POST)) {
     $data = json_decode($json_data, true);
 }
 
+// CSRF validation
+$csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+    echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
 // Validate required fields
 $paciente_id = !empty($data['paciente']) ? $data['paciente'] : null;
 $paciente_nombre = !empty($data['paciente_nombre']) ? $data['paciente_nombre'] : '';
@@ -49,12 +56,24 @@ try {
         $nombre = $parts[0];
         $apellido = isset($parts[1]) ? $parts[1] : '';
 
-        $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro, id_hospital) VALUES (?, ?, NOW(), ?)");
-        $stmtP->execute([$nombre, $apellido, $id_hospital]);
-        $paciente_id = $conn->lastInsertId();
+        // Check if patient already exists before creating
+        $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
+        $checkStmt->execute([$nombre, $apellido, $id_hospital]);
+        $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existing) {
+            $paciente_id = $existing['id_paciente'];
+        } else {
+            $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro, id_hospital) VALUES (?, ?, NOW(), ?)");
+            $stmtP->execute([$nombre, $apellido, $id_hospital]);
+            $paciente_id = $conn->lastInsertId();
+        }
     }
 
     $tipo_pago = !empty($data['tipo_pago']) ? $data['tipo_pago'] : 'Efectivo';
+    if (!validar_tipo_pago($tipo_pago)) {
+        throw new Exception('Tipo de pago inválido: ' . $tipo_pago);
+    }
 
     $stmt = $conn->prepare("
         INSERT INTO cobros (paciente_cobro, cantidad_consulta, fecha_consulta, id_doctor, tipo_consulta, tipo_pago, id_hospital) 

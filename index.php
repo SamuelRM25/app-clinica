@@ -2,6 +2,7 @@
 // index.php - Sistema de Gestión Médica
 session_start();
 require_once __DIR__ . '/config/hospital.php';
+require_once __DIR__ . '/includes/functions.php';
 
 error_log("INDEX DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESSION['user_id'] ?? 'not set'));
 
@@ -22,7 +23,7 @@ date_default_timezone_set('America/Guatemala');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/img/Logo.png">
@@ -359,10 +360,11 @@ date_default_timezone_set('America/Guatemala');
             </div>
 
             <form id="loginForm" action="php/auth/login.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <?php if (isset($_GET['error'])): ?>
                     <div class="error-message">
                         <i class="bi bi-exclamation-circle"></i>
-                        <span>Usuario o contraseña incorrectos.</span>
+                        <span><?php echo $_GET['error'] === '2' ? 'Demasiados intentos. Espere 60 segundos.' : 'Usuario o contraseña incorrectos.'; ?></span>
                     </div>
                 <?php endif; ?>
 

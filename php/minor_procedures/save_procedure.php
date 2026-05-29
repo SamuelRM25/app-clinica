@@ -16,6 +16,12 @@ date_default_timezone_set('America/Guatemala');
 // header('Content-Type: application/json');
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     // Verificar sesión
     if (!isset($_SESSION['user_id'])) {
         throw new Exception('Sesión no válida o expirada');

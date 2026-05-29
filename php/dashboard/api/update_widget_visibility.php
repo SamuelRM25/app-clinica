@@ -15,6 +15,11 @@ if (!isset($_SESSION['user_id'])) {
 $hospital_id = $_SESSION['id_hospital'] ?? 1;
 
 try {
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        echo json_encode(['success' => false, 'error' => 'Token CSRF inválido']);
+        exit;
+    }
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
 

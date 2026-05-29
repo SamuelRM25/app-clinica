@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['id_inventario'])) {
     exit;
 }
 
+// CSRF validation
+verify_csrf_token();
+
 $id_inventario = intval($_POST['id_inventario']);
 $cantidad_fisica = $_POST['cantidad_fisica'] !== '' ? intval($_POST['cantidad_fisica']) : null;
 $diferencia = intval($_POST['diferencia'] ?? 0);

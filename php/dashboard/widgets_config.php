@@ -16,6 +16,12 @@ try {
 
     // Procesar actualización si se envía el formulario
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_widgets') {
+        $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+        if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+            $_SESSION['error_msg'] = 'Token CSRF inválido';
+            header("Location: widgets_config.php");
+            exit;
+        }
         $widgets = $_POST['widgets'] ?? [];
         $all_possible_widgets = [
             'widget-appointments', 'widget-hospitalized', 'widget-alerts',
@@ -147,7 +153,7 @@ $page_title = "Configuración de Widgets - CMS";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

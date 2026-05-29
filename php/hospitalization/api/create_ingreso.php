@@ -21,6 +21,12 @@ date_default_timezone_set('America/Guatemala');
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $is_retrasado = isset($_POST['is_retrasado']) && $_POST['is_retrasado'] == '1';
     $tipo_ingreso = $_POST['tipo_ingreso'] ?? '';
 

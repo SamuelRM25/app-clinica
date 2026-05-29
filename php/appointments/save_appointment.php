@@ -11,20 +11,21 @@ verify_session();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();
+        $conn->beginTransaction();
 
         // Validate required fields
         if (empty($_POST['nombre_pac']) || empty($_POST['apellido_pac']) || empty($_POST['fecha_cita']) || empty($_POST['hora_cita']) || empty($_POST['id_doctor'])) {
             throw new Exception("Los campos de nombre, apellido, fecha, hora y médico son obligatorios");
         }
 
-        // Get the next appointment number
-        $stmt = $conn->prepare("SELECT MAX(num_cita) as max_num FROM citas WHERE id_hospital = ?");
+        // Get the next appointment number (locked within transaction)
+        $stmt = $conn->prepare("SELECT COALESCE(MAX(num_cita), 0) + 1 as next_num FROM citas WHERE id_hospital = ? FOR UPDATE");
         $stmt->execute([$id_hospital]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        $num_cita = ($result['max_num'] ?? 0) + 1;
+        $num_cita = $stmt->fetch(PDO::FETCH_ASSOC)['next_num'];
 
         // Prepare SQL statement
         $sql = "INSERT INTO citas (id_paciente, nombre_pac, apellido_pac, num_cita, fecha_cita, hora_cita, telefono, id_doctor, id_hospital) 
@@ -45,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
+            $conn->commit();
+
             // Check if patient exists
             $checkPatient = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
             $checkPatient->execute([$_POST['nombre_pac'], $_POST['apellido_pac'], $id_hospital]);
@@ -65,6 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     } catch (Exception $e) {
+        if (isset($conn) && $conn->inTransaction()) {
+            $conn->rollBack();
+        }
         echo json_encode([
             'status' => 'error',
             'message' => "Error: " . $e->getMessage()

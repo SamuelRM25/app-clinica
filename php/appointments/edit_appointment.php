@@ -3,6 +3,7 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 
 
 
@@ -26,6 +27,7 @@ $doctors = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         if (empty($_POST['nombre_pac']) || empty($_POST['apellido_pac']) || empty($_POST['fecha_cita']) || empty($_POST['hora_cita']) || empty($_POST['id_doctor'])) {
             throw new Exception("Todos los campos marcados como obligatorios son necesarios");
@@ -77,7 +79,8 @@ try {
 
     $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en edit_appointment: " . $e->getMessage());
+    die("Error al cargar la cita. Por favor, contacte al administrador.");
 }
 
 $page_title = "Editar Cita - Clínica";
@@ -124,7 +127,7 @@ include_once '../../includes/header.php';
                     style="color: var(--text-color);">
                     <div class="avatar-circle me-2 bg-primary text-white d-flex align-items-center justify-content-center rounded-circle"
                         style="width: 32px; height: 32px;">
-                        <?php echo strtoupper(substr($_SESSION['nombre'], 0, 1)); ?>
+                        <?php echo htmlspecialchars(strtoupper(substr($_SESSION['nombre'], 0, 1))); ?>
                     </div>
                     <strong><?php echo htmlspecialchars($_SESSION['nombre']); ?></strong>
                 </a>
@@ -138,6 +141,11 @@ include_once '../../includes/header.php';
 
     <!-- Main Content Reengineered -->
     <div class="main-content-glass">
+        <?php render_breadcrumbs([
+            ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+            ['label' => 'Citas', 'url' => 'index.php'],
+            ['label' => 'Editar Cita'],
+        ]); ?>
         <div class="container-fluid">
             <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
                 <div class="d-flex align-items-center">
@@ -150,7 +158,7 @@ include_once '../../includes/header.php';
 
             <?php if (isset($error_message)): ?>
                 <div class="alert alert-danger card-glass mb-4 animate__animated animate__shakeX">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo $error_message; ?>
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i><?php echo htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
 
@@ -159,10 +167,11 @@ include_once '../../includes/header.php';
                     <div class="card-glass p-0">
                         <div class="card-header-glass border-0 bg-primary bg-opacity-10 py-3">
                             <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-info-circle me-2"></i>Información de
-                                la Cita #<?php echo $appointment['num_cita']; ?></h5>
+                                la Cita #<?php echo htmlspecialchars($appointment['num_cita']); ?></h5>
                         </div>
                         <div class="card-body p-4">
-                            <form action="edit_appointment.php?id=<?php echo $id_cita; ?>" method="POST">
+                            <form action="edit_appointment.php?id=<?php echo htmlspecialchars($id_cita); ?>" method="POST">
+                                <?php echo csrf_field(); ?>
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <label for="nombre_pac" class="form-label text-sm text-muted">Nombre del

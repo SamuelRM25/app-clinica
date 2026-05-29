@@ -56,7 +56,7 @@ try {
                 <!-- Información del usuario -->
                 <div class="header-user">
                     <div class="header-avatar">
-                        <?php echo isset($_SESSION['nombre']) ? strtoupper(substr($_SESSION['nombre'], 0, 1)) : 'U'; ?>
+                        <?php echo isset($_SESSION['nombre']) ? htmlspecialchars(strtoupper(substr($_SESSION['nombre'], 0, 1))) : 'U'; ?>
                     </div>
                     <div class="header-details">
                         <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
@@ -167,6 +167,7 @@ try {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="newPatientForm" action="../patients/save_patient.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>

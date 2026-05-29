@@ -12,17 +12,18 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
-    $stmt = $conn->query("
+    $stmt = $conn->prepare("
         SELECT c.*, 
                u.nombre as doc_nombre, u.apellido as doc_apellido,
                p.id_paciente
         FROM citas c
         LEFT JOIN usuarios u ON c.id_doctor = u.idUsuario
         LEFT JOIN pacientes p ON (c.nombre_pac = p.nombre AND c.apellido_pac = p.apellido)
-        WHERE c.id_hospital = $id_hospital
+        WHERE c.id_hospital = ?
     ");
+    $stmt->execute([$id_hospital]);
 
     $events = [];
     while ($row = $stmt->fetch()) {

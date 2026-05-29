@@ -247,7 +247,7 @@ try {
             <div style="font-size: 10px; color: #888; text-align: center; margin-top: 30px;">
                 Generado por Sistema CMHS el
                 <?php echo date('d/m/Y H:i:s'); ?> por
-                <?php echo $_SESSION['nombre']; ?>
+                <?php echo htmlspecialchars($_SESSION['nombre']); ?>
             </div>
 
             <script>

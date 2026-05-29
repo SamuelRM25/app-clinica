@@ -77,6 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         isset($_POST['fecha_cita']) && isset($_POST['hora_cita'])
     ) {
         try {
+            // CSRF validation
+            $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+            if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+                throw new Exception('Token CSRF inválido');
+            }
+
             // Necesitamos un ID de doctor. Usamos el primer doctor/admin disponible
             $stmt_doc = $conn->query("SELECT id_usuario FROM usuarios WHERE tipoUsuario IN ('admin', 'doc') LIMIT 1");
             $default_doc = $stmt_doc->fetch(PDO::FETCH_ASSOC);
@@ -120,7 +126,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Recibo de Cobro - Centro Médico RS - Comprobante de pago médico">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">

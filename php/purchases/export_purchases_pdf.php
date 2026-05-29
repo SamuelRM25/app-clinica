@@ -256,7 +256,7 @@ try {
             <div class="hospital-brand">
                 <h1>Centro Médico RS</h1>
                 <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
-                <p><i class="bi bi-person"></i> Generado por: <?php echo $_SESSION['nombre']; ?></p>
+                <p><i class="bi bi-person"></i> Generado por: <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
             </div>
             <div class="report-title">
                 <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;">

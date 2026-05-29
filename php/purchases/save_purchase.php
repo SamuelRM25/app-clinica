@@ -20,6 +20,12 @@ try {
     // Get JSON input
     $data = json_decode(file_get_contents('php://input'), true);
 
+    // CSRF validation for JSON requests
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     if (!$data || !isset($data['header']) || !isset($data['items'])) {
         throw new Exception('Datos incompletos');
     }
@@ -68,15 +74,16 @@ try {
         $itemId = $conn->lastInsertId();
 
         // Insert into Inventory (Pendiente)
-        // fecha_vencimiento is set to purchase_date initially as a placeholder until received
+        // fecha_vencimiento uses item expiry date if provided, otherwise NULL
+        $vencimiento = !empty($item['expiry_date']) ? $item['expiry_date'] : null;
         $stmtInv->execute([
             $item['name'],
             $item['presentation'],
             $item['molecule'],
-            $header['provider_name'], // Provider is the pharma house
+            $header['provider_name'],
             $item['qty'],
-            $header['purchase_date'], // fecha_adquisicion
-            $header['purchase_date'], // fecha_vencimiento (placeholder)
+            $header['purchase_date'],
+            $vencimiento,
             $item['sale_price'],
             $itemId,
             $id_hospital

@@ -16,6 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 $id_archivo = $input['id_archivo'] ?? null;
 
+// CSRF validation from header
+$csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (empty($csrf_header) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_header)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
 if (!$id_archivo) {
     echo json_encode(['success' => false, 'message' => 'ID de archivo no proporcionado']);
     exit;

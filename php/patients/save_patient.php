@@ -10,6 +10,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();
@@ -29,16 +30,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Género inválido');
         }
 
-        // 1. DUPLICATE CHECK
+        // 1. DUPLICATE CHECK — incluye fecha_nacimiento para mayor precisión
         // If it's an update, we only check for duplicates that ARE NOT the current patient
         if (!$id_paciente) {
-            $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
-            $checkStmt->execute([$nombre, $apellido, $id_hospital]);
+            $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND fecha_nacimiento = ? AND id_hospital = ?");
+            $checkStmt->execute([$nombre, $apellido, $fecha_nacimiento, $id_hospital]);
             $existingPatient = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingPatient && !isset($_POST['confirm_action'])) {
                 $_SESSION['duplicate_patient_data'] = $_POST;
                 $_SESSION['existing_patient_id'] = $existingPatient['id_paciente'];
+
+                // Fetch existing patient details for the confirmation screen
+                $existingStmt = $conn->prepare("SELECT nombre, apellido, fecha_registro FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+                $existingStmt->execute([$existingPatient['id_paciente'], $id_hospital]);
+                $existingData = $existingStmt->fetch(PDO::FETCH_ASSOC);
+                $_SESSION['existing_patient_nombre'] = $existingData['nombre'] ?? 'N/A';
+                $_SESSION['existing_patient_apellido'] = $existingData['apellido'] ?? 'N/A';
+                $_SESSION['existing_patient_fecha'] = $existingData['fecha_registro'] ?? null;
+
+                // Count previous consultations
+                $consultasStmt = $conn->prepare("SELECT COUNT(*) FROM historial_clinico WHERE id_paciente = ? AND id_hospital = ?");
+                $consultasStmt->execute([$existingPatient['id_paciente'], $id_hospital]);
+                $_SESSION['existing_patient_consultas'] = $consultasStmt->fetchColumn() ?: 0;
+
                 header("Location: confirm_duplicate.php");
                 exit;
             }

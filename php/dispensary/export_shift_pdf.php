@@ -103,7 +103,7 @@ try {
             Hasta:
             <?php echo date('d/m/Y H:i', strtotime($end_datetime)); ?><br>
             Generado por:
-            <?php echo $_SESSION['nombre']; ?> el
+            <?php echo htmlspecialchars($_SESSION['nombre']); ?> el
             <?php echo date('d/m/Y H:i'); ?>
         </div>
     </div>

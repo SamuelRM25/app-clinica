@@ -21,6 +21,12 @@ if (!$id_encamamiento || $monto <= 0) {
 }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $database = new Database();
     $conn = $database->getConnection();

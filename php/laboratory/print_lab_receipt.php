@@ -39,7 +39,8 @@ try {
     $user_name = $_SESSION['nombre'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en print_lab_receipt: " . $e->getMessage());
+    die("Error al generar el recibo.");
 }
 ?>
 <!DOCTYPE html>
@@ -48,7 +49,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibo Laboratorio #<?php echo $id_examen; ?></title>
+    <title>Recibo Laboratorio #<?php echo htmlspecialchars($id_examen); ?></title>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 

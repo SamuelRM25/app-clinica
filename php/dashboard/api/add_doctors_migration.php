@@ -1,9 +1,19 @@
 <?php
 // api/add_doctors_migration.php
+// SECURITY: This script requires an active admin session
+session_start();
+require_once '../../../includes/functions.php';
 require_once '../../../config/database.php';
 require_once '../../../config/hospital.php';
 
 header('Content-Type: text/plain');
+
+verify_session();
+
+// Only admins can run this migration
+if ($_SESSION['tipoUsuario'] !== 'admin') {
+    die("Acceso denegado.");
+}
 
 try {
     $database = new Database();
@@ -20,7 +30,7 @@ try {
     $doctors_to_add = [
         [
             'usuario' => 'dra.belen',
-            'password' => '12345',
+            'password' => password_hash('12345', PASSWORD_DEFAULT),
             'nombre' => 'Belén',
             'apellido' => 'López',
             'tipoUsuario' => 'doc',
@@ -28,7 +38,7 @@ try {
         ],
         [
             'usuario' => 'dra.yoana',
-            'password' => '12345',
+            'password' => password_hash('12345', PASSWORD_DEFAULT),
             'nombre' => 'Yoana Mabel',
             'apellido' => 'Gómez López',
             'tipoUsuario' => 'doc',
@@ -62,6 +72,7 @@ try {
     echo "Proceso finalizado.";
 
 } catch (Exception $e) {
-    echo "Error: " . $e->getMessage();
+    error_log("Migration error: " . $e->getMessage());
+    echo "Error al ejecutar la migración.";
 }
 ?>

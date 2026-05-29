@@ -4,6 +4,7 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 
 $id_hospital = hospital_id();
 
@@ -52,7 +53,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Crear Orden de Laboratorio - Centro Médico RS">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -121,6 +122,11 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Laboratorio', 'url' => 'index.php'],
+                ['label' => 'Nueva Orden'],
+            ]); ?>
             <!-- Banner de bienvenida -->
             <div class="welcome-banner animate-in">
                 <h1>Nueva Orden de Laboratorio</h1>

@@ -2,37 +2,66 @@
 // config/database.php
 date_default_timezone_set('America/Guatemala');
 
-class Database {
-    private $host = "bzlwnzdfwf8n1tct7ebf-mysql.services.clever-cloud.com";
-    private $db_name = "bzlwnzdfwf8n1tct7ebf";
-    private $username = "uiewshfkax9viaaw"; // Tus credenciales reales
-    private $password = "ecxBIcUMIBgaN3SX0h6X"; // Tus credenciales reales
-    private $port = "3306";
-    private $conn = null; // Inicializar a null
+// Buscar .env en múltiples ubicaciones (local, Hostinger, etc.)
+$envPaths = [
+    __DIR__ . '/../.env',          // Local XAMPP (project root)
+    __DIR__ . '/../../.env',       // Hostinger: public_html/
+    __DIR__ . '/../../../.env',    // Hostinger: fuera de public_html/
+];
+$envFile = null;
+foreach ($envPaths as $path) {
+    if (file_exists($path)) {
+        $envFile = $path;
+        break;
+    }
+}
 
-    /**
-     * @return PDO
-     */
+if ($envFile) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        putenv(trim($line));
+    }
+}
+
+// También leer variables de entorno reales (Hostinger hPanel)
+// getenv() ya las buscará automáticamente
+
+class Database {
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
+    private $port = "3306";
+    private $conn = null;
+
+    public function __construct() {
+        $this->host = getenv('DB_HOST') ?: "localhost";
+        $this->db_name = getenv('DB_NAME') ?: "clinica_db";
+        $this->username = getenv('DB_USER') ?: "root";
+        $this->password = getenv('DB_PASS') ?: "";
+        $this->port = getenv('DB_PORT') ?: "3306";
+    }
+
     public function getConnection() {
         try {
             if ($this->conn === null) {
-                $dsn = "mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name . ";charset=utf8"; // Añadir charset para UTF-8
-                
+                $dsn = "mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
+
                 $this->conn = new PDO(
                     $dsn,
                     $this->username,
                     $this->password,
                     array(
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC // Para que fetchAll devuelva arrays asociativos por defecto
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                     )
                 );
             }
             return $this->conn;
         } catch(PDOException $e) {
             error_log("Connection Error: " . $e->getMessage());
-            // En un entorno de producción, es mejor lanzar una excepción genérica o mostrar un mensaje amigable.
-            throw new Exception("Database connection failed: " . $e->getMessage()); // Mostrar el mensaje para depuración
+            throw new Exception("Error de conexión a la base de datos.");
         }
     }
 }

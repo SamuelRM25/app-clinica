@@ -9,6 +9,7 @@ $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 verify_session();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();

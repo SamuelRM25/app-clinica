@@ -14,6 +14,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('purchases');
 
@@ -116,7 +117,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
         content="Módulo de Compras - Centro Médico RS - Gestión de compras de medicamentos e insumos">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -196,6 +197,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Compras'],
+            ]); ?>
             <!-- Bienvenida personalizada -->
             <div class="stat-card mb-4 animate-in">
                 <div class="stat-header">
@@ -1907,6 +1912,7 @@ try {
 
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>
+    <?php flash_toast(); ?>
 </body>
 
 </html>

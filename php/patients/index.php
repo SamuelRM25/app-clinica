@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 require_once '../../includes/module_guard.php';
 
 check_module_access('core'); // Pacientes siempre activo (módulo base)
@@ -113,7 +114,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Gestión de Pacientes - Centro Médico RS">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -351,6 +352,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Pacientes'],
+            ]); ?>
             <!-- Bienvenida personalizada -->
             <div class="stat-card mb-4 animate-in">
                 <div class="stat-header">
@@ -705,6 +710,7 @@ try {
                 </button>
             </div>
             <form id="newPatientForm" action="save_patient.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" id="edit_id_paciente" name="id_paciente">
                 <div class="custom-modal-body">
                     <div class="form-grid">
@@ -854,6 +860,7 @@ try {
                 </button>
             </div>
             <form id="noteForm" action="save_quick_note.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="custom-modal-body">
                     <div class="form-grid">
                         <div class="form-group" style="grid-column: span 2;">
@@ -1355,6 +1362,7 @@ try {
 
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>
+    <?php flash_toast(); ?>
 </body>
 
 </html>

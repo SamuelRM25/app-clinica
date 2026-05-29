@@ -17,6 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id_orden = $_POST['id_orden'] ?? null;
 $notas = $_POST['notas'] ?? '';
 
+// CSRF validation
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
     if (!$id_orden) {
         echo json_encode(['success' => false, 'message' => 'Faltan parámetros requeridos']);
         exit;

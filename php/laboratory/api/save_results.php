@@ -24,6 +24,12 @@ if (!$id_orden) {
 }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -129,8 +135,13 @@ try {
         $targetPath = $uploadDir . $newFileName;
 
         $allowedExts = ['pdf', 'jpg', 'jpeg', 'png'];
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
 
-        if (in_array($extension, $allowedExts)) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $_FILES['archivo_resultados']['tmp_name']);
+        finfo_close($finfo);
+
+        if (in_array($extension, $allowedExts) && in_array($mimeType, $allowedMimes)) {
             if (move_uploaded_file($_FILES['archivo_resultados']['tmp_name'], $targetPath)) {
                 // Save relative path to DB
                 $dbPath = '../../uploads/results/' . $newFileName;

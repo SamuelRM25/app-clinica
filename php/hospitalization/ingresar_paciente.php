@@ -4,6 +4,7 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
@@ -206,6 +207,11 @@ try {
         </header>
 
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Hospitalización', 'url' => 'index.php'],
+                ['label' => 'Ingresar Paciente'],
+            ]); ?>
             <div class="page-header">
                 <h1 class="page-title">
                     <i class="bi bi-person-plus-fill text-primary"></i>
@@ -503,6 +509,7 @@ try {
                 e.preventDefault();
 
                 const formData = new FormData(this);
+                formData.append('csrf_token', '<?php echo csrf_token(); ?>');
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerHTML;
 

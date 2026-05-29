@@ -40,7 +40,8 @@ try {
     $user_name = $_SESSION['nombre'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en print_rx: " . $e->getMessage());
+    die("Error al generar el recibo.");
 }
 ?>
 <!DOCTYPE html>
@@ -50,7 +51,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo Rayos X #
-        <?php echo $id_rx; ?>
+        <?php echo htmlspecialchars($id_rx); ?>
     </title>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>

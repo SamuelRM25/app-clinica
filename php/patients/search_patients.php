@@ -26,7 +26,7 @@ try {
     $search = "%" . $q . "%";
 
     $stmt = $conn->prepare("
-        SELECT id_paciente, nombre, apellido, dpi 
+        SELECT id_paciente, nombre, apellido, dpi, telefono 
         FROM pacientes 
         WHERE id_hospital = ?
           AND (nombre LIKE ? OR apellido LIKE ? OR dpi LIKE ? 

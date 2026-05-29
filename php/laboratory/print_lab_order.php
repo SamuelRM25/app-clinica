@@ -58,7 +58,8 @@ try {
     $user_name = $_SESSION['nombre'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en print_lab_order: " . $e->getMessage());
+    die("Error al generar la orden.");
 }
 ?>
 <!DOCTYPE html>
@@ -68,7 +69,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orden Laboratorio #
-        <?php echo $orden['numero_orden']; ?>
+        <?php echo htmlspecialchars($orden['numero_orden']); ?>
     </title>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>

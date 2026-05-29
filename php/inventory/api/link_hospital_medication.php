@@ -12,12 +12,20 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
 
 // Verificar permisos de gestión (admin o usuarios específicos 1, 6)
 $user_id = $_SESSION['user_id'];
 $user_type = $_SESSION['tipoUsuario'] ?? '';
 if ($user_type !== 'admin' && !in_array($user_id, [1, 6])) {
     echo json_encode(['success' => false, 'message' => 'No tiene permisos para realizar esta acción.']);
+    exit;
+}
+
+// CSRF validation
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido.']);
     exit;
 }
 

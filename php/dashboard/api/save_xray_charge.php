@@ -13,6 +13,7 @@ require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
 
 try {
+    verify_csrf_token();
     $database = new Database();
     $conn = $database->getConnection();
 

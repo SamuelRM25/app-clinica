@@ -12,6 +12,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('core'); // Citas es módulo base
 
@@ -61,7 +62,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Calendario de Citas del Centro Médico RS - Sistema de gestión de agenda médica">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -210,6 +211,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Citas'],
+            ]); ?>
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
@@ -339,6 +344,7 @@ try {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="appointmentForm" action="save_appointment.php" method="POST">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="reconsulta-toggle-container mb-4 d-flex justify-content-between align-items-center">
                             <div>
@@ -397,7 +403,7 @@ try {
                                 <label class="form-label">Teléfono de Contacto</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-telephone"></i>
-                                    <input type="tel" class="form-control" name="telefono" placeholder="Ej. 5555-5555">
+                                    <input type="tel" class="form-control" name="telefono" id="telefono" placeholder="Ej. 5555-5555">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -441,6 +447,7 @@ try {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="editAppointmentForm" action="update_appointment.php" method="POST">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="id_cita" id="edit_id_cita">
                     <div class="modal-body">
                         <div class="row g-4">
@@ -690,27 +697,30 @@ try {
                             data: function (params) {
                                 return { q: params.term };
                             },
-                            processResults: function (data) {
-                                if (!Array.isArray(data)) return { results: [] };
-                                return {
-                                    results: data.map(p => ({
-                                        id: p.id_paciente,
-                                        text: `${p.nombre} ${p.apellido}${p.dpi ? ' — ' + p.dpi : ''}`,
-                                        nombre: p.nombre,
-                                        apellido: p.apellido
-                                    }))
-                                };
-                            },
-                            cache: true,
-                            error: function() {
-                                console.warn('Error searching patients');
-                            }
-                        }
-                    }).on('select2:select', function (e) {
-                        const data = e.params.data;
-                        document.getElementById('selectedPatientId').value = data.id;
-                        document.getElementById('nombre_pac').value = data.nombre;
-                        document.getElementById('apellido_pac').value = data.apellido;
+                                    processResults: function (data) {
+                                        if (!Array.isArray(data)) return { results: [] };
+                                        return {
+                                            results: data.map(p => ({
+                                                id: p.id_paciente,
+                                                text: `${p.nombre} ${p.apellido}${p.dpi ? ' — ' + p.dpi : ''}`,
+                                                nombre: p.nombre,
+                                                apellido: p.apellido,
+                                                telefono: p.telefono || '',
+                                                dpi: p.dpi || ''
+                                            }))
+                                        };
+                                    },
+                                    cache: true,
+                                    error: function() {
+                                        console.warn('Error searching patients');
+                                    }
+                                }
+                            }).on('select2:select', function (e) {
+                                const data = e.params.data;
+                                document.getElementById('selectedPatientId').value = data.id;
+                                document.getElementById('nombre_pac').value = data.nombre;
+                                document.getElementById('apellido_pac').value = data.apellido;
+                                document.getElementById('telefono').value = data.telefono;
                     });
                 }
             }

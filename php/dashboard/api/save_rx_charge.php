@@ -11,6 +11,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+        exit;
+    }
     $database = new Database();
     $conn = $database->getConnection();
 

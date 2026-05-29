@@ -8,13 +8,23 @@ require_once '../../config/hospital.php'; // Identidad de la carpeta
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
+
+    // Rate limiting: max 5 attempts per 60 seconds
+    if (!isset($_SESSION['login_attempts'])) {
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['login_attempt_time'] = 0;
+    }
+    if ($_SESSION['login_attempts'] >= 5 && time() - $_SESSION['login_attempt_time'] < 60) {
+        header("Location: ../../index.php?error=2");
+        exit;
+    }
+
     $database = new Database();
     $conn = $database->getConnection();
 
     $usuario = sanitize_input($_POST['usuario']);
     $password = sanitize_input($_POST['password']);
-
-    error_log("LOGIN DEBUG: Attempting login for user: '" . $usuario . "' with password: '" . $password . "'. Hospital code: '" . CURRENT_HOSPITAL_CODE . "'");
 
     // Buscar el usuario uniendo con la tabla hospitales para validar el CÓDIGO
     $stmt = $conn->prepare("
@@ -27,20 +37,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        error_log("LOGIN DEBUG: User found in DB. DB password: '" . $user['password'] . "'");
+        error_log("LOGIN DEBUG: User found in DB for user: " . $usuario);
     } else {
         error_log("LOGIN DEBUG: User NOT found in DB with this hospital code.");
     }
 
-    if ($user && $password === $user['password']) {
-        error_log("LOGIN DEBUG: Password match. Setting session variables.");
-        $_SESSION['user_id'] = $user['idUsuario'];
-        $_SESSION['nombre'] = $user['nombre'];
-        $_SESSION['id_hospital'] = $user['hospital_real_id']; // Guardamos el ID numérico real
+    if ($user) {
+        $passwordValid = false;
 
-        // Cargar configuración del hospital
-        require_once '../../includes/multitenant.php';
-        $h_config = get_hospital_config($conn, $user['id_hospital']);
+        // Intentar verificación con password_hash primero
+        if (password_verify($password, $user['password'])) {
+            $passwordValid = true;
+            // Re-hash si el algoritmo necesita actualización
+            if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                $updateStmt = $conn->prepare("UPDATE usuarios SET password = ? WHERE idUsuario = ?");
+                $updateStmt->execute([$newHash, $user['idUsuario']]);
+            }
+        } elseif ($password === $user['password']) {
+            // Migración: contraseña en texto plano -> hash
+            $passwordValid = true;
+            $newHash = password_hash($password, PASSWORD_DEFAULT);
+            $updateStmt = $conn->prepare("UPDATE usuarios SET password = ? WHERE idUsuario = ?");
+            $updateStmt->execute([$newHash, $user['idUsuario']]);
+            error_log("LOGIN DEBUG: Migrated plaintext password to hash for user ID " . $user['idUsuario']);
+        }
+
+        if ($passwordValid) {
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user['idUsuario'];
+            $_SESSION['nombre'] = $user['nombre'];
+            $_SESSION['id_hospital'] = $user['hospital_real_id'];
+
+            // Cargar configuración del hospital
+            require_once '../../includes/multitenant.php';
+            $h_config = get_hospital_config($conn, $user['id_hospital']);
 
         if ($h_config) {
             error_log("LOGIN DEBUG: Hospital config loaded successfully.");
@@ -58,14 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['especialidad'] = $user['especialidad'];
         $_SESSION['tipoUsuario'] = $user['tipoUsuario'];
         $_SESSION['usuario'] = $user['usuario'];
+        $_SESSION['login_attempts'] = 0;
+
+        audit_log('login_exitoso', 'Usuario: ' . $user['usuario'] . ' - Hospital ID: ' . $user['id_hospital'], $user['idUsuario']);
 
         error_log("LOGIN DEBUG: Redirecting to dashboard/index.php");
         header("Location: ../dashboard/index.php");
         exit();
-    } else {
-        error_log("LOGIN DEBUG: Login failed. Redirecting back to index.php?error=1");
-        header("Location: ../../index.php?error=1");
-        exit();
     }
+}
+
+    $_SESSION['login_attempts']++;
+    $_SESSION['login_attempt_time'] = time();
+    audit_log('login_fallido', 'Usuario intentado: ' . ($_POST['usuario'] ?? 'unknown'));
+    error_log("LOGIN DEBUG: Login failed. Redirecting back to index.php?error=1");
+    header("Location: ../../index.php?error=1");
+    exit();
 }
 ?>

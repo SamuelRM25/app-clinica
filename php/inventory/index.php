@@ -16,6 +16,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('inventory');
 
@@ -149,7 +150,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Módulo de Inventario - Centro Médico RS - Sistema de gestión médica">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -317,6 +318,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Inventario'],
+            ]); ?>
             <!-- Notificación de compras pendientes -->
             <?php if ($pending_purchases > 0 && $user_type === 'user'): ?>
                     <div class="alert-card mb-4 animate-in delay-1">
@@ -908,6 +913,7 @@ try {
                 <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <form id="addMedicineForm" action="save_medicine.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="custom-modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -1014,6 +1020,7 @@ try {
                 <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <form id="editMedicineForm" action="update_medicine.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="id_inventario" id="edit_id_inventario">
                 <div class="custom-modal-body">
                     <div class="row g-3">
@@ -2057,6 +2064,7 @@ try {
             }
         }
     </script>
+    <?php flash_toast(); ?>
 </body>
 
 </html>

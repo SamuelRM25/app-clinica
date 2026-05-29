@@ -3,6 +3,7 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
@@ -99,7 +100,7 @@ try {
 
 } catch (Exception $e) {
     error_log("Error en historial clínico: " . $e->getMessage());
-    die("Error: " . $e->getMessage());
+    die("Error al cargar el historial clínico. Por favor, contacte al administrador.");
 }
 ?>
 <!DOCTYPE html>
@@ -109,7 +110,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Historial Clínico - Centro Médico Herrera Sáenz">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -420,6 +421,11 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Pacientes', 'url' => 'index.php'],
+                ['label' => 'Historial Clínico'],
+            ]); ?>
             <!-- Botón Volver -->
             <div class="mb-4 animate-in">
                 <a href="index.php" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
@@ -763,6 +769,7 @@ try {
                 <button type="button" class="custom-modal-close" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">&times;</button>
             </div>
             <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="id_paciente" value="<?php echo $patient_id; ?>">
                 
                 <div class="custom-modal-body" style="max-height: 70vh; overflow-y: auto;">
@@ -1277,6 +1284,7 @@ try {
 
     <!-- Bootstrap JS (para modales y collapse) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php flash_toast(); ?>
 </body>
 
 </html>

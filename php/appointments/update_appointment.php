@@ -11,6 +11,7 @@ verify_session();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();

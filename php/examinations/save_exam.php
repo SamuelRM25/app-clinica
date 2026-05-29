@@ -12,6 +12,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $id_paciente = $_POST['id_paciente'];
     $nombre_paciente = $_POST['nombre_paciente'];
     $examenes = $_POST['examenes'] ?? [];

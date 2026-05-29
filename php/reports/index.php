@@ -14,6 +14,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('reports');
 
@@ -413,7 +414,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Módulo de Reportes - Centro Médico RS - Sistema de gestión médica">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -814,6 +815,10 @@ try {
         </header>
 
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Reportes'],
+            ]); ?>
             <!-- Encabezado de página -->
             <div class="page-header">
                 <div class="page-title-section">
@@ -822,7 +827,7 @@ try {
                 </div>
                 <div class="page-actions">
                     <?php if ($user_type === 'admin'): ?>
-                            <a href="export_jornada.php" target="_blank" class="action-btn">
+                            <a href="export_jornada.php" target="_blank" class="action-btn" onclick="showPdfLoading()">
                                 <i class="bi bi-file-earmark-pdf me-2"></i>
                                 Exportar Jornada
                             </a>
@@ -2127,6 +2132,9 @@ try {
             }
 
         })();
+    </script>
+    <script>
+    function showPdfLoading() { Swal.fire({ title: 'Generando reporte...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); }
     </script>
 </body>
 

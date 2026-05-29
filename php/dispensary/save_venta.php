@@ -12,10 +12,6 @@ date_default_timezone_set('America/Guatemala');
 
 verify_session();
 
-// Enable error reporting for debugging
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 header('Content-Type: application/json');
 
 try {
@@ -30,8 +26,19 @@ try {
         throw new Exception('Invalid JSON: ' . json_last_error_msg());
     }
 
+    // CSRF validation for JSON requests via X-CSRF-Token header
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     if (!isset($data['nombre_cliente']) || !isset($data['tipo_pago']) || !isset($data['items']) || empty($data['items'])) {
         throw new Exception('Datos incompletos');
+    }
+
+    // Validar tipo de pago contra lista blanca
+    if (!validar_tipo_pago($data['tipo_pago'])) {
+        throw new Exception('Tipo de pago inválido: ' . $data['tipo_pago']);
     }
 
     $database = new Database();
@@ -69,10 +76,23 @@ try {
     $stmt = $conn->prepare("INSERT INTO detalle_ventas (id_venta, id_inventario, cantidad_vendida, precio_unitario) VALUES (?, ?, ?, ?)");
     $stmt_inv = $conn->prepare("UPDATE inventario SET cantidad_med = cantidad_med - ? WHERE id_inventario = ?");
 
+    // Prepare stock check statement
+    $stmt_check = $conn->prepare("SELECT cantidad_med FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+
     foreach ($data['items'] as $item) {
         // Validate item data
         if (!isset($item['id_inventario']) || !isset($item['cantidad']) || !isset($item['precio_unitario'])) {
             throw new Exception('Datos de item incompletos');
+        }
+
+        // Check stock availability before decrementing
+        $stmt_check->execute([$item['id_inventario'], $id_hospital]);
+        $current_stock = $stmt_check->fetchColumn();
+        if ($current_stock === false) {
+            throw new Exception('Producto no encontrado en inventario');
+        }
+        if ((int)$current_stock < (int)$item['cantidad']) {
+            throw new Exception('Stock insuficiente. Disponible: ' . (int)$current_stock . ', solicitado: ' . (int)$item['cantidad']);
         }
 
         $stmt->execute([
@@ -92,6 +112,8 @@ try {
 
     // Commit transaction
     $conn->commit();
+
+    audit_log('venta_creada', 'Venta #' . $id_venta . ' - Total: Q' . $data['total'] . ' - Cliente: ' . $data['nombre_cliente'], $_SESSION['user_id'] ?? null);
 
     echo json_encode(['status' => 'success', 'message' => 'Venta registrada correctamente', 'id_venta' => $id_venta]);
 

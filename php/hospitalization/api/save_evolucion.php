@@ -16,6 +16,12 @@ if (!isset($_SESSION['user_id'])) {
 date_default_timezone_set('America/Guatemala');
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $required = ['id_encamamiento', 'fecha_evolucion'];
     foreach ($required as $field) {
         if (!isset($_POST[$field]) || empty($_POST[$field])) {

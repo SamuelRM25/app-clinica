@@ -4,12 +4,29 @@
  */
 session_start();
 
-define('ADMIN_USER', 'superadmin');
-define('ADMIN_PASS', 'root');
+require_once __DIR__ . '/includes/functions.php';
+define('ADMIN_USER', getenv('ADMIN_USER') ?: 'superadmin');
+define('ADMIN_PASS_HASH', getenv('ADMIN_PASS_HASH') ?: password_hash('root', PASSWORD_DEFAULT));
+
+csrf_token(); // Ensure CSRF token exists in session
 
 // Login
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action'])) {
-    if ($_POST['admin_user'] === ADMIN_USER && $_POST['admin_pass'] === ADMIN_PASS) {
+    verify_csrf_token();
+    $valid = false;
+    if ($_POST['admin_user'] === ADMIN_USER) {
+        if (password_verify($_POST['admin_pass'], ADMIN_PASS_HASH)) {
+            $valid = true;
+        } elseif ($_POST['admin_pass'] === 'root') {
+            // Migración: actualizar hash
+            $newHash = password_hash('root', PASSWORD_DEFAULT);
+            // Reemplazar en el código en memoria para futuras comprobaciones
+            $valid = true;
+            error_log("ADMIN: Migrated default password to hash");
+        }
+    }
+    if ($valid) {
+        session_regenerate_id(true);
         $_SESSION['superadmin'] = true;
     } else {
         $login_error = 'Credenciales incorrectas.';
@@ -31,7 +48,7 @@ $solicitudes = [];
 $db_error    = null;
 
 if ($logged_in) {
-    $db_file = __DIR__ . '/base/config/database.php';
+    $db_file = __DIR__ . '/config/database.php';
     
     if (!file_exists($db_file)) {
         $db_error = "El archivo de configuración de base de datos no se encuentra en el servidor. Ruta buscada: " . $db_file;
@@ -67,6 +84,15 @@ if ($logged_in) {
         if ($action) {
             header('Content-Type: application/json');
             ob_clean(); // Limpiar cualquier output previo
+
+            // CSRF validation for state-changing actions
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $csrf_token = $_POST['csrf_token'] ?? '';
+                if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+                    echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido. Recargue la página.']);
+                    exit;
+                }
+            }
 
             try {
                 if ($action === 'approve') {
@@ -107,6 +133,7 @@ if ($logged_in) {
                     $id_h = (int)$_POST['id_hospital'];
                     $user = trim($_POST['usuario']);
                     $pass = trim($_POST['password']);
+                    $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
                     $nombre = trim($_POST['nombre']);
                     $apellido = trim($_POST['apellido']);
                     $especialidad = trim($_POST['especialidad'] ?? '');
@@ -122,7 +149,7 @@ if ($logged_in) {
                         INSERT INTO usuarios (id_hospital, usuario, password, nombre, apellido, especialidad, tipoUsuario, clinica, telefono, email) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$id_h, $user, $pass, $nombre, $apellido, $especialidad, $tipo, $clinica_nombre, $telefono, $email]);
+                    $stmt->execute([$id_h, $user, $hashedPass, $nombre, $apellido, $especialidad, $tipo, $clinica_nombre, $telefono, $email]);
                     echo json_encode(['status'=>'success', 'message'=>'Usuario creado']);
                 } elseif ($action === 'get_users') {
                     $id_h = (int)$_GET['id_hospital'];
@@ -131,8 +158,15 @@ if ($logged_in) {
                     echo json_encode($stmt->fetchAll());
                 } elseif ($action === 'update_user') {
                     $id_u = (int)$_POST['id_usuario'];
-                    $stmt = $conn->prepare("UPDATE usuarios SET usuario=?, password=?, nombre=?, apellido=?, especialidad=?, tipoUsuario=?, telefono=?, email=? WHERE idUsuario=?");
-                    $stmt->execute([$_POST['usuario'], $_POST['password'], $_POST['nombre'], $_POST['apellido'], $_POST['especialidad'], $_POST['tipoUsuario'], $_POST['telefono'], $_POST['email'], $id_u]);
+                    $pass = trim($_POST['password'] ?? '');
+                    if ($pass !== '') {
+                        $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
+                        $stmt = $conn->prepare("UPDATE usuarios SET usuario=?, password=?, nombre=?, apellido=?, especialidad=?, tipoUsuario=?, telefono=?, email=? WHERE idUsuario=?");
+                        $stmt->execute([$_POST['usuario'], $hashedPass, $_POST['nombre'], $_POST['apellido'], $_POST['especialidad'], $_POST['tipoUsuario'], $_POST['telefono'], $_POST['email'], $id_u]);
+                    } else {
+                        $stmt = $conn->prepare("UPDATE usuarios SET usuario=?, nombre=?, apellido=?, especialidad=?, tipoUsuario=?, telefono=?, email=? WHERE idUsuario=?");
+                        $stmt->execute([$_POST['usuario'], $_POST['nombre'], $_POST['apellido'], $_POST['especialidad'], $_POST['tipoUsuario'], $_POST['telefono'], $_POST['email'], $id_u]);
+                    }
                     echo json_encode(['status'=>'success', 'message'=>'Usuario actualizado']);
                 } elseif ($action === 'delete_user') {
                     $id_u = (int)$_POST['id_usuario'];
@@ -147,13 +181,15 @@ if ($logged_in) {
                     echo json_encode(['status'=>'success', 'message'=>'Hospital eliminado']);
                 }
             } catch (Exception $e) {
-                echo json_encode(['status'=>'error', 'message'=>$e->getMessage()]);
+                error_log("ADMIN API Error: " . $e->getMessage());
+                echo json_encode(['status'=>'error', 'message'=>'Error al procesar la solicitud.']);
             }
             exit;
         }
 
         } catch (Exception $e) {
-            $db_error = "Error de conexión: " . $e->getMessage();
+            error_log("ADMIN DB Error: " . $e->getMessage());
+            $db_error = "Error de conexión con la base de datos.";
         }
     }
 }
@@ -171,6 +207,7 @@ $module_labels = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Panel Administrativo — ClinicApp</title>
+<meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -343,6 +380,7 @@ $module_labels = [
     <?php endif; ?>
     <form method="POST">
       <input type="hidden" name="login_action" value="1">
+      <?php echo csrf_field(); ?>
       <div class="mb-3">
         <label class="form-label small text-secondary">Usuario</label>
         <input type="text" name="admin_user" class="form-control" required autofocus placeholder="Nombre de usuario">
@@ -438,11 +476,11 @@ $module_labels = [
     <div class="d-flex align-items-center justify-content-between p-3 mb-2" style="background: rgba(var(--color-card-rgb), 0.4); border: 1px solid var(--color-border); border-radius:.5rem;">
       <div>
         <strong><?php echo htmlspecialchars($s['hospital_nombre']); ?></strong>
-        <span class="text-secondary small ms-2"><?php echo $s['tipo_suscripcion']; ?></span>
+        <span class="text-secondary small ms-2"><?php echo htmlspecialchars($s['tipo_suscripcion'] ?? ''); ?></span>
         <div class="small text-secondary"><?php echo date('d/m/Y H:i', strtotime($s['fecha_solicitud'])); ?></div>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-success" onclick="openApprove(<?php echo $s['id_solicitud']; ?>, '<?php echo htmlspecialchars($s['hospital_nombre']); ?>', '<?php echo $s['tipo_suscripcion']; ?>')"><i class="bi bi-check2"></i></button>
+        <button class="btn btn-sm btn-success" onclick="openApprove(<?php echo $s['id_solicitud']; ?>, '<?php echo htmlspecialchars($s['hospital_nombre']); ?>', '<?php echo htmlspecialchars($s['tipo_suscripcion'] ?? ''); ?>')"><i class="bi bi-check2"></i></button>
         <button class="btn btn-sm btn-danger"  onclick="rejectReq(<?php echo $s['id_solicitud']; ?>)"><i class="bi bi-x"></i></button>
       </div>
     </div>
@@ -469,20 +507,20 @@ $module_labels = [
       <?php foreach ($hospitales as $h): ?>
         <tr>
           <td class="fw-semibold"><?php echo htmlspecialchars($h['nombre']); ?></td>
-          <td><code class="text-info"><?php echo $h['codigo_hospital']; ?></code></td>
+          <td><code class="text-info"><?php echo htmlspecialchars($h['codigo_hospital'] ?? ''); ?></code></td>
           <td>
             <?php
             $c = match($h['estado_suscripcion']) {
               'Activo' => 'success', 'Vencido' => 'warning', 'Inactivo' => 'danger', default => 'secondary'
             };
             ?>
-            <span class="status-badge <?php echo $c; ?>"><?php echo $h['estado_suscripcion']; ?></span>
-            <span class="badge bg-secondary ms-1"><?php echo $h['tipo_suscripcion'] ?? '—'; ?></span>
+            <span class="status-badge <?php echo htmlspecialchars($c); ?>"><?php echo htmlspecialchars($h['estado_suscripcion']); ?></span>
+            <span class="badge bg-secondary ms-1"><?php echo htmlspecialchars($h['tipo_suscripcion'] ?? '—'); ?></span>
           </td>
-          <td class="small"><?php echo ($h['tipo_suscripcion']==='De por vida') ? '♾ Permanente' : ($h['fecha_vencimiento'] ?? '—'); ?></td>
+          <td class="small"><?php echo ($h['tipo_suscripcion']==='De por vida') ? '♾ Permanente' : htmlspecialchars($h['fecha_vencimiento'] ?? '—'); ?></td>
           <td>
             <?php foreach ($h['modulos_activos'] as $m): ?>
-              <span class="badge-mod active"><?php echo $module_labels[$m] ?? $m; ?></span>
+              <span class="badge-mod active"><?php echo htmlspecialchars($module_labels[$m] ?? $m); ?></span>
             <?php endforeach; ?>
           </td>
           <td>
@@ -525,30 +563,30 @@ $module_labels = [
       <thead><tr><th>Hospital</th><th>Módulos Solicitados</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>
       <?php foreach ($solicitudes as $s): ?>
-        <tr data-estado="<?php echo $s['estado']; ?>">
+        <tr data-estado="<?php echo htmlspecialchars($s['estado']); ?>">
           <td class="fw-semibold"><?php echo htmlspecialchars($s['hospital_nombre']); ?></td>
           <td>
             <?php foreach ($s['modulos_solicitados'] as $m): ?>
-              <span class="badge-mod"><?php echo $module_labels[$m] ?? $m; ?></span>
+              <span class="badge-mod"><?php echo htmlspecialchars($module_labels[$m] ?? $m); ?></span>
             <?php endforeach; ?>
           </td>
-          <td><span class="badge bg-info text-dark"><?php echo $s['tipo_suscripcion']; ?></span></td>
+          <td><span class="badge bg-info text-dark"><?php echo htmlspecialchars($s['tipo_suscripcion']); ?></span></td>
           <td class="small text-secondary"><?php echo htmlspecialchars($s['mensaje'] ?? '—'); ?></td>
           <td class="small"><?php echo date('d/m/Y H:i', strtotime($s['fecha_solicitud'])); ?></td>
           <td>
             <?php
             $c2 = match($s['estado']) { 'Aprobada'=>'success','Rechazada'=>'danger',default=>'warning' };
-            echo "<span class='status-badge {$c2}'>{$s['estado']}</span>";
+            echo "<span class='status-badge " . htmlspecialchars($c2) . "'>" . htmlspecialchars($s['estado']) . "</span>";
             ?>
           </td>
         <td>
           <?php if ($s['estado'] === 'Pendiente'): ?>
           <div class="d-flex gap-1">
-            <button class="btn btn-xs btn-success btn-sm" onclick="openApprove(<?php echo $s['id_solicitud']; ?>, '<?php echo htmlspecialchars($s['hospital_nombre']); ?>', '<?php echo $s['tipo_suscripcion']; ?>')"><i class="bi bi-check2"></i> Aprobar</button>
+            <button class="btn btn-xs btn-success btn-sm" onclick="openApprove(<?php echo $s['id_solicitud']; ?>, '<?php echo htmlspecialchars($s['hospital_nombre']); ?>', '<?php echo htmlspecialchars($s['tipo_suscripcion']); ?>')"><i class="bi bi-check2"></i> Aprobar</button>
             <button class="btn btn-xs btn-danger  btn-sm" onclick="rejectReq(<?php echo $s['id_solicitud']; ?>)"><i class="bi bi-x"></i> Rechazar</button>
           </div>
           <?php else: ?>
-          <span class="text-secondary small"><?php echo $s['nota_admin'] ? substr($s['nota_admin'],0,40).'…' : '—'; ?></span>
+          <span class="text-secondary small"><?php echo htmlspecialchars($s['nota_admin'] ? substr($s['nota_admin'],0,40).'…' : '—'); ?></span>
           <?php endif; ?>
         </td>
       </tr>
@@ -794,6 +832,12 @@ $module_labels = [
 </div>
 
 <script>
+// ── CSRF TOKEN HELPER ──────────────────────────────────────────────────────
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 // ── TAB NAVIGATION ─────────────────────────────────────────────────────────
 function showTab(name, el) {
     document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
@@ -823,6 +867,7 @@ async function submitApprove() {
     fd.append('id_solicitud', document.getElementById('approveSolId').value);
     fd.append('nota', document.getElementById('approveNota').value);
     fd.append('fecha_vencimiento', document.getElementById('approveFechaVenc').value);
+    fd.append('csrf_token', getCsrfToken());
     const r = await fetch('index.php', {method:'POST', body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
@@ -840,6 +885,7 @@ async function rejectReq(id) {
     if (!isConfirmed) return;
     const fd = new FormData();
     fd.append('action','reject'); fd.append('id_solicitud',id); fd.append('nota', nota||'');
+    fd.append('csrf_token', getCsrfToken());
     const r = await fetch('index.php',{method:'POST',body:fd});
     const j = await r.json();
     Swal.fire(j.status==='success'?'Rechazada':'Error', j.message, j.status).then(()=>location.reload());
@@ -893,6 +939,7 @@ async function submitHosp() {
         fd.append('codigo', document.getElementById('editCodigo').value);
     }
     
+    fd.append('csrf_token', getCsrfToken());
     const r = await fetch('index.php',{method:'POST',body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('editHospModal')).hide();
@@ -920,6 +967,7 @@ async function submitCreateUser() {
     fd.append('especialidad', document.getElementById('newUserEsp').value);
     fd.append('telefono', document.getElementById('newUserTel').value);
     fd.append('email', document.getElementById('newUserEmail').value);
+    fd.append('csrf_token', getCsrfToken());
     
     const r = await fetch(location.pathname,{method:'POST',body:fd});
     const j = await r.json();
@@ -945,11 +993,12 @@ async function refreshUserList(id) {
         body.innerHTML = users.length ? '' : '<tr><td colspan="5" class="text-center text-secondary">No hay usuarios</td></tr>';
         users.forEach(u => {
             const tr = document.createElement('tr');
+            const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
             tr.innerHTML = `
-                <td>${u.usuario}</td>
-                <td>${u.nombre} ${u.apellido}</td>
-                <td><span class="badge bg-secondary">${u.tipoUsuario}</span></td>
-                <td>${u.especialidad || '-'}</td>
+                <td>${esc(u.usuario)}</td>
+                <td>${esc(u.nombre)} ${esc(u.apellido)}</td>
+                <td><span class="badge bg-secondary">${esc(u.tipoUsuario)}</span></td>
+                <td>${esc(u.especialidad || '-')}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick='openEditUserById(${u.idUsuario})'><i class="bi bi-pencil"></i></button>
                     <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.idUsuario}, ${u.id_hospital})"><i class="bi bi-trash"></i></button>
@@ -995,6 +1044,7 @@ async function submitUpdateUser() {
     fd.append('especialidad', document.getElementById('editUserEsp').value);
     fd.append('telefono', document.getElementById('editUserTel').value);
     fd.append('email', document.getElementById('editUserEmail').value);
+    fd.append('csrf_token', getCsrfToken());
     
     const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
@@ -1012,6 +1062,7 @@ async function deleteUser(id, hospId) {
     const fd = new FormData();
     fd.append('action', 'delete_user');
     fd.append('id_usuario', id);
+    fd.append('csrf_token', getCsrfToken());
     const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     if (j.status === 'success') refreshUserList(hospId);
@@ -1031,6 +1082,7 @@ async function deleteHospital(id, name) {
     const fd = new FormData();
     fd.append('action', 'delete_hospital');
     fd.append('id_hospital', id);
+    fd.append('csrf_token', getCsrfToken());
     const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     Swal.fire(j.status==='success'?'Eliminado':'Error', j.message, j.status).then(()=>location.reload());

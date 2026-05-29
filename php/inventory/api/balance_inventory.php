@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['id_inventario']) || 
     exit;
 }
 
+// CSRF validation
+verify_csrf_token();
+
 $id_inventario = intval($_POST['id_inventario']);
 $nueva_cantidad = intval($_POST['nueva_cantidad']);
 $id_hospital = hospital_id();

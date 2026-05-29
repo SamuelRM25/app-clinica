@@ -13,6 +13,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     try {
         $database = new Database();
         $conn = $database->getConnection();

@@ -2,6 +2,7 @@
 // settings/api/delete_user.php
 session_start();
 require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
 
 header('Content-Type: application/json');
 
@@ -12,6 +13,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {
 
 if (!isset($_GET['id'])) {
     echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
+    exit;
+}
+
+// CSRF validation via X-CSRF-Token header
+$csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (empty($csrf_header) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_header)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
     exit;
 }
 
@@ -35,6 +43,7 @@ try {
     echo json_encode(['success' => true, 'message' => 'Usuario eliminado correctamente']);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log("Error delete_user: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error al eliminar el usuario.']);
 }
 ?>

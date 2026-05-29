@@ -98,7 +98,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Módulo de Ventas del Centro Médico RS - Sistema de gestión médica">
-    <title><?php echo $page_title; ?></title>
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
+    <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
@@ -1698,9 +1699,10 @@ try {
                     });
 
                     try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
                         const response = await fetch('save_venta.php', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                             body: JSON.stringify(saleData)
                         });
 

@@ -17,6 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    // CSRF validation
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        throw new Exception('Token CSRF inválido');
+    }
+
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -71,7 +77,8 @@ try {
             INSERT INTO orden_logs (id_orden, accion, observaciones, id_usuario, fecha, id_hospital)
             VALUES (?, 'Muestra Recibida', ?, ?, NOW(), ?)
         ");
-        $stmt->execute([$id_orden, $observaciones, $_SESSION['idUsuario'], $id_hospital]);
+        $userId = $_SESSION['user_id'] ?? null;
+        $stmt->execute([$id_orden, $observaciones, $userId, $id_hospital]);
     }
 
     echo json_encode([

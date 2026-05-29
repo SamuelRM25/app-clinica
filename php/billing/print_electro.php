@@ -46,7 +46,8 @@ try {
     $user_name = $_SESSION['nombre'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("Error en print_electro: " . $e->getMessage());
+    die("Error al generar el recibo.");
 }
 ?>
 <!DOCTYPE html>
@@ -55,7 +56,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibo Electrocardiograma #<?php echo $id_electro; ?></title>
+    <title>Recibo Electrocardiograma #<?php echo htmlspecialchars($id_electro); ?></title>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 

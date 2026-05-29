@@ -1,8 +1,31 @@
 <IfModule lsapi_module>
     php_value session.cookie_path "/"
     php_value session.name "CLINICA_BASE"
+    php_value session.cookie_httponly "1"
+    php_value session.use_strict_mode "1"
+    php_value session.cookie_samesite "Lax"
+    # Descomentar la siguiente línea SOLO si el sitio se sirve sobre HTTPS:
+    # php_value session.cookie_secure "1"
 </IfModule>
 <IfModule mod_php.c>
     php_value session.cookie_path "/"
     php_value session.name "CLINICA_BASE"
+    php_value session.cookie_httponly "1"
+    php_value session.use_strict_mode "1"
+    php_value session.cookie_samesite "Lax"
+    # Descomentar la siguiente línea SOLO si el sitio se sirve sobre HTTPS:
+    # php_value session.cookie_secure "1"
+</IfModule>
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "DENY"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'"
+</IfModule>
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK) [NC]
+    RewriteRule .* - [F]
 </IfModule>

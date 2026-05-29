@@ -15,6 +15,7 @@ require_once '../../includes/multitenant.php';
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $user_id = $_SESSION['user_id'];
     $id_inventario = $_POST['id_inventario'] ?? null;
     $cantidad = $_POST['cantidad'] ?? null;

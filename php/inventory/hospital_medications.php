@@ -14,6 +14,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/breadcrumbs.php';
 
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
@@ -74,7 +75,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo htmlspecialchars($page_title); ?></title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
     <!-- Google Fonts -->
@@ -100,6 +101,11 @@ try {
     </div>
 
     <div class="main-content">
+        <?php render_breadcrumbs([
+            ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+            ['label' => 'Inventario', 'url' => 'index.php'],
+            ['label' => 'Medicamentos Hospitalarios'],
+        ]); ?>
         <div class="appointments-section">
             <h5 class="mb-4"><i class="bi bi-hospital me-2 text-primary"></i> Registro de Administración a Pacientes
             </h5>
@@ -166,6 +172,7 @@ try {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="linkInventoryForm" action="api/link_hospital_medication.php" method="POST">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="id_cargo" id="link_id_cargo">
                     <div class="modal-body">
                         <div class="alert alert-info">
