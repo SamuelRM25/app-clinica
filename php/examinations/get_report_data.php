@@ -76,7 +76,8 @@ try {
 } catch (Exception $e) {
     // Asegurar que solo devolvemos JSON válido incluso en error
     ob_clean();
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log("php/examinations/get_report_data.php error: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }
 // Finalizar buffer y enviar
 ob_end_flush();

@@ -44,6 +44,7 @@ try {
     echo json_encode(['success' => true, 'orders' => $orders]);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Error en php/dashboard/get_lab_orders_billing.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }
 ?>

@@ -62,7 +62,8 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en hospitalization/ingresar_paciente.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

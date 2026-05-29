@@ -99,12 +99,14 @@ try {
 } catch (PDOException $e) {
     // Error de base de datos
     ob_clean();
-    header("Location: index.php?status=error&message=" . urlencode("Error al guardar en la base de datos: " . $e->getMessage()));
+error_log('Error en save_procedure.php DB: ' . $e->getMessage());
+    header("Location: index.php?status=error&message=" . urlencode("Error al guardar en la base de datos"));
     exit;
 } catch (Exception $e) {
     // Otros errores
     ob_clean();
-    header("Location: index.php?status=error&message=" . urlencode($e->getMessage()));
+error_log('Error en save_procedure.php: ' . $e->getMessage());
+    header("Location: index.php?status=error&message=" . urlencode("Error del servidor"));
     exit;
 }
 ?>

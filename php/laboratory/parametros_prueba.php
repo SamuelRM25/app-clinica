@@ -47,7 +47,8 @@ try {
 
     $page_title = "Parámetros: " . $prueba['nombre_prueba'];
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/parametros_prueba.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

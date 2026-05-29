@@ -40,7 +40,8 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        echo json_encode(['error' => $e->getMessage()]);
+        error_log('Error en php/inventory/get_medicine.php: ' . $e->getMessage());
+        echo json_encode(['error' => 'Error del servidor.']);
     }
 } else {
     echo json_encode(['error' => 'ID no válido']);

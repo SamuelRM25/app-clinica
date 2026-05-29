@@ -100,5 +100,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Error en php/dashboard/get_detailed_shift_data.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }

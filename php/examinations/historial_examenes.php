@@ -65,7 +65,8 @@ try {
     $examenes = [];
     $total_paginas = 1;
     $total_registros = 0;
-    $error_message = "Error al cargar el historial: " . $e->getMessage();
+error_log('Error en historial_examenes: ' . $e->getMessage());
+    $error_message = "Error al cargar el historial: Error del servidor.";
     error_log("Error en historial_examenes: " . $e->getMessage());
 }
 ?>

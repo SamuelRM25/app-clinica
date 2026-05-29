@@ -74,8 +74,10 @@ try {
     if ($e->getCode() == 23000) { // Integrity constraint violation
         echo json_encode(['success' => false, 'message' => 'El código de prueba ya existe. Por favor use un código diferente.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+        error_log('Error en laboratory/api/save_test.php: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . 'Error del servidor.']);
     }
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log('Error en laboratory/api/save_test.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error: ' . 'Error del servidor.']);
 }

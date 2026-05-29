@@ -37,5 +37,6 @@ try {
     echo json_encode(['status' => 'success', 'message' => 'Cobro marcado como pagado correctamente']);
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en billing/mark_as_paid.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

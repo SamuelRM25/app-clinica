@@ -27,7 +27,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        $_SESSION['purchase_message'] = 'Error: ' . $e->getMessage();
+        error_log("php/purchases/delete_purchase.php error: " . $e->getMessage());
         $_SESSION['purchase_status'] = 'error';
     }
 } else {

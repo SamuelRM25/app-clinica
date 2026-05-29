@@ -52,6 +52,7 @@ try {
     fclose($output);
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en billing/export_cobros.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>

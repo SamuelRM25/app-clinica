@@ -26,7 +26,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        $_SESSION['inventory_message'] = 'Error: ' . $e->getMessage();
+        error_log("php/inventory/delete_medicine.php error: " . $e->getMessage());
         $_SESSION['inventory_status'] = 'error';
     }
 } else {

@@ -57,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
 
     } catch (PDOException $e) {
-        header('Location: index.php?status=error&message=' . urlencode('Error al guardar: ' . $e->getMessage()));
+        error_log("php/examinations/save_exam.php error: " . $e->getMessage());
+        header('Location: index.php?status=error&message=' . urlencode('Error del servidor.'));
         exit;
     }
 } else {

@@ -131,5 +131,6 @@ try {
     
 } catch (Exception $e) {
     if (isset($conn)) $conn->rollBack();
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/api/create_order.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }

@@ -43,6 +43,7 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en dispensary/get_precio.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }
 ?>

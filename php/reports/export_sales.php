@@ -260,6 +260,7 @@ try {
         <?php
 
 } catch (PDOException $e) {
-    die("Error de base de datos: " . $e->getMessage());
+    error_log('Error en reports/export_sales.php: ' . $e->getMessage());
+    die("Error de base de datos: " . 'Error del servidor.');
 }
 ?>

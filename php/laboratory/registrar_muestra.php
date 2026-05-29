@@ -30,7 +30,8 @@ try {
 
     $page_title = "Registrar Muestra - Laboratorio";
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/registrar_muestra.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

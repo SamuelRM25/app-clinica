@@ -104,5 +104,6 @@ try {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        error_log("hospitalization/api/update_hospital_charge.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

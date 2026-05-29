@@ -97,6 +97,7 @@ try {
     if ($conn && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    error_log('Error en purchases/save_purchase.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
 }
 ?>

@@ -158,5 +158,6 @@ try {
 } catch (Exception $e) {
     if (isset($conn))
         $conn->rollBack();
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log('Error en laboratory/api/save_results.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error: ' . 'Error del servidor.']);
 }

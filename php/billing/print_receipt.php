@@ -53,7 +53,8 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en billing/print_receipt.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 
 // Formatear fecha
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensaje = '<div class="alert-card mb-4 animate-in" style="border-left: 4px solid var(--color-danger);">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 1.25rem;"></i>
-                    <span>Error al agendar la cita: ' . htmlspecialchars($e->getMessage()) . '</span>
+<span>Error del servidor.</span>
                 </div>
             </div>';
         }

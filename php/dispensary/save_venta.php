@@ -127,5 +127,6 @@ try {
     error_log('Error in save_venta.php: ' . $e->getMessage());
 
     // Return error response
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en dispensary/save_venta.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

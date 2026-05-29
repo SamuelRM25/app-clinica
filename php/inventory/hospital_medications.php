@@ -65,7 +65,8 @@ try {
 
 } catch (Throwable $e) {
     error_log("Error en medicamentos hospitalarios: " . $e->getMessage());
-    echo "DEBUG ERROR: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine();
+    error_log('Error en php/inventory/hospital_medications.php: ' . $e->getMessage());
+    echo "DEBUG ERROR: " . 'Error del servidor.' . " at " . $e->getFile() . ":" . $e->getLine();
     die("<br>Error al cargar la información. contacte al administrador.");
 }
 ?>

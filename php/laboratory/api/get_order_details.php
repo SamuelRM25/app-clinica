@@ -41,7 +41,7 @@ try {
 } catch (Exception $e) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Error de base de datos: ' . $e->getMessage()
+'message' => 'Error del servidor.'
     ]);
 }
 ?>

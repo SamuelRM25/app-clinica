@@ -85,7 +85,8 @@ try {
         ));
     }
 } catch (Exception $e) {
-    fputcsv($output, array('Error: ' . $e->getMessage()));
+error_log('Error en purchases/export_purchases.php: ' . $e->getMessage());
+        fputcsv($output, array('Error: Error del servidor.'));
 }
 
 fclose($output);

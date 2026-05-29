@@ -217,7 +217,8 @@ try {
     }
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en hospitalization/detalle_encamamiento.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

@@ -143,7 +143,8 @@ try {
     ];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en dashboard/widgets_config.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 
 $page_title = "Configuración de Widgets - CMS";

@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        $_SESSION['inventory_message'] = 'Error: ' . $e->getMessage();
+        error_log("php/inventory/save_medicine.php error: " . $e->getMessage());
         $_SESSION['inventory_status'] = 'error';
     }
 

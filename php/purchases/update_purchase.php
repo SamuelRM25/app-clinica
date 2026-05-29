@@ -105,7 +105,7 @@ verify_session();
             $conn->rollBack();
         }
         error_log($e->getMessage());
-        $_SESSION['purchase_message'] = 'Error: ' . $e->getMessage();
+        error_log("php/purchases/update_purchase.php error: " . $e->getMessage());
         $_SESSION['purchase_status'] = 'error';
     }
 

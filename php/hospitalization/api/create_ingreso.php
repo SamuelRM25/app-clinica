@@ -251,6 +251,6 @@ try {
 
     echo json_encode([
         'status' => 'error',
-        'message' => $e->getMessage()
+'message' => 'Error del servidor.'
     ]);
 }

@@ -64,6 +64,7 @@ try {
 } catch (Exception $e) {
     if (isset($conn))
         $conn->rollBack();
-    echo json_encode(['status' => 'error', 'message' => 'Error al procesar: ' . $e->getMessage()]);
+    error_log('Error en laboratory/api/process_refund.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error al procesar: ' . 'Error del servidor.']);
 }
 ?>

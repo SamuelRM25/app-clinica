@@ -29,7 +29,8 @@ try {
     $page_title = "Citas Programadas para Hoy";
     include_once '../../includes/header.php';
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en appointments/today.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 

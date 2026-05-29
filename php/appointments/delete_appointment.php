@@ -38,7 +38,8 @@ if (isset($data['id'])) {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        echo json_encode(['status' => 'error', 'message' => 'Error al eliminar la cita: ' . $e->getMessage()]);
+        error_log('Error en appointments/delete_appointment.php: ' . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error al eliminar la cita: ' . 'Error del servidor.']);
     }
 } else {
     echo json_encode(['status' => 'error', 'message' => 'ID de cita no proporcionado']);

@@ -85,7 +85,8 @@ try {
     }
 
 } catch (Exception $e) {
-    die("Error al generar reporte: " . $e->getMessage());
+    error_log('Error en sales/generate_shift_report.php: ' . $e->getMessage());
+    die("Error al generar reporte: " . 'Error del servidor.');
 }
 
 // Obtener información del usuario

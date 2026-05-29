@@ -108,5 +108,6 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+    error_log("php/admin/manage_request.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error: ' . 'Error del servidor.']);
 }

@@ -75,5 +75,6 @@ try {
     ]);
     
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        error_log("hospitalization/api/save_signos.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
         }
     } catch (Exception $e) {
         error_log($e->getMessage());
-        $_SESSION['inventory_message'] = 'Error: ' . $e->getMessage();
+        error_log("php/inventory/update_medicine.php error: " . $e->getMessage());
         $_SESSION['inventory_status'] = 'error';
     }
 

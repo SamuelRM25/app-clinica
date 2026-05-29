@@ -39,5 +39,6 @@ try {
     echo json_encode($patients);
 
 } catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    error_log('Error en billing/search_patients.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Error del servidor.']);
 }

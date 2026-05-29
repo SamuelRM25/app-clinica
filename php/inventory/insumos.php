@@ -37,7 +37,8 @@ try {
     $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("php/inventory/insumos.php error: " . $e->getMessage());
+        die("Error: " . 'Error del servidor.');
 }
 
 $page_title = "Gestión de Insumos - CMHS";

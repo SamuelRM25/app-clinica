@@ -42,6 +42,7 @@ if (!isset($_GET['id'])) {
     ]);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    error_log('Error en purchases/get_purchase_details.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
 }
 ?>

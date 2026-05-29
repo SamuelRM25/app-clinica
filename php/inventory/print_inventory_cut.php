@@ -96,7 +96,8 @@ try {
     }
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("php/inventory/print_inventory_cut.php error: " . $e->getMessage());
+        die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

@@ -48,5 +48,6 @@ try {
     echo json_encode(['status' => 'success', 'cobro' => $cobro]);
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en billing/get_billing_details.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

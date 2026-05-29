@@ -56,7 +56,8 @@ try {
     $clinica_telefono = "(+502) 4195-8112";
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en patients/print_prescription.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 

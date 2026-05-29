@@ -131,7 +131,8 @@ try {
 } catch (Exception $e) {
     // Manejo de errores
     error_log("Error en dashboard de laboratorio: " . $e->getMessage());
-    die("Error al cargar el dashboard de laboratorio: " . $e->getMessage());
+    error_log('Error en laboratory/index.php: ' . $e->getMessage());
+    die("Error al cargar el dashboard de laboratorio: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

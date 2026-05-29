@@ -67,7 +67,8 @@ try {
 
 } catch (Exception $e) {
     ob_clean();
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log("php/minor_procedures/get_report_data.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }
 ob_end_flush();
 ?>

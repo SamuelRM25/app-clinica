@@ -44,7 +44,8 @@ try {
     }
 } catch (Exception $e) {
     // Si hay error, lo mostramos en el CSV
-    fputcsv($output, array('Error: ' . $e->getMessage()));
+error_log('Error en inventory/generate_report.php: ' . $e->getMessage());
+        fputcsv($output, array('Error: Error del servidor.'));
 }
 fclose($output);
 exit;

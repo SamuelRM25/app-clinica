@@ -43,7 +43,8 @@ try {
 
     $page_title = "Catálogo de Pruebas - Laboratorio";
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/catalogo_pruebas.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

@@ -42,6 +42,7 @@ try {
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Error en php/dashboard/api/save_xray_charge.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }
 ?>

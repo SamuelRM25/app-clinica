@@ -1,5 +1,10 @@
 <?php
-// Configuración de la base de datos
+session_start();
+
+if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {
+    die("Acceso no autorizado.");
+}
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
@@ -57,6 +62,7 @@ try {
     exit;
 
 } catch (Exception $e) {
-    die("Error al exportar: " . $e->getMessage());
+    error_log("export_database error: " . $e->getMessage());
+    die("Error al exportar la base de datos.");
 }
 ?>

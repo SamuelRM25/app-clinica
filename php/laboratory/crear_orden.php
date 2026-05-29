@@ -43,7 +43,8 @@ try {
 
     $page_title = "Nueva Orden de Laboratorio";
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/crear_orden.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

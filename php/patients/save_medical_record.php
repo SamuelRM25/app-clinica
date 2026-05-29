@@ -228,7 +228,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     } catch (Exception $e) {
-        $_SESSION['message'] = "Error: " . $e->getMessage();
+        error_log('Error en patients/save_medical_record.php: ' . $e->getMessage());
+        $_SESSION['message'] = "Error: " . 'Error del servidor.';
         $_SESSION['message_type'] = "danger";
     }
 

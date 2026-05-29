@@ -1,4 +1,13 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+ini_set('session.gc_maxlifetime', 28800);
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -68,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['idUsuario'];
             $_SESSION['nombre'] = $user['nombre'];
             $_SESSION['id_hospital'] = $user['hospital_real_id'];
+            $_SESSION['login_time'] = time();
+            $_SESSION['last_activity'] = time();
 
             // Cargar configuración del hospital
             require_once '../../includes/multitenant.php';

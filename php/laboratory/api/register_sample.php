@@ -63,6 +63,14 @@ try {
         $allowedExts = ['pdf', 'jpg', 'jpeg', 'png'];
 
         if (in_array($extension, $allowedExts)) {
+            // Validate MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $_FILES['archivo_orden']['tmp_name']);
+            finfo_close($finfo);
+            $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+            if (!in_array($mime, $allowedMimes)) {
+                throw new Exception("Tipo de archivo no permitido.");
+            }
             if (move_uploaded_file($_FILES['archivo_orden']['tmp_name'], $targetPath)) {
                 $dbPath = '../../uploads/results/' . $newFileName;
                 $stmt_file = $conn->prepare("UPDATE ordenes_laboratorio SET archivo_resultados = ? WHERE id_orden = ? AND id_hospital = ?");
@@ -89,6 +97,6 @@ try {
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+'message' => 'Error: Error del servidor.'
     ]);
 }

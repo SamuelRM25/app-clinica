@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['status' => 'success', 'message' => 'Paciente registrado correctamente']);
 
     } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        error_log('Error en appointments/save_patient_ajax.php: ' . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
     }
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Método no permitido']);

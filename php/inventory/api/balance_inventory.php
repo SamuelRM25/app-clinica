@@ -99,5 +99,6 @@ try {
         $conn->rollBack();
     }
     error_log("Error balancing inventory: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("inventory/api/balance_inventory.php error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
 }

@@ -71,5 +71,6 @@ try {
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     error_log("Error saving physical count: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("inventory/api/save_physical_count.php error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
 }

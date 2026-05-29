@@ -53,5 +53,6 @@ try {
     echo json_encode(['status' => 'success', 'message' => 'Solicitud enviada correctamente. El administrador la revisará pronto.']);
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
+    error_log('Error en settings/api/request_modules.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error interno: ' . 'Error del servidor.']);
 }

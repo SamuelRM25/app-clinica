@@ -396,7 +396,8 @@ try {
 
     // Mostrar mensaje amigable al usuario
     $error_message = "Error al conectar con la base de datos. Por favor, contacte al administrador.";
-    if ($_SESSION['tipoUsuario'] === 'admin') {
+error_log('Error en reports/index.php: ' . $e->getMessage());
+        if ($_SESSION['tipoUsuario'] === 'admin') {
         $error_message .= "<br><small>Detalles técnicos: " . htmlspecialchars($e->getMessage()) . "</small>";
     }
     die($error_message);

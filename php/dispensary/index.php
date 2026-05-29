@@ -86,7 +86,8 @@ try {
     $page_title = "Ventas - Centro Médico RS";
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en dispensary/index.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 
 

@@ -27,7 +27,8 @@ try {
     $stmt->execute([$id_hospital]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("php/inventory/export_inventory_pdf.php error: " . $e->getMessage());
+        die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

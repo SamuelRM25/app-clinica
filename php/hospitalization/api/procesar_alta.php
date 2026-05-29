@@ -90,5 +90,6 @@ try {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        error_log("hospitalization/api/procesar_alta.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

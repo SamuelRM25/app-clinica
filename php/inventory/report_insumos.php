@@ -48,7 +48,8 @@ try {
     }
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("php/inventory/report_insumos.php error: " . $e->getMessage());
+        die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

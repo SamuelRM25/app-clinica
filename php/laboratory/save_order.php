@@ -175,5 +175,6 @@ try {
 } catch (Exception $e) {
     if (isset($conn))
         $conn->rollBack();
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en laboratory/save_order.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

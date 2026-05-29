@@ -98,6 +98,7 @@ try {
     exit;
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en reports/export_transfers.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>

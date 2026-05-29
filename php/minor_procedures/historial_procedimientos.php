@@ -78,7 +78,8 @@ try {
     $total_paginas = 1;
     $today_revenue = 0;
     $week_revenue = 0;
-    $error_message = "Error al cargar el historial: " . $e->getMessage();
+error_log('Error en historial_procedimientos: ' . $e->getMessage());
+    $error_message = "Error al cargar el historial: Error del servidor.";
 }
 ?>
 <!DOCTYPE html>

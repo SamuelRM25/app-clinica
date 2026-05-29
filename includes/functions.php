@@ -76,6 +76,25 @@ function verify_session()
         header("Location: ../../index.php");
         exit();
     }
+
+    // Session idle timeout: 2 hours (7200 seconds)
+    $idle_timeout = 7200;
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $idle_timeout)) {
+        session_unset();
+        session_destroy();
+        header("Location: ../../index.php?error=session_expired");
+        exit();
+    }
+    $_SESSION['last_activity'] = time();
+
+    // Absolute session lifetime: 8 hours (28800 seconds)
+    $session_lifetime = 28800;
+    if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time'] > $session_lifetime)) {
+        session_unset();
+        session_destroy();
+        header("Location: ../../index.php?error=session_expired");
+        exit();
+    }
 }
 
 function time_ago($datetime, $full = false)
@@ -86,29 +105,30 @@ function time_ago($datetime, $full = false)
     $diff = $now->diff($ago);
 
     $weeks = floor($diff->d / 7);
-    $diff->d += $weeks * 7; // Add weeks back to days since DateInterval doesn't have a weeks property
-    $diff->d -= $weeks * 7;
+    $diff->d = $diff->d % 7;
 
     $string = array(
         'y' => 'año',
         'm' => 'mes',
-        'w' => 'semana',
         'd' => 'día',
         'h' => 'hora',
         'i' => 'minuto',
         's' => 'segundo',
     );
-    foreach ($string as $k => &$v) {
+
+    $parts = [];
+    if ($weeks > 0) {
+        $parts[] = $weeks . ' semana' . ($weeks > 1 ? 's' : '');
+    }
+    foreach ($string as $k => $v) {
         if ($diff->$k) {
-            $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '');
-        } else {
-            unset($string[$k]);
+            $parts[] = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '');
         }
     }
 
     if (!$full)
-        $string = array_slice($string, 0, 1);
-    return $string ? 'hace ' . implode(', ', $string) : 'justo ahora';
+        $parts = array_slice($parts, 0, 1);
+    return $parts ? 'hace ' . implode(', ', $parts) : 'justo ahora';
 }
 
 // ==========================================
@@ -133,13 +153,32 @@ function output_keep_alive_script()
 {
     echo "
     <script>
+    // CSRF token global para fetch requests
+    window.CSRF_TOKEN = '" . csrf_token() . "';
+
+    // Intercepta fetch para agregar CSRF automáticamente
+    (function() {
+        const origFetch = window.fetch;
+        window.fetch = function(input, init) {
+            init = init || {};
+            if (!init.method || init.method.toUpperCase() !== 'GET') {
+                init.headers = init.headers || {};
+                if (init.headers instanceof Headers) {
+                    if (!init.headers.has('X-CSRF-Token')) {
+                        init.headers.set('X-CSRF-Token', window.CSRF_TOKEN);
+                    }
+                } else {
+                    init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+                }
+            }
+            return origFetch.call(this, input, init);
+        };
+    })();
+
     document.addEventListener('DOMContentLoaded', function() {
         // Keep-alive
         setInterval(function() {
-            fetch('?keep_alive=1')
-                .then(response => response.json())
-                .then(data => console.log('Session refreshed:', data))
-                .catch(e => console.error('Keep-alive error:', e));
+            fetch('?keep_alive=1').catch(function() {});
         }, 300000);
 
         // Auto-disable submit buttons to prevent double-clicks

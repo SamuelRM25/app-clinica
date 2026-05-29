@@ -51,7 +51,8 @@ try {
 
     $page_title = "Reporte Diario - Laboratorio";
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/reportes_diarios.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

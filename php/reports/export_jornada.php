@@ -166,7 +166,8 @@ try {
     $page_title = "Reporte de Jornada - $date - Centro Médico RS";
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en reports/export_jornada.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

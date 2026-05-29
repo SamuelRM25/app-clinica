@@ -49,6 +49,7 @@ try {
     echo json_encode(['success' => true, 'message' => 'Archivo eliminado correctamente']);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log('Error en laboratory/api/delete_result_file.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error: ' . 'Error del servidor.']);
 }
 ?>

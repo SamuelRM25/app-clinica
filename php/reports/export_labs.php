@@ -134,6 +134,7 @@ try {
     }
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en reports/export_labs.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>

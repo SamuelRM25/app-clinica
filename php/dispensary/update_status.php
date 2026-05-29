@@ -69,5 +69,6 @@ try {
     // Rollback transaction on error
     $conn->rollBack();
 
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en dispensary/update_status.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

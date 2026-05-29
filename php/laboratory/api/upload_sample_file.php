@@ -69,6 +69,15 @@ try {
                 continue; // Skip invalid files
             }
 
+            // Validate MIME type via finfo
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $fileTmpPath);
+            finfo_close($finfo);
+            $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+            if (!in_array($mimeType, $allowedMimes)) {
+                continue; // Skip invalid file types
+            }
+
             // Compression logic for images
             if (in_array($fileExtension, ['jpg', 'jpeg', 'png'])) {
                 // Compress to a temporary file
@@ -119,6 +128,7 @@ try {
 
 } catch (Exception $e) {
     if (isset($conn)) $conn->rollBack();
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log('Error en laboratory/api/upload_sample_file.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error: ' . 'Error del servidor.']);
 }
 ?>

@@ -56,7 +56,8 @@ if (isset($_GET['shift_report']) && $_GET['shift_report'] == 1 && isset($_GET['s
                 echo json_encode(['status' => 'error', 'message' => 'Venta no encontrada']);
             }
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log('Error en sales/get_sale_details.php: ' . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
         }
         exit;
     }
@@ -104,7 +105,8 @@ function generate_shift_report($shift_date)
         generate_html_report($ventas, $start_date, $end_date, $total_jornada);
 
     } catch (Exception $e) {
-        die("Error generando reporte: " . $e->getMessage());
+        error_log('Error en sales/get_sale_details.php: ' . $e->getMessage());
+        die("Error generando reporte: " . 'Error del servidor.');
     }
 }
 

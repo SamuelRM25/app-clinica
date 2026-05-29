@@ -93,6 +93,7 @@ try {
         $conn->rollBack();
     }
     error_log("Error linking hospital medication: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("inventory/api/link_hospital_medication.php error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
 }
 ?>

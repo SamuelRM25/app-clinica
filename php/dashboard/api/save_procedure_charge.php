@@ -72,5 +72,6 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en php/dashboard/api/save_procedure_charge.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

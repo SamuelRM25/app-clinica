@@ -152,7 +152,8 @@ try {
             $imported_params++;
 
         } catch (Exception $e) {
-            $errors[] = "Row error: " . $e->getMessage() . " | Data: " . implode(', ', $row);
+error_log('Error en import_lims_data.php row: ' . $e->getMessage());
+            $errors[] = "Row error: Error del servidor.";
         }
     }
 
@@ -180,7 +181,7 @@ try {
 
     echo json_encode([
         'status' => 'error',
-        'message' => $e->getMessage(),
+'message' => 'Error del servidor.',
         'errors' => isset($errors) ? $errors : []
     ]);
 }

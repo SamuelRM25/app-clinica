@@ -53,7 +53,8 @@ try {
     $archivo_orden = $stmt_archivo->fetch(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/imprimir_resultados.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

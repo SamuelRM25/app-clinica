@@ -72,6 +72,7 @@ try {
 } catch (Exception $e) {
     if (isset($conn))
         $conn->rollBack();
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        error_log("hospitalization/api/delete_charge.php error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }
 ?>

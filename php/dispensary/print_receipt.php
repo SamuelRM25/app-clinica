@@ -77,7 +77,8 @@ try {
     $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico RS";
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en dispensary/print_receipt.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 
 // Formatear fecha

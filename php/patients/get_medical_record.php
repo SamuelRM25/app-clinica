@@ -29,5 +29,6 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Registro no encontrado']);
     }
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log('Error en patients/get_medical_record.php: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
 }

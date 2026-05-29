@@ -98,7 +98,8 @@ try {
     $ventas_hoy = 0;
     $total_mes = 0;
     $pendientes = 0;
-    $error_message = "Error al cargar ventas: " . $e->getMessage();
+error_log('Error en sales/index.php: ' . $e->getMessage());
+        $error_message = "Error al cargar ventas: Error del servidor.";
 }
 ?>
 <!DOCTYPE html>

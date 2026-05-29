@@ -143,7 +143,8 @@ try {
     $pacientes_hospitalizados = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log("php/hospitalization/index.php error: " . $e->getMessage());
+        die("Error: " . 'Error del servidor.');
 }
 
 $page_title = "Gestión de Hospitalización - Centro Médico RS";

@@ -61,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Error al actualizar la cita");
         }
     } catch (Exception $e) {
-        $error_message = $e->getMessage();
+error_log('Error en appointments/edit_appointment.php: ' . $e->getMessage());
+        $error_message = 'Error del servidor.';
     }
 }
 

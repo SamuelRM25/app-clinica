@@ -50,5 +50,6 @@ try {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Error en php/dashboard/api/update_widget_visibility.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }

@@ -47,6 +47,7 @@ try {
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    error_log('Error en dashboard/save_lab_charge.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }
 ?>

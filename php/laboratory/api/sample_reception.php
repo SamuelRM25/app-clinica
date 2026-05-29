@@ -42,5 +42,6 @@ try {
     header("Location: ../procesar_orden.php?id=" . $id_orden);
     
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/api/sample_reception.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }

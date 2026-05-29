@@ -60,6 +60,7 @@ try {
 
 } catch (Exception $e) {
     http_response_code(500);
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/api/get_file.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>

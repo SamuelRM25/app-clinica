@@ -6,7 +6,14 @@ session_start();
 
 require_once __DIR__ . '/includes/functions.php';
 define('ADMIN_USER', getenv('ADMIN_USER') ?: 'superadmin');
-define('ADMIN_PASS_HASH', getenv('ADMIN_PASS_HASH') ?: password_hash('root', PASSWORD_DEFAULT));
+
+$adminPassHash = getenv('ADMIN_PASS_HASH');
+if (!$adminPassHash) {
+    // Sin variable de entorno, denegar acceso — seguridad por defecto
+    define('ADMIN_PASS_HASH', false);
+} else {
+    define('ADMIN_PASS_HASH', $adminPassHash);
+}
 
 csrf_token(); // Ensure CSRF token exists in session
 
@@ -14,15 +21,11 @@ csrf_token(); // Ensure CSRF token exists in session
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action'])) {
     verify_csrf_token();
     $valid = false;
-    if ($_POST['admin_user'] === ADMIN_USER) {
+    if (!ADMIN_PASS_HASH) {
+        $login_error = 'ADMIN_PASS_HASH no configurado en variables de entorno.';
+    } elseif ($_POST['admin_user'] === ADMIN_USER) {
         if (password_verify($_POST['admin_pass'], ADMIN_PASS_HASH)) {
             $valid = true;
-        } elseif ($_POST['admin_pass'] === 'root') {
-            // Migración: actualizar hash
-            $newHash = password_hash('root', PASSWORD_DEFAULT);
-            // Reemplazar en el código en memoria para futuras comprobaciones
-            $valid = true;
-            error_log("ADMIN: Migrated default password to hash");
         }
     }
     if ($valid) {

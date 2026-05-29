@@ -2,6 +2,7 @@
 // settings/api/save_user.php
 session_start();
 require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
 
 header('Content-Type: application/json');
 
@@ -9,6 +10,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {
     echo json_encode(['success' => false, 'message' => 'Acceso no autorizado']);
     exit;
 }
+
+verify_csrf_token();
 
 try {
     $database = new Database();
@@ -62,6 +65,7 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    error_log("save_user error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error al guardar el usuario.']);
 }
 ?>

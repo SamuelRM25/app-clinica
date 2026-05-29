@@ -68,7 +68,8 @@ try {
     $page_title = "Ver Orden #" . $orden['numero_orden'];
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    error_log('Error en laboratory/ver_orden.php: ' . $e->getMessage());
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>

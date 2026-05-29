@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         echo json_encode([
             'status' => 'error',
-            'message' => "Error: " . $e->getMessage()
+'message' => "Error: Error del servidor."
         ]);
     }
 }
