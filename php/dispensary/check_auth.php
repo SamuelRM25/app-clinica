@@ -46,9 +46,9 @@ try {
         }
     }
 
-    // Fallback for hardcoded legacy code if desired, OR just enforce admin user password.
-    // Let's also allow a specific "Master Code" if defined in config, or the hardcoded one securely check here.
-    if (!$authorized && $password === 'cmhsmedical') {
+    // Allow master auth code from environment variable (defined in .env)
+    $auth_code = getenv('AUTH_CODE');
+    if (!$authorized && $auth_code && $password === $auth_code) {
         $authorized = true;
     }
 

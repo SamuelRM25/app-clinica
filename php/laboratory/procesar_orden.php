@@ -231,6 +231,7 @@ try {
 
             <!-- Formulario para ingresar resultados -->
             <form id="resultsForm" action="api/save_results.php" method="POST" enctype="multipart/form-data">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="id_orden" value="<?php echo $id_orden; ?>">
 
                 <!-- Visualizador de Resultados (Global para la Orden) -->

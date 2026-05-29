@@ -165,6 +165,7 @@ if (!$patientData || !$existingPatientId) {
 
     <!-- Formulario oculto para enviar datos -->
     <form id="duplicateForm" action="save_patient.php" method="post" style="display: none;">
+        <?php echo csrf_field(); ?>
         <input type="hidden" name="confirm_action" id="confirmAction" value="">
         <input type="hidden" name="existing_patient_id" value="<?php echo $existingPatientId; ?>">
 

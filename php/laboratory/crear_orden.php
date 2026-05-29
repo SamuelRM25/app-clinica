@@ -136,6 +136,7 @@ try {
 
             <!-- Formulario de orden -->
             <form id="orderForm" action="api/create_order.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <div class="order-form-container">
                     <!-- Panel izquierdo: Información y selección de pruebas -->
                     <div>

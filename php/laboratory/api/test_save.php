@@ -1,5 +1,8 @@
 <?php
 // test_save.php - Diagnostic script to test save_test.php
+// DISABLED IN PRODUCTION - kept for reference only
+http_response_code(403);
+die('Script deshabilitado en producción.');
 session_start();
 
 // Simulate admin session
