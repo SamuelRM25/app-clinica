@@ -12,6 +12,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('laboratory');
 
@@ -223,6 +224,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Laboratorio'],
+            ]); ?>
             <!-- Banner de bienvenida -->
             <div class="welcome-banner animate-in">
                 <h1>Laboratorio Clínico</h1>

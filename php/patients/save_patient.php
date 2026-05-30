@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $apellido = $_POST['apellido'];
         $fecha_nacimiento = $_POST['fecha_nacimiento'];
         $genero = $_POST['genero'];
+        $dpi = $_POST['dpi'] ?? null;
         $direccion = $_POST['direccion'] ?? null;
         $telefono = $_POST['telefono'] ?? null;
         $correo = $_POST['correo'] ?? null;
@@ -68,12 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     apellido = ?,
                     fecha_nacimiento = ?,
                     genero = ?,
+                    dpi = ?,
                     direccion = ?,
                     telefono = ?,
                     correo = ?
                 WHERE id_paciente = ? AND id_hospital = ?
             ");
-            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo, $id_paciente, $id_hospital]);
+            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $dpi, $direccion, $telefono, $correo, $id_paciente, $id_hospital]);
 
             $_SESSION['message'] = "Paciente actualizado correctamente";
             $_SESSION['message_type'] = "success";
@@ -87,13 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     apellido, 
                     fecha_nacimiento, 
                     genero, 
+                    dpi, 
                     direccion, 
                     telefono, 
                     correo,
                     id_hospital
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $direccion, $telefono, $correo, $id_hospital]);
+            $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $dpi, $direccion, $telefono, $correo, $id_hospital]);
             $id_paciente = $conn->lastInsertId();
 
             $_SESSION['message'] = "Paciente agregado correctamente";

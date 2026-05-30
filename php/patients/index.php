@@ -556,6 +556,7 @@ try {
                                         data-phone="<?php echo htmlspecialchars(strtolower($patient['telefono'] ?? '')); ?>"
                                         data-email="<?php echo htmlspecialchars(strtolower($patient['correo'] ?? '')); ?>"
                                         data-direction="<?php echo htmlspecialchars($patient['direccion'] ?? ''); ?>"
+                                        data-dpi="<?php echo htmlspecialchars($patient['dpi'] ?? ''); ?>"
                                         data-has-appointments="<?php echo $has_appointments ? 'true' : 'false'; ?>"
                                         data-has-history="<?php echo $has_history ? 'true' : 'false'; ?>"
                                         data-active-today="<?php echo $active_today ? 'true' : 'false'; ?>"
@@ -586,6 +587,7 @@ try {
                                                         }
                                                         ?>
                                                         • <?php echo htmlspecialchars($patient['genero']); ?>
+                                                        <?php if (!empty($patient['dpi'])): ?> • <i class="bi bi-card-text"></i> <?php echo htmlspecialchars($patient['dpi']); ?><?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -745,6 +747,15 @@ try {
                                 <option value="Masculino">Masculino</option>
                                 <option value="Femenino">Femenino</option>
                             </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dpi" class="form-label">DPI</label>
+                            <div class="input-group">
+                                <i class="bi bi-card-text input-icon"></i>
+                                <input type="text" id="dpi" name="dpi" class="form-input"
+                                    placeholder="Ej: 1234567890123" maxlength="15">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -1146,6 +1157,7 @@ try {
                 document.getElementById('fecha_nacimiento').value = p.birth;
                 document.getElementById('genero').value = p.gender;
                 document.getElementById('telefono').value = p.phone;
+                document.getElementById('dpi').value = p.dpi;
                 document.getElementById('correo').value = p.email;
                 document.getElementById('direccion').value = p.direction;
 
