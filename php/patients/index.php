@@ -128,6 +128,7 @@ try {
 
     <!-- CSS Crítico (mismo que el dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
 
     <style>
         /* ===== SEARCH & FILTER BAR ===== */
@@ -572,7 +573,7 @@ try {
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div>
-                                                            <div class="fw-bold text-dark">
+                                                            <div class="fw-bold" style="color: var(--color-text);">
                                                                 <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>
                                                             </div>
                                                             <div class="small text-muted">

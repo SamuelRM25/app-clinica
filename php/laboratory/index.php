@@ -129,10 +129,13 @@ try {
     $page_title = "Laboratorio - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
-    // Manejo de errores
     error_log("Error en dashboard de laboratorio: " . $e->getMessage());
     error_log('Error en laboratory/index.php: ' . $e->getMessage());
-    die("Error al cargar el dashboard de laboratorio: " . 'Error del servidor.');
+    $error_msg = "Error al cargar el dashboard de laboratorio. Por favor, contacte al administrador.";
+    if (isset($_SESSION['tipoUsuario']) && $_SESSION['tipoUsuario'] === 'admin') {
+        $error_msg .= "<br><small>Detalles técnicos: " . htmlspecialchars($e->getMessage()) . "</small>";
+    }
+    die($error_msg);
 }
 ?>
 <!DOCTYPE html>

@@ -329,437 +329,290 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'logo';
     <link rel="stylesheet" href="../../assets/css/style.css">
     <!-- Responsive fixes for mobile -->
     <style>
-        @media (max-width: 767px) {
-            .dashboard-header {
-                position: relative;
-                padding-bottom: 0.5rem;
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        html {
+            overflow-x: hidden;
+        }
+        body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        .dashboard-container {
+            max-width: 100%;
+        }
+        .main-content {
+            max-width: 100%;
+        }
+        .mobile-toggle {
+            display: none;
+        }
+        @media (max-width: 991px) {
+            .mobile-toggle {
+                display: block;
             }
-
-            .header-content {
-                flex-wrap: wrap;
+            .sidebar-toggle {
+                display: none;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .dashboard-container {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 0.75rem;
+                max-width: 100vw;
+                overflow-x: hidden;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            .alerts-grid {
+                grid-template-columns: 1fr;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
                 gap: 0.5rem;
-                padding: 0.5rem !important;
             }
-
-            .header-controls {
-                gap: 0.4rem;
+            .action-btn {
+                width: 100%;
+                justify-content: center;
             }
-
+            .header-content {
+                padding: 0.5rem 0.75rem;
+            }
             .header-user .header-details {
                 display: none;
             }
-
             .header-avatar {
                 width: 32px;
                 height: 32px;
                 font-size: 0.85rem;
             }
-
             .brand-logo {
                 height: 28px;
             }
-
             .shift-cut-btn-container {
                 position: static !important;
                 margin-top: 0.5rem;
                 text-align: center;
             }
-
             .shift-cut-btn-container .btn {
                 width: 100%;
+                max-width: 100%;
                 font-size: 0.85rem;
                 padding: 0.5rem 1rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
-
-            .stats-grid {
-                gap: 0.75rem;
+            .appointments-table {
+                min-width: 400px;
             }
-
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+                overflow-x: auto;
+            }
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+            .modal-dialog.modal-xl {
+                margin: 0.25rem;
+            }
+            .modal-dialog.modal-xl .lab-summary-panel {
+                min-width: 100% !important;
+                border-left: none !important;
+                border-top: 1px solid var(--color-border);
+            }
+            .modal-dialog.modal-xl .d-flex.h-100 {
+                flex-direction: column !important;
+                min-height: auto !important;
+            }
+            .btn-group.w-100 {
+                flex-wrap: wrap;
+            }
+            .btn-group.w-100 .btn {
+                font-size: 0.75rem;
+                padding: 0.35rem 0.5rem;
+            }
+            .btn-group.w-100 .btn i {
+                display: none;
+            }
+            .row.g-3.p-3,
+            .row.g-3.mb-4.p-3 {
+                padding: 0.5rem !important;
+                margin-left: 0;
+                margin-right: 0;
+            }
+            .row.g-3.p-3 > [class*="col-"],
+            .row.g-3.mb-4.p-3 > [class*="col-"] {
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+            }
             .stat-card {
                 padding: 0.75rem;
             }
-
             .stat-value {
                 font-size: 1.5rem;
             }
-
             .stat-icon {
                 width: 36px;
                 height: 36px;
                 font-size: 1.15rem;
             }
-
             .appointments-section,
             .billing-section {
                 padding: 1rem;
             }
-
             .appointments-table th,
             .appointments-table td {
                 padding: 0.5rem;
                 font-size: 0.8rem;
             }
-
-            .patient-cell {
-                flex-direction: row;
-                gap: 0.5rem;
-            }
-
             .patient-avatar {
                 width: 30px;
                 height: 30px;
                 font-size: 0.8rem;
             }
-
-            .appointments-table thead th:nth-child(3),
-            .appointments-table td:nth-child(3) {
-                display: none;
-            }
-
-            .alert-card {
-                padding: 0.75rem;
-            }
-
-            .alert-title {
-                font-size: 0.95rem;
-            }
-
-            .alert-item {
-                padding: 0.5rem;
-            }
-
-            .alerts-grid {
-                gap: 0.75rem;
-            }
-
-            .section-header .badge {
-                font-size: 0.7rem;
-                padding: 0.3rem 0.6rem;
-            }
-
             #greeting {
                 font-size: 1.1rem !important;
             }
-
-            .greeting-meta .mx-2 {
-                display: none;
-            }
-
             .greeting-meta {
                 font-size: 0.75rem;
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0.25rem;
             }
-
-            .btn-group.w-100 {
-                flex-wrap: wrap;
+            .greeting-meta .mx-2 {
+                margin-left: 0.25rem !important;
+                margin-right: 0.25rem !important;
             }
-
-            .btn-group.w-100 .btn {
-                flex: 1 1 auto;
-                font-size: 0.75rem;
-                padding: 0.35rem 0.4rem;
-            }
-
-            .btn-group.w-100 .btn i {
-                display: none;
-            }
-
-            .modal-dialog.modal-xl .lab-summary-panel {
-                min-width: 100% !important;
-                border-left: none !important;
-                border-top: 1px solid var(--color-border);
-                padding: 0.75rem !important;
-            }
-
-            .modal-body.p-4 {
-                padding: 0.75rem !important;
-            }
-
-            .modal-header {
-                padding: 0.75rem;
-            }
-
-            .modal-footer {
-                padding: 0.75rem;
-            }
-
-            .modal-dialog {
-                margin: 0.5rem;
-            }
-
-            .d-flex.gap-2.align-items-center {
-                flex-wrap: wrap;
-            }
-
-            .lab-summary-panel .btn-group .btn {
-                font-size: 0.7rem;
-                padding: 0.3rem 0.4rem;
-            }
-
-            .lab-summary-panel .btn-primary.w-100 {
-                font-size: 0.85rem;
-                padding: 0.6rem !important;
-            }
-
-            #shiftContent .table-responsive table {
-                min-width: 500px;
-            }
-
-            .table-responsive {
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .row.g-3.p-3>.col-md-4,
-            .row.g-3.p-3>.col-md-6 {
-                padding-left: 0.25rem;
-                padding-right: 0.25rem;
-            }
-
-            .row.g-3.p-3 {
-                padding: 0.5rem !important;
-                margin: 0;
-            }
-
-            .section-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.5rem;
-            }
-
             .section-title {
                 font-size: 1rem;
             }
-
-            .section-title-icon {
-                font-size: 1.2rem;
+            .section-header .badge {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+                align-self: flex-start;
             }
-
-            .action-btn {
-                width: 100%;
-                justify-content: center;
-                font-size: 0.85rem;
-                padding: 0.5rem 1rem !important;
+            .alert-card {
+                padding: 0.75rem;
             }
-
+            .alert-item {
+                padding: 0.5rem;
+            }
             .stat-card.border-start {
                 padding: 0.75rem;
             }
-
             .stat-card.border-start .stat-value {
                 font-size: 1rem;
             }
-
-            .stat-card.border-start .stat-title {
-                font-size: 0.8rem;
+            .card.p-2,
+            .card.card-body.p-2 {
+                padding: 0.5rem !important;
             }
-
-            .test-card-v2 .fw-semibold {
-                font-size: 0.75rem;
-            }
-
-            .test-card-v2 .text-success {
-                font-size: 0.75rem;
-            }
-
-            .accordion-button {
-                font-size: 0.85rem;
-                padding: 0.6rem;
-            }
-
-            .accordion-body.p-2 .row.g-2 {
-                margin: 0;
-            }
-
-            .accordion-body.p-2 .row.g-2>.col-md-6 {
-                padding: 0.15rem;
-            }
-
-            .test-card-v2 {
-                padding: 0.4rem !important;
-            }
-
-            .test-card-v2 .check-indicator .form-check-input {
-                width: 14px;
-                height: 14px;
-            }
-
-            .modal-header .modal-title .d-block.fw-bold {
-                font-size: 0.9rem;
-            }
-
-            .modal-header .modal-title small {
-                font-size: 0.7rem;
-            }
-
-            .input-group-lg .form-control {
-                font-size: 0.9rem;
-                padding: 0.5rem;
-            }
-
-            .input-group-lg .input-group-text {
-                font-size: 0.9rem;
-                padding: 0.5rem;
-            }
-
-            .form-label.fw-bold.small.text-uppercase.text-muted {
-                font-size: 0.65rem !important;
-            }
-
             .form-control,
             .form-select {
                 font-size: 0.8rem;
                 padding: 0.45rem 0.6rem;
             }
-
-            .row.g-3.mb-4.p-3 {
-                padding: 0.75rem !important;
-                margin: 0 -0.25rem;
-            }
-
-            .row.g-3.mb-4.p-3>.col-md-6,
-            .row.g-3.mb-4.p-3>.col-md-12 {
-                padding-left: 0.25rem;
-                padding-right: 0.25rem;
-            }
-
-            #widget-patients .patient-avatar {
-                width: 30px;
-                height: 30px;
+            .form-label {
                 font-size: 0.75rem;
             }
-
+            .modal-body.p-4 {
+                padding: 0.75rem !important;
+            }
+            .modal-header {
+                padding: 0.75rem;
+            }
+            .modal-footer {
+                padding: 0.75rem;
+            }
             .empty-state {
                 padding: 1.5rem 0.75rem;
             }
-
-            .empty-icon {
-                font-size: 2.5rem;
+            .accordion-button {
+                font-size: 0.85rem;
+                padding: 0.6rem;
             }
-
-            .modal-dialog.modal-lg .modal-content .modal-body .d-flex.h-100 {
-                flex-direction: column !important;
-                min-height: auto !important;
+            .test-card-v2 {
+                padding: 0.4rem !important;
             }
-
-            .modal-dialog.modal-lg .modal-content .modal-body .d-flex.h-100>div:first-child {
-                padding: 0.5rem !important;
+            .test-card-v2 .fw-semibold {
+                font-size: 0.75rem;
             }
-
-            .sticky-top.bg-white.py-2 {
-                position: static;
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            input[type="text"].form-control,
+            input[type="number"].form-control,
+            input[type="date"].form-control,
+            select.form-select {
+                max-width: 100%;
+            }
+            .table {
+                max-width: 100%;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
             }
         }
-
-        @media (max-width: 480px) {
-            body {
-                overflow-x: hidden;
-            }
-
+        @media (max-width: 767px) {
             .stats-grid {
-                gap: 0.5rem;
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
             }
-
             .stat-card {
+                padding: 0.75rem;
+            }
+            .stat-value {
+                font-size: 1.35rem;
+            }
+            .section-title {
+                font-size: 0.95rem;
+            }
+            .badge.p-2.fs-6 {
+                font-size: 0.8rem !important;
+                padding: 0.25rem 0.5rem !important;
+            }
+            .main-content {
                 padding: 0.5rem;
             }
-
-            .stat-value {
-                font-size: 1.2rem;
-            }
-
-            .stat-icon {
-                width: 30px;
-                height: 30px;
-                font-size: 1rem;
-            }
-
-            .stat-title {
-                font-size: 0.7rem;
-            }
-
-            .appointments-table th,
-            .appointments-table td {
-                padding: 0.3rem 0.4rem;
-                font-size: 0.7rem;
-            }
-
-            .patient-avatar {
-                width: 26px;
-                height: 26px;
-                font-size: 0.7rem;
-            }
-
-            .appointments-table thead th:nth-child(3),
-            .appointments-table td:nth-child(3) {
-                display: none;
-            }
-
-            .theme-btn {
-                width: 34px;
-                height: 34px;
-            }
-
-            .header-controls {
-                gap: 0.3rem;
-            }
-
-            .logout-btn span {
-                display: none;
-            }
-
-            .logout-btn {
-                padding: 0.3rem;
-            }
-
-            .action-btn {
-                font-size: 0.8rem;
-                padding: 0.4rem 0.75rem !important;
-            }
-
             #greeting {
                 font-size: 1rem !important;
             }
-
-            .badge.p-2.fs-6 {
-                font-size: 0.8rem !important;
-                padding: 0.3rem 0.6rem !important;
+            .appointments-table th,
+            .appointments-table td {
+                padding: 0.4rem;
+                font-size: 0.75rem;
             }
-
-            .section-title {
-                font-size: 0.85rem;
-            }
-
-            .alert-card,
-            .appointments-section {
-                padding: 0.5rem;
-            }
-
-            .modal-header .modal-title .d-block.fw-bold {
-                font-size: 0.85rem;
-            }
-
-            .modal-header .icon-shape {
-                width: 32px;
-                height: 32px;
-            }
-
-            .modal-header .icon-shape i {
-                font-size: 1rem;
-            }
-
-            .modal-header .modal-title .me-3 {
-                margin-right: 0.5rem !important;
-            }
-
-            .btn-group.w-100 .btn {
-                font-size: 0.7rem;
-                padding: 0.3rem 0.35rem;
-            }
-
-            .btn-group.w-100 .btn i {
+            .logout-btn span {
                 display: none;
+            }
+            .logout-btn {
+                padding: 0.4rem;
+            }
+            .theme-btn {
+                width: 36px;
+                height: 36px;
+            }
+            .brand-container {
+                flex-shrink: 0;
+            }
+            .header-controls {
+                gap: 0.3rem;
             }
         }
     </style>

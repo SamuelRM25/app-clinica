@@ -658,7 +658,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
                                                             <?php echo strtoupper(substr($pac['nombre_paciente'], 0, 1)); ?>
                                                         </div>
                                                         <div>
-                                                            <div class="fw-bold text-dark">
+                                                            <div class="fw-bold" style="color: var(--color-text);">
                                                                 <?php echo htmlspecialchars($pac['nombre_paciente'] . ' ' . $pac['apellido_paciente']); ?>
                                                             </div>
                                                             <small class="text-muted">
@@ -670,7 +670,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <div class="badge bg-light text-dark border p-2">
+                                                    <div class="badge" style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem;">
                                                         <i class="bi bi-door-open me-1"></i> Hab.
                                                         <?php echo htmlspecialchars($pac['numero_habitacion']); ?>
                                                         <span class="mx-1">|</span>

@@ -128,7 +128,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-
+    <?php include '../../includes/theme_head.php'; ?>
 </head>
 
 <body>

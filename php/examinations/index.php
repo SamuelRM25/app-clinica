@@ -120,6 +120,7 @@ try {
 
     <!-- CSS COMPLETAMENTE IDÉNTICO AL DASHBOARD (NO CAMBIAR NADA) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <?php include '../../includes/theme_head.php'; ?>
 </head>
 
 <body>
@@ -296,9 +297,6 @@ try {
                         </button>
                     </div>
                 </div>
-                Actualizar
-                </button>
-    </div>
 
     <?php if (count($recent_exams) > 0): ?>
             <div class="table-responsive">
