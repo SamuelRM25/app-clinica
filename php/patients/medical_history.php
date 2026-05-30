@@ -116,11 +116,7 @@ try {
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
 
     <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap 5 CSS -->
@@ -368,8 +364,6 @@ try {
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
 
-
-
     <!-- Contenedor Principal -->
     <div class="dashboard-container">
         <!-- Header Superior -->
@@ -382,7 +376,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <!-- Controles -->
@@ -417,7 +411,6 @@ try {
 
         <!-- Scripts adicionales para Mapa Corporal -->
         <script src="../../assets/js/human_body_map.js"></script>
-
 
         <!-- Contenido Principal -->
         <main class="main-content">

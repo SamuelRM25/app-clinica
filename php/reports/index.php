@@ -18,8 +18,6 @@ require_once '../../includes/breadcrumbs.php';
 
 check_module_access('reports');
 
-
-
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -329,7 +327,6 @@ try {
         $grouped_labs[$mes_nombre]['dias'][$dia_str]['pacientes'][$paciente_nombre]['labs'][] = $lab;
     }
 
-
     // ============ REPORTE DE TRASLADOS (Acceso Restringido) ============
     $can_view_transfers = in_array($user_id, [1, 9, 10]);
     $transfers_data = [];
@@ -388,7 +385,6 @@ try {
         }
     }
 
-
 } catch (PDOException $e) {
     // Error específico de base de datos
     error_log("Error DB en módulo de reportes: " . $e->getMessage());
@@ -421,11 +417,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- SweetAlert2 -->
@@ -776,7 +768,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             <div class="header-content">
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <!-- Controles -->

@@ -109,9 +109,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
+<link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
 

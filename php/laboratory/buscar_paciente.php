@@ -5,8 +5,6 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
-
 verify_session();
 
 $page_title = "Buscar Paciente - Laboratorio";
@@ -20,8 +18,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
     <style>
@@ -81,7 +78,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
+                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
                 <div class="header-controls">
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn">

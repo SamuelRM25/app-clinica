@@ -36,7 +36,6 @@ try {
         $subscription_warning = true;
     }
 
-
     // Obtener información del usuario
     $user_id = $_SESSION['user_id'];
     $user_type = $_SESSION['tipoUsuario'];
@@ -300,11 +299,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- SweetAlert2 -->
+<!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -555,7 +550,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <!-- Controles -->
@@ -2066,8 +2061,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
     </div>
     </div>
 
-
-
     <script>
         function toggleLabCheckbox(id) {
             const cb = document.getElementById(id);
@@ -2805,9 +2798,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                     }
                 }
 
-
-
-
                 setupUltrasoundHandlers() {
                     const select = document.getElementById('ultrasoundSelect');
                     const amountInput = document.getElementById('ultrasound_amount');
@@ -3037,8 +3027,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                         lazyImages.forEach(img => imageObserver.observe(img));
                     }
                 }
-
-
 
                 setupAnalytics() {
                     // Aquí iría la configuración de Google Analytics u otro sistema de análisis
@@ -3839,7 +3827,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
             // Keep this for backward compatibility if old buttons reference it
             openDashboardConfig();
         }
-
 
         // ==========================================
         // Prevención de doble submit en formularios

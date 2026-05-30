@@ -13,8 +13,6 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
-
 verify_session();
 
 // Verificar si se proporciona ID
@@ -133,9 +131,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
+<link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
 
@@ -165,7 +161,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <!-- Controles -->
@@ -219,7 +215,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                 <!-- Encabezado de la clínica -->
                 <header class="receipt-header">
                     <div class="logo-section">
-                        <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="clinic-logo">
+                        <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="clinic-logo" width="40" height="40">
                     </div>
                     <div class="clinic-info">
                         Dirección de prueba<br>

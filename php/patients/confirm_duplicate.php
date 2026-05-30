@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-
 verify_session();
 
 // Recuperar datos de la sesión
@@ -30,9 +29,7 @@ if (!$patientData || !$existingPatientId) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Favicon -->
+<!-- Favicon -->
     <link rel="icon" type="image/png" href="Logo.png">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">

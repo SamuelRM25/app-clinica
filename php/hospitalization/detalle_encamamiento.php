@@ -232,8 +232,7 @@ try {
     </title>
 
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -518,7 +517,7 @@ try {
     <header class="dashboard-header">
         <div class="header-content">
             <div class="brand-container">
-                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
+                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
             </div>
             <div class="header-controls">
                 <a href="index.php" class="action-btn secondary">
@@ -790,7 +789,6 @@ try {
                         </button>
                     </div>
 
-
                     <?php if ($cuenta): ?>
                         <!-- Account Summary Grid -->
                         <div class="row g-3 mb-4">
@@ -953,7 +951,7 @@ try {
     <!-- Receipt Print Area (Dedicated for formal printing) -->
     <div id="receipt-print-container" style="display: none;">
         <div class="receipt-header">
-            <img src="../../assets/img/Logo.png" alt="CMHS" class="receipt-logo">
+            <img src="../../assets/img/Logo.png" alt="CMHS" class="receipt-logo" width="40" height="40">
             <div class="receipt-title">Centro Médico RS</div>
             <div>Estado de Cuenta Hospitalaria</div>
         </div>

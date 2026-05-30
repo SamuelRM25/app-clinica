@@ -156,10 +156,7 @@ $page_title = "Configuración de Widgets - CMS";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <style>
         .widget-config-card {
@@ -251,7 +248,7 @@ $page_title = "Configuración de Widgets - CMS";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Logo" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Logo" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <a href="index.php" class="action-btn secondary">

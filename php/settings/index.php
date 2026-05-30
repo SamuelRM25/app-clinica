@@ -55,8 +55,7 @@ $page_title = "Configuración del Sistema";
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     
@@ -157,7 +156,7 @@ $page_title = "Configuración del Sistema";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <div class="header-controls">

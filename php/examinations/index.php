@@ -18,8 +18,6 @@ require_once '../../includes/breadcrumbs.php';
 
 check_module_access('imaging');
 
-
-
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -112,10 +110,7 @@ try {
 
     <!-- FAVICON Y FUENTES IDÉNTICAS -->
     <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Choices.js (para búsqueda en selects) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
@@ -143,7 +138,7 @@ try {
 
                 <!-- Logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
                 </div>
 
                 <!-- Controles -->

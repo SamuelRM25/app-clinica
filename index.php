@@ -29,11 +29,7 @@ date_default_timezone_set('America/Guatemala');
     <link rel="icon" type="image/png" href="assets/img/Logo.png">
 
     <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <style>
@@ -352,7 +348,7 @@ date_default_timezone_set('America/Guatemala');
     <main class="login-container">
         <div class="login-card animate-up">
             <div class="logo-section">
-                <img src="assets/img/Logo.png" alt="Logo" class="logo-img">
+                <img src="assets/img/Logo.png" alt="Logo" class="logo-img" width="40" height="40">
                 <div class="login-header">
                     <h1>Centro Médico RS</h1>
                     <p>Gestión Clínica Inteligente</p>

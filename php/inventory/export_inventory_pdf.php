@@ -40,11 +40,7 @@ try {
     <title>Reporte de Inventario - Centro Médico RS</title>
     
     <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -205,7 +201,7 @@ try {
                 <p><i class="bi bi-person"></i> Generado por: <?php echo $_SESSION['nombre']; ?></p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;">
+                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;" width="50" height="50">
                 <h2>REPORTE DE EXISTENCIAS</h2>
                 <p><?php echo date('d/m/Y H:i'); ?></p>
             </div>

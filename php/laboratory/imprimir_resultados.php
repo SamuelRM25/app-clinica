@@ -66,11 +66,7 @@ try {
     <title>Informe de Laboratorio - <?php echo $orden['numero_orden']; ?></title>
     
     <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -285,7 +281,7 @@ try {
                 <p><i class="bi bi-geo-alt"></i> Amatitlán, Guatemala | <i class="bi bi-telephone"></i> 6633-XXXX</p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;">
+                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;" width="60" height="60">
                 <h2>INFORME DE RESULTADOS</h2>
                 <p>Orden #<?php echo $orden['numero_orden']; ?></p>
             </div>

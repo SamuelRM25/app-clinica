@@ -41,7 +41,7 @@ try {
         <div class="header-content">
             <!-- Logo -->
             <div class="brand-container">
-                <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo">
+                <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
             </div>
 
             <!-- Controles -->

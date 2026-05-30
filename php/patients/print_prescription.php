@@ -70,9 +70,7 @@ try {
     <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro Médico Herrera Sáenz</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
+<!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
     <style>
