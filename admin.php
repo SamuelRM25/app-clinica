@@ -5,15 +5,32 @@
 session_start();
 
 require_once __DIR__ . '/includes/functions.php';
-define('ADMIN_USER', getenv('ADMIN_USER') ?: 'superadmin');
 
-$adminPassHash = getenv('ADMIN_PASS_HASH');
-if (!$adminPassHash) {
-    // Sin variable de entorno, denegar acceso — seguridad por defecto
-    define('ADMIN_PASS_HASH', false);
-} else {
-    define('ADMIN_PASS_HASH', $adminPassHash);
+// Buscar .env en múltiples ubicaciones (local, Hostinger, etc.)
+$envPaths = [
+    __DIR__ . '/.env',             // Local XAMPP (project root / public_html)
+    __DIR__ . '/../.env',          // Hostinger: fuera de public_html/
+    __DIR__ . '/../../.env',       // Hostinger: dos niveles arriba/
+];
+$envFile = null;
+foreach ($envPaths as $path) {
+    if (file_exists($path)) {
+        $envFile = $path;
+        break;
+    }
 }
+
+if ($envFile) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        putenv(trim($line));
+    }
+}
+
+define('ADMIN_USER', getenv('ADMIN_USER') ?: 'superadmin');
+define('ADMIN_PASS', getenv('ADMIN_PASS') ?: '');
+define('ADMIN_PASS_HASH', getenv('ADMIN_PASS_HASH') ?: '');
 
 csrf_token(); // Ensure CSRF token exists in session
 
@@ -21,10 +38,12 @@ csrf_token(); // Ensure CSRF token exists in session
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action'])) {
     verify_csrf_token();
     $valid = false;
-    if (!ADMIN_PASS_HASH) {
-        $login_error = 'ADMIN_PASS_HASH no configurado en variables de entorno.';
+    if (empty(ADMIN_USER)) {
+        $login_error = 'Usuario administrador no configurado.';
     } elseif ($_POST['admin_user'] === ADMIN_USER) {
-        if (password_verify($_POST['admin_pass'], ADMIN_PASS_HASH)) {
+        if (!empty(ADMIN_PASS) && $_POST['admin_pass'] === ADMIN_PASS) {
+            $valid = true;
+        } elseif (!empty(ADMIN_PASS_HASH) && password_verify($_POST['admin_pass'], ADMIN_PASS_HASH)) {
             $valid = true;
         }
     }
@@ -32,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action'])) {
         session_regenerate_id(true);
         $_SESSION['superadmin'] = true;
     } else {
-        $login_error = 'Credenciales incorrectas.';
+        $login_error = $login_error ?? 'Credenciales incorrectas.';
     }
 }
 
@@ -871,7 +890,7 @@ async function submitApprove() {
     fd.append('nota', document.getElementById('approveNota').value);
     fd.append('fecha_vencimiento', document.getElementById('approveFechaVenc').value);
     fd.append('csrf_token', getCsrfToken());
-    const r = await fetch('index.php', {method:'POST', body:fd});
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
     Swal.fire(j.status==='success'?'Aprobado':'Error', j.message, j.status==='success'?'success':'error')
@@ -889,7 +908,7 @@ async function rejectReq(id) {
     const fd = new FormData();
     fd.append('action','reject'); fd.append('id_solicitud',id); fd.append('nota', nota||'');
     fd.append('csrf_token', getCsrfToken());
-    const r = await fetch('index.php',{method:'POST',body:fd});
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     Swal.fire(j.status==='success'?'Rechazada':'Error', j.message, j.status).then(()=>location.reload());
 }
@@ -943,7 +962,7 @@ async function submitHosp() {
     }
     
     fd.append('csrf_token', getCsrfToken());
-    const r = await fetch('index.php',{method:'POST',body:fd});
+    const r = await fetch(location.pathname, {method:'POST', body:fd});
     const j = await r.json();
     bootstrap.Modal.getInstance(document.getElementById('editHospModal')).hide();
     Swal.fire(j.status==='success'?'Guardado':'Error', j.message, j.status).then(()=>location.reload());

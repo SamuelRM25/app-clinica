@@ -179,7 +179,7 @@ function output_keep_alive_script()
                     init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
                 }
             }
-            return origFetch.call(this, input, init);
+            return origFetch(input, init);
         };
     })();
 

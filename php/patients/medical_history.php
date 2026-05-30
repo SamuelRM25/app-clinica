@@ -409,9 +409,6 @@ try {
             </div>
         </header>
 
-        <!-- Scripts adicionales para Mapa Corporal -->
-        <script src="../../assets/js/human_body_map.js"></script>
-
         <!-- Contenido Principal -->
         <main class="main-content">
             <?php render_breadcrumbs([
@@ -1088,12 +1085,14 @@ try {
                         DOM.sidebarOverlay.addEventListener('click', () => this.closeMobile());
                     }
 
-                    const navLinks = DOM.sidebar.querySelectorAll('.nav-link');
-                    navLinks.forEach(link => {
-                        link.addEventListener('click', () => {
-                            if (this.isMobile) this.closeMobile();
+                    if (DOM.sidebar) {
+                        const navLinks = DOM.sidebar.querySelectorAll('.nav-link');
+                        navLinks.forEach(link => {
+                            link.addEventListener('click', () => {
+                                if (this.isMobile) this.closeMobile();
+                            });
                         });
-                    });
+                    }
 
                     window.addEventListener('resize', this.debounce(() => {
                         const wasMobile = this.isMobile;
