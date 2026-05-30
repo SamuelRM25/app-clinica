@@ -6,7 +6,7 @@ require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 date_default_timezone_set('America/Guatemala');
@@ -74,8 +74,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ingresar Paciente - Hospitalización</title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
@@ -93,6 +93,7 @@ try {
             box-shadow: var(--shadow-sm);
             position: relative;
         }
+
         .form-section-title {
             font-size: 1rem;
             font-weight: 700;
@@ -104,9 +105,15 @@ try {
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--color-border);
         }
-        .form-section-title i { color: var(--color-primary); font-size: 1.15rem; }
+
+        .form-section-title i {
+            color: var(--color-primary);
+            font-size: 1.15rem;
+        }
+
         .step-badge {
-            width: 28px; height: 28px;
+            width: 28px;
+            height: 28px;
             background: var(--color-primary);
             color: white;
             border-radius: 50%;
@@ -127,7 +134,9 @@ try {
             color: var(--color-text-secondary);
             margin-bottom: 0.4rem;
         }
-        .form-control, .form-select {
+
+        .form-control,
+        .form-select {
             padding: 0.7rem 0.875rem;
             border: 1.5px solid var(--color-border);
             border-radius: var(--radius-md);
@@ -137,12 +146,18 @@ try {
             font-size: 0.875rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-control:focus, .form-select:focus {
+
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
             outline: none;
         }
-        textarea.form-control { resize: vertical; min-height: 90px; }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 90px;
+        }
 
         /* ===== BED SELECTION ===== */
         .bed-option {
@@ -157,11 +172,35 @@ try {
             transition: all 0.2s;
             margin-bottom: 0.5rem;
         }
-        .bed-option:hover { border-color: var(--color-primary); background: rgba(var(--color-primary-rgb), 0.04); }
-        .bed-option input[type="radio"] { accent-color: var(--color-primary); width: 16px; height: 16px; }
-        .bed-option-name { font-weight: 700; font-size: 0.875rem; color: var(--color-text); }
-        .bed-option-meta { font-size: 0.75rem; color: var(--color-text-secondary); }
-        .bed-rate { font-weight: 700; color: var(--color-success); font-size: 0.875rem; margin-left: auto; }
+
+        .bed-option:hover {
+            border-color: var(--color-primary);
+            background: rgba(var(--color-primary-rgb), 0.04);
+        }
+
+        .bed-option input[type="radio"] {
+            accent-color: var(--color-primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        .bed-option-name {
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+
+        .bed-option-meta {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+
+        .bed-rate {
+            font-weight: 700;
+            color: var(--color-success);
+            font-size: 0.875rem;
+            margin-left: auto;
+        }
 
         /* Select2 custom theme for this page */
         .select2-container--default .select2-selection--single {
@@ -172,13 +211,46 @@ try {
             color: var(--color-text);
             height: auto;
         }
-        .select2-container--default .select2-selection--single:focus { border-color: var(--color-primary); }
-        .select2-container--default .select2-selection--single .select2-selection__rendered { color: var(--color-text); line-height: 1.5; padding: 0; }
-        .select2-container--default .select2-selection--single .select2-selection__arrow { top: 50%; transform: translateY(-50%); }
-        .select2-dropdown { background: var(--color-card); border: 1.5px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
-        .select2-container--default .select2-results__option { padding: 0.6rem 1rem; color: var(--color-text); }
-        .select2-container--default .select2-results__option--highlighted { background: rgba(var(--color-primary-rgb), 0.1); color: var(--color-primary); }
-        .select2-search--dropdown input { border: 1.5px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); padding: 0.5rem 0.75rem; }
+
+        .select2-container--default .select2-selection--single:focus {
+            border-color: var(--color-primary);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--color-text);
+            line-height: 1.5;
+            padding: 0;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .select2-dropdown {
+            background: var(--color-card);
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .select2-container--default .select2-results__option {
+            padding: 0.6rem 1rem;
+            color: var(--color-text);
+        }
+
+        .select2-container--default .select2-results__option--highlighted {
+            background: rgba(var(--color-primary-rgb), 0.1);
+            color: var(--color-primary);
+        }
+
+        .select2-search--dropdown input {
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-text);
+            padding: 0.5rem 0.75rem;
+        }
     </style>
 </head>
 
@@ -189,7 +261,7 @@ try {
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">

@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Cobros - Centro Médico RS
+// index.php - Módulo de Cobros - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -70,7 +70,7 @@ try {
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Cobros - Centro Médico RS";
+    $page_title = "Cobros - Centro Médico Herrera Saenz";
 
     // Obtener estadísticas rápidas
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE() AND id_hospital = ?");
@@ -93,14 +93,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Cobros - Centro Médico RS - Sistema de gestión de cobros médicos">
+    <meta name="description" content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS (Required for Modals) -->
@@ -127,9 +127,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -498,7 +499,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Cobros Reingenierizado - Centro Médico RS
+        // Módulo de Cobros Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';

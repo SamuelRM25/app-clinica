@@ -1,6 +1,6 @@
 <?php
 // inventory/insumos.php - Módulo de Insumos
-// Centro Médico RS
+// Centro Médico Herrera Saenz
 // Restringido a Admin (1) e YSantos (12)
 
 session_start();
@@ -15,7 +15,7 @@ require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 
@@ -38,10 +38,10 @@ try {
 
 } catch (Exception $e) {
     error_log("php/inventory/insumos.php error: " . $e->getMessage());
-        die("Error: " . 'Error del servidor.');
+    die("Error: " . 'Error del servidor.');
 }
 
-$page_title = "Gestión de Insumos - CMHS";
+$page_title = "Gestión de Insumos - logo";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -52,7 +52,7 @@ $page_title = "Gestión de Insumos - CMHS";
     <title>
         <?php echo htmlspecialchars($page_title); ?>
     </title>
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

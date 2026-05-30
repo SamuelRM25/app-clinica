@@ -1,5 +1,5 @@
 <?php
-// inventory/index.php - Módulo de Ventas - Centro Médico RS
+// inventory/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -84,7 +84,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico RS";
+    $page_title = "Ventas - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     error_log('Error en dispensary/index.php: ' . $e->getMessage());
@@ -98,15 +98,15 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas del Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS -->
@@ -142,6 +142,7 @@ try {
             .pos-container {
                 grid-template-columns: 1fr;
             }
+
             :root {
                 --pos-sidebar-width: 100%;
             }
@@ -250,8 +251,15 @@ try {
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .cart-items-table {
@@ -404,7 +412,7 @@ try {
             box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
         }
 
-        .selection-form .d-flex.align-items-center > span {
+        .selection-form .d-flex.align-items-center>span {
             padding: 0.625rem 0.75rem;
             background: var(--color-surface);
             color: var(--color-text-secondary);
@@ -414,7 +422,7 @@ try {
             flex-shrink: 0;
         }
 
-        .selection-form .d-flex.align-items-center > input {
+        .selection-form .d-flex.align-items-center>input {
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;
@@ -541,9 +549,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -752,10 +761,13 @@ try {
                         <div class="selected-product mb-4">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h4 class="selected-product-name fw-bold text-primary mb-1" id="selectedProductName">---</h4>
-                                    <p class="selected-product-details text-muted small" id="selectedProductDetails">---</p>
+                                    <h4 class="selected-product-name fw-bold text-primary mb-1"
+                                        id="selectedProductName">---</h4>
+                                    <p class="selected-product-details text-muted small" id="selectedProductDetails">---
+                                    </p>
                                 </div>
-                                <div class="badge bg-primary-subtle text-primary border p-2" id="documentTypeDisplay">---</div>
+                                <div class="badge bg-primary-subtle text-primary border p-2" id="documentTypeDisplay">
+                                    ---</div>
                             </div>
 
                             <div class="row g-3 mt-2">
@@ -1029,7 +1041,7 @@ try {
 
     <!-- JavaScript Optimizado (mismo que dashboard con funcionalidad POS) -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
         // Módulo de Ventas - Punto de Venta
 
         (function () {
@@ -1873,13 +1885,13 @@ try {
 
                         loading.style.display = 'none';
 
-                    if (data.status === 'success' && data.sales.length > 0) {
-                        let totalJornada = 0;
-                        data.sales.forEach(sale => {
-                            const total = parseFloat(sale.total) || 0;
-                            totalJornada += total;
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
+                        if (data.status === 'success' && data.sales.length > 0) {
+                            let totalJornada = 0;
+                            data.sales.forEach(sale => {
+                                const total = parseFloat(sale.total) || 0;
+                                totalJornada += total;
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
                                 <td class="ps-4 small text-muted">${sale.hora}</td>
                                 <td>
                                     <div class="fw-bold">${sale.nombre_cliente}</div>
@@ -1892,15 +1904,15 @@ try {
                                     </button>
                                 </td>
                             `;
-                            tbody.appendChild(row);
-                        });
-                        const totalEl = document.getElementById('historyTotalSum');
-                        if (totalEl) totalEl.textContent = `Q${totalJornada.toFixed(2)}`;
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
-                        const totalEl = document.getElementById('historyTotalSum');
-                        if (totalEl) totalEl.textContent = 'Q0.00';
-                    }
+                                tbody.appendChild(row);
+                            });
+                            const totalEl = document.getElementById('historyTotalSum');
+                            if (totalEl) totalEl.textContent = `Q${totalJornada.toFixed(2)}`;
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
+                            const totalEl = document.getElementById('historyTotalSum');
+                            if (totalEl) totalEl.textContent = 'Q0.00';
+                        }
                     } catch (error) {
                         console.error('Error loading history:', error);
                         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
@@ -1995,7 +2007,7 @@ try {
                 };
 
                 // Log de inicialización
-                console.log('Módulo de Ventas - Centro Médico RS');
+                console.log('Módulo de Ventas - Centro Médico Herrera Saenz');
                 console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
                 console.log('Productos disponibles: <?php echo count($inventario); ?>');
                 console.log('Ventas hoy: <?php echo $today_sales['count'] ?? 0; ?>');

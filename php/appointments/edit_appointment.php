@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Error al actualizar la cita");
         }
     } catch (Exception $e) {
-error_log('Error en appointments/edit_appointment.php: ' . $e->getMessage());
+        error_log('Error en appointments/edit_appointment.php: ' . $e->getMessage());
         $error_message = 'Error del servidor.';
     }
 }
@@ -97,7 +97,7 @@ include_once '../../includes/header.php';
     <div class="sidebar-glass p-3 d-flex flex-column">
         <div class="brand-section">
             <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
-                <img src="../../assets/img/siloe.png" alt="Logo" width="40" height="40"
+                <img src="../../assets/img/cmhs.png" alt="logo" width="40" height="40"
                     style="height: 40px; margin-right: 15px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
             </div>
         </div>
@@ -171,7 +171,8 @@ include_once '../../includes/header.php';
                                 la Cita #<?php echo htmlspecialchars($appointment['num_cita']); ?></h5>
                         </div>
                         <div class="card-body p-4">
-                            <form action="edit_appointment.php?id=<?php echo htmlspecialchars($id_cita); ?>" method="POST">
+                            <form action="edit_appointment.php?id=<?php echo htmlspecialchars($id_cita); ?>"
+                                method="POST">
                                 <?php echo csrf_field(); ?>
                                 <div class="row g-4">
                                     <div class="col-md-6">

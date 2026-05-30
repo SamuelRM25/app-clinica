@@ -1,5 +1,5 @@
 <?php
-// index.php - Procedimientos Menores - Centro Médico RS
+// index.php - Procedimientos Menores - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -32,7 +32,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // ============ CONSULTAS ESTADÍSTICAS ============
 
@@ -96,7 +96,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Procedimientos Menores - Centro Médico RS";
+    $page_title = "Procedimientos Menores - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -110,14 +110,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico RS">
+    <meta name="description" content="Módulo de Procedimientos Menores - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Choices.js (para búsqueda en selects) -->
@@ -145,9 +145,10 @@ try {
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -193,27 +194,27 @@ try {
                 ['label' => 'Procedimientos Menores'],
             ]); ?>
             <?php if (isset($_GET['status']) && isset($_GET['message'])): ?>
-                <div class="alert alert-<?php echo $_GET['status'] === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show mb-4 animate-in"
-                    role="alert">
-                    <div class="d-flex align-items-center">
-                        <i
-                            class="bi bi-<?php echo $_GET['status'] === 'success' ? 'check-circle' : 'exclamation-circle'; ?>-fill fs-4 me-2"></i>
-                        <div>
-                            <strong><?php echo $_GET['status'] === 'success' ? '¡Éxito!' : '¡Error!'; ?></strong>
-                            <?php echo htmlspecialchars(urldecode($_GET['message'])); ?>
+                    <div class="alert alert-<?php echo $_GET['status'] === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show mb-4 animate-in"
+                        role="alert">
+                        <div class="d-flex align-items-center">
+                            <i
+                                class="bi bi-<?php echo $_GET['status'] === 'success' ? 'check-circle' : 'exclamation-circle'; ?>-fill fs-4 me-2"></i>
+                            <div>
+                                <strong><?php echo $_GET['status'] === 'success' ? '¡Éxito!' : '¡Error!'; ?></strong>
+                                <?php echo htmlspecialchars(urldecode($_GET['message'])); ?>
+                            </div>
                         </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                <script>
-                    // Limpiar URL después de mostrar la alerta
-                    if (history.replaceState) {
-                        var url = new URL(window.location.href);
-                        url.searchParams.delete('status');
-                        url.searchParams.delete('message');
-                        history.replaceState(null, '', url);
-                    }
-                </script>
+                    <script>
+                        // Limpiar URL después de mostrar la alerta
+                        if (history.replaceState) {
+                            var url = new URL(window.location.href);
+                            url.searchParams.delete('status');
+                            url.searchParams.delete('message');
+                            history.replaceState(null, '', url);
+                        }
+                    </script>
             <?php endif; ?>
 
             <!-- Bienvenida personalizada -->
@@ -257,168 +258,6 @@ try {
                 </div>
 
                 <?php if (count($recent_procedures) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Procedimiento</th>
-                                    <th>Costo</th>
-                                    <th>Fecha</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_procedures as $procedure): ?>
-                                    <?php
-                                    $patient_name = htmlspecialchars($procedure['nombre_paciente']);
-                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="procedure-type">
-                                                <?php echo htmlspecialchars($procedure['procedimiento']); ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge bg-success text-white">
-                                                Q<?php echo number_format($procedure['cobro'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge">
-                                                <i class="bi bi-clock"></i>
-                                                <?php echo date('d/m/Y H:i', strtotime($procedure['fecha_procedimiento'])); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <a href="#" class="btn-icon edit" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <a href="#" class="btn-icon history" title="Ver detalles">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-3 text-center">
-                        <a href="historial_procedimientos.php" class="text-primary text-decoration-none">
-                            Ver todos los procedimientos <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-bandaid"></i>
-                        </div>
-                        <h4 class="text-muted mb-2">No hay procedimientos registrados</h4>
-                        <p class="text-muted mb-3">Total en sistema: <?php echo $total_procedures; ?></p>
-                        <p class="text-muted">Complete el formulario para registrar su primer procedimiento</p>
-                    </div>
-                <?php endif; ?>
-            </section>
-
-            <!-- Estadísticas principales -->
-            <?php if ($user_type === 'admin'): ?>
-                <div class="stats-grid">
-                    <!-- Procedimientos de hoy -->
-                    <div class="stat-card animate-in delay-1">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Procedimientos Hoy</div>
-                                <div class="stat-value"><?php echo $today_procedures; ?></div>
-                            </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-bandaid"></i>
-                            </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-arrow-up-right"></i>
-                            <span>Realizados hoy</span>
-                        </div>
-                    </div>
-
-                    <!-- Ingresos de hoy -->
-                    <div class="stat-card animate-in delay-2">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Ingresos Hoy</div>
-                                <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
-                            </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-currency-dollar"></i>
-                            </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-cash-stack"></i>
-                            <span>Total recaudado</span>
-                        </div>
-                    </div>
-
-                    <!-- Procedimientos de la semana -->
-                    <div class="stat-card animate-in delay-3">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Esta Semana</div>
-                                <div class="stat-value"><?php echo $week_procedures; ?></div>
-                            </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-calendar-week"></i>
-                            </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-range"></i>
-                            <span>Total de la semana</span>
-                        </div>
-                    </div>
-
-                    <!-- Ingresos de la semana -->
-                    <div class="stat-card animate-in delay-4">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Ingresos Semana</div>
-                                <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
-                            </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-graph-up-arrow"></i>
-                            </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-month"></i>
-                            <span>Acumulado semanal</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Procedimientos recientes -->
-                <section class="appointments-section animate-in delay-2">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-clock-history section-title-icon"></i>
-                            Procedimientos Recientes
-                        </h3>
-                        <button type="button" class="action-btn" onclick="refreshProcedures()">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            Actualizar
-                        </button>
-                    </div>
-
-                    <?php if (count($recent_procedures) > 0): ?>
                         <div class="table-responsive">
                             <table class="appointments-table">
                                 <thead>
@@ -432,48 +271,48 @@ try {
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recent_procedures as $procedure): ?>
-                                        <?php
-                                        $patient_name = htmlspecialchars($procedure['nombre_paciente']);
-                                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
-                                        ?>
-                                        <tr>
-                                            <td>
-                                                <div class="patient-cell">
-                                                    <div class="patient-avatar">
-                                                        <?php echo $patient_initials; ?>
+                                            <?php
+                                            $patient_name = htmlspecialchars($procedure['nombre_paciente']);
+                                            $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="patient-cell">
+                                                        <div class="patient-avatar">
+                                                            <?php echo $patient_initials; ?>
+                                                        </div>
+                                                        <div class="patient-info">
+                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                        </div>
                                                     </div>
-                                                    <div class="patient-info">
-                                                        <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                </td>
+                                                <td>
+                                                    <div class="procedure-type">
+                                                        <?php echo htmlspecialchars($procedure['procedimiento']); ?>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="procedure-type">
-                                                    <?php echo htmlspecialchars($procedure['procedimiento']); ?>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="time-badge bg-success text-white">
-                                                    Q<?php echo number_format($procedure['cobro'], 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="time-badge">
-                                                    <i class="bi bi-clock"></i>
-                                                    <?php echo date('d/m/Y H:i', strtotime($procedure['fecha_procedimiento'])); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="action-buttons">
-                                                    <a href="#" class="btn-icon edit" title="Editar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <a href="#" class="btn-icon history" title="Ver detalles">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                </td>
+                                                <td>
+                                                    <span class="time-badge bg-success text-white">
+                                                        Q<?php echo number_format($procedure['cobro'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="time-badge">
+                                                        <i class="bi bi-clock"></i>
+                                                        <?php echo date('d/m/Y H:i', strtotime($procedure['fecha_procedimiento'])); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a href="#" class="btn-icon edit" title="Editar">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <a href="#" class="btn-icon history" title="Ver detalles">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -483,7 +322,7 @@ try {
                                 Ver todos los procedimientos <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
-                    <?php else: ?>
+                <?php else: ?>
                         <div class="empty-state">
                             <div class="empty-icon">
                                 <i class="bi bi-bandaid"></i>
@@ -492,31 +331,193 @@ try {
                             <p class="text-muted mb-3">Total en sistema: <?php echo $total_procedures; ?></p>
                             <p class="text-muted">Complete el formulario para registrar su primer procedimiento</p>
                         </div>
-                    <?php endif; ?>
-                </section>
+                <?php endif; ?>
+            </section>
 
-                <!-- Resumen mensual -->
-                <div class="stat-card animate-in delay-3">
-                    <div class="stat-header">
-                        <div>
-                            <div class="stat-title">Resumen del Mes Actual</div>
-                            <div class="stat-value"><?php echo $month_procedures; ?> Procedimientos</div>
+            <!-- Estadísticas principales -->
+            <?php if ($user_type === 'admin'): ?>
+                    <div class="stats-grid">
+                        <!-- Procedimientos de hoy -->
+                        <div class="stat-card animate-in delay-1">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Procedimientos Hoy</div>
+                                    <div class="stat-value"><?php echo $today_procedures; ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-bandaid"></i>
+                                </div>
+                            </div>
                             <div class="stat-change positive">
-                                <i class="bi bi-calendar-month"></i>
-                                <span>Mes de <?php echo date('F'); ?></span>
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Realizados hoy</span>
                             </div>
                         </div>
-                        <div class="stat-icon warning">
-                            <i class="bi bi-bar-chart-line"></i>
+
+                        <!-- Ingresos de hoy -->
+                        <div class="stat-card animate-in delay-2">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Ingresos Hoy</div>
+                                    <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                            </div>
+                            <div class="stat-change positive">
+                                <i class="bi bi-cash-stack"></i>
+                                <span>Total recaudado</span>
+                            </div>
+                        </div>
+
+                        <!-- Procedimientos de la semana -->
+                        <div class="stat-card animate-in delay-3">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Esta Semana</div>
+                                    <div class="stat-value"><?php echo $week_procedures; ?></div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-calendar-week"></i>
+                                </div>
+                            </div>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-range"></i>
+                                <span>Total de la semana</span>
+                            </div>
+                        </div>
+
+                        <!-- Ingresos de la semana -->
+                        <div class="stat-card animate-in delay-4">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Ingresos Semana</div>
+                                    <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                            </div>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-month"></i>
+                                <span>Acumulado semanal</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <p class="text-muted mb-2">Total acumulado en sistema:
-                            <strong><?php echo $total_procedures; ?></strong> procedimientos
-                        </p>
-                        <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico RS</p>
+
+                    <!-- Procedimientos recientes -->
+                    <section class="appointments-section animate-in delay-2">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-clock-history section-title-icon"></i>
+                                Procedimientos Recientes
+                            </h3>
+                            <button type="button" class="action-btn" onclick="refreshProcedures()">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Actualizar
+                            </button>
+                        </div>
+
+                        <?php if (count($recent_procedures) > 0): ?>
+                                <div class="table-responsive">
+                                    <table class="appointments-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Paciente</th>
+                                                <th>Procedimiento</th>
+                                                <th>Costo</th>
+                                                <th>Fecha</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($recent_procedures as $procedure): ?>
+                                                    <?php
+                                                    $patient_name = htmlspecialchars($procedure['nombre_paciente']);
+                                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="patient-cell">
+                                                                <div class="patient-avatar">
+                                                                    <?php echo $patient_initials; ?>
+                                                                </div>
+                                                                <div class="patient-info">
+                                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="procedure-type">
+                                                                <?php echo htmlspecialchars($procedure['procedimiento']); ?>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="time-badge bg-success text-white">
+                                                                Q<?php echo number_format($procedure['cobro'], 2); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="time-badge">
+                                                                <i class="bi bi-clock"></i>
+                                                                <?php echo date('d/m/Y H:i', strtotime($procedure['fecha_procedimiento'])); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="action-buttons">
+                                                                <a href="#" class="btn-icon edit" title="Editar">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </a>
+                                                                <a href="#" class="btn-icon history" title="Ver detalles">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <a href="historial_procedimientos.php" class="text-primary text-decoration-none">
+                                        Ver todos los procedimientos <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                        <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-bandaid"></i>
+                                    </div>
+                                    <h4 class="text-muted mb-2">No hay procedimientos registrados</h4>
+                                    <p class="text-muted mb-3">Total en sistema: <?php echo $total_procedures; ?></p>
+                                    <p class="text-muted">Complete el formulario para registrar su primer procedimiento</p>
+                                </div>
+                        <?php endif; ?>
+                    </section>
+
+                    <!-- Resumen mensual -->
+                    <div class="stat-card animate-in delay-3">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-title">Resumen del Mes Actual</div>
+                                <div class="stat-value"><?php echo $month_procedures; ?> Procedimientos</div>
+                                <div class="stat-change positive">
+                                    <i class="bi bi-calendar-month"></i>
+                                    <span>Mes de <?php echo date('F'); ?></span>
+                                </div>
+                            </div>
+                            <div class="stat-icon warning">
+                                <i class="bi bi-bar-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p class="text-muted mb-2">Total acumulado en sistema:
+                                <strong><?php echo $total_procedures; ?></strong> procedimientos
+                            </p>
+                            <p class="text-muted mb-0">Sistema de procedimientos menores - Centro Médico Herrera Saenz</p>
+                        </div>
                     </div>
-                </div>
             <?php endif; ?>
         </main>
     </div>
@@ -528,7 +529,7 @@ try {
     <script>
         /**
          * Procedimientos Menores v4.5 - Reingenierizado
-         * Centro Médico RS
+         * Centro Médico Herrera Saenz
          */
         'use strict';
 

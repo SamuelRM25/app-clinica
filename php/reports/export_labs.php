@@ -1,5 +1,5 @@
 <?php
-// export_labs.php - Reporte de Laboratorios - Centro Médico RS
+// export_labs.php - Reporte de Laboratorios - Centro Médico Herrera Saenz
 // Versión 1.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';
@@ -38,7 +38,7 @@ try {
 
     // ============ CÁLCULO DE MÉTRICAS ============
 
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     $stmt_labs_detail = $conn->prepare("
         SELECT 

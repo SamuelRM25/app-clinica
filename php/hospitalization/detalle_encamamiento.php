@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -231,8 +231,8 @@ try {
         <?php echo htmlspecialchars($encamamiento['nombre_paciente'] . ' ' . $encamamiento['apellido_paciente']); ?>
     </title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -250,25 +250,51 @@ try {
             position: relative;
             overflow: hidden;
         }
+
         .patient-header-card::after {
             content: '';
             position: absolute;
-            top: -30%; right: -5%;
-            width: 220px; height: 220px;
-            background: rgba(255,255,255,0.06);
+            top: -30%;
+            right: -5%;
+            width: 220px;
+            height: 220px;
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 50%;
         }
+
         .patient-id-badge {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            background: rgba(255,255,255,0.2); padding: 0.3rem 0.85rem;
-            border-radius: 50px; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.85rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
         }
-        .patient-full-name { font-size: 1.75rem; font-weight: 800; margin: 0 0 0.25rem; }
-        .patient-info-pills { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+
+        .patient-full-name {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin: 0 0 0.25rem;
+        }
+
+        .patient-info-pills {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+
         .patient-info-pill {
-            display: flex; align-items: center; gap: 0.35rem;
-            background: rgba(255,255,255,0.15); padding: 0.3rem 0.75rem;
-            border-radius: 50px; font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.3rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
         }
 
         /* ===== SECTION CARDS ===== */
@@ -280,6 +306,7 @@ try {
             overflow: hidden;
             box-shadow: var(--shadow-sm);
         }
+
         .detail-card-header {
             display: flex;
             align-items: center;
@@ -288,6 +315,7 @@ try {
             border-bottom: 1px solid var(--color-border);
             background: rgba(var(--color-primary-rgb), 0.03);
         }
+
         .detail-card-title {
             font-size: 0.95rem;
             font-weight: 700;
@@ -297,70 +325,142 @@ try {
             align-items: center;
             gap: 0.5rem;
         }
-        .detail-card-title i { color: var(--color-primary); }
-        .detail-card-body { padding: 1.5rem; }
+
+        .detail-card-title i {
+            color: var(--color-primary);
+        }
+
+        .detail-card-body {
+            padding: 1.5rem;
+        }
 
         /* ===== VITALS TABLE ===== */
-        .vitals-table { width: 100%; border-collapse: collapse; }
+        .vitals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
         .vitals-table th {
             padding: 0.75rem 1rem;
-            font-size: 0.7rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             color: var(--color-text-secondary);
             background: var(--color-surface);
             border-bottom: 1px solid var(--color-border);
         }
+
         .vitals-table td {
             padding: 0.875rem 1rem;
             border-bottom: 1px solid var(--color-border);
             color: var(--color-text);
             font-size: 0.875rem;
         }
-        .vitals-table tbody tr:last-child td { border-bottom: none; }
-        .vitals-table tbody tr:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+
+        .vitals-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .vitals-table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
 
         /* ===== CHARGE ITEMS ===== */
         .charge-group-title {
-            display: flex; align-items: center; gap: 0.5rem;
-            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; color: var(--color-text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
             padding: 0.75rem 1rem;
             background: var(--color-surface);
             border-bottom: 1px solid var(--color-border);
         }
+
         .charge-item-row {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 0.875rem 1.25rem;
             border-bottom: 1px solid var(--color-border);
             gap: 1rem;
         }
-        .charge-item-row:last-child { border-bottom: none; }
-        .charge-item-name { font-size: 0.875rem; color: var(--color-text); font-weight: 500; }
-        .charge-item-meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 1px; }
-        .charge-item-price { font-weight: 700; color: var(--color-text); white-space: nowrap; }
+
+        .charge-item-row:last-child {
+            border-bottom: none;
+        }
+
+        .charge-item-name {
+            font-size: 0.875rem;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        .charge-item-meta {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 1px;
+        }
+
+        .charge-item-price {
+            font-weight: 700;
+            color: var(--color-text);
+            white-space: nowrap;
+        }
+
         .charge-item-delete {
-            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            background: rgba(var(--color-danger-rgb), 0.1); color: var(--color-danger);
-            border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(var(--color-danger-rgb), 0.1);
+            color: var(--color-danger);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
             flex-shrink: 0;
         }
-        .charge-item-delete:hover { background: var(--color-danger); color: white; }
+
+        .charge-item-delete:hover {
+            background: var(--color-danger);
+            color: white;
+        }
 
         /* ===== ACCOUNT SUMMARY ===== */
         .account-summary-row {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--color-border);
             font-size: 0.875rem;
         }
+
         .account-summary-row.total {
-            padding-top: 1rem; border-bottom: none;
-            font-size: 1.1rem; font-weight: 800;
+            padding-top: 1rem;
+            border-bottom: none;
+            font-size: 1.1rem;
+            font-weight: 800;
             color: var(--color-text);
         }
-        .account-summary-row.total .amount { color: var(--color-primary); }
-        .account-summary-label { color: var(--color-text-secondary); }
-        .account-summary-amount { font-weight: 700; }
+
+        .account-summary-row.total .amount {
+            color: var(--color-primary);
+        }
+
+        .account-summary-label {
+            color: var(--color-text-secondary);
+        }
+
+        .account-summary-amount {
+            font-weight: 700;
+        }
 
         /* ===== ADD CHARGE FORM ===== */
         .add-charge-grid {
@@ -369,7 +469,12 @@ try {
             gap: 0.75rem;
             align-items: end;
         }
-        @media (max-width: 768px) { .add-charge-grid { grid-template-columns: 1fr; } }
+
+        @media (max-width: 768px) {
+            .add-charge-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 
     <style media="print">
@@ -517,7 +622,7 @@ try {
     <header class="dashboard-header">
         <div class="header-content">
             <div class="brand-container">
-                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
             </div>
             <div class="header-controls">
                 <a href="index.php" class="action-btn secondary">
@@ -525,10 +630,10 @@ try {
                     Volver
                 </a>
                 <?php if ($encamamiento['estado'] == 'Activo'): ?>
-                    <button class="action-btn danger" onclick="procesarAlta()">
-                        <i class="bi bi-door-open"></i>
-                        Dar de Alta
-                    </button>
+                        <button class="action-btn danger" onclick="procesarAlta()">
+                            <i class="bi bi-door-open"></i>
+                            Dar de Alta
+                        </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -624,48 +729,48 @@ try {
                     </div>
 
                     <?php if (count($signos_vitales) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha/Hora</th>
-                                        <th>Temp (°C)</th>
-                                        <th>PA (mmHg)</th>
-                                        <th>Pulso</th>
-                                        <th>FR</th>
-                                        <th>SpO2 (%)</th>
-                                        <th>Glucosa</th>
-                                        <th>Registrado por</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($signos_vitales as $sv): ?>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
                                         <tr>
-                                            <td><?php echo date('d/m/Y H:i', strtotime($sv['fecha_registro'])); ?></td>
-                                            <td><?php echo $sv['temperatura'] ? number_format($sv['temperatura'], 1) : '-'; ?>
-                                            </td>
-                                            <td><?php echo ($sv['presion_sistolica'] && $sv['presion_diastolica']) ? $sv['presion_sistolica'] . '/' . $sv['presion_diastolica'] : '-'; ?>
-                                            </td>
-                                            <td><?php echo $sv['pulso'] ? $sv['pulso'] : '-'; ?></td>
-                                            <td><?php echo $sv['frecuencia_respiratoria'] ? $sv['frecuencia_respiratoria'] : '-'; ?>
-                                            </td>
-                                            <td><?php echo $sv['saturacion_oxigeno'] ? number_format($sv['saturacion_oxigeno'], 1) : '-'; ?>
-                                            </td>
-                                            <td><?php echo $sv['glucometria'] ? number_format($sv['glucometria'], 0) : '-'; ?>
-                                            </td>
-                                            <td><small><?php echo htmlspecialchars($sv['registrado_nombre'] . ' ' . $sv['registrado_apellido']); ?></small>
-                                            </td>
+                                            <th>Fecha/Hora</th>
+                                            <th>Temp (°C)</th>
+                                            <th>PA (mmHg)</th>
+                                            <th>Pulso</th>
+                                            <th>FR</th>
+                                            <th>SpO2 (%)</th>
+                                            <th>Glucosa</th>
+                                            <th>Registrado por</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($signos_vitales as $sv): ?>
+                                                <tr>
+                                                    <td><?php echo date('d/m/Y H:i', strtotime($sv['fecha_registro'])); ?></td>
+                                                    <td><?php echo $sv['temperatura'] ? number_format($sv['temperatura'], 1) : '-'; ?>
+                                                    </td>
+                                                    <td><?php echo ($sv['presion_sistolica'] && $sv['presion_diastolica']) ? $sv['presion_sistolica'] . '/' . $sv['presion_diastolica'] : '-'; ?>
+                                                    </td>
+                                                    <td><?php echo $sv['pulso'] ? $sv['pulso'] : '-'; ?></td>
+                                                    <td><?php echo $sv['frecuencia_respiratoria'] ? $sv['frecuencia_respiratoria'] : '-'; ?>
+                                                    </td>
+                                                    <td><?php echo $sv['saturacion_oxigeno'] ? number_format($sv['saturacion_oxigeno'], 1) : '-'; ?>
+                                                    </td>
+                                                    <td><?php echo $sv['glucometria'] ? number_format($sv['glucometria'], 0) : '-'; ?>
+                                                    </td>
+                                                    <td><small><?php echo htmlspecialchars($sv['registrado_nombre'] . ' ' . $sv['registrado_apellido']); ?></small>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                     <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="bi bi-heart-pulse"></i></div>
-                            <h4>No hay signos vitales registrados</h4>
-                            <p>Haga clic en "Registrar Signos" para agregar el primer registro</p>
-                        </div>
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="bi bi-heart-pulse"></i></div>
+                                <h4>No hay signos vitales registrados</h4>
+                                <p>Haga clic en "Registrar Signos" para agregar el primer registro</p>
+                            </div>
                     <?php endif; ?>
                 </div>
 
@@ -680,57 +785,57 @@ try {
                     </div>
 
                     <?php if (count($evoluciones) > 0): ?>
-                        <div class="timeline">
-                            <?php foreach ($evoluciones as $evol): ?>
-                                <div class="timeline-item">
-                                    <div class="timeline-header">
-                                        <div>
-                                            <div class="timeline-date">
-                                                <?php echo date('d/m/Y H:i', strtotime($evol['fecha_evolucion'])); ?>
+                            <div class="timeline">
+                                <?php foreach ($evoluciones as $evol): ?>
+                                        <div class="timeline-item">
+                                            <div class="timeline-header">
+                                                <div>
+                                                    <div class="timeline-date">
+                                                        <?php echo date('d/m/Y H:i', strtotime($evol['fecha_evolucion'])); ?>
+                                                    </div>
+                                                    <div class="timeline-doctor">Dr(a).
+                                                        <?php echo htmlspecialchars($evol['doctor_nombre'] . ' ' . $evol['doctor_apellido']); ?>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="timeline-doctor">Dr(a).
-                                                <?php echo htmlspecialchars($evol['doctor_nombre'] . ' ' . $evol['doctor_apellido']); ?>
-                                            </div>
+                                            <?php if ($evol['subjetivo']): ?>
+                                                    <div class="evolution-section">
+                                                        <div class="evolution-label">Subjetivo:</div>
+                                                        <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['subjetivo'])); ?>
+                                                        </div>
+                                                    </div>
+                                            <?php endif; ?>
+                                            <?php if ($evol['objetivo']): ?>
+                                                    <div class="evolution-section">
+                                                        <div class="evolution-label">Objetivo:</div>
+                                                        <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['objetivo'])); ?>
+                                                        </div>
+                                                    </div>
+                                            <?php endif; ?>
+                                            <?php if ($evol['evaluacion']): ?>
+                                                    <div class="evolution-section">
+                                                        <div class="evolution-label">Evaluación:</div>
+                                                        <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['evaluacion'])); ?>
+                                                        </div>
+                                                    </div>
+                                            <?php endif; ?>
+                                            <?php if ($evol['plan_tratamiento']): ?>
+                                                    <div class="evolution-section">
+                                                        <div class="evolution-label">Plan de Tratamiento:</div>
+                                                        <div class="evolution-text">
+                                                            <?php echo nl2br(htmlspecialchars($evol['plan_tratamiento'])); ?>
+                                                        </div>
+                                                    </div>
+                                            <?php endif; ?>
                                         </div>
-                                    </div>
-                                    <?php if ($evol['subjetivo']): ?>
-                                        <div class="evolution-section">
-                                            <div class="evolution-label">Subjetivo:</div>
-                                            <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['subjetivo'])); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($evol['objetivo']): ?>
-                                        <div class="evolution-section">
-                                            <div class="evolution-label">Objetivo:</div>
-                                            <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['objetivo'])); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($evol['evaluacion']): ?>
-                                        <div class="evolution-section">
-                                            <div class="evolution-label">Evaluación:</div>
-                                            <div class="evolution-text"><?php echo nl2br(htmlspecialchars($evol['evaluacion'])); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    <?php if ($evol['plan_tratamiento']): ?>
-                                        <div class="evolution-section">
-                                            <div class="evolution-label">Plan de Tratamiento:</div>
-                                            <div class="evolution-text">
-                                                <?php echo nl2br(htmlspecialchars($evol['plan_tratamiento'])); ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                                <?php endforeach; ?>
+                            </div>
                     <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="bi bi-clipboard-pulse"></i></div>
-                            <h4>No hay evoluciones registradas</h4>
-                            <p>Haga clic en "Nueva Evolución" para agregar la primera nota</p>
-                        </div>
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="bi bi-clipboard-pulse"></i></div>
+                                <h4>No hay evoluciones registradas</h4>
+                                <p>Haga clic en "Nueva Evolución" para agregar la primera nota</p>
+                            </div>
                     <?php endif; ?>
                 </div>
 
@@ -740,38 +845,38 @@ try {
                         <h3 class="tab-title">Medicamentos Administrados</h3>
                     </div>
                     <?php if (isset($cargos_por_tipo['Medicamento']) && count($cargos_por_tipo['Medicamento']) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha/Hora</th>
-                                        <th>Medicamento</th>
-                                        <th>Cantidad</th>
-                                        <th>Precio U.</th>
-                                        <th>Subtotal</th>
-                                        <th>Registrado por</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($cargos_por_tipo['Medicamento'] as $med): ?>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
                                         <tr>
-                                            <td><?php echo date('d/m/Y H:i', strtotime($med['fecha_cargo'])); ?></td>
-                                            <td class="fw-bold"><?php echo htmlspecialchars($med['descripcion']); ?></td>
-                                            <td><?php echo $med['cantidad']; ?></td>
-                                            <td>Q<?php echo number_format($med['precio_unitario'], 2); ?></td>
-                                            <td class="fw-bold">Q<?php echo number_format($med['subtotal'], 2); ?></td>
-                                            <td><small><?php echo htmlspecialchars($med['registrado_nombre']); ?></small></td>
+                                            <th>Fecha/Hora</th>
+                                            <th>Medicamento</th>
+                                            <th>Cantidad</th>
+                                            <th>Precio U.</th>
+                                            <th>Subtotal</th>
+                                            <th>Registrado por</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($cargos_por_tipo['Medicamento'] as $med): ?>
+                                                <tr>
+                                                    <td><?php echo date('d/m/Y H:i', strtotime($med['fecha_cargo'])); ?></td>
+                                                    <td class="fw-bold"><?php echo htmlspecialchars($med['descripcion']); ?></td>
+                                                    <td><?php echo $med['cantidad']; ?></td>
+                                                    <td>Q<?php echo number_format($med['precio_unitario'], 2); ?></td>
+                                                    <td class="fw-bold">Q<?php echo number_format($med['subtotal'], 2); ?></td>
+                                                    <td><small><?php echo htmlspecialchars($med['registrado_nombre']); ?></small></td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                     <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="bi bi-capsule"></i></div>
-                            <h4>No hay medicamentos registrados</h4>
-                            <p>Los medicamentos aparecen aquí cuando se agregan a la cuenta hospitalaria.</p>
-                        </div>
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="bi bi-capsule"></i></div>
+                                <h4>No hay medicamentos registrados</h4>
+                                <p>Los medicamentos aparecen aquí cuando se agregan a la cuenta hospitalaria.</p>
+                            </div>
                     <?php endif; ?>
                 </div>
 
@@ -790,158 +895,171 @@ try {
                     </div>
 
                     <?php if ($cuenta): ?>
-                        <!-- Account Summary Grid -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-3">
-                                <div class="stat-card p-3 h-100">
-                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Estancia</div>
-                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_habitacion'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-card p-3 h-100">
-                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Farmacia</div>
-                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_medicamentos'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-card p-3 h-100">
-                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Procedimientos</div>
-                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_procedimientos'], 2); ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="stat-card p-3 h-100">
-                                    <div class="small text-muted mb-1 text-uppercase fw-bold">Otros Cargos</div>
-                                    <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_laboratorios'] + $cuenta['subtotal_honorarios'] + $cuenta['subtotal_otros'], 2); ?></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="stat-card p-4 mb-4" style="background: linear-gradient(135deg, var(--color-primary), #1e40af); color: white;">
-                            <div class="row align-items-center">
-                                <div class="col-md-4 text-center border-end border-white border-opacity-25">
-                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Total General</div>
-                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_general'], 2); ?></div>
-                                </div>
-                                <div class="col-md-4 text-center border-end border-white border-opacity-25">
-                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Pagos/Abonos</div>
-                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_pagado'] ?? 0, 2); ?></div>
-                                </div>
-                                <div class="col-md-4 text-center">
-                                    <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Saldo Pendiente</div>
-                                    <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0), 2); ?></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Abonos Section -->
-                    <div class="charges-section">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4>Pagos Realizados (Abonos)</h4>
-                            <button class="btn btn-sm btn-success" onclick="openAbonoModal()">
-                                <i class="bi bi-cash-coin"></i> Agregar Abono
-                            </button>
-                        </div>
-                        <?php if (count($abonos) > 0): ?>
-                            <div class="table-responsive mb-4">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Método</th>
-                                            <th>Notas</th>
-                                            <th>Registrado Por</th>
-                                            <th>Monto</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($abonos as $abono): ?>
-                                            <tr>
-                                                <td><?php echo date('d/m/Y H:i', strtotime($abono['fecha_abono'])); ?></td>
-                                                <td><?php echo htmlspecialchars($abono['metodo_pago']); ?></td>
-                                                <td><?php echo htmlspecialchars($abono['notas']); ?></td>
-                                                <td><small><?php echo htmlspecialchars($abono['u_nombre'] . ' ' . $abono['u_apellido']); ?></small>
-                                                </td>
-                                                <td class="fw-bold text-success">Q<?php echo number_format($abono['monto'], 2); ?>
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-outline-secondary"
-                                                        onclick="printAbono(<?php echo $abono['id_abono']; ?>)">
-                                                        <i class="bi bi-printer"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="alert alert-info mb-4">No se han registrado abonos.</div>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Detailed Charges -->
-                    <div class="charges-section">
-                        <h4 class="mb-3">Cargos Detallados</h4>
-
-                        <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
-                            <?php if (count($cargos_tipo) > 0): ?>
-                                <?php
-                                $subtotal_tipo = array_sum(array_column($cargos_tipo, 'subtotal'));
-                                ?>
-                                <div class="charges-category">
-                                    <div class="category-title">
-                                        <span><?php echo $tipo; ?></span>
-                                        <span class="category-total">Q<?php echo number_format($subtotal_tipo, 2); ?></span>
+                            <!-- Account Summary Grid -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 h-100">
+                                        <div class="small text-muted mb-1 text-uppercase fw-bold">Estancia</div>
+                                        <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_habitacion'], 2); ?>
+                                        </div>
                                     </div>
-                                    <div class="table-responsive">
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 h-100">
+                                        <div class="small text-muted mb-1 text-uppercase fw-bold">Farmacia</div>
+                                        <div class="h4 mb-0">Q<?php echo number_format($cuenta['subtotal_medicamentos'], 2); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 h-100">
+                                        <div class="small text-muted mb-1 text-uppercase fw-bold">Procedimientos</div>
+                                        <div class="h4 mb-0">
+                                            Q<?php echo number_format($cuenta['subtotal_procedimientos'], 2); ?></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card p-3 h-100">
+                                        <div class="small text-muted mb-1 text-uppercase fw-bold">Otros Cargos</div>
+                                        <div class="h4 mb-0">
+                                            Q<?php echo number_format($cuenta['subtotal_laboratorios'] + $cuenta['subtotal_honorarios'] + $cuenta['subtotal_otros'], 2); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card p-4 mb-4"
+                                style="background: linear-gradient(135deg, var(--color-primary), #1e40af); color: white;">
+                                <div class="row align-items-center">
+                                    <div class="col-md-4 text-center border-end border-white border-opacity-25">
+                                        <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Total General
+                                        </div>
+                                        <div class="h2 mb-0 fw-bold">Q<?php echo number_format($cuenta['total_general'], 2); ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center border-end border-white border-opacity-25">
+                                        <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Pagos/Abonos
+                                        </div>
+                                        <div class="h2 mb-0 fw-bold">
+                                            Q<?php echo number_format($cuenta['total_pagado'] ?? 0, 2); ?></div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="small text-white text-opacity-75 text-uppercase fw-bold mb-1">Saldo
+                                            Pendiente</div>
+                                        <div class="h2 mb-0 fw-bold">
+                                            Q<?php echo number_format($cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0), 2); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Abonos Section -->
+                        <div class="charges-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Pagos Realizados (Abonos)</h4>
+                                <button class="btn btn-sm btn-success" onclick="openAbonoModal()">
+                                    <i class="bi bi-cash-coin"></i> Agregar Abono
+                                </button>
+                            </div>
+                            <?php if (count($abonos) > 0): ?>
+                                    <div class="table-responsive mb-4">
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
                                                     <th>Fecha</th>
-                                                    <th>Descripción</th>
-                                                    <th>Cantidad</th>
-                                                    <th>Precio Unit.</th>
-                                                    <th>Subtotal</th>
-                                                    <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
-                                                        <th>Acciones</th>
-                                                    <?php endif; ?>
+                                                    <th>Método</th>
+                                                    <th>Notas</th>
+                                                    <th>Registrado Por</th>
+                                                    <th>Monto</th>
+                                                    <th>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php foreach ($cargos_tipo as $cargo): ?>
-                                                    <tr>
-                                                        <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
-                                                        <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
-                                                        <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
-                                                        <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
-                                                        <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
-                                                        <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
+                                                <?php foreach ($abonos as $abono): ?>
+                                                        <tr>
+                                                            <td><?php echo date('d/m/Y H:i', strtotime($abono['fecha_abono'])); ?></td>
+                                                            <td><?php echo htmlspecialchars($abono['metodo_pago']); ?></td>
+                                                            <td><?php echo htmlspecialchars($abono['notas']); ?></td>
+                                                            <td><small><?php echo htmlspecialchars($abono['u_nombre'] . ' ' . $abono['u_apellido']); ?></small>
+                                                            </td>
+                                                            <td class="fw-bold text-success">Q<?php echo number_format($abono['monto'], 2); ?>
+                                                            </td>
                                                             <td>
-                                                                <button class="btn btn-sm btn-outline-primary" title="Editar Cargo"
-                                                                    onclick='editCargo(<?php echo json_encode($cargo); ?>)'>
-                                                                    <i class="bi bi-pencil"></i>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-outline-danger" title="Eliminar Cargo"
-                                                                    onclick='deleteCargo(<?php echo $cargo['id_cargo']; ?>)'>
-                                                                    <i class="bi bi-trash"></i>
+                                                                <button class="btn btn-sm btn-outline-secondary"
+                                                                    onclick="printAbono(<?php echo $abono['id_abono']; ?>)">
+                                                                    <i class="bi bi-printer"></i>
                                                                 </button>
                                                             </td>
-                                                        <?php endif; ?>
-                                                    </tr>
+                                                        </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
+                            <?php else: ?>
+                                    <div class="alert alert-info mb-4">No se han registrado abonos.</div>
                             <?php endif; ?>
-                        <?php endforeach; ?>
-                    </div>
+                        </div>
+
+                        <!-- Detailed Charges -->
+                        <div class="charges-section">
+                            <h4 class="mb-3">Cargos Detallados</h4>
+
+                            <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
+                                    <?php if (count($cargos_tipo) > 0): ?>
+                                            <?php
+                                            $subtotal_tipo = array_sum(array_column($cargos_tipo, 'subtotal'));
+                                            ?>
+                                            <div class="charges-category">
+                                                <div class="category-title">
+                                                    <span><?php echo $tipo; ?></span>
+                                                    <span class="category-total">Q<?php echo number_format($subtotal_tipo, 2); ?></span>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="data-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Fecha</th>
+                                                                <th>Descripción</th>
+                                                                <th>Cantidad</th>
+                                                                <th>Precio Unit.</th>
+                                                                <th>Subtotal</th>
+                                                                <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
+                                                                        <th>Acciones</th>
+                                                                <?php endif; ?>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($cargos_tipo as $cargo): ?>
+                                                                    <tr>
+                                                                        <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
+                                                                        <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
+                                                                        <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
+                                                                        <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
+                                                                        <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
+                                                                        <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
+                                                                                <td>
+                                                                                    <button class="btn btn-sm btn-outline-primary" title="Editar Cargo"
+                                                                                        onclick='editCargo(<?php echo json_encode($cargo); ?>)'>
+                                                                                        <i class="bi bi-pencil"></i>
+                                                                                    </button>
+                                                                                    <button class="btn btn-sm btn-outline-danger" title="Eliminar Cargo"
+                                                                                        onclick='deleteCargo(<?php echo $cargo['id_cargo']; ?>)'>
+                                                                                        <i class="bi bi-trash"></i>
+                                                                                    </button>
+                                                                                </td>
+                                                                        <?php endif; ?>
+                                                                    </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                    <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
                 <?php else: ?>
-                    <div class="alert alert-warning">No se encontró cuenta hospitalaria.</div>
+                        <div class="alert alert-warning">No se encontró cuenta hospitalaria.</div>
                 <?php endif; ?>
             </div>
         </div>
@@ -951,8 +1069,8 @@ try {
     <!-- Receipt Print Area (Dedicated for formal printing) -->
     <div id="receipt-print-container" style="display: none;">
         <div class="receipt-header">
-            <img src="../../assets/img/Logo.png" alt="CMHS" class="receipt-logo" width="40" height="40">
-            <div class="receipt-title">Centro Médico RS</div>
+            <img src="../../assets/img/cmhs.png" alt="logo" class="receipt-logo" width="40" height="40">
+            <div class="receipt-title">Centro Médico Herrera Saenz</div>
             <div>Estado de Cuenta Hospitalaria</div>
         </div>
 
@@ -974,52 +1092,52 @@ try {
         </div>
 
         <?php if ($cuenta): ?>
-            <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
-                <?php if (count($cargos_tipo) > 0): ?>
-                    <div class="receipt-section-title"><?php echo $tipo; ?></div>
-                    <table class="receipt-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">Fecha</th>
-                                <th>Descripción</th>
-                                <th style="width: 10%; text-align: center;">Cant.</th>
-                                <th style="width: 15%; text-align: right;">Precio U.</th>
-                                <th style="width: 15%; text-align: right;">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($cargos_tipo as $cargo): ?>
-                                <tr>
-                                    <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
-                                    <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
-                                    <td style="text-align: center;"><?php echo number_format($cargo['cantidad'] ?? 1, 0); ?></td>
-                                    <td style="text-align: right;">Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
-                                    <td style="text-align: right;">Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            <?php endforeach; ?>
+                <?php foreach ($cargos_por_tipo as $tipo => $cargos_tipo): ?>
+                        <?php if (count($cargos_tipo) > 0): ?>
+                                <div class="receipt-section-title"><?php echo $tipo; ?></div>
+                                <table class="receipt-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">Fecha</th>
+                                            <th>Descripción</th>
+                                            <th style="width: 10%; text-align: center;">Cant.</th>
+                                            <th style="width: 15%; text-align: right;">Precio U.</th>
+                                            <th style="width: 15%; text-align: right;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($cargos_tipo as $cargo): ?>
+                                                <tr>
+                                                    <td><?php echo date('d/m/Y', strtotime($cargo['fecha_cargo'])); ?></td>
+                                                    <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
+                                                    <td style="text-align: center;"><?php echo number_format($cargo['cantidad'] ?? 1, 0); ?></td>
+                                                    <td style="text-align: right;">Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
+                                                    <td style="text-align: right;">Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                        <?php endif; ?>
+                <?php endforeach; ?>
 
-            <div class="receipt-total-box">
-                <div class="receipt-total-row">
-                    <span style="margin-right: 20px;">TOTAL GENERAL:</span>
-                    <span>Q<?php echo number_format($cuenta['total_general'], 2); ?></span>
-                </div>
-                <?php
-                $saldo_pendiente_calc = $cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0);
-                if ($saldo_pendiente_calc > 0): ?>
-                    <div class="receipt-total-row" style="color: #d9534f; font-size: 10pt; margin-top: 5px;">
-                        <span style="margin-right: 20px;">SALDO PENDIENTE:</span>
-                        <span>Q<?php echo number_format($saldo_pendiente_calc, 2); ?></span>
+                <div class="receipt-total-box">
+                    <div class="receipt-total-row">
+                        <span style="margin-right: 20px;">TOTAL GENERAL:</span>
+                        <span>Q<?php echo number_format($cuenta['total_general'], 2); ?></span>
                     </div>
-                <?php endif; ?>
-            </div>
+                    <?php
+                    $saldo_pendiente_calc = $cuenta['total_general'] - ($cuenta['total_pagado'] ?? 0);
+                    if ($saldo_pendiente_calc > 0): ?>
+                            <div class="receipt-total-row" style="color: #d9534f; font-size: 10pt; margin-top: 5px;">
+                                <span style="margin-right: 20px;">SALDO PENDIENTE:</span>
+                                <span>Q<?php echo number_format($saldo_pendiente_calc, 2); ?></span>
+                            </div>
+                    <?php endif; ?>
+                </div>
         <?php endif; ?>
 
         <div class="receipt-footer">
-            <p>Gracias por confiar en Centro Médico RS</p>
+            <p>Gracias por confiar en Centro Médico Herrera Saenz</p>
             <p>Este documento es un estado de cuenta informativo.</p>
         </div>
     </div>

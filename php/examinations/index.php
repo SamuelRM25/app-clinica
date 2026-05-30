@@ -1,5 +1,5 @@
 <?php
-// index.php - Registro de Exámenes - Centro Médico RS
+// index.php - Registro de Exámenes - Centro Médico Herrera Saenz
 // Versión: 4.5 - Estilo Dashboard Principal con Estadísticas
 session_start();
 
@@ -90,7 +90,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Registro de Exámenes - Centro Médico RS";
+    $page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -105,12 +105,12 @@ try {
     <!-- META TAGS IDÉNTICOS AL DASHBOARD -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Registro de Exámenes - Centro Médico RS">
+    <meta name="description" content="Registro de Exámenes - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- FAVICON Y FUENTES IDÉNTICAS -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- logo Y FUENTES IDÉNTICAS -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Choices.js (para búsqueda en selects) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
@@ -136,9 +136,10 @@ try {
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -394,7 +395,7 @@ try {
         <div class="mt-3">
             <p class="text-muted mb-2">Total acumulado en sistema: <strong><?php echo $total_exams; ?></strong> exámenes
             </p>
-            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico RS</p>
+            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Herrera Saenz</p>
         </div>
     </div>
     </main>
@@ -407,7 +408,7 @@ try {
     <script>
         /**
          * Registro de Exámenes v4.5 - Reingenierizado
-         * Centro Médico RS
+         * Centro Médico Herrera Saenz
          */
         'use strict';
 

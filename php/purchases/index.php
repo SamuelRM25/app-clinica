@@ -1,5 +1,5 @@
 <?php
-// purchases/index.php - Módulo de Compras del Centro Médico RS
+// purchases/index.php - Módulo de Compras del Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -32,7 +32,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Administrador';
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Verificar permisos (solo admin puede acceder a compras)
     if ($user_type !== 'admin') {
@@ -99,7 +99,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Compras - Centro Médico RS";
+    $page_title = "Compras - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -114,14 +114,14 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Compras - Centro Médico RS - Gestión de compras de medicamentos e insumos">
+        content="Módulo de Compras - Centro Médico Herrera Saenz - Gestión de compras de medicamentos e insumos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS (Required for Modals) -->
@@ -148,9 +148,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -333,90 +334,90 @@ try {
                     </div>
 
                     <?php if (count($recent_purchases) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="appointments-table" id="tableRecent">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Proveedor</th>
-                                        <th>Documento</th>
-                                        <th>Total</th>
-                                        <th>Pagado</th>
-                                        <th>Saldo</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recent_purchases as $purchase): ?>
-                                        <?php
-                                        $balance = $purchase['balance'];
-                                        $paid = $purchase['total_amount'] - $balance;
-                                        ?>
+                            <div class="table-responsive">
+                                <table class="appointments-table" id="tableRecent">
+                                    <thead>
                                         <tr>
-                                            <td>
-                                                <?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?>
-                                                <br>
-                                                <small class="text-muted"><?php echo $purchase['items_count']; ?> items</small>
-                                            </td>
-                                            <td>
-                                                <div class="patient-cell">
-                                                    <div class="patient-avatar" style="background: var(--color-info);">
-                                                        <?php echo strtoupper(substr($purchase['provider_name'], 0, 1)); ?>
-                                                    </div>
-                                                    <div class="patient-info">
-                                                        <div class="patient-name">
-                                                            <?php echo htmlspecialchars($purchase['provider_name']); ?>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-secondary">
-                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
-                                                    <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
-                                                </span>
-                                            </td>
-                                            <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
-                                            <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
-                                            <td>
-                                                <?php if ($balance > 0): ?>
-                                                    <span
-                                                        class="badge badge-danger">Q<?php echo number_format($balance, 2); ?></span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-success">Pagado</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <div class="action-buttons">
-                                                    <a href="#" class="btn-icon history" title="Ver detalles"
-                                                        onclick="viewPurchaseDetails(<?php echo $purchase['id']; ?>)">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <?php if ($balance > 0): ?>
-                                                        <a href="#" class="btn-icon edit" title="Registrar pago"
-                                                            onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
-                                                            <i class="bi bi-cash-coin"></i>
-                                                        </a>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
+                                            <th>Fecha</th>
+                                            <th>Proveedor</th>
+                                            <th>Documento</th>
+                                            <th>Total</th>
+                                            <th>Pagado</th>
+                                            <th>Saldo</th>
+                                            <th>Acciones</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-cart-x"></i>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recent_purchases as $purchase): ?>
+                                                <?php
+                                                $balance = $purchase['balance'];
+                                                $paid = $purchase['total_amount'] - $balance;
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?>
+                                                        <br>
+                                                        <small class="text-muted"><?php echo $purchase['items_count']; ?> items</small>
+                                                    </td>
+                                                    <td>
+                                                        <div class="patient-cell">
+                                                            <div class="patient-avatar" style="background: var(--color-info);">
+                                                                <?php echo strtoupper(substr($purchase['provider_name'], 0, 1)); ?>
+                                                            </div>
+                                                            <div class="patient-info">
+                                                                <div class="patient-name">
+                                                                    <?php echo htmlspecialchars($purchase['provider_name']); ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge badge-secondary">
+                                                            <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                            <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
+                                                    <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
+                                                    <td>
+                                                        <?php if ($balance > 0): ?>
+                                                                <span
+                                                                    class="badge badge-danger">Q<?php echo number_format($balance, 2); ?></span>
+                                                        <?php else: ?>
+                                                                <span class="badge badge-success">Pagado</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <a href="#" class="btn-icon history" title="Ver detalles"
+                                                                onclick="viewPurchaseDetails(<?php echo $purchase['id']; ?>)">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                            <?php if ($balance > 0): ?>
+                                                                    <a href="#" class="btn-icon edit" title="Registrar pago"
+                                                                        onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
+                                                                        <i class="bi bi-cash-coin"></i>
+                                                                    </a>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                            <h4 class="text-muted mb-2">No hay compras registradas</h4>
-                            <p class="text-muted mb-3">Comienza registrando tu primera compra</p>
-                            <button class="action-btn" onclick="showNewPurchaseModal()">
-                                <i class="bi bi-plus-lg"></i>
-                                Nueva Compra
-                            </button>
-                        </div>
+                    <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-cart-x"></i>
+                                </div>
+                                <h4 class="text-muted mb-2">No hay compras registradas</h4>
+                                <p class="text-muted mb-3">Comienza registrando tu primera compra</p>
+                                <button class="action-btn" onclick="showNewPurchaseModal()">
+                                    <i class="bi bi-plus-lg"></i>
+                                    Nueva Compra
+                                </button>
+                            </div>
                     <?php endif; ?>
                 </section>
             </div>
@@ -452,75 +453,75 @@ try {
                     ?>
 
                     <?php if (count($pending_purchases) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="appointments-table" id="tablePending">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Proveedor</th>
-                                        <th>Documento</th>
-                                        <th>Total</th>
-                                        <th>Pagado</th>
-                                        <th>Saldo</th>
-                                        <th>Días</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($pending_purchases as $purchase): ?>
-                                        <?php
-                                        $balance = $purchase['balance'];
-                                        $paid = $purchase['total_amount'] - $balance;
-                                        $purchase_date = new DateTime($purchase['purchase_date']);
-                                        $today = new DateTime();
-                                        $days_diff = $today->diff($purchase_date)->days;
-                                        ?>
+                            <div class="table-responsive">
+                                <table class="appointments-table" id="tablePending">
+                                    <thead>
                                         <tr>
-                                            <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
-                                            <td class="fw-bold"><?php echo htmlspecialchars($purchase['provider_name']); ?></td>
-                                            <td>
-                                                <span class="badge badge-secondary">
-                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
-                                                    <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
-                                                </span>
-                                            </td>
-                                            <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
-                                            <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
-                                            <td class="fw-bold text-danger">Q<?php echo number_format($balance, 2); ?></td>
-                                            <td>
-                                                <span
-                                                    class="badge <?php echo $days_diff > 30 ? 'badge-danger' : ($days_diff > 15 ? 'badge-warning' : 'badge-info'); ?>">
-                                                    <?php echo $days_diff; ?> días
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="action-buttons">
-                                                    <a href="#" class="btn-icon edit" title="Registrar pago"
-                                                        onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
-                                                        <i class="bi bi-cash-coin"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
+                                            <th>Fecha</th>
+                                            <th>Proveedor</th>
+                                            <th>Documento</th>
+                                            <th>Total</th>
+                                            <th>Pagado</th>
+                                            <th>Saldo</th>
+                                            <th>Días</th>
+                                            <th>Acciones</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3 text-center">
-                            <p class="text-muted mb-2">
-                                Total pendiente: <strong
-                                    class="text-danger">Q<?php echo number_format($total_balance, 2); ?></strong>
-                                en <strong><?php echo $pending_count; ?></strong> compras
-                            </p>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-check-circle text-success"></i>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($pending_purchases as $purchase): ?>
+                                                <?php
+                                                $balance = $purchase['balance'];
+                                                $paid = $purchase['total_amount'] - $balance;
+                                                $purchase_date = new DateTime($purchase['purchase_date']);
+                                                $today = new DateTime();
+                                                $days_diff = $today->diff($purchase_date)->days;
+                                                ?>
+                                                <tr>
+                                                    <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
+                                                    <td class="fw-bold"><?php echo htmlspecialchars($purchase['provider_name']); ?></td>
+                                                    <td>
+                                                        <span class="badge badge-secondary">
+                                                            <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                            <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
+                                                    <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
+                                                    <td class="fw-bold text-danger">Q<?php echo number_format($balance, 2); ?></td>
+                                                    <td>
+                                                        <span
+                                                            class="badge <?php echo $days_diff > 30 ? 'badge-danger' : ($days_diff > 15 ? 'badge-warning' : 'badge-info'); ?>">
+                                                            <?php echo $days_diff; ?> días
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <a href="#" class="btn-icon edit" title="Registrar pago"
+                                                                onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
+                                                                <i class="bi bi-cash-coin"></i>
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                            <h4 class="text-muted mb-2">¡Excelente gestión!</h4>
-                            <p class="text-muted mb-3">Todas las compras están completamente pagadas</p>
-                        </div>
+                            <div class="mt-3 text-center">
+                                <p class="text-muted mb-2">
+                                    Total pendiente: <strong
+                                        class="text-danger">Q<?php echo number_format($total_balance, 2); ?></strong>
+                                    en <strong><?php echo $pending_count; ?></strong> compras
+                                </p>
+                            </div>
+                    <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-check-circle text-success"></i>
+                                </div>
+                                <h4 class="text-muted mb-2">¡Excelente gestión!</h4>
+                                <p class="text-muted mb-3">Todas las compras están completamente pagadas</p>
+                            </div>
                     <?php endif; ?>
                 </section>
             </div>
@@ -550,56 +551,56 @@ try {
                     ?>
 
                     <?php if (count($old_purchases_list) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="appointments-table" id="tableOld">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Producto</th>
-                                        <th>Presentación</th>
-                                        <th>Casa Farm.</th>
-                                        <th>Cant.</th>
-                                        <th>Precio U.</th>
-                                        <th>Total</th>
-                                        <th>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($old_purchases_list as $row): ?>
-                                        <?php
-                                        $statusClass = 'secondary';
-                                        if ($row['estado_compra'] == 'Completo')
-                                            $statusClass = 'success';
-                                        if ($row['estado_compra'] == 'Pendiente')
-                                            $statusClass = 'warning';
-                                        if ($row['estado_compra'] == 'Abonado')
-                                            $statusClass = 'info';
-                                        ?>
+                            <div class="table-responsive">
+                                <table class="appointments-table" id="tableOld">
+                                    <thead>
                                         <tr>
-                                            <td><?php echo date('d/m/Y', strtotime($row['fecha_compra'])); ?></td>
-                                            <td class="fw-bold"><?php echo htmlspecialchars($row['nombre_compra']); ?></td>
-                                            <td><?php echo htmlspecialchars($row['presentacion_compra']); ?></td>
-                                            <td><?php echo htmlspecialchars($row['casa_compra']); ?></td>
-                                            <td class="text-center"><?php echo $row['cantidad_compra']; ?></td>
-                                            <td>Q<?php echo number_format($row['precio_unidad'], 2); ?></td>
-                                            <td class="fw-bold text-primary">
-                                                Q<?php echo number_format($row['total_compra'], 2); ?></td>
-                                            <td><span
-                                                    class="badge badge-<?php echo $statusClass; ?>"><?php echo $row['estado_compra']; ?></span>
-                                            </td>
+                                            <th>Fecha</th>
+                                            <th>Producto</th>
+                                            <th>Presentación</th>
+                                            <th>Casa Farm.</th>
+                                            <th>Cant.</th>
+                                            <th>Precio U.</th>
+                                            <th>Total</th>
+                                            <th>Estado</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-archive"></i>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($old_purchases_list as $row): ?>
+                                                <?php
+                                                $statusClass = 'secondary';
+                                                if ($row['estado_compra'] == 'Completo')
+                                                    $statusClass = 'success';
+                                                if ($row['estado_compra'] == 'Pendiente')
+                                                    $statusClass = 'warning';
+                                                if ($row['estado_compra'] == 'Abonado')
+                                                    $statusClass = 'info';
+                                                ?>
+                                                <tr>
+                                                    <td><?php echo date('d/m/Y', strtotime($row['fecha_compra'])); ?></td>
+                                                    <td class="fw-bold"><?php echo htmlspecialchars($row['nombre_compra']); ?></td>
+                                                    <td><?php echo htmlspecialchars($row['presentacion_compra']); ?></td>
+                                                    <td><?php echo htmlspecialchars($row['casa_compra']); ?></td>
+                                                    <td class="text-center"><?php echo $row['cantidad_compra']; ?></td>
+                                                    <td>Q<?php echo number_format($row['precio_unidad'], 2); ?></td>
+                                                    <td class="fw-bold text-primary">
+                                                        Q<?php echo number_format($row['total_compra'], 2); ?></td>
+                                                    <td><span
+                                                            class="badge badge-<?php echo $statusClass; ?>"><?php echo $row['estado_compra']; ?></span>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                            <h4 class="text-muted mb-2">No hay registros antiguos</h4>
-                            <p class="text-muted mb-3">Todos los registros están en el sistema actual</p>
-                        </div>
+                    <?php else: ?>
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-archive"></i>
+                                </div>
+                                <h4 class="text-muted mb-2">No hay registros antiguos</h4>
+                                <p class="text-muted mb-3">Todos los registros están en el sistema actual</p>
+                            </div>
                     <?php endif; ?>
                 </section>
             </div>
@@ -616,30 +617,30 @@ try {
                         </div>
 
                         <?php if (count($top_providers) > 0): ?>
-                            <ul class="provider-list">
-                                <?php foreach ($top_providers as $provider): ?>
-                                    <li class="provider-item">
-                                        <div class="provider-item-header">
-                                            <span
-                                                class="provider-item-name"><?php echo htmlspecialchars($provider['provider_name']); ?></span>
-                                            <span class="provider-badge success">
-                                                <?php echo $provider['count']; ?> compras
-                                            </span>
-                                        </div>
-                                        <div class="provider-item-details">
-                                            <span>Total invertido:</span>
-                                            <span class="fw-bold">Q<?php echo number_format($provider['total'], 2); ?></span>
-                                        </div>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
+                                <ul class="provider-list">
+                                    <?php foreach ($top_providers as $provider): ?>
+                                            <li class="provider-item">
+                                                <div class="provider-item-header">
+                                                    <span
+                                                        class="provider-item-name"><?php echo htmlspecialchars($provider['provider_name']); ?></span>
+                                                    <span class="provider-badge success">
+                                                        <?php echo $provider['count']; ?> compras
+                                                    </span>
+                                                </div>
+                                                <div class="provider-item-details">
+                                                    <span>Total invertido:</span>
+                                                    <span class="fw-bold">Q<?php echo number_format($provider['total'], 2); ?></span>
+                                                </div>
+                                            </li>
+                                    <?php endforeach; ?>
+                                </ul>
                         <?php else: ?>
-                            <div class="no-alerts">
-                                <div class="no-alerts-icon">
-                                    <i class="bi bi-building"></i>
+                                <div class="no-alerts">
+                                    <div class="no-alerts-icon">
+                                        <i class="bi bi-building"></i>
+                                    </div>
+                                    <p class="text-muted mb-0">No hay datos de proveedores</p>
                                 </div>
-                                <p class="text-muted mb-0">No hay datos de proveedores</p>
-                            </div>
                         <?php endif; ?>
                     </div>
 
@@ -699,7 +700,8 @@ try {
                     <i class="bi bi-bag-plus text-primary me-2"></i>
                     Registrar Nueva Compra
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <form id="purchaseForm">
@@ -707,8 +709,7 @@ try {
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <label class="form-label">Fecha de Compra</label>
-                            <input type="date" class="form-control" name="purchase_date" id="purchase_date"
-                                required>
+                            <input type="date" class="form-control" name="purchase_date" id="purchase_date" required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Tipo de Documento</label>
@@ -805,7 +806,8 @@ try {
                 </form>
             </div>
             <div class="custom-modal-footer">
-                <button type="button" class="action-btn secondary" onclick="document.getElementById('newPurchaseModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('newPurchaseModal').classList.remove('active')">Cancelar</button>
                 <button type="button" class="action-btn primary" id="savePurchaseBtn" onclick="savePurchase()">
                     <i class="bi bi-check-lg me-2"></i>Guardar Compra
                 </button>
@@ -821,7 +823,8 @@ try {
                     <i class="bi bi-cash-coin text-primary me-2"></i>
                     Gestionar Pagos / Abonos
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <div id="paymentHeaderInfo"
@@ -900,7 +903,8 @@ try {
                     <i class="bi bi-eye text-primary me-2"></i>
                     Detalles de Compra
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body" id="detailsModalBody">
                 <div class="text-center py-5">
@@ -921,7 +925,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Compras Reingenierizado - Centro Médico RS
+        // Módulo de Compras Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';

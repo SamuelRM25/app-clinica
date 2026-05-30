@@ -1,5 +1,5 @@
 <?php
-// historial_examenes.php - Historial de Exámenes - Centro Médico RS
+// historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
 // Versión: 4.0 - Estilo Dashboard Principal
 session_start();
 
@@ -30,7 +30,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Historial de Exámenes - Centro Médico RS";
+    $page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
 
     // Configuración de paginación
     $limit = 20; // Registros por página
@@ -63,7 +63,7 @@ try {
     $examenes = [];
     $total_paginas = 1;
     $total_registros = 0;
-error_log('Error en historial_examenes: ' . $e->getMessage());
+    error_log('Error en historial_examenes: ' . $e->getMessage());
     $error_message = "Error al cargar el historial: Error del servidor.";
     error_log("Error en historial_examenes: " . $e->getMessage());
 }
@@ -74,14 +74,14 @@ error_log('Error en historial_examenes: ' . $e->getMessage());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Exámenes - Centro Médico RS">
+    <meta name="description" content="Historial de Exámenes - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- CSS Crítico (incrustado para máxima velocidad) - IDÉNTICO AL DASHBOARD -->
@@ -105,9 +105,10 @@ error_log('Error en historial_examenes: ' . $e->getMessage());
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -156,7 +157,7 @@ error_log('Error en historial_examenes: ' . $e->getMessage());
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -372,7 +373,7 @@ error_log('Error en historial_examenes: ' . $e->getMessage());
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -706,7 +707,7 @@ error_log('Error en historial_examenes: ' . $e->getMessage());
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(22);
                     doc.setFont('helvetica', 'bold');
-                    doc.text("Centro Médico RS", 105, 18, { align: 'center' });
+                    doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
 
                     doc.setFontSize(14);
                     doc.setFont('helvetica', 'normal');

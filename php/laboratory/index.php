@@ -126,7 +126,7 @@ try {
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // Título de la página
-    $page_title = "Laboratorio - Centro Médico RS";
+    $page_title = "Laboratorio - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -141,14 +141,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard de Laboratorio - Centro Médico RS">
+    <meta name="description" content="Dashboard de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Choices.js (para búsqueda en selects) -->
@@ -176,9 +176,10 @@ try {
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -332,7 +333,7 @@ try {
                             <div class="d-flex gap-2">
                                 <a href="catalogo_pruebas.php" class="action-btn secondary">
                                     <i class="bi bi-gear"></i>
-                                    Catálogo
+                                    catálogo
                                 </a>
 
                                 <?php if ($user_type === 'user' || $user_type === 'admin'): ?>
@@ -402,7 +403,7 @@ try {
                                                                 class="text-muted"><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?></small>
                                                         </td>
                                                         <td>
-                                                             <span class="badge badge-info"><?php echo $orden['num_pruebas']; ?></span>
+                                                            <span class="badge badge-info"><?php echo $orden['num_pruebas']; ?></span>
                                                         </td>
                                                         <td>
                                                             <?php
@@ -555,7 +556,8 @@ try {
         <div class="custom-modal">
             <div class="custom-modal-header">
                 <h5 class="custom-modal-title">
-                    <i class="bi bi-arrow-return-left text-danger"></i> Devolución de Orden <span id="lblNumOrdenDev"></span>
+                    <i class="bi bi-arrow-return-left text-danger"></i> Devolución de Orden <span
+                        id="lblNumOrdenDev"></span>
                 </h5>
                 <button type="button" class="custom-modal-close" onclick="cerrarModalDevolucion()">&times;</button>
             </div>
@@ -573,7 +575,8 @@ try {
 
                     <div class="mb-3">
                         <label for="dev_monto" class="form-label fw-semibold">Monto a Devolver (Q)</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="dev_monto" name="monto" required>
+                        <input type="number" step="0.01" min="0" class="form-control" id="dev_monto" name="monto"
+                            required>
                     </div>
 
                     <div class="mb-3">
@@ -584,7 +587,8 @@ try {
             </div>
             <div class="custom-modal-footer">
                 <button type="button" class="action-btn secondary" onclick="cerrarModalDevolucion()">Cancelar</button>
-                <button type="button" class="action-btn bg-danger text-white border-0" onclick="procesarDevolucionLab()">
+                <button type="button" class="action-btn bg-danger text-white border-0"
+                    onclick="procesarDevolucionLab()">
                     <i class="bi bi-check-circle"></i> Confirmar Devolución
                 </button>
             </div>

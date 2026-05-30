@@ -1,5 +1,5 @@
 <?php
-// sales/index.php - Módulo de Ventas - Centro Médico RS
+// sales/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 
@@ -26,7 +26,7 @@ date_default_timezone_set('America/Guatemala');
 $user_name = $_SESSION['nombre'];
 $user_type = $_SESSION['tipoUsuario'];
 $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 try {
     // Conectar a la base de datos
@@ -86,7 +86,7 @@ try {
     $pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['pendientes'] ?? 0;
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico RS";
+    $page_title = "Ventas - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -97,8 +97,8 @@ try {
     $ventas_hoy = 0;
     $total_mes = 0;
     $pendientes = 0;
-error_log('Error en sales/index.php: ' . $e->getMessage());
-        $error_message = "Error al cargar ventas: Error del servidor.";
+    error_log('Error en sales/index.php: ' . $e->getMessage());
+    $error_message = "Error al cargar ventas: Error del servidor.";
 }
 ?>
 <!DOCTYPE html>
@@ -107,14 +107,14 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS (Required for Modals) -->
@@ -139,6 +139,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
+
         .stat-card {
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease !important;
             border: 1px solid var(--color-border) !important;
@@ -147,22 +148,27 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             box-shadow: var(--shadow-sm) !important;
             cursor: pointer;
         }
+
         .stat-card:hover {
             transform: translateY(-6px);
         }
+
         /* Neon/RGB glows on hover depending on active card color */
         .stat-card:nth-child(1):hover {
             border-color: rgba(var(--color-primary-rgb), 0.65) !important;
             box-shadow: 0 12px 30px rgba(var(--color-primary-rgb), 0.18), 0 0 15px rgba(var(--color-primary-rgb), 0.08) !important;
         }
+
         .stat-card:nth-child(2):hover {
             border-color: rgba(var(--color-success-rgb), 0.65) !important;
             box-shadow: 0 12px 30px rgba(var(--color-success-rgb), 0.18), 0 0 15px rgba(var(--color-success-rgb), 0.08) !important;
         }
+
         .stat-card:nth-child(3):hover {
             border-color: rgba(var(--color-info-rgb), 0.65) !important;
             box-shadow: 0 12px 30px rgba(var(--color-info-rgb), 0.18), 0 0 15px rgba(var(--color-info-rgb), 0.08) !important;
         }
+
         .stat-card:nth-child(4):hover {
             border-color: rgba(var(--color-warning-rgb), 0.65) !important;
             box-shadow: 0 12px 30px rgba(var(--color-warning-rgb), 0.18), 0 0 15px rgba(var(--color-warning-rgb), 0.08) !important;
@@ -174,6 +180,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             border-collapse: collapse;
             background: transparent;
         }
+
         .sales-table th {
             position: sticky;
             top: 0;
@@ -189,6 +196,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             font-size: 0.72rem;
             letter-spacing: 0.06em;
         }
+
         .sales-table td {
             padding: 1.1rem 1.25rem !important;
             border-bottom: 1px solid var(--color-border) !important;
@@ -196,6 +204,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             background: transparent;
             transition: background-color 0.2s ease;
         }
+
         .sales-table tbody tr:hover td {
             background-color: rgba(var(--color-primary-rgb), 0.04) !important;
         }
@@ -215,23 +224,26 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             border-style: solid;
             transition: all 0.3s ease;
         }
+
         .status-badge.pagado {
             background: rgba(var(--color-success-rgb), 0.15) !important;
             color: var(--color-success) !important;
             border-color: rgba(var(--color-success-rgb), 0.35) !important;
-            box-shadow: 0 2px 10px rgba(var(--color-success-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 2px 10px rgba(var(--color-success-rgb), 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
+
         .status-badge.pendiente {
             background: rgba(var(--color-warning-rgb), 0.15) !important;
             color: var(--color-warning) !important;
             border-color: rgba(var(--color-warning-rgb), 0.35) !important;
-            box-shadow: 0 2px 10px rgba(var(--color-warning-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 2px 10px rgba(var(--color-warning-rgb), 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
+
         .status-badge.cancelado {
             background: rgba(var(--color-danger-rgb), 0.15) !important;
             color: var(--color-danger) !important;
             border-color: rgba(var(--color-danger-rgb), 0.35) !important;
-            box-shadow: 0 2px 10px rgba(var(--color-danger-rgb), 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 2px 10px rgba(var(--color-danger-rgb), 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         /* ===== SLIDING DRAWER BACKDROP & DRAWER ===== */
@@ -249,10 +261,12 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             visibility: hidden;
             transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.38s;
         }
+
         .sales-drawer-backdrop.open {
             opacity: 1;
             visibility: visible;
         }
+
         .sales-drawer {
             position: fixed;
             top: 0;
@@ -268,12 +282,16 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             flex-direction: column;
             transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         .sales-drawer-backdrop.open .sales-drawer {
             transform: translateX(-480px);
         }
+
         [data-theme="dark"] .sales-drawer {
-            background: #0f172a; /* Dark background matching global system */
+            background: #0f172a;
+            /* Dark background matching global system */
         }
+
         .sales-drawer-header {
             padding: 1.5rem;
             border-bottom: 1px solid var(--color-border);
@@ -281,6 +299,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             justify-content: space-between;
             align-items: center;
         }
+
         .sales-drawer-title {
             font-size: 1.15rem;
             font-weight: 700;
@@ -290,6 +309,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             color: var(--color-text);
             font-family: 'Inter', sans-serif;
         }
+
         .sales-drawer-close {
             background: transparent;
             border: none;
@@ -300,15 +320,18 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             line-height: 1;
             padding: 0 0.5rem;
         }
+
         .sales-drawer-close:hover {
             color: var(--color-text);
             transform: scale(1.1);
         }
+
         .sales-drawer-body {
             flex: 1;
             overflow-y: auto;
             padding: 1.5rem;
         }
+
         .sales-drawer-footer {
             padding: 1.5rem;
             border-top: 1px solid var(--color-border);
@@ -322,11 +345,13 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             font-family: 'Inter', sans-serif;
             color: var(--color-text);
         }
+
         .invoice-header {
             border-bottom: 2px dashed var(--color-border);
             padding-bottom: 1.5rem;
             margin-bottom: 1.5rem;
         }
+
         .invoice-brand {
             font-size: 1.15rem;
             font-weight: 800;
@@ -334,6 +359,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             letter-spacing: 0.05em;
             margin-bottom: 0.25rem;
         }
+
         .invoice-no {
             font-family: monospace;
             font-size: 0.95rem;
@@ -344,6 +370,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             padding: 0.25rem 0.75rem;
             border-radius: var(--radius-sm);
         }
+
         .invoice-section-title {
             font-size: 0.72rem;
             text-transform: uppercase;
@@ -354,20 +381,24 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             border-bottom: 1px solid rgba(var(--color-border-rgb), 0.5);
             padding-bottom: 0.25rem;
         }
+
         .invoice-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1.25rem;
             margin-bottom: 1.5rem;
         }
+
         .invoice-info-block p {
             margin: 0;
             font-size: 0.85rem;
         }
+
         .invoice-table {
             width: 100%;
             margin-bottom: 1.5rem;
         }
+
         .invoice-table th {
             font-size: 0.72rem;
             font-weight: 800;
@@ -376,11 +407,13 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             padding: 0.6rem 0;
             border-bottom: 1px solid var(--color-border);
         }
+
         .invoice-table td {
             padding: 0.75rem 0;
             border-bottom: 1px solid rgba(var(--color-border-rgb), 0.4);
             font-size: 0.85rem;
         }
+
         .invoice-total-row {
             display: flex;
             justify-content: space-between;
@@ -389,11 +422,13 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             border-top: 2px dashed var(--color-border);
             margin-top: 1.5rem;
         }
+
         .invoice-total-label {
             font-weight: 800;
             font-size: 1.05rem;
             color: var(--color-text);
         }
+
         .invoice-total-val {
             font-size: 1.4rem;
             font-weight: 800;
@@ -412,6 +447,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                 max-width: 100%;
                 right: -100%;
             }
+
             .sales-drawer-backdrop.open .sales-drawer {
                 transform: translateX(-100%);
             }
@@ -427,9 +463,10 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -471,20 +508,20 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
         <main class="main-content">
             <!-- Notificación de ventas pendientes -->
             <?php if ($pendientes > 0): ?>
-                <div class="alert-card mb-4 animate-in delay-1">
-                    <div class="alert-header">
-                        <div class="alert-icon warning">
-                            <i class="bi bi-exclamation-triangle"></i>
+                    <div class="alert-card mb-4 animate-in delay-1">
+                        <div class="alert-header">
+                            <div class="alert-icon warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <h3 class="alert-title">Ventas Pendientes</h3>
                         </div>
-                        <h3 class="alert-title">Ventas Pendientes</h3>
+                        <p class="text-muted mb-0">
+                            Hay <strong><?php echo $pendientes; ?></strong> ventas pendientes de pago.
+                            <a href="#pendientes" class="text-primary text-decoration-none ms-1">
+                                Revisar ahora <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </p>
                     </div>
-                    <p class="text-muted mb-0">
-                        Hay <strong><?php echo $pendientes; ?></strong> ventas pendientes de pago.
-                        <a href="#pendientes" class="text-primary text-decoration-none ms-1">
-                            Revisar ahora <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </p>
-                </div>
             <?php endif; ?>
 
             <!-- Bienvenida personalizada -->
@@ -582,11 +619,11 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
             <!-- Sección de ventas -->
             <section class="sales-section animate-in delay-1">
                 <?php if (isset($error_message)): ?>
-                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <strong>Error:</strong> <?php echo htmlspecialchars($error_message); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Error:</strong> <?php echo htmlspecialchars($error_message); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                 <?php endif; ?>
 
                 <div class="section-header">
@@ -608,137 +645,137 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                 </div>
 
                 <?php if (count($ventas) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="sales-table">
-                            <thead>
-                                <tr>
-                                    <th>Venta</th>
-                                    <th>Cliente</th>
-                                    <th>Vendedor</th>
-                                    <th>Método Pago</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($ventas as $venta): ?>
-                                    <?php
-                                    $fecha_venta = new DateTime($venta['fecha_venta']);
-                                    $hora_venta = $fecha_venta->format('h:i A');
-                                    $fecha_formateada = $fecha_venta->format('d/m/Y');
-                                    $vendedor_nombre = $venta['vendedor_nombre'] ? htmlspecialchars($venta['vendedor_nombre'] . ' ' . substr($venta['vendedor_apellido'], 0, 1) . '.') : 'Sistema';
-                                    ?>
+                        <div class="table-responsive">
+                            <table class="sales-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="sale-cell">
-                                                <div class="sale-avatar">
-                                                    <?php echo strtoupper(substr($venta['nombre_cliente'] ?? 'C', 0, 1)); ?>
-                                                </div>
-                                                <div class="sale-info">
-                                                    <div class="sale-number">
-                                                        #VTA-<?php echo str_pad($venta['id_venta'], 5, '0', STR_PAD_LEFT); ?>
-                                                    </div>
-                                                    <div class="sale-time"><?php echo $hora_venta; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="client-name"><?php echo htmlspecialchars($venta['nombre_cliente']); ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="client-type"><?php echo $vendedor_nombre; ?></div>
-                                        </td>
-                                        <td>
-                                            <span class="payment-badge">
-                                                <i class="bi bi-credit-card"></i>
-                                                <?php echo htmlspecialchars($venta['tipo_pago']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="amount-badge">
-                                                Q<?php echo number_format($venta['total'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $status_class = match (strtolower($venta['estado'])) {
-                                                'pagado' => 'pagado',
-                                                'pendiente' => 'pendiente',
-                                                'cancelado' => 'cancelado',
-                                                default => 'pendiente'
-                                            };
-                                            ?>
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <?php echo htmlspecialchars($venta['estado']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button type="button" class="btn-icon view view-details" title="Ver detalles"
-                                                    data-id="<?php echo $venta['id_venta']; ?>">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <a href="../dispensary/print_receipt.php?id=<?php echo $venta['id_venta']; ?>"
-                                                    target="_blank" class="btn-icon print" title="Imprimir recibo">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                            </div>
-                                        </td>
+                                        <th>Venta</th>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Método Pago</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Paginación -->
-                    <?php if ($total_pages > 1): ?>
-                        <div class="d-flex justify-content-center mt-4">
-                            <nav>
-                                <ul class="pagination">
-                                    <?php if ($page > 1): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-
-                                    <?php
-                                    $start = max(1, $page - 2);
-                                    $end = min($total_pages, $page + 2);
-
-                                    for ($i = $start; $i <= $end; $i++):
-                                        ?>
-                                        <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                        </li>
-                                    <?php endfor; ?>
-
-                                    <?php if ($page < $total_pages): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-                                </ul>
-                            </nav>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($ventas as $venta): ?>
+                                            <?php
+                                            $fecha_venta = new DateTime($venta['fecha_venta']);
+                                            $hora_venta = $fecha_venta->format('h:i A');
+                                            $fecha_formateada = $fecha_venta->format('d/m/Y');
+                                            $vendedor_nombre = $venta['vendedor_nombre'] ? htmlspecialchars($venta['vendedor_nombre'] . ' ' . substr($venta['vendedor_apellido'], 0, 1) . '.') : 'Sistema';
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="sale-cell">
+                                                        <div class="sale-avatar">
+                                                            <?php echo strtoupper(substr($venta['nombre_cliente'] ?? 'C', 0, 1)); ?>
+                                                        </div>
+                                                        <div class="sale-info">
+                                                            <div class="sale-number">
+                                                                #VTA-<?php echo str_pad($venta['id_venta'], 5, '0', STR_PAD_LEFT); ?>
+                                                            </div>
+                                                            <div class="sale-time"><?php echo $hora_venta; ?></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="client-name"><?php echo htmlspecialchars($venta['nombre_cliente']); ?>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="client-type"><?php echo $vendedor_nombre; ?></div>
+                                                </td>
+                                                <td>
+                                                    <span class="payment-badge">
+                                                        <i class="bi bi-credit-card"></i>
+                                                        <?php echo htmlspecialchars($venta['tipo_pago']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="amount-badge">
+                                                        Q<?php echo number_format($venta['total'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $status_class = match (strtolower($venta['estado'])) {
+                                                        'pagado' => 'pagado',
+                                                        'pendiente' => 'pendiente',
+                                                        'cancelado' => 'cancelado',
+                                                        default => 'pendiente'
+                                                    };
+                                                    ?>
+                                                    <span class="status-badge <?php echo $status_class; ?>">
+                                                        <?php echo htmlspecialchars($venta['estado']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <button type="button" class="btn-icon view view-details" title="Ver detalles"
+                                                            data-id="<?php echo $venta['id_venta']; ?>">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <a href="../dispensary/print_receipt.php?id=<?php echo $venta['id_venta']; ?>"
+                                                            target="_blank" class="btn-icon print" title="Imprimir recibo">
+                                                            <i class="bi bi-printer"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endif; ?>
+
+                        <!-- Paginación -->
+                        <?php if ($total_pages > 1): ?>
+                                <div class="d-flex justify-content-center mt-4">
+                                    <nav>
+                                        <ul class="pagination">
+                                            <?php if ($page > 1): ?>
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                                            <i class="bi bi-chevron-left"></i>
+                                                        </a>
+                                                    </li>
+                                            <?php endif; ?>
+
+                                            <?php
+                                            $start = max(1, $page - 2);
+                                            $end = min($total_pages, $page + 2);
+
+                                            for ($i = $start; $i <= $end; $i++):
+                                                ?>
+                                                    <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                                    </li>
+                                            <?php endfor; ?>
+
+                                            <?php if ($page < $total_pages): ?>
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                                            <i class="bi bi-chevron-right"></i>
+                                                        </a>
+                                                    </li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </nav>
+                                </div>
+                        <?php endif; ?>
                 <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-receipt"></i>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No hay ventas registradas</h4>
+                            <p class="text-muted mb-3">Total de ventas en sistema: <?php echo $total_records; ?></p>
+                            <a href="../dispensary/index.php" class="action-btn">
+                                <i class="bi bi-plus-lg"></i>
+                                Registrar primera venta
+                            </a>
                         </div>
-                        <h4 class="text-muted mb-2">No hay ventas registradas</h4>
-                        <p class="text-muted mb-3">Total de ventas en sistema: <?php echo $total_records; ?></p>
-                        <a href="../dispensary/index.php" class="action-btn">
-                            <i class="bi bi-plus-lg"></i>
-                            Registrar primera venta
-                        </a>
-                    </div>
                 <?php endif; ?>
             </section>
         </main>
@@ -764,7 +801,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                 <!-- Contenido Premium de Factura -->
                 <div id="drawer-content" class="invoice-wrapper" style="display: none;">
                     <div class="invoice-header text-center">
-                        <div class="invoice-brand">CENTRO MÉDICO RS</div>
+                        <div class="invoice-brand">Centro Médico Herrera Saenz</div>
                         <div class="text-muted small">Servicios de Salud Premium</div>
                         <div class="invoice-no mt-2" id="drawer-sale-no">#VTA-00000</div>
                     </div>
@@ -823,7 +860,8 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                     <i class="bi bi-file-earmark-bar-graph text-success me-2"></i>
                     Reporte por Jornada
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <p class="text-muted small mb-3">
@@ -836,7 +874,8 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                 </div>
             </div>
             <div class="custom-modal-footer">
-                <button type="button" class="action-btn secondary" onclick="document.getElementById('reportModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('reportModal').classList.remove('active')">Cancelar</button>
                 <button type="button" class="action-btn success primary" id="btnGenerateReport">
                     <i class="bi bi-file-earmark-pdf me-2"></i>
                     Generar Reporte
@@ -855,7 +894,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Ventas Reingenierizado - Centro Médico RS
+        // Módulo de Ventas Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -1054,7 +1093,7 @@ error_log('Error en sales/index.php: ' . $e->getMessage());
                             document.getElementById('drawer-fecha').textContent = fechaFormateada;
 
                             document.getElementById('drawer-tipo-pago').textContent = data.venta.tipo_pago || 'Efectivo';
-                            
+
                             // Estado de pago en badge brillante
                             const estado = data.venta.estado || 'Pendiente';
                             const estadoBadge = document.getElementById('drawer-estado-badge');

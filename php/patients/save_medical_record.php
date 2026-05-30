@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Regular payment record (using same logic as save_order.php)
                     $total_bill = array_sum(array_column($items_billing, 'precio'));
                     $desc_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", array_column($items_billing, 'nombre'));
-                    
+
                     $patientDataStmt = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre_full FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
                     $patientDataStmt->execute([$_POST['id_paciente'], $id_hospital]);
                     $pac_full = $patientDataStmt->fetch(PDO::FETCH_ASSOC)['nombre_full'] ?? 'Paciente';
@@ -219,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmtBill->execute([$_POST['id_paciente'], $id_orden, $pac_full, $desc_bill, $total_bill, $id_hospital]);
                 }
-                
+
                 $_SESSION['message'] .= " y se ha generado la Orden de Laboratorio #$numero_orden";
             }
 

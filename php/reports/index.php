@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Reportes - Centro Médico RS
+// index.php - Módulo de Reportes - Centro Médico Herrera Saenz
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 
@@ -32,7 +32,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Obtener fechas para filtros (predeterminado: mes actual)
     // Obtener fecha para filtro (predeterminado: hoy) - Filtro por Día (Turno)
@@ -204,7 +204,7 @@ try {
     $total_medicamentos = $total_medicamentos->fetchColumn();
 
     // Título de la página
-    $page_title = "Reportes - Centro Médico RS";
+    $page_title = "Reportes - Centro Médico Herrera Saenz";
 
     // ============ REPORTE DE RENTABILIDAD DE FARMACIA ============
 
@@ -359,7 +359,7 @@ try {
 
         foreach ($raw_transfers as $transfer) {
             $total_transfers_amount += $transfer['valor_traslado'];
-            
+
             $t_date = new DateTime($transfer['fecha_venta']);
             $mes_num = (int) date('m', $t_date->getTimestamp()) - 1;
             $anio = date('Y', $t_date->getTimestamp());
@@ -380,7 +380,7 @@ try {
             $transfers_data[$mes_nombre]['total'] += $transfer['valor_traslado'];
             $transfers_data[$mes_nombre]['dias'][$dia_str]['total'] += $transfer['valor_traslado'];
             $transfers_data[$mes_nombre]['dias'][$dia_str]['destinos'][$destino]['total'] += $transfer['valor_traslado'];
-            
+
             $transfers_data[$mes_nombre]['dias'][$dia_str]['destinos'][$destino]['items'][] = $transfer;
         }
     }
@@ -392,8 +392,8 @@ try {
 
     // Mostrar mensaje amigable al usuario
     $error_message = "Error al conectar con la base de datos. Por favor, contacte al administrador.";
-error_log('Error en reports/index.php: ' . $e->getMessage());
-        if ($_SESSION['tipoUsuario'] === 'admin') {
+    error_log('Error en reports/index.php: ' . $e->getMessage());
+    if ($_SESSION['tipoUsuario'] === 'admin') {
         $error_message .= "<br><small>Detalles técnicos: " . htmlspecialchars($e->getMessage()) . "</small>";
     }
     die($error_message);
@@ -410,14 +410,14 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Reportes - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Reportes - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- SweetAlert2 -->
@@ -444,12 +444,21 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             margin-bottom: 2rem;
             box-shadow: var(--shadow-sm);
         }
-        .filter-header { margin-bottom: 1rem; }
-        .filter-title {
-            font-size: 1rem; font-weight: 700;
-            color: var(--color-text); margin: 0 0 0.25rem;
-            display: flex; align-items: center; gap: 0.5rem;
+
+        .filter-header {
+            margin-bottom: 1rem;
         }
+
+        .filter-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0 0 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .filter-form input[type="date"] {
             padding: 0.625rem 0.875rem;
             border: 1.5px solid var(--color-border);
@@ -462,6 +471,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             transition: border-color 0.2s, box-shadow 0.2s;
             min-width: 180px;
         }
+
         .filter-form input[type="date"]:focus {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
@@ -478,23 +488,46 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
         }
 
         /* Override Bootstrap table styles to match our theme */
-        .content-section .table { --bs-table-bg: var(--color-card); color: var(--color-text); }
-        .content-section .table thead.bg-light { background: var(--color-surface) !important; }
-        .content-section .table > :not(caption) > * > * { border-color: var(--color-border); color: var(--color-text); }
-        .content-section .card { background: var(--color-card) !important; }
-        .content-section .card-header { background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+        .content-section .table {
+            --bs-table-bg: var(--color-card);
+            color: var(--color-text);
+        }
+
+        .content-section .table thead.bg-light {
+            background: var(--color-surface) !important;
+        }
+
+        .content-section .table> :not(caption)>*>* {
+            border-color: var(--color-border);
+            color: var(--color-text);
+        }
+
+        .content-section .card {
+            background: var(--color-card) !important;
+        }
+
+        .content-section .card-header {
+            background: var(--color-surface) !important;
+            border-color: var(--color-border) !important;
+        }
 
         /* ===== AMOUNT BADGE ===== */
         .amount-badge {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            padding: 0.4rem 0.875rem; border-radius: 50px;
-            font-size: 0.85rem; font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
         }
+
         .amount-badge.income {
             background: rgba(var(--color-success-rgb), 0.12);
             color: var(--color-success);
             border: 1px solid rgba(var(--color-success-rgb), 0.25);
         }
+
         .amount-badge.expense {
             background: rgba(var(--color-danger-rgb), 0.12);
             color: var(--color-danger);
@@ -502,7 +535,11 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
         }
 
         /* ===== LABS ACCORDION ===== */
-        .custom-accordion-wrapper { display: flex; flex-direction: column; gap: 0.75rem; }
+        .custom-accordion-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
 
         .report-details {
             background: var(--color-card);
@@ -511,9 +548,21 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             overflow: hidden;
             transition: box-shadow 0.2s;
         }
-        .report-details[open] { box-shadow: var(--shadow-sm); }
-        .report-details.level-2 { margin-top: 0.5rem; border-radius: var(--radius-md); background: var(--color-surface); }
-        .report-details.level-3 { margin-top: 0.35rem; border-radius: var(--radius-sm); }
+
+        .report-details[open] {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .report-details.level-2 {
+            margin-top: 0.5rem;
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+        }
+
+        .report-details.level-3 {
+            margin-top: 0.35rem;
+            border-radius: var(--radius-sm);
+        }
 
         .custom-summary {
             display: flex;
@@ -529,30 +578,110 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             transition: background 0.15s;
             gap: 1rem;
         }
-        .custom-summary::-webkit-details-marker { display: none; }
-        .custom-summary:hover { background: rgba(var(--color-primary-rgb), 0.05); }
-        .report-details[open] > .custom-summary { border-bottom: 1px solid var(--color-border); }
-        .report-details.level-2 .custom-summary { padding: 0.75rem 1rem; font-size: 0.85rem; }
-        .report-details.level-3 .custom-summary { padding: 0.6rem 1rem; font-size: 0.8rem; }
 
-        .report-details-body { padding: 0.75rem 1rem; }
-        .report-details.level-2 .report-details-body { padding: 0.5rem 0.75rem; }
+        .custom-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .custom-summary:hover {
+            background: rgba(var(--color-primary-rgb), 0.05);
+        }
+
+        .report-details[open]>.custom-summary {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .report-details.level-2 .custom-summary {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .report-details.level-3 .custom-summary {
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .report-details-body {
+            padding: 0.75rem 1rem;
+        }
+
+        .report-details.level-2 .report-details-body {
+            padding: 0.5rem 0.75rem;
+        }
 
         /* Lab items table */
-        .lab-items-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        .lab-items-table th { color: var(--color-text-secondary); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border); }
-        .lab-items-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border); color: var(--color-text); }
-        .lab-items-table tr:last-child td { border-bottom: none; }
+        .lab-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .lab-items-table th {
+            color: var(--color-text-secondary);
+            font-weight: 700;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .lab-items-table td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+        }
+
+        .lab-items-table tr:last-child td {
+            border-bottom: none;
+        }
 
         /* ===== PROFITABILITY TABLE ===== */
-        .profit-table { width: 100%; border-collapse: collapse; }
-        .profit-table th { padding: 0.875rem 1.25rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); background: var(--color-surface); border-bottom: 1px solid var(--color-border); text-align: left; }
-        .profit-table td { padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--color-border); color: var(--color-text); font-size: 0.875rem; }
-        .profit-table tbody tr:hover { background: rgba(var(--color-primary-rgb), 0.03); }
-        .profit-table .text-success { color: var(--color-success) !important; font-weight: 700; }
-        .profit-table .text-danger  { color: var(--color-danger) !important; }
-        .profit-positive { color: var(--color-success); font-weight: 700; }
-        .profit-negative { color: var(--color-danger); font-weight: 700; }
+        .profit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .profit-table th {
+            padding: 0.875rem 1.25rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            text-align: left;
+        }
+
+        .profit-table td {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+            font-size: 0.875rem;
+        }
+
+        .profit-table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+
+        .profit-table .text-success {
+            color: var(--color-success) !important;
+            font-weight: 700;
+        }
+
+        .profit-table .text-danger {
+            color: var(--color-danger) !important;
+        }
+
+        .profit-positive {
+            color: var(--color-success);
+            font-weight: 700;
+        }
+
+        .profit-negative {
+            color: var(--color-danger);
+            font-weight: 700;
+        }
 
         /* Chart containers */
         .chart-container {
@@ -563,13 +692,23 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             padding: 1.5rem;
             box-shadow: var(--shadow-sm);
         }
-        .chart-title { font-size: 0.9rem; font-weight: 700; color: var(--color-text); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
         /* ===== PREMIUM TABS ===== */
         .reports-tabs-container {
             margin-bottom: 2rem;
             position: relative;
         }
+
         .reports-tabs {
             display: flex;
             gap: 0.35rem;
@@ -582,9 +721,11 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             position: relative;
             scrollbar-width: none;
         }
+
         .reports-tabs::-webkit-scrollbar {
             display: none;
         }
+
         .reports-tab-btn {
             flex: 1;
             min-width: 150px;
@@ -605,10 +746,12 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             position: relative;
             z-index: 2;
         }
+
         .reports-tab-btn:hover {
             color: var(--color-primary);
             background: rgba(var(--color-primary-rgb), 0.05);
         }
+
         .reports-tab-btn.active {
             color: #ffffff;
             background: var(--color-primary);
@@ -622,6 +765,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             transform: translateY(10px);
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
+
         .tab-content.active {
             display: block;
             opacity: 1;
@@ -637,20 +781,26 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             box-shadow: var(--shadow-sm);
             overflow: hidden;
         }
+
         .stat-card::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             border-radius: inherit;
             pointer-events: none;
             box-shadow: inset 0 0 12px rgba(var(--color-primary-rgb), 0);
             transition: box-shadow 0.3s;
         }
+
         .stat-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-lg), 0 0 15px rgba(var(--color-primary-rgb), 0.12);
             border-color: rgba(var(--color-primary-rgb), 0.3) !important;
         }
+
         .stat-card:hover::after {
             box-shadow: inset 0 0 12px rgba(var(--color-primary-rgb), 0.05);
         }
@@ -664,20 +814,25 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             margin-bottom: 0.75rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
+
         .report-details.level-1:hover {
             border-color: rgba(var(--color-primary-rgb), 0.3);
             box-shadow: var(--shadow-sm);
         }
+
         .report-details.level-1[open] {
             border-color: rgba(var(--color-primary-rgb), 0.4);
             box-shadow: var(--shadow-md);
         }
-        .report-details.level-1 > .custom-summary {
+
+        .report-details.level-1>.custom-summary {
             border-left: 4px solid var(--color-primary);
         }
+
         .report-details.level-2 {
             border-left: 3px solid var(--color-info);
         }
+
         .report-details.level-3 {
             border-left: 2px solid var(--color-secondary);
         }
@@ -686,8 +841,10 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             position: relative;
             padding: 1.1rem 2.5rem 1.1rem 1.5rem !important;
         }
+
         .custom-summary::after {
-            content: '\F282'; /* bootstrap icon chevron-down */
+            content: '\F282';
+            /* bootstrap icon chevron-down */
             font-family: 'Bootstrap Icons';
             position: absolute;
             right: 1.5rem;
@@ -697,7 +854,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             font-size: 0.85rem;
             color: var(--color-text-secondary);
         }
-        .report-details[open] > .custom-summary::after {
+
+        .report-details[open]>.custom-summary::after {
             transform: translateY(-50%) rotate(180deg);
         }
 
@@ -708,6 +866,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             max-width: 380px;
             margin-bottom: 1.25rem;
         }
+
         .search-input {
             width: 100%;
             padding: 0.625rem 1rem 0.625rem 2.5rem;
@@ -719,11 +878,13 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
             outline: none;
             transition: all 0.2s;
         }
+
         .search-input:focus {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
             background: var(--color-card);
         }
+
         .search-icon {
             position: absolute;
             left: 0.875rem;
@@ -735,18 +896,27 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
         /* Hide tabs in print mode */
         @media print {
-            .reports-tabs-container, .filter-panel, .chart-container, .page-actions, .theme-toggle, .btn-group {
+
+            .reports-tabs-container,
+            .filter-panel,
+            .chart-container,
+            .page-actions,
+            .theme-toggle,
+            .btn-group {
                 display: none !important;
             }
+
             .tab-content {
                 display: block !important;
                 opacity: 1 !important;
                 transform: none !important;
             }
+
             body {
                 background: white !important;
                 color: black !important;
             }
+
             .content-section {
                 border: none !important;
                 box-shadow: none !important;
@@ -766,9 +936,10 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -866,9 +1037,9 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                         <i class="bi bi-droplet-half"></i> Auditoría de Labs
                     </button>
                     <?php if ($can_view_transfers): ?>
-                    <button class="reports-tab-btn" data-tab="transfers">
-                        <i class="bi bi-arrow-left-right"></i> Dispensario
-                    </button>
+                            <button class="reports-tab-btn" data-tab="transfers">
+                                <i class="bi bi-arrow-left-right"></i> Dispensario
+                            </button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -931,7 +1102,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                 </div>
 
                 <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
-                <div class="content-section animate-in mt-4 p-4" style="background: var(--color-surface); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
+                <div class="content-section animate-in mt-4 p-4"
+                    style="background: var(--color-surface); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
                     <div class="section-header border-0 mb-4">
                         <h3 class="section-title h4">
                             <i class="bi bi-bar-chart-line text-primary me-2"></i>
@@ -942,8 +1114,10 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     <div class="row g-4 mb-5">
                         <!-- Gráfico de Tendencia -->
                         <div class="col-lg-8">
-                            <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-3">Tendencia de Ventas (30 días)</h5>
+                            <div class="card border-0 shadow-sm p-3 h-100"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
+                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-3">Tendencia de Ventas
+                                    (30 días)</h5>
                                 <div style="height: 300px;">
                                     <canvas id="salesTrendChart"></canvas>
                                 </div>
@@ -952,7 +1126,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
                         <!-- Gráfico de Distribución -->
                         <div class="col-lg-4">
-                            <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--color-card); border-radius: var(--radius-lg);">
+                            <div class="card border-0 shadow-sm p-3 h-100"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
                                 <h5 class="card-title text-muted small text-uppercase fw-bold mb-3">Mix de Ingresos</h5>
                                 <div style="height: 300px;">
                                     <canvas id="revenueDistChart"></canvas>
@@ -964,9 +1139,11 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     <div class="row g-4">
                         <!-- Top Medicamentos -->
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100" style="background: var(--color-card); border-radius: var(--radius-lg);">
+                            <div class="card border-0 shadow-sm h-100"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
                                 <div class="card-header bg-transparent border-0 p-3">
-                                    <h5 class="card-title text-muted small text-uppercase fw-bold mb-0">Top Medicamentos Vendidos</h5>
+                                    <h5 class="card-title text-muted small text-uppercase fw-bold mb-0">Top Medicamentos
+                                        Vendidos</h5>
                                 </div>
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
@@ -980,13 +1157,18 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                             <tbody>
                                                 <?php foreach ($top_meds_data as $med): ?>
                                                         <tr>
-                                                            <td class="ps-3 py-2 fw-medium"><?php echo htmlspecialchars($med['nombre_med']); ?></td>
-                                                            <td class="pe-3 py-2 text-end fw-bold text-primary"><?php echo $med['total_vendido']; ?></td>
+                                                            <td class="ps-3 py-2 fw-medium">
+                                                                <?php echo htmlspecialchars($med['nombre_med']); ?>
+                                                            </td>
+                                                            <td class="pe-3 py-2 text-end fw-bold text-primary">
+                                                                <?php echo $med['total_vendido']; ?>
+                                                            </td>
                                                         </tr>
                                                 <?php endforeach; ?>
                                                 <?php if (empty($top_meds_data)): ?>
                                                         <tr>
-                                                            <td colspan="2" class="text-center py-4 text-muted small">Sin datos disponibles</td>
+                                                            <td colspan="2" class="text-center py-4 text-muted small">Sin datos
+                                                                disponibles</td>
                                                         </tr>
                                                 <?php endif; ?>
                                             </tbody>
@@ -998,29 +1180,38 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
                         <!-- Resumen Quick Insights -->
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100 p-4" style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-4">Insights Estratégicos</h5>
+                            <div class="card border-0 shadow-sm h-100 p-4"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
+                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-4">Insights
+                                    Estratégicos</h5>
                                 <div class="row g-3">
                                     <div class="col-6">
-                                        <div class="p-3 rounded-3" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+                                        <div class="p-3 rounded-3"
+                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
                                             <small class="text-muted d-block mb-1">Margen Operativo</small>
-                                            <span class="h3 fw-bold mb-0 text-success"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
+                                            <span
+                                                class="h3 fw-bold mb-0 text-success"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="p-3 rounded-3" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+                                        <div class="p-3 rounded-3"
+                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
                                             <small class="text-muted d-block mb-1">Costo de Ventas</small>
-                                            <span class="h3 fw-bold mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
+                                            <span
+                                                class="h3 fw-bold mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
                                         </div>
                                     </div>
                                     <div class="col-12">
-                                        <div class="p-3 rounded-3 mt-2" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+                                        <div class="p-3 rounded-3 mt-2"
+                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <small class="text-muted fw-bold">Ganancia Farmacia Estimada</small>
                                                 <span class="badge bg-success-subtle text-success">Rentable</span>
                                             </div>
-                                            <span class="h2 fw-bold mb-0 text-primary">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
-                                            <p class="text-muted small mt-2 mb-0">Cálculo basado en FIFO: Precio Venta - Costo de Adquisición</p>
+                                            <span
+                                                class="h2 fw-bold mb-0 text-primary">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
+                                            <p class="text-muted small mt-2 mb-0">Cálculo basado en FIFO: Precio Venta -
+                                                Costo de Adquisición</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1151,7 +1342,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                             Contabilidad Detallada
                         </h3>
                         <span class="amount-badge <?php echo $total_gross_profit >= 0 ? 'income' : 'expense'; ?>">
-                            <i class="bi <?php echo $total_gross_profit >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'; ?>"></i>
+                            <i
+                                class="bi <?php echo $total_gross_profit >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'; ?>"></i>
                             Q<?php echo number_format($total_gross_profit, 2); ?>
                         </span>
                     </div>
@@ -1159,14 +1351,16 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     <div class="row g-4">
                         <!-- Ingresos -->
                         <div class="col-md-6">
-                            <div class="card h-100 shadow-sm border-0" style="background: var(--color-card); border-radius: var(--radius-lg);">
+                            <div class="card h-100 shadow-sm border-0"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
                                 <div class="card-header bg-transparent border-0 p-4">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
                                             <i class="bi bi-arrow-down-left-circle-fill text-success me-2"></i>
                                             Fuentes de Ingresos
                                         </h4>
-                                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 border border-success">
+                                        <span
+                                            class="badge rounded-pill bg-success-subtle text-success px-3 py-2 border border-success">
                                             Q<?php echo number_format($total_gross_revenue, 2); ?>
                                         </span>
                                     </div>
@@ -1177,29 +1371,35 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                             <thead class="bg-light">
                                                 <tr>
                                                     <th class="ps-4 py-3 text-muted small text-uppercase">Categoría</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto</th>
+                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3">Ventas Farmacia</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_sales_meds, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_sales_meds, 2); ?></td>
                                                 </tr>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3">Consultas Médicas</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_billings, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_billings, 2); ?></td>
                                                 </tr>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3">Procedimientos</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_procedures, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_procedures, 2); ?></td>
                                                 </tr>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3">Servicios Laboratorio</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_exams_revenue, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_exams_revenue, 2); ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td class="ps-4 py-3">Hospitalización</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_hospitalization, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_hospitalization, 2); ?></td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1210,14 +1410,16 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
                         <!-- Egresos -->
                         <div class="col-md-6">
-                            <div class="card h-100 shadow-sm border-0" style="background: var(--color-card); border-radius: var(--radius-lg);">
+                            <div class="card h-100 shadow-sm border-0"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
                                 <div class="card-header bg-transparent border-0 p-4">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
                                             <i class="bi bi-arrow-up-right-circle-fill text-danger me-2"></i>
                                             Egresos e Inversión
                                         </h4>
-                                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2 border border-danger">
+                                        <span
+                                            class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2 border border-danger">
                                             Q<?php echo number_format($total_purchases_meds, 2); ?>
                                         </span>
                                     </div>
@@ -1228,13 +1430,15 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                             <thead class="bg-light">
                                                 <tr>
                                                     <th class="ps-4 py-3 text-muted small text-uppercase">Concepto</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto</th>
+                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3">Adquisición Inventario</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">Q<?php echo number_format($total_purchases_meds, 2); ?></td>
+                                                    <td class="pe-4 py-3 text-end fw-semibold">
+                                                        Q<?php echo number_format($total_purchases_meds, 2); ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td colspan="2" class="text-center py-5">
@@ -1255,7 +1459,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     <!-- Resumen de desempeño -->
                     <div class="row mt-4">
                         <div class="col-12">
-                            <div class="card shadow-sm border-0" style="background: var(--color-card); border-radius: var(--radius-lg);">
+                            <div class="card shadow-sm border-0"
+                                style="background: var(--color-card); border-radius: var(--radius-lg);">
                                 <div class="card-header bg-transparent border-0 p-4">
                                     <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
                                         <i class="bi bi-graph-up-arrow text-primary me-2"></i>
@@ -1267,38 +1472,48 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="bg-light">
                                                 <tr>
-                                                    <th class="ps-4 py-3 text-muted small text-uppercase">Métrica de Desempeño</th>
-                                                    <th class="py-3 text-end text-muted small text-uppercase">Valor Nominal</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Impacto / Margen</th>
+                                                    <th class="ps-4 py-3 text-muted small text-uppercase">Métrica de
+                                                        Desempeño</th>
+                                                    <th class="py-3 text-end text-muted small text-uppercase">Valor
+                                                        Nominal</th>
+                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">
+                                                        Impacto / Margen</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3 fw-medium">Ingresos Brutos Acumulados</td>
-                                                    <td class="text-end fw-bold text-success">Q<?php echo number_format($total_gross_revenue, 2); ?></td>
-                                                    <td class="pe-4 text-end"><span class="badge bg-light text-dark border">100%</span></td>
+                                                    <td class="text-end fw-bold text-success">
+                                                        Q<?php echo number_format($total_gross_revenue, 2); ?></td>
+                                                    <td class="pe-4 text-end"><span
+                                                            class="badge bg-light text-dark border">100%</span></td>
                                                 </tr>
                                                 <tr class="border-bottom">
                                                     <td class="ps-4 py-3 fw-medium">Costo de Ventas (Farmacia)</td>
-                                                    <td class="text-end text-danger">- Q<?php echo number_format($sales_cost, 2); ?></td>
+                                                    <td class="text-end text-danger">-
+                                                        Q<?php echo number_format($sales_cost, 2); ?></td>
                                                     <td class="pe-4 text-end text-muted small">
                                                         <?php echo $total_gross_revenue > 0 ? number_format(($sales_cost / $total_gross_revenue) * 100, 1) : '0'; ?>%
                                                     </td>
                                                 </tr>
                                                 <tr class="border-bottom" style="background: var(--color-surface);">
                                                     <td class="ps-4 py-3 fw-bold">Utilidad Bruta de Operación</td>
-                                                    <td class="text-end fw-bold <?php echo $total_gross_profit >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                                    <td
+                                                        class="text-end fw-bold <?php echo $total_gross_profit >= 0 ? 'text-success' : 'text-danger'; ?>">
                                                         Q<?php echo number_format($total_gross_profit, 2); ?>
                                                     </td>
                                                     <td class="pe-4 text-end">
-                                                        <span class="badge <?php echo $total_gross_profit >= 0 ? 'bg-success' : 'bg-danger'; ?>">
+                                                        <span
+                                                            class="badge <?php echo $total_gross_profit >= 0 ? 'bg-success' : 'bg-danger'; ?>">
                                                             <?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%
                                                         </span>
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td class="ps-4 py-3 fw-medium">Flujo de Efectivo Neto (Periodo)</td>
-                                                    <td class="text-end fw-bold <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
+                                                    <td class="ps-4 py-3 fw-medium">Flujo de Efectivo Neto (Periodo)
+                                                    </td>
+                                                    <td
+                                                        class="text-end fw-bold <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
                                                         Q<?php echo number_format($net_cash_flow, 2); ?>
                                                     </td>
                                                     <td class="pe-4 text-end text-muted small">Ingresos - Compras</td>
@@ -1343,16 +1558,19 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     </div>
 
                     <!-- Filtros de Rentabilidad -->
-                    <div class="card border-0 shadow-sm mb-4" style="background: var(--color-surface); border-radius: var(--radius-lg);">
+                    <div class="card border-0 shadow-sm mb-4"
+                        style="background: var(--color-surface); border-radius: var(--radius-lg);">
                         <div class="card-body p-3">
                             <form method="GET" class="row g-3 align-items-end">
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted">Rango Inicial</label>
-                                    <input type="date" name="profit_start" class="form-control form-control-sm" value="<?php echo $profit_start; ?>">
+                                    <input type="date" name="profit_start" class="form-control form-control-sm"
+                                        value="<?php echo $profit_start; ?>">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted">Rango Final</label>
-                                    <input type="date" name="profit_end" class="form-control form-control-sm" value="<?php echo $profit_end; ?>">
+                                    <input type="date" name="profit_end" class="form-control form-control-sm"
+                                        value="<?php echo $profit_end; ?>">
                                 </div>
                                 <div class="col-md-4">
                                     <input type="hidden" name="fecha_filtro" value="<?php echo $fecha_filtro ?? ''; ?>">
@@ -1370,7 +1588,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                             <div class="stat-header">
                                 <div>
                                     <div class="stat-title">Ventas Totales</div>
-                                    <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?></div>
+                                    <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?>
+                                    </div>
                                 </div>
                                 <div class="stat-icon info">
                                     <i class="bi bi-currency-dollar"></i>
@@ -1393,7 +1612,9 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                 <div>
                                     <div class="stat-title">Ganancia Neta</div>
                                     <div class="stat-value">Q<?php echo number_format($total_profit_amount, 2); ?></div>
-                                    <div class="stat-label mt-1 fw-bold text-success"><?php echo number_format($total_profit_margin, 1); ?>% Margen</div>
+                                    <div class="stat-label mt-1 fw-bold text-success">
+                                        <?php echo number_format($total_profit_margin, 1); ?>% Margen
+                                    </div>
                                 </div>
                                 <div class="stat-icon success">
                                     <i class="bi bi-graph-up-arrow"></i>
@@ -1405,7 +1626,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     <!-- Buscador dinámico en tiempo real para medicamentos -->
                     <div class="search-wrapper">
                         <i class="bi bi-search search-icon"></i>
-                        <input type="search" id="pharmacySearch" class="search-input" placeholder="Buscar por nombre de medicamento o código de barras...">
+                        <input type="search" id="pharmacySearch" class="search-input"
+                            placeholder="Buscar por nombre de medicamento o código de barras...">
                     </div>
 
                     <!-- Tabla de Detalles de Rentabilidad -->
@@ -1414,7 +1636,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                             <table class="table table-hover align-middle mb-0 profit-table">
                                 <thead class="bg-light">
                                     <tr style="border-bottom: 2px solid var(--color-border);">
-                                        <th class="ps-4 py-3 text-muted small text-uppercase">Medicamento / Producto</th>
+                                        <th class="ps-4 py-3 text-muted small text-uppercase">Medicamento / Producto
+                                        </th>
                                         <th class="text-center py-3 text-muted small text-uppercase">Uds.</th>
                                         <th class="text-end py-3 text-muted small text-uppercase">P. Venta</th>
                                         <th class="text-end py-3 text-muted small text-uppercase">P. Costo</th>
@@ -1432,21 +1655,29 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                         ?>
                                             <tr>
                                                 <td class="ps-4 py-3">
-                                                    <div class="fw-bold" style="color: var(--color-text);"><?php echo htmlspecialchars($row['nom_medicamento']); ?></div>
+                                                    <div class="fw-bold" style="color: var(--color-text);">
+                                                        <?php echo htmlspecialchars($row['nom_medicamento']); ?>
+                                                    </div>
                                                     <?php if (!empty($row['codigo_barras'])): ?>
                                                             <div class="text-muted" style="font-size: 0.7rem;">
-                                                                <i class="bi bi-upc-scan me-1"></i><?php echo htmlspecialchars($row['codigo_barras']); ?>
+                                                                <i
+                                                                    class="bi bi-upc-scan me-1"></i><?php echo htmlspecialchars($row['codigo_barras']); ?>
                                                             </div>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="text-center py-3">
-                                                    <span class="badge bg-light text-dark border"><?php echo $row['cantidad_total']; ?></span>
+                                                    <span
+                                                        class="badge bg-light text-dark border"><?php echo $row['cantidad_total']; ?></span>
                                                 </td>
-                                                <td class="text-end py-3 text-muted">Q<?php echo number_format($p_venta_unit, 2); ?></td>
-                                                <td class="text-end py-3 text-muted">Q<?php echo number_format($p_costo_unit, 2); ?></td>
-                                                <td class="text-end py-3 fw-bold">Q<?php echo number_format($row['total_venta'], 2); ?></td>
+                                                <td class="text-end py-3 text-muted">
+                                                    Q<?php echo number_format($p_venta_unit, 2); ?></td>
+                                                <td class="text-end py-3 text-muted">
+                                                    Q<?php echo number_format($p_costo_unit, 2); ?></td>
+                                                <td class="text-end py-3 fw-bold">
+                                                    Q<?php echo number_format($row['total_venta'], 2); ?></td>
                                                 <td class="text-end py-3">
-                                                    <span class="fw-bold <?php echo $ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                                    <span
+                                                        class="fw-bold <?php echo $ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">
                                                         Q<?php echo number_format($ganancia, 2); ?>
                                                     </span>
                                                 </td>
@@ -1454,7 +1685,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                                     <?php
                                                     $margen_color = $margen > 30 ? 'bg-success' : ($margen > 15 ? 'bg-warning text-dark' : 'bg-danger');
                                                     ?>
-                                                    <span class="badge <?php echo $margen_color; ?> rounded-pill px-2" style="min-width: 45px;">
+                                                    <span class="badge <?php echo $margen_color; ?> rounded-pill px-2"
+                                                        style="min-width: 45px;">
                                                         <?php echo number_format($margen, 0); ?>%
                                                     </span>
                                                 </td>
@@ -1501,7 +1733,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
                     <div class="custom-accordion-wrapper" id="labsAccordion">
                         <?php if (empty($grouped_labs)): ?>
-                                <div class="text-center py-4 text-muted border rounded" style="background: var(--color-surface);">
+                                <div class="text-center py-4 text-muted border rounded"
+                                    style="background: var(--color-surface);">
                                     <i class="bi bi-info-circle me-2"></i>
                                     No se encontraron laboratorios realizados en este período.
                                 </div>
@@ -1521,7 +1754,8 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                                 <div class="d-flex align-items-center">
                                                     <i class="bi bi-calendar3 me-2 text-primary"></i>
                                                     <span><?php echo $mes_nombre; ?></span>
-                                                    <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?> labs</span>
+                                                    <span class="badge bg-primary ms-3 rounded-pill"><?php echo $mes_data['count']; ?>
+                                                        labs</span>
                                                 </div>
                                                 <span class="text-success">Q <?php echo number_format($mes_data['total'], 2); ?></span>
                                             </summary>
@@ -1534,9 +1768,12 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                                                 <div class="d-flex align-items-center">
                                                                     <i class="bi bi-calendar-day me-2 text-info"></i>
                                                                     <span>Día: <?php echo $dia_str; ?></span>
-                                                                    <span class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?> labs</span>
+                                                                    <span
+                                                                        class="badge bg-info text-dark ms-3 rounded-pill"><?php echo $dia_data['count']; ?>
+                                                                        labs</span>
                                                                 </div>
-                                                                <span class="text-success fw-semibold">Q <?php echo number_format($dia_data['total'], 2); ?></span>
+                                                                <span class="text-success fw-semibold">Q
+                                                                    <?php echo number_format($dia_data['total'], 2); ?></span>
                                                             </summary>
                                                             <div class="report-details-body">
                                                                 <?php $pac_id = 0;
@@ -1548,9 +1785,12 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                                                                 <div class="d-flex align-items-center">
                                                                                     <i class="bi bi-person me-2 text-secondary"></i>
                                                                                     <span><?php echo htmlspecialchars($paciente_nombre); ?></span>
-                                                                                    <span class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?> labs</span>
+                                                                                    <span
+                                                                                        class="badge bg-secondary ms-3 rounded-pill"><?php echo $pac_data['count']; ?>
+                                                                                        labs</span>
                                                                                 </div>
-                                                                                <span class="text-success fw-medium">Q <?php echo number_format($pac_data['total'], 2); ?></span>
+                                                                                <span class="text-success fw-medium">Q
+                                                                                    <?php echo number_format($pac_data['total'], 2); ?></span>
                                                                             </summary>
                                                                             <div class="report-details-body p-0">
                                                                                 <div class="table-responsive">
@@ -1603,107 +1843,122 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
             <!-- TAB 5: REPORTES DE TRASLADOS -->
             <?php if ($can_view_transfers): ?>
-            <div id="tab-transfers" class="tab-content">
-                <div class="content-section animate-in">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-arrow-left-right section-title-icon" style="color: var(--color-danger);"></i>
-                            Reporte de Traslados (Dispensario)
-                        </h3>
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <span class="amount-badge expense">
-                                Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
-                            </span>
-                            <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
-                                target="_blank" class="action-btn" style="background: var(--color-success)">
-                                <i class="bi bi-file-earmark-excel me-2"></i>
-                                Exportar Traslados
-                            </a>
-                        </div>
-                    </div>
+                    <div id="tab-transfers" class="tab-content">
+                        <div class="content-section animate-in">
+                            <div class="section-header">
+                                <h3 class="section-title">
+                                    <i class="bi bi-arrow-left-right section-title-icon"
+                                        style="color: var(--color-danger);"></i>
+                                    Reporte de Traslados (Dispensario)
+                                </h3>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <span class="amount-badge expense">
+                                        Valor Total: Q<?php echo number_format($total_transfers_amount, 2); ?>
+                                    </span>
+                                    <a href="export_transfers.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>"
+                                        target="_blank" class="action-btn" style="background: var(--color-success)">
+                                        <i class="bi bi-file-earmark-excel me-2"></i>
+                                        Exportar Traslados
+                                    </a>
+                                </div>
+                            </div>
 
-                    <?php if (!empty($transfers_data)): ?>
-                        <div class="custom-accordion-wrapper">
-                            <?php foreach ($transfers_data as $mes_nombre => $mes_data): ?>
-                                <details class="report-details level-1" open>
-                                    <summary class="custom-summary">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <i class="bi bi-calendar3 text-primary"></i>
-                                            <span><?php echo htmlspecialchars($mes_nombre); ?></span>
-                                            <span class="badge bg-primary-subtle text-primary"><?php echo count($mes_data['dias']); ?> día(s)</span>
-                                        </div>
-                                        <span class="amount-badge expense">Q<?php echo number_format($mes_data['total'], 2); ?></span>
-                                    </summary>
-                                    <div class="report-details-body">
-                                        <?php foreach ($mes_data['dias'] as $dia_str => $dia_data): ?>
-                                            <details class="report-details level-2" open>
-                                                <summary class="custom-summary">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <i class="bi bi-calendar-event text-info"></i>
-                                                        <span><?php echo htmlspecialchars($dia_str); ?></span>
-                                                        <span class="badge bg-info-subtle text-info"><?php echo count($dia_data['destinos']); ?> destino(s)</span>
-                                                    </div>
-                                                    <span class="amount-badge expense">Q<?php echo number_format($dia_data['total'], 2); ?></span>
-                                                </summary>
-                                                <div class="report-details-body">
-                                                    <?php foreach ($dia_data['destinos'] as $destino => $dest_data): ?>
-                                                        <details class="report-details level-3">
-                                                            <summary class="custom-summary">
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <i class="bi bi-person text-secondary"></i>
-                                                                    <span><?php echo htmlspecialchars($destino); ?></span>
-                                                                    <span class="badge bg-secondary-subtle text-secondary"><?php echo count($dest_data['items']); ?> item(s)</span>
-                                                                </div>
-                                                                <span class="amount-badge expense">Q<?php echo number_format($dest_data['total'], 2); ?></span>
-                                                            </summary>
-                                                            <div class="report-details-body">
-                                                                <table class="lab-items-table">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th>Medicamento</th>
-                                                                            <th class="text-center">Cant.</th>
-                                                                            <th>Realizado por</th>
-                                                                            <th class="text-end">Valor</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <?php foreach ($dest_data['items'] as $item): ?>
-                                                                            <tr>
-                                                                                <td><?php echo htmlspecialchars($item['nom_medicamento']); ?></td>
-                                                                                <td class="text-center">
-                                                                                    <span class="badge bg-light text-dark border"><?php echo $item['cantidad_vendida']; ?></span>
-                                                                                </td>
-                                                                                <td><?php echo htmlspecialchars($item['realizado_por']); ?></td>
-                                                                                <td class="text-end fw-bold text-danger">Q<?php echo number_format($item['valor_traslado'], 2); ?></td>
-                                                                            </tr>
+                            <?php if (!empty($transfers_data)): ?>
+                                    <div class="custom-accordion-wrapper">
+                                        <?php foreach ($transfers_data as $mes_nombre => $mes_data): ?>
+                                                <details class="report-details level-1" open>
+                                                    <summary class="custom-summary">
+                                                        <div class="d-flex align-items-center gap-3">
+                                                            <i class="bi bi-calendar3 text-primary"></i>
+                                                            <span><?php echo htmlspecialchars($mes_nombre); ?></span>
+                                                            <span
+                                                                class="badge bg-primary-subtle text-primary"><?php echo count($mes_data['dias']); ?>
+                                                                día(s)</span>
+                                                        </div>
+                                                        <span
+                                                            class="amount-badge expense">Q<?php echo number_format($mes_data['total'], 2); ?></span>
+                                                    </summary>
+                                                    <div class="report-details-body">
+                                                        <?php foreach ($mes_data['dias'] as $dia_str => $dia_data): ?>
+                                                                <details class="report-details level-2" open>
+                                                                    <summary class="custom-summary">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <i class="bi bi-calendar-event text-info"></i>
+                                                                            <span><?php echo htmlspecialchars($dia_str); ?></span>
+                                                                            <span
+                                                                                class="badge bg-info-subtle text-info"><?php echo count($dia_data['destinos']); ?>
+                                                                                destino(s)</span>
+                                                                        </div>
+                                                                        <span
+                                                                            class="amount-badge expense">Q<?php echo number_format($dia_data['total'], 2); ?></span>
+                                                                    </summary>
+                                                                    <div class="report-details-body">
+                                                                        <?php foreach ($dia_data['destinos'] as $destino => $dest_data): ?>
+                                                                                <details class="report-details level-3">
+                                                                                    <summary class="custom-summary">
+                                                                                        <div class="d-flex align-items-center gap-2">
+                                                                                            <i class="bi bi-person text-secondary"></i>
+                                                                                            <span><?php echo htmlspecialchars($destino); ?></span>
+                                                                                            <span
+                                                                                                class="badge bg-secondary-subtle text-secondary"><?php echo count($dest_data['items']); ?>
+                                                                                                item(s)</span>
+                                                                                        </div>
+                                                                                        <span
+                                                                                            class="amount-badge expense">Q<?php echo number_format($dest_data['total'], 2); ?></span>
+                                                                                    </summary>
+                                                                                    <div class="report-details-body">
+                                                                                        <table class="lab-items-table">
+                                                                                            <thead>
+                                                                                                <tr>
+                                                                                                    <th>Medicamento</th>
+                                                                                                    <th class="text-center">Cant.</th>
+                                                                                                    <th>Realizado por</th>
+                                                                                                    <th class="text-end">Valor</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                                <?php foreach ($dest_data['items'] as $item): ?>
+                                                                                                        <tr>
+                                                                                                            <td><?php echo htmlspecialchars($item['nom_medicamento']); ?>
+                                                                                                            </td>
+                                                                                                            <td class="text-center">
+                                                                                                                <span
+                                                                                                                    class="badge bg-light text-dark border"><?php echo $item['cantidad_vendida']; ?></span>
+                                                                                                            </td>
+                                                                                                            <td><?php echo htmlspecialchars($item['realizado_por']); ?>
+                                                                                                            </td>
+                                                                                                            <td class="text-end fw-bold text-danger">
+                                                                                                                Q<?php echo number_format($item['valor_traslado'], 2); ?>
+                                                                                                            </td>
+                                                                                                        </tr>
+                                                                                                <?php endforeach; ?>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </details>
                                                                         <?php endforeach; ?>
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                        </details>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </details>
+                                                                    </div>
+                                                                </details>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </details>
                                         <?php endforeach; ?>
                                     </div>
-                                </details>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="bi bi-info-circle fs-1 d-block mb-3 opacity-50"></i>
+                                        <p>No se encontraron traslados en este período.</p>
+                                    </div>
+                            <?php endif; ?>
                         </div>
-                    <?php else: ?>
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-info-circle fs-1 d-block mb-3 opacity-50"></i>
-                            <p>No se encontraron traslados en este período.</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
+                    </div>
             <?php endif; ?>
-    </main>
+        </main>
     </div>
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Reportes - Centro Médico RS
+        // Módulo de Reportes - Centro Médico Herrera Saenz
         // JavaScript para funcionalidades del módulo de reportes
 
         (function () {
@@ -1821,7 +2076,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                 switchTab(tabId, immediate = false) {
                     const targetBtn = document.querySelector(`.reports-tab-btn[data-tab="${tabId}"]`);
                     const targetContent = document.getElementById(`tab-${tabId}`);
-                    
+
                     if (!targetBtn || !targetContent) {
                         // Fallback si no existe la pestaña activa guardada (ej. si no tiene permisos para transfers)
                         if (tabId !== 'overview') {
@@ -1853,7 +2108,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     } else {
                         // Animación suave de salida/entrada
                         const activeContents = Array.from(this.contents).filter(c => c.classList.contains('active'));
-                        
+
                         if (activeContents.length > 0 && activeContents[0] !== targetContent) {
                             activeContents.forEach(content => {
                                 content.style.opacity = '0';
@@ -1861,7 +2116,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                 setTimeout(() => {
                                     content.classList.remove('active');
                                     content.style.display = 'none';
-                                    
+
                                     // Entrada de la nueva pestaña
                                     targetContent.style.display = 'block';
                                     setTimeout(() => {
@@ -1925,7 +2180,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                     if (trendCtx) {
                         const salesTrendData = <?php echo json_encode($sales_trend_data); ?>;
                         const ctx = trendCtx.getContext('2d');
-                        
+
                         // Crear gradiente vertical premium (de color de marca a transparente)
                         const gradient = ctx.createLinearGradient(0, 0, 0, 240);
                         gradient.addColorStop(0, 'rgba(124, 144, 219, 0.45)');
@@ -1959,7 +2214,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                plugins: { 
+                                plugins: {
                                     legend: { display: false },
                                     tooltip: {
                                         backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
@@ -1973,7 +2228,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                         titleFont: { family: 'Outfit, sans-serif', weight: 'bold' },
                                         bodyFont: { family: 'Outfit, sans-serif' },
                                         callbacks: {
-                                            label: function(context) {
+                                            label: function (context) {
                                                 return 'Total Venta: Q' + context.parsed.y.toLocaleString('es-GT', { minimumFractionDigits: 2 });
                                             }
                                         }
@@ -2041,7 +2296,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
                                         titleFont: { family: 'Outfit, sans-serif', weight: 'bold' },
                                         bodyFont: { family: 'Outfit, sans-serif' },
                                         callbacks: {
-                                            label: function(context) {
+                                            label: function (context) {
                                                 const value = context.raw;
                                                 return ` ${context.label}: Q${value.toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
                                             }
@@ -2074,14 +2329,14 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
 
                     this.input.addEventListener('input', (e) => {
                         const query = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                        
+
                         this.rows.forEach(row => {
                             const nameEl = row.querySelector('.fw-bold');
                             const barcodeEl = row.querySelector('.text-muted');
-                            
+
                             const nameText = nameEl ? nameEl.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
                             const barcodeText = barcodeEl ? barcodeEl.textContent.toLowerCase() : '';
-                            
+
                             if (nameText.includes(query) || barcodeText.includes(query)) {
                                 row.style.display = '';
                             } else {
@@ -2127,7 +2382,7 @@ error_log('Error en reports/index.php: ' . $e->getMessage());
         })();
     </script>
     <script>
-    function showPdfLoading() { Swal.fire({ title: 'Generando reporte...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); }
+        function showPdfLoading() { Swal.fire({ title: 'Generando reporte...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); }
     </script>
 </body>
 

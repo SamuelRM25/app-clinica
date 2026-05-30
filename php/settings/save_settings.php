@@ -65,7 +65,7 @@ try {
 
     header("Location: index.php?status=success&message=Configuración actualizada correctamente");
 } catch (Exception $e) {
-error_log('Error en settings/save_settings.php: ' . $e->getMessage());
+    error_log('Error en settings/save_settings.php: ' . $e->getMessage());
     header("Location: index.php?status=error&message=Error+del+servidor");
 }
 ?>

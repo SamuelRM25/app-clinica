@@ -1,5 +1,5 @@
 <?php
-// export_jornada.php - Reporte de Jornada - Centro Médico RS
+// export_jornada.php - Reporte de Jornada - Centro Médico Herrera Saenz
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';
@@ -43,7 +43,7 @@ try {
 
     // ============ CÁLCULO DE MÉTRICAS ============
 
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // 1. Total de pacientes atendidos
     $stmt = $conn->prepare("SELECT COUNT(DISTINCT historial_id) FROM citas WHERE fecha_cita BETWEEN ? AND ? AND id_hospital = ?");
@@ -161,7 +161,7 @@ try {
     $wa_url = "https://wa.me/50239029076?text=" . urlencode($wa_text);
 
     // Título de la página
-    $page_title = "Reporte de Jornada - $date - Centro Médico RS";
+    $page_title = "Reporte de Jornada - $date - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     error_log('Error en reports/export_jornada.php: ' . $e->getMessage());
@@ -174,14 +174,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Jornada - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Reporte de Jornada - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- SweetAlert2 -->
@@ -205,7 +205,7 @@ try {
         <!-- Header sidebar -->
         <div class="sidebar-header">
             <div class="sidebar-logo">
-                <img src="../../assets/img/Logo.png" alt="Logo CMS" width="40" height="40">
+                <img src="../../assets/img/cmhs.png" alt="logo CMS" width="40" height="40">
             </div>
             <h2>CMS Reportes</h2>
         </div>
@@ -327,9 +327,10 @@ try {
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -478,7 +479,7 @@ try {
 
                 <!-- Información de generación -->
                 <div class="generation-info">
-                    Generado automáticamente por Centro Médico RS Management System -
+                    Generado automáticamente por Centro Médico Herrera Saenz Management System -
                     <?php echo date('d/m/Y H:i'); ?>
                 </div>
             </div>

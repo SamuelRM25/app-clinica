@@ -34,7 +34,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Gestión de Pacientes - Centro Médico RS";
+    $page_title = "Gestión de Pacientes - Centro Médico Herrera Saenz";
 
     // Obtener parámetros de ordenamiento
     $sort = $_GET['sort'] ?? 'name';
@@ -113,14 +113,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gestión de Pacientes - Centro Médico RS">
+    <meta name="description" content="Gestión de Pacientes - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Seguridad y Protección de Código -->
@@ -267,8 +267,13 @@ try {
             flex-shrink: 0;
         }
 
-        .bg-male   { background: linear-gradient(135deg, var(--color-primary), #3b82f6); }
-        .bg-female { background: linear-gradient(135deg, #f43f5e, #ec4899); }
+        .bg-male {
+            background: linear-gradient(135deg, var(--color-primary), #3b82f6);
+        }
+
+        .bg-female {
+            background: linear-gradient(135deg, #f43f5e, #ec4899);
+        }
 
         /* Dark mode */
         [data-theme="dark"] .search-and-filter-bar {
@@ -305,9 +310,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -364,7 +370,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -375,75 +381,75 @@ try {
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
-                <div class="stats-grid">
-                    <!-- Total de pacientes -->
-                    <div class="stat-card animate-in delay-1" onclick="filterPatients('all')">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Total Pacientes</div>
-                                <div class="stat-value"><?php echo $total_patients; ?></div>
+                    <div class="stats-grid">
+                        <!-- Total de pacientes -->
+                        <div class="stat-card animate-in delay-1" onclick="filterPatients('all')">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Total Pacientes</div>
+                                    <div class="stat-value"><?php echo $total_patients; ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-people-fill"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Registrados en sistema</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-arrow-up-right"></i>
-                            <span>Registrados en sistema</span>
-                        </div>
-                    </div>
 
-                    <!-- Pacientes con citas -->
-                    <div class="stat-card animate-in delay-2" onclick="filterPatients('with_appointments')">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Con Citas</div>
-                                <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
+                        <!-- Pacientes con citas -->
+                        <div class="stat-card animate-in delay-2" onclick="filterPatients('with_appointments')">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Con Citas</div>
+                                    <div class="stat-value"><?php echo $patients_with_appointments; ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-calendar-check"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-person-check"></i>
+                                <span>Con historial de citas</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-person-check"></i>
-                            <span>Con historial de citas</span>
-                        </div>
-                    </div>
 
-                    <!-- Pacientes sin historial -->
-                    <div class="stat-card animate-in delay-3" onclick="filterPatients('without_history')">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Sin Historial</div>
-                                <div class="stat-value"><?php echo $patients_without_history; ?></div>
+                        <!-- Pacientes sin historial -->
+                        <div class="stat-card animate-in delay-3" onclick="filterPatients('without_history')">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Sin Historial</div>
+                                    <div class="stat-value"><?php echo $patients_without_history; ?></div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-person-x"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-person-x"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span>Requieren primera consulta</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <span>Requieren primera consulta</span>
-                        </div>
-                    </div>
 
-                    <!-- Activos hoy -->
-                    <div class="stat-card animate-in delay-4" onclick="filterPatients('active_today')">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Activos Hoy</div>
-                                <div class="stat-value"><?php echo $active_today; ?></div>
+                        <!-- Activos hoy -->
+                        <div class="stat-card animate-in delay-4" onclick="filterPatients('active_today')">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Activos Hoy</div>
+                                    <div class="stat-value"><?php echo $active_today; ?></div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-activity"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-activity"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-day"></i>
+                                <span>Atendidos hoy</span>
                             </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-day"></i>
-                            <span>Atendidos hoy</span>
                         </div>
                     </div>
-                </div>
             <?php endif; ?>
 
             <!-- Barra de búsqueda y acciones -->
@@ -473,10 +479,14 @@ try {
                             <div class="sort-controls-wrapper">
                                 <span class="small fw-bold text-muted text-uppercase me-2">Ordenar:</span>
                                 <div class="sort-group">
-                                    <a href="?sort=name" class="sort-item <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>" title="Orden Alfabético">
+                                    <a href="?sort=name"
+                                        class="sort-item <?php echo $sort === 'name' || !isset($_GET['sort']) ? 'active' : ''; ?>"
+                                        title="Orden Alfabético">
                                         <i class="bi bi-sort-alpha-down"></i>
                                     </a>
-                                    <a href="?sort=recent" class="sort-item <?php echo $sort === 'recent' ? 'active' : ''; ?>" title="Más Recientes">
+                                    <a href="?sort=recent"
+                                        class="sort-item <?php echo $sort === 'recent' ? 'active' : ''; ?>"
+                                        title="Más Recientes">
                                         <i class="bi bi-clock-history"></i>
                                     </a>
                                 </div>
@@ -522,174 +532,175 @@ try {
                 </div>
 
                 <?php if (count($patients) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="appointments-table" id="patientsTable">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Contacto</th>
-                                    <th>Información</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="patientsTableBody">
-                                <?php foreach ($patients as $patient):
-                                    $edad = isset($patient['fecha_nacimiento']) ?
-                                        (new DateTime())->diff(new DateTime($patient['fecha_nacimiento']))->y : 0;
-                                    $patient_initials = strtoupper(
-                                        substr($patient['nombre'] ?? '', 0, 1) .
-                                        substr($patient['apellido'] ?? '', 0, 1)
-                                    );
-                                    $has_appointments = $patient['total_citas'] > 0;
-                                    $has_history = isset($patient['ultima_cita']);
-                                    $active_today = $has_history && $patient['ultima_cita'] === date('Y-m-d');
-                                    ?>
-                                    <tr class="patient-row" data-id="<?php echo $patient['id_paciente']; ?>"
-                                        data-name="<?php echo htmlspecialchars(strtolower(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? ''))); ?>"
-                                        data-raw-nombre="<?php echo htmlspecialchars($patient['nombre'] ?? ''); ?>"
-                                        data-raw-apellido="<?php echo htmlspecialchars($patient['apellido'] ?? ''); ?>"
-                                        data-phone="<?php echo htmlspecialchars(strtolower($patient['telefono'] ?? '')); ?>"
-                                        data-email="<?php echo htmlspecialchars(strtolower($patient['correo'] ?? '')); ?>"
-                                        data-direction="<?php echo htmlspecialchars($patient['direccion'] ?? ''); ?>"
-                                        data-dpi="<?php echo htmlspecialchars($patient['dpi'] ?? ''); ?>"
-                                        data-has-appointments="<?php echo $has_appointments ? 'true' : 'false'; ?>"
-                                        data-has-history="<?php echo $has_history ? 'true' : 'false'; ?>"
-                                        data-active-today="<?php echo $active_today ? 'true' : 'false'; ?>"
-                                        data-gender="<?php echo htmlspecialchars($patient['gender'] ?? ''); ?>"
-                                        data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>"
-                                        data-notes="<?php echo htmlspecialchars($patient['notas'] ?? ''); ?>">
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div>
-                                                    <div class="fw-bold text-dark">
-                                                        <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>
-                                                    </div>
-                                                    <div class="small text-muted">
-                                                        <?php
-                                                        if (isset($patient['fecha_nacimiento'])) {
-                                                            $dob = new DateTime($patient['fecha_nacimiento']);
-                                                            $diff = (new DateTime())->diff($dob);
-
-                                                            if ($diff->y > 0) {
-                                                                echo $diff->y . ' años';
-                                                            } elseif ($diff->m > 0) {
-                                                                echo $diff->m . ' meses';
-                                                            } else {
-                                                                echo $diff->d . ' días';
-                                                            }
-                                                        } else {
-                                                            echo 'N/A';
-                                                        }
-                                                        ?>
-                                                        • <?php echo htmlspecialchars($patient['genero']); ?>
-                                                        <?php if (!empty($patient['dpi'])): ?> • <i class="bi bi-card-text"></i> <?php echo htmlspecialchars($patient['dpi']); ?><?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column gap-1">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
-                                                    <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
-                                                </div>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
-                                                    <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column gap-1">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="bi bi-calendar3 text-muted" style="font-size: 0.875rem;"></i>
-                                                    <span><?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? 'N/A'); ?>
-                                                        (<?php
-                                                        if (isset($patient['fecha_nacimiento'])) {
-                                                            if ($diff->y > 0) {
-                                                                echo $diff->y . ' años';
-                                                            } elseif ($diff->m > 0) {
-                                                                echo $diff->m . ' meses';
-                                                            } else {
-                                                                echo $diff->d . ' días';
-                                                            }
-                                                        } else {
-                                                            echo 'N/A';
-                                                        }
-                                                        ?>)</span>
-                                                </div>
-                                                <?php if (isset($patient['genero'])): ?>
-                                                    <span class="gender-badge <?php
-                                                    echo strtolower($patient['genero']) === 'masculino' ? 'gender-male' :
-                                                        (strtolower($patient['genero']) === 'femenino' ? 'gender-female' : 'gender-other');
-                                                    ?>">
-                                                        <?php echo htmlspecialchars($patient['genero']); ?>
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <?php if ($active_today): ?>
-                                                <span class="status-badge status-active">
-                                                    <i class="bi bi-check-circle"></i>
-                                                    Activo Hoy
-                                                </span>
-                                            <?php elseif ($has_history): ?>
-                                                <span class="status-badge status-active">
-                                                    <i class="bi bi-check-circle"></i>
-                                                    Activo
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="status-badge status-inactive"
-                                                    onclick="openNoteModal(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? '')); ?>', this.closest('tr').dataset.notes)"
-                                                    style="cursor: pointer;" title="Registrar Nota">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                    Externo
-                                                </span>
-                                            <?php endif; ?>
-                                            <?php if ($has_appointments): ?>
-                                                <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
-                                                    <i class="bi bi-calendar-check"></i>
-                                                    <?php echo $patient['total_citas']; ?> citas
-                                                </div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button type="button" class="btn-icon edit" title="Editar Información"
-                                                    onclick="editPatient(this)">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <?php if ($user_type === 'admin'): ?>
-                                                    <a href="medical_history.php?id=<?php echo $patient['id_paciente']; ?>"
-                                                        class="btn-icon history" title="Historial Clínico">
-                                                        <i class="bi bi-clipboard2-pulse"></i>
-                                                    </a>
-                                                <?php endif; ?>
-                                                <button type="button" class="btn-icon appointment" title="Nueva Cita"
-                                                    onclick="quickAppointment(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars($patient['nombre']); ?>', '<?php echo htmlspecialchars($patient['apellido']); ?>')">
-                                                    <i class="bi bi-calendar-plus"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                        <div class="table-responsive">
+                            <table class="appointments-table" id="patientsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Contacto</th>
+                                        <th>Información</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-people"></i>
+                                </thead>
+                                <tbody id="patientsTableBody">
+                                    <?php foreach ($patients as $patient):
+                                        $edad = isset($patient['fecha_nacimiento']) ?
+                                            (new DateTime())->diff(new DateTime($patient['fecha_nacimiento']))->y : 0;
+                                        $patient_initials = strtoupper(
+                                            substr($patient['nombre'] ?? '', 0, 1) .
+                                            substr($patient['apellido'] ?? '', 0, 1)
+                                        );
+                                        $has_appointments = $patient['total_citas'] > 0;
+                                        $has_history = isset($patient['ultima_cita']);
+                                        $active_today = $has_history && $patient['ultima_cita'] === date('Y-m-d');
+                                        ?>
+                                            <tr class="patient-row" data-id="<?php echo $patient['id_paciente']; ?>"
+                                                data-name="<?php echo htmlspecialchars(strtolower(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? ''))); ?>"
+                                                data-raw-nombre="<?php echo htmlspecialchars($patient['nombre'] ?? ''); ?>"
+                                                data-raw-apellido="<?php echo htmlspecialchars($patient['apellido'] ?? ''); ?>"
+                                                data-phone="<?php echo htmlspecialchars(strtolower($patient['telefono'] ?? '')); ?>"
+                                                data-email="<?php echo htmlspecialchars(strtolower($patient['correo'] ?? '')); ?>"
+                                                data-direction="<?php echo htmlspecialchars($patient['direccion'] ?? ''); ?>"
+                                                data-dpi="<?php echo htmlspecialchars($patient['dpi'] ?? ''); ?>"
+                                                data-has-appointments="<?php echo $has_appointments ? 'true' : 'false'; ?>"
+                                                data-has-history="<?php echo $has_history ? 'true' : 'false'; ?>"
+                                                data-active-today="<?php echo $active_today ? 'true' : 'false'; ?>"
+                                                data-gender="<?php echo htmlspecialchars($patient['gender'] ?? ''); ?>"
+                                                data-birth="<?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? ''); ?>"
+                                                data-notes="<?php echo htmlspecialchars($patient['notas'] ?? ''); ?>">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div>
+                                                            <div class="fw-bold text-dark">
+                                                                <?php echo htmlspecialchars($patient['nombre'] . ' ' . $patient['apellido']); ?>
+                                                            </div>
+                                                            <div class="small text-muted">
+                                                                <?php
+                                                                if (isset($patient['fecha_nacimiento'])) {
+                                                                    $dob = new DateTime($patient['fecha_nacimiento']);
+                                                                    $diff = (new DateTime())->diff($dob);
+
+                                                                    if ($diff->y > 0) {
+                                                                        echo $diff->y . ' años';
+                                                                    } elseif ($diff->m > 0) {
+                                                                        echo $diff->m . ' meses';
+                                                                    } else {
+                                                                        echo $diff->d . ' días';
+                                                                    }
+                                                                } else {
+                                                                    echo 'N/A';
+                                                                }
+                                                                ?>
+                                                                • <?php echo htmlspecialchars($patient['genero']); ?>
+                                                                <?php if (!empty($patient['dpi'])): ?> • <i class="bi bi-card-text"></i>
+                                                                        <?php echo htmlspecialchars($patient['dpi']); ?>                 <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="bi bi-telephone text-muted" style="font-size: 0.875rem;"></i>
+                                                            <span><?php echo htmlspecialchars($patient['telefono'] ?? 'No disponible'); ?></span>
+                                                        </div>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="bi bi-envelope text-muted" style="font-size: 0.875rem;"></i>
+                                                            <span><?php echo htmlspecialchars($patient['correo'] ?? 'No disponible'); ?></span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="bi bi-calendar3 text-muted" style="font-size: 0.875rem;"></i>
+                                                            <span><?php echo htmlspecialchars($patient['fecha_nacimiento'] ?? 'N/A'); ?>
+                                                                (<?php
+                                                                if (isset($patient['fecha_nacimiento'])) {
+                                                                    if ($diff->y > 0) {
+                                                                        echo $diff->y . ' años';
+                                                                    } elseif ($diff->m > 0) {
+                                                                        echo $diff->m . ' meses';
+                                                                    } else {
+                                                                        echo $diff->d . ' días';
+                                                                    }
+                                                                } else {
+                                                                    echo 'N/A';
+                                                                }
+                                                                ?>)</span>
+                                                        </div>
+                                                        <?php if (isset($patient['genero'])): ?>
+                                                                <span class="gender-badge <?php
+                                                                echo strtolower($patient['genero']) === 'masculino' ? 'gender-male' :
+                                                                    (strtolower($patient['genero']) === 'femenino' ? 'gender-female' : 'gender-other');
+                                                                ?>">
+                                                                    <?php echo htmlspecialchars($patient['genero']); ?>
+                                                                </span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <?php if ($active_today): ?>
+                                                            <span class="status-badge status-active">
+                                                                <i class="bi bi-check-circle"></i>
+                                                                Activo Hoy
+                                                            </span>
+                                                    <?php elseif ($has_history): ?>
+                                                            <span class="status-badge status-active">
+                                                                <i class="bi bi-check-circle"></i>
+                                                                Activo
+                                                            </span>
+                                                    <?php else: ?>
+                                                            <span class="status-badge status-inactive"
+                                                                onclick="openNoteModal(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars(($patient['nombre'] ?? '') . ' ' . ($patient['apellido'] ?? '')); ?>', this.closest('tr').dataset.notes)"
+                                                                style="cursor: pointer;" title="Registrar Nota">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                                Externo
+                                                            </span>
+                                                    <?php endif; ?>
+                                                    <?php if ($has_appointments): ?>
+                                                            <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
+                                                                <i class="bi bi-calendar-check"></i>
+                                                                <?php echo $patient['total_citas']; ?> citas
+                                                            </div>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <button type="button" class="btn-icon edit" title="Editar Información"
+                                                            onclick="editPatient(this)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <?php if ($user_type === 'admin'): ?>
+                                                                <a href="medical_history.php?id=<?php echo $patient['id_paciente']; ?>"
+                                                                    class="btn-icon history" title="Historial Clínico">
+                                                                    <i class="bi bi-clipboard2-pulse"></i>
+                                                                </a>
+                                                        <?php endif; ?>
+                                                        <button type="button" class="btn-icon appointment" title="Nueva Cita"
+                                                            onclick="quickAppointment(<?php echo $patient['id_paciente']; ?>, '<?php echo htmlspecialchars($patient['nombre']); ?>', '<?php echo htmlspecialchars($patient['apellido']); ?>')">
+                                                            <i class="bi bi-calendar-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                        <h4 class="text-muted mb-2">No se encontraron pacientes</h4>
-                        <p class="text-muted mb-3">Comienza agregando tu primer paciente</p>
-                        <button type="button" class="action-btn" id="emptyNewPatientButton">
-                            <i class="bi bi-person-plus"></i>
-                            Agregar Primer Paciente
-                        </button>
-                    </div>
+                <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No se encontraron pacientes</h4>
+                            <p class="text-muted mb-3">Comienza agregando tu primer paciente</p>
+                            <button type="button" class="action-btn" id="emptyNewPatientButton">
+                                <i class="bi bi-person-plus"></i>
+                                Agregar Primer Paciente
+                            </button>
+                        </div>
                 <?php endif; ?>
             </section>
         </main>
@@ -827,10 +838,10 @@ try {
                             <select id="quickDoctor" name="id_doctor" class="form-select" required>
                                 <option value="">Seleccionar Médico...</option>
                                 <?php foreach ($doctors as $doctor): ?>
-                                    <option value="<?php echo $doctor['idUsuario']; ?>">
-                                        Dr(a).
-                                        <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                    </option>
+                                        <option value="<?php echo $doctor['idUsuario']; ?>">
+                                            Dr(a).
+                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                        </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -899,7 +910,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
         (function () {
             'use strict';
 

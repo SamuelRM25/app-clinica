@@ -5,7 +5,7 @@ require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
 date_default_timezone_set('America/Guatemala');
@@ -112,11 +112,11 @@ try {
     <meta name="description" content="Historial Clínico - Centro Médico Herrera Sáenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap 5 CSS -->
@@ -124,7 +124,8 @@ try {
 
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet" />
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -140,6 +141,7 @@ try {
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
         .patient-header {
             display: flex;
             justify-content: space-between;
@@ -148,18 +150,21 @@ try {
             gap: 1rem;
             margin-bottom: 1.25rem;
         }
+
         .patient-name {
             font-size: 1.75rem;
             font-weight: 700;
             color: #212529;
             margin-bottom: 0.25rem;
         }
+
         .patient-meta {
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
             align-items: center;
         }
+
         .patient-meta span {
             background: rgba(13, 110, 253, 0.08);
             color: #0d6efd;
@@ -168,6 +173,7 @@ try {
             font-size: 0.85rem;
             font-weight: 600;
         }
+
         .info-grid {
             display: flex;
             flex-wrap: wrap;
@@ -177,28 +183,34 @@ try {
             border-radius: var(--radius-md, 12px);
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
         .info-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-size: 0.95rem;
         }
+
         .info-label {
             font-weight: 600;
             color: #6c757d;
         }
+
         .info-label::after {
             content: ":";
         }
+
         .info-value {
             font-weight: 600;
             color: #212529;
         }
+
         .action-buttons {
             display: flex;
             gap: 0.75rem;
             align-items: center;
         }
+
         .btn-icon {
             display: inline-flex;
             align-items: center;
@@ -211,6 +223,7 @@ try {
             text-decoration: none;
             transition: all 0.2s ease;
         }
+
         .btn-icon:hover {
             background: #e9ecef;
             transform: translateY(-2px);
@@ -225,6 +238,7 @@ try {
             flex-wrap: wrap;
             gap: 1rem;
         }
+
         .section-title {
             font-size: 1.25rem;
             font-weight: 700;
@@ -234,9 +248,11 @@ try {
             color: #212529;
             margin-bottom: 0;
         }
+
         .section-title-icon {
             color: #0d6efd;
         }
+
         .action-btn {
             background: #0d6efd;
             color: white;
@@ -249,10 +265,12 @@ try {
             gap: 0.5rem;
             transition: all 0.2s ease;
         }
+
         .action-btn:hover {
             background: #0b5ed7;
             transform: translateY(-2px);
         }
+
         .consultation-card {
             background: #ffffff;
             border: 1px solid rgba(0, 0, 0, 0.06);
@@ -262,10 +280,12 @@ try {
             overflow: hidden;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+
         .consultation-card:hover {
             border-color: rgba(13, 110, 253, 0.25);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
         }
+
         .consultation-header {
             display: flex;
             align-items: center;
@@ -276,6 +296,7 @@ try {
             user-select: none;
             gap: 1.5rem;
         }
+
         .consultation-date {
             display: inline-flex;
             align-items: center;
@@ -288,27 +309,32 @@ try {
             font-size: 0.9rem;
             flex-shrink: 0;
         }
+
         .date-day {
             text-transform: uppercase;
             font-size: 0.75rem;
             font-weight: 600;
             letter-spacing: 0.5px;
         }
+
         .date-number {
             font-size: 1.05rem;
             font-weight: 800;
         }
+
         .consultation-doctor {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             flex-grow: 1;
         }
+
         .doctor-name {
             font-weight: 600;
             color: #212529;
             font-size: 0.95rem;
         }
+
         .doctor-label {
             font-size: 0.75rem;
             color: #6c757d;
@@ -317,11 +343,13 @@ try {
             border-radius: 4px;
             font-weight: 500;
         }
+
         .collapse-icon {
             font-size: 1.2rem;
             color: #adb5bd;
             transition: transform 0.2s ease;
         }
+
         .collapse-icon.rotate-180 {
             transform: rotate(180deg);
         }
@@ -332,6 +360,7 @@ try {
             background: #fafbfe;
             padding: 1.5rem;
         }
+
         .section-box {
             background: #ffffff;
             border-radius: 8px;
@@ -339,8 +368,9 @@ try {
             border-left: 4px solid #0d6efd;
             padding: 1rem;
             margin-bottom: 1.25rem;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.005);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.005);
         }
+
         .section-title-small {
             font-size: 0.85rem;
             font-weight: 700;
@@ -352,6 +382,7 @@ try {
             align-items: center;
             gap: 0.4rem;
         }
+
         .section-content {
             font-size: 0.95rem;
             color: #333333;
@@ -374,9 +405,10 @@ try {
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -435,7 +467,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -499,7 +531,8 @@ try {
                         <i class="bi bi-clock-history section-title-icon"></i>
                         Historial de Consultas
                     </h3>
-                    <button type="button" class="action-btn" onclick="document.getElementById('newMedicalRecordModal').classList.add('active')">
+                    <button type="button" class="action-btn"
+                        onclick="document.getElementById('newMedicalRecordModal').classList.add('active')">
                         <i class="bi bi-plus-lg me-2"></i>
                         Nueva Consulta
                     </button>
@@ -667,10 +700,10 @@ try {
                                                                 Mapa de Dolor
                                                             </div>
                                                             <div class="section-content text-center">
-                                                                <div class="body-map-display" 
-                                                                     id="display_map_<?php echo $record['id_historial']; ?>" 
-                                                                     data-points='<?php echo $record['puntos_dolor']; ?>'
-                                                                     style="width: 200px; height: 350px; margin: 0 auto; background: rgba(0,0,0,0.02); border-radius: 1rem;">
+                                                                <div class="body-map-display"
+                                                                    id="display_map_<?php echo $record['id_historial']; ?>"
+                                                                    data-points='<?php echo $record['puntos_dolor']; ?>'
+                                                                    style="width: 200px; height: 350px; margin: 0 auto; background: rgba(0,0,0,0.02); border-radius: 1rem;">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -756,33 +789,40 @@ try {
                     <i class="bi bi-clipboard-plus text-primary me-2"></i>
                     Nuevo Registro Clínico
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">&times;</button>
             </div>
-            <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST" onsubmit="document.querySelector('#newMedicalRecordForm button[type=submit]').disabled = true; document.querySelector('#newMedicalRecordForm button[type=submit]').innerHTML = '<i class=\'bi bi-hourglass-split me-2\'></i> Guardando...';">
+            <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST"
+                onsubmit="document.querySelector('#newMedicalRecordForm button[type=submit]').disabled = true; document.querySelector('#newMedicalRecordForm button[type=submit]').innerHTML = '<i class=\'bi bi-hourglass-split me-2\'></i> Guardando...';">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="id_paciente" value="<?php echo $patient_id; ?>">
-                
+
                 <div class="custom-modal-body" style="max-height: 70vh; overflow-y: auto;">
                     <div class="row g-4">
                         <!-- Información de la consulta -->
                         <div class="col-md-6">
                             <div class="form-group mb-4">
                                 <label for="motivo_consulta" class="form-label fw-semibold">Motivo de Consulta *</label>
-                                <textarea id="motivo_consulta" name="motivo_consulta" class="form-control" rows="3" required placeholder="Describa el motivo de la visita..."></textarea>
+                                <textarea id="motivo_consulta" name="motivo_consulta" class="form-control" rows="3"
+                                    required placeholder="Describa el motivo de la visita..."></textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label for="sintomas" class="form-label fw-semibold">Síntomas / Historia *</label>
-                                <textarea id="sintomas" name="sintomas" class="form-control" rows="3" required placeholder="Detalle los síntomas presentados..."></textarea>
+                                <textarea id="sintomas" name="sintomas" class="form-control" rows="3" required
+                                    placeholder="Detalle los síntomas presentados..."></textarea>
                             </div>
                             <div class="form-group mb-4">
-                                <label for="examen_fisico" class="form-label fw-semibold">Examen Físico y Zonas de Dolor</label>
+                                <label for="examen_fisico" class="form-label fw-semibold">Examen Físico y Zonas de
+                                    Dolor</label>
                                 <div class="row g-3">
                                     <div class="col-md-7">
-                                        <textarea id="examen_fisico" name="examen_fisico" class="form-control" rows="12" placeholder="Hallazgos del examen físico..."></textarea>
+                                        <textarea id="examen_fisico" name="examen_fisico" class="form-control" rows="12"
+                                            placeholder="Hallazgos del examen físico..."></textarea>
                                         <input type="hidden" name="puntos_dolor" id="puntos_dolor">
                                     </div>
                                     <div class="col-md-5">
-                                        <div id="human-body-map-container" class="border rounded-3 p-3 bg-light shadow-sm">
+                                        <div id="human-body-map-container"
+                                            class="border rounded-3 p-3 bg-light shadow-sm">
                                             <!-- SVG se cargará aquí -->
                                         </div>
                                     </div>
@@ -794,28 +834,37 @@ try {
                         <div class="col-md-6">
                             <div class="form-group mb-4">
                                 <label for="diagnostico" class="form-label fw-semibold">Diagnóstico *</label>
-                                <textarea id="diagnostico" name="diagnostico" class="form-control" rows="3" required placeholder="Diagnóstico médico..."></textarea>
+                                <textarea id="diagnostico" name="diagnostico" class="form-control" rows="3" required
+                                    placeholder="Diagnóstico médico..."></textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label for="tratamiento" class="form-label fw-semibold">Tratamiento *</label>
-                                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="3" required placeholder="Plan de tratamiento..."></textarea>
+                                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="3" required
+                                    placeholder="Plan de tratamiento..."></textarea>
                             </div>
                             <div class="form-group mb-4">
                                 <label for="receta_medica" class="form-label fw-semibold">Receta Médica</label>
-                                <textarea id="receta_medica" name="receta_medica" class="form-control" rows="3" placeholder="Medicamentos y dosis..."></textarea>
+                                <textarea id="receta_medica" name="receta_medica" class="form-control" rows="3"
+                                    placeholder="Medicamentos y dosis..."></textarea>
                             </div>
-                            
+
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="antecedentes_personales" class="form-label fw-semibold">Antecedentes Personales</label>
-                                        <textarea id="antecedentes_personales" name="antecedentes_personales" class="form-control" rows="2" placeholder="Alergias, cirugías..."></textarea>
+                                        <label for="antecedentes_personales" class="form-label fw-semibold">Antecedentes
+                                            Personales</label>
+                                        <textarea id="antecedentes_personales" name="antecedentes_personales"
+                                            class="form-control" rows="2"
+                                            placeholder="Alergias, cirugías..."></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="antecedentes_familiares" class="form-label fw-semibold">Antecedentes Familiares</label>
-                                        <textarea id="antecedentes_familiares" name="antecedentes_familiares" class="form-control" rows="2" placeholder="Enfermedades hereditarias..."></textarea>
+                                        <label for="antecedentes_familiares" class="form-label fw-semibold">Antecedentes
+                                            Familiares</label>
+                                        <textarea id="antecedentes_familiares" name="antecedentes_familiares"
+                                            class="form-control" rows="2"
+                                            placeholder="Enfermedades hereditarias..."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -828,21 +877,28 @@ try {
                         <!-- Exámenes y Próxima Cita -->
                         <div class="col-md-6">
                             <div class="form-group mb-4">
-                                <label for="examenes_realizados" class="form-label fw-semibold">Exámenes Solicitados</label>
-                                <select id="examenes_realizados" name="examenes_realizados[]" class="form-select select2-tests" multiple data-placeholder="Buscar pruebas de laboratorio...">
-                                    <?php 
+                                <label for="examenes_realizados" class="form-label fw-semibold">Exámenes
+                                    Solicitados</label>
+                                <select id="examenes_realizados" name="examenes_realizados[]"
+                                    class="form-select select2-tests" multiple
+                                    data-placeholder="Buscar pruebas de laboratorio...">
+                                    <?php
                                     $current_cat = '';
-                                    foreach ($all_tests as $test): 
+                                    foreach ($all_tests as $test):
                                         if ($current_cat !== $test['categoria']):
-                                            if ($current_cat !== '') echo '</optgroup>';
+                                            if ($current_cat !== '')
+                                                echo '</optgroup>';
                                             $current_cat = $test['categoria'];
                                             echo '<optgroup label="' . htmlspecialchars($current_cat) . '">';
                                         endif;
-                                    ?>
+                                        ?>
                                         <option value="<?php echo $test['id_prueba']; ?>">
-                                            <?php echo htmlspecialchars($test['nombre_prueba']); ?> (Q<?php echo number_format($test['precio'], 2); ?>)
+                                            <?php echo htmlspecialchars($test['nombre_prueba']); ?>
+                                            (Q<?php echo number_format($test['precio'], 2); ?>)
                                         </option>
-                                    <?php endforeach; if ($current_cat !== '') echo '</optgroup>'; ?>
+                                    <?php endforeach;
+                                    if ($current_cat !== '')
+                                        echo '</optgroup>'; ?>
                                 </select>
                             </div>
                         </div>
@@ -854,11 +910,15 @@ try {
                         </div>
                         <div class="col-md-3">
                             <div class="form-group mb-4">
-                                <label for="medico_responsable" class="form-label fw-semibold">Médico Responsable *</label>
+                                <label for="medico_responsable" class="form-label fw-semibold">Médico Responsable
+                                    *</label>
                                 <select id="medico_responsable" name="medico_responsable" class="form-select" required>
                                     <?php foreach ($doctors as $doctor): ?>
-                                        <option value="<?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>" <?php echo ($doctor['nombre'] . ' ' . $doctor['apellido'] === $user_name) ? 'selected' : ''; ?>>
-                                            Dr(a). <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                        <option
+                                            value="<?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>"
+                                            <?php echo ($doctor['nombre'] . ' ' . $doctor['apellido'] === $user_name) ? 'selected' : ''; ?>>
+                                            Dr(a).
+                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -868,7 +928,8 @@ try {
                 </div>
 
                 <div class="custom-modal-footer">
-                    <button type="button" class="action-btn secondary" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">Cancelar</button>
+                    <button type="button" class="action-btn secondary"
+                        onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">Cancelar</button>
                     <button type="submit" class="action-btn primary">
                         <i class="bi bi-save me-2"></i>
                         Guardar Registro
@@ -883,7 +944,8 @@ try {
         <div class="custom-modal modal-xl">
             <div class="custom-modal-header">
                 <h5 class="custom-modal-title">Orden de Laboratorio</h5>
-                <button type="button" class="custom-modal-close" onclick="document.getElementById('labOrderModal').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="document.getElementById('labOrderModal').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body p-0" style="height: 80vh;">
                 <iframe id="labOrderFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
@@ -897,7 +959,7 @@ try {
     <script src="../../assets/js/human_body_map.js"></script>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Inicializar Select2
             $('.select2-tests').select2({
                 theme: 'bootstrap-5',
@@ -915,7 +977,7 @@ try {
             frame.src = '../laboratory/crear_orden.php?id_paciente=' + patientId + '&embedded=1';
             document.getElementById('labOrderModal').classList.add('active');
         }
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
         (function () {
             'use strict';
 
@@ -1022,7 +1084,7 @@ try {
 
                 applyState() {
                     if (!DOM.sidebar) return; // FIX: Prevent error if sidebar doesn't exist
-                    
+
                     if (this.isCollapsed && !this.isMobile) {
                         DOM.sidebar.classList.add('collapsed');
                         if (DOM.sidebarToggleIcon) {

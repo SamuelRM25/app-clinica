@@ -1,5 +1,5 @@
 <?php
-// print_receipt.php - Recibo de Cobro - Centro Médico RS
+// print_receipt.php - Recibo de Cobro - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Título de la página
-$page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . " - Centro Médico RS";
+$page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . " - Centro Médico Herrera Saenz";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -124,14 +124,14 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Recibo de Cobro - Centro Médico RS - Comprobante de pago médico">
+    <meta name="description" content="Recibo de Cobro - Centro Médico Herrera Saenz - Comprobante de pago médico">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<link
+    <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
 
@@ -159,9 +159,10 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
         <header class="dashboard-header">
             <div class="header-content">
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -215,7 +216,8 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                 <!-- Encabezado de la clínica -->
                 <header class="receipt-header">
                     <div class="logo-section">
-                        <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="clinic-logo" width="40" height="40">
+                        <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="clinic-logo" width="40"
+                            height="40">
                     </div>
                     <div class="clinic-info">
                         Dirección de prueba<br>
@@ -277,7 +279,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                         <strong>Información Importante:</strong><br>
                         Este recibo es un comprobante de pago por servicios médicos prestados.
                         Para cualquier aclaración, favor de presentar este documento original.
-                        Documento generado por Centro Médico RS Management System.
+                        Documento generado por Centro Médico Herrera Saenz Management System.
                     </div>
                     <div class="thank-you">
                         <h4 style="margin: 0; font-size: 16px;">¡Gracias por su preferencia!</h4>
@@ -290,7 +292,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Recibo de Cobro Reingenierizado - Centro Médico RS
+        // Recibo de Cobro Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';

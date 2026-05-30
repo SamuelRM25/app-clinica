@@ -1,6 +1,6 @@
 <?php
 // inventory/index.php - Módulo de Inventario Reingenierizado
-// Centro Médico RS - Sistema de Gestión Médica
+// Centro Médico Herrera Saenz - Sistema de Gestión Médica
 // Versión: 4.0 - Mismo diseño que Dashboard Principal
 
 session_start();
@@ -135,7 +135,7 @@ try {
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Inventario - Centro Médico RS";
+    $page_title = "Inventario - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -149,14 +149,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Inventario - Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Inventario - Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS (Required for Modals) -->
@@ -190,6 +190,7 @@ try {
             border-radius: var(--radius-md);
             margin-top: 1rem;
         }
+
         .filter-tab {
             display: inline-flex;
             align-items: center;
@@ -205,24 +206,33 @@ try {
             transition: all 0.18s ease;
             white-space: nowrap;
         }
+
         .filter-tab:hover {
             background: rgba(var(--color-primary-rgb), 0.09);
             color: var(--color-primary);
         }
+
         .filter-tab.active {
             background: var(--color-primary);
             color: white;
             box-shadow: 0 2px 10px rgba(var(--color-primary-rgb), 0.3);
         }
-        .filter-tab i { font-size: 0.85rem; }
+
+        .filter-tab i {
+            font-size: 0.85rem;
+        }
 
         /* ===== SEARCH CONTAINER ===== */
-        .search-container { padding: 1rem 0 0.5rem; }
+        .search-container {
+            padding: 1rem 0 0.5rem;
+        }
+
         .search-box {
             position: relative;
             display: flex;
             align-items: center;
         }
+
         .search-box .search-icon {
             position: absolute;
             left: 1rem;
@@ -230,6 +240,7 @@ try {
             pointer-events: none;
             font-size: 1rem;
         }
+
         .search-input {
             width: 100%;
             padding: 0.7rem 1rem 0.7rem 2.75rem;
@@ -241,12 +252,16 @@ try {
             font-size: 0.875rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
+
         .search-input:focus {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
             outline: none;
         }
-        .search-input::placeholder { color: var(--color-text-secondary); }
+
+        .search-input::placeholder {
+            color: var(--color-text-secondary);
+        }
 
         /* ===== MEDICINE CARD ===== */
         .medicine-card {
@@ -257,7 +272,12 @@ try {
             transition: all 0.2s;
             position: relative;
         }
-        .medicine-card:hover { border-color: rgba(var(--color-primary-rgb), 0.4); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+        .medicine-card:hover {
+            border-color: rgba(var(--color-primary-rgb), 0.4);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
     </style>
 
 </head>
@@ -271,9 +291,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -488,7 +509,8 @@ try {
                                     <i class="bi bi-calendar-check"></i>
                                     Reporte Mensual
                                 </button>
-                                <a href="print_inventory_cut.php" target="_blank" class="action-btn" style="background: var(--color-primary);">
+                                <a href="print_inventory_cut.php" target="_blank" class="action-btn"
+                                    style="background: var(--color-primary);">
                                     <i class="bi bi-clipboard-check"></i>
                                     Corte Inventario
                                 </a>
@@ -498,7 +520,8 @@ try {
                                     <i class="bi bi-hospital"></i>
                                     Meds. Hospitalarios
                                 </a>
-                                <button type="button" class="action-btn" onclick="document.getElementById('addMedicineModal').classList.add('active')">
+                                <button type="button" class="action-btn"
+                                    onclick="document.getElementById('addMedicineModal').classList.add('active')">
                                     <i class="bi bi-plus-circle"></i>
                                     Nuevo Medicamento
                                 </button>
@@ -759,7 +782,8 @@ try {
                                                         <?php else: ?>
                                                                 <?php if ($can_manage_inventory): ?>
                                                                         <button type="button" class="btn-icon edit"
-                                                                            onclick="openEditModal(<?php echo $item['id_inventario']; ?>)" title="Editar">
+                                                                            onclick="openEditModal(<?php echo $item['id_inventario']; ?>)"
+                                                                            title="Editar">
                                                                             <i class="bi bi-pencil"></i>
                                                                         </button>
                                                                         <button type="button" class="btn-icon delete"
@@ -783,7 +807,8 @@ try {
                             <h4 class="text-muted mb-2">No hay medicamentos en el inventario</h4>
                             <p class="text-muted mb-3">Comience agregando nuevos medicamentos al sistema</p>
                             <?php if ($can_manage_inventory): ?>
-                                    <button type="button" class="action-btn" onclick="document.getElementById('addMedicineModal').classList.add('active')">
+                                    <button type="button" class="action-btn"
+                                        onclick="document.getElementById('addMedicineModal').classList.add('active')">
                                         <i class="bi bi-plus-circle"></i>
                                         Agregar primer medicamento
                                     </button>
@@ -906,7 +931,8 @@ try {
                     <i class="bi bi-plus-circle me-2"></i>
                     Agregar Medicamento
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <form id="addMedicineForm" action="save_medicine.php" method="POST">
                 <?php echo csrf_field(); ?>
@@ -947,8 +973,8 @@ try {
                         </div>
                         <div class="col-md-3">
                             <label for="stock_hospital" class="form-label">Stock Hospital</label>
-                            <input type="number" class="form-control" id="stock_hospital" name="stock_hospital"
-                                min="0" value="0" required>
+                            <input type="number" class="form-control" id="stock_hospital" name="stock_hospital" min="0"
+                                value="0" required>
                         </div>
                         <div class="col-md-3">
                             <label for="precio_compra" class="form-label">Precio Compra</label>
@@ -962,16 +988,16 @@ try {
                             <label for="precio_venta" class="form-label">Precio Venta</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="precio_venta" name="precio_venta"
-                                    min="0" step="0.01" required>
+                                <input type="number" class="form-control" id="precio_venta" name="precio_venta" min="0"
+                                    step="0.01" required>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label for="precio_hospital" class="form-label">Precio Hosp.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="precio_hospital"
-                                    name="precio_hospital" min="0" step="0.01" required>
+                                <input type="number" class="form-control" id="precio_hospital" name="precio_hospital"
+                                    min="0" step="0.01" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -995,7 +1021,8 @@ try {
                     </div>
                 </div>
                 <div class="custom-modal-footer">
-                    <button type="button" class="action-btn secondary" onclick="document.getElementById('addMedicineModal').classList.remove('active')">Cancelar</button>
+                    <button type="button" class="action-btn secondary"
+                        onclick="document.getElementById('addMedicineModal').classList.remove('active')">Cancelar</button>
                     <button type="submit" class="action-btn primary">
                         <i class="bi bi-save me-2"></i>
                         Guardar Medicamento
@@ -1013,7 +1040,8 @@ try {
                     <i class="bi bi-pencil me-2"></i>
                     Editar Medicamento
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <form id="editMedicineForm" action="update_medicine.php" method="POST">
                 <?php echo csrf_field(); ?>
@@ -1024,8 +1052,7 @@ try {
                             <label for="edit_codigo_barras" class="form-label">Código de Barras</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                                <input type="text" class="form-control" id="edit_codigo_barras"
-                                    name="codigo_barras">
+                                <input type="text" class="form-control" id="edit_codigo_barras" name="codigo_barras">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -1040,13 +1067,13 @@ try {
                         </div>
                         <div class="col-md-6">
                             <label for="edit_presentacion_med" class="form-label">Presentación</label>
-                            <input type="text" class="form-control" id="edit_presentacion_med"
-                                name="presentacion_med" required>
+                            <input type="text" class="form-control" id="edit_presentacion_med" name="presentacion_med"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label for="edit_casa_farmaceutica" class="form-label">Casa Farmacéutica</label>
-                            <input type="text" class="form-control" id="edit_casa_farmaceutica"
-                                name="casa_farmaceutica" required>
+                            <input type="text" class="form-control" id="edit_casa_farmaceutica" name="casa_farmaceutica"
+                                required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Stock Total</label>
@@ -1054,8 +1081,8 @@ try {
                         </div>
                         <div class="col-md-4">
                             <label for="edit_cantidad_med" class="form-label">Stock Farmacia</label>
-                            <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med"
-                                min="0" required oninput="updateStockDistribution('pharmacy')">
+                            <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med" min="0"
+                                required oninput="updateStockDistribution('pharmacy')">
                         </div>
                         <div class="col-md-4">
                             <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
@@ -1066,8 +1093,8 @@ try {
                             <label for="edit_precio_compra" class="form-label">Precio Compra</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="edit_precio_compra"
-                                    name="precio_compra" min="0" step="0.01" required>
+                                <input type="number" class="form-control" id="edit_precio_compra" name="precio_compra"
+                                    min="0" step="0.01" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -1090,24 +1117,25 @@ try {
                             <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="edit_precio_medico"
-                                    name="precio_medico" min="0" step="0.01" required>
+                                <input type="number" class="form-control" id="edit_precio_medico" name="precio_medico"
+                                    min="0" step="0.01" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label for="edit_fecha_adquisicion" class="form-label">Fecha Adquisición</label>
-                            <input type="date" class="form-control" id="edit_fecha_adquisicion"
-                                name="fecha_adquisicion" required>
+                            <input type="date" class="form-control" id="edit_fecha_adquisicion" name="fecha_adquisicion"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label for="edit_fecha_vencimiento" class="form-label">Fecha Vencimiento</label>
-                            <input type="date" class="form-control" id="edit_fecha_vencimiento"
-                                name="fecha_vencimiento" required>
+                            <input type="date" class="form-control" id="edit_fecha_vencimiento" name="fecha_vencimiento"
+                                required>
                         </div>
                     </div>
                 </div>
                 <div class="custom-modal-footer">
-                    <button type="button" class="action-btn secondary" onclick="document.getElementById('editMedicineModal').classList.remove('active')">Cancelar</button>
+                    <button type="button" class="action-btn secondary"
+                        onclick="document.getElementById('editMedicineModal').classList.remove('active')">Cancelar</button>
                     <button type="submit" class="action-btn primary">
                         <i class="bi bi-save me-2"></i>
                         Actualizar Medicamento
@@ -1125,7 +1153,8 @@ try {
                     <i class="bi bi-box-arrow-in-down me-2"></i>
                     Recibir Medicamento
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <div class="mb-3">
@@ -1146,13 +1175,13 @@ try {
                 </div>
                 <div class="mb-3">
                     <label for="receive_documento_referencia" class="form-label">Factura / Nota de Envío</label>
-                    <input type="text" class="form-control" id="receive_documento_referencia"
-                        placeholder="Opcional">
+                    <input type="text" class="form-control" id="receive_documento_referencia" placeholder="Opcional">
                 </div>
                 <input type="hidden" id="receive_id_inventario">
             </div>
             <div class="custom-modal-footer">
-                <button type="button" class="action-btn secondary" onclick="document.getElementById('receiveMedicineModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('receiveMedicineModal').classList.remove('active')">Cancelar</button>
                 <button type="button" class="action-btn success" onclick="submitReceive()">
                     <i class="bi bi-check-circle me-2"></i>
                     Confirmar Recepción
@@ -1163,7 +1192,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Inventario Reingenierizado - Centro Médico RS
+        // Módulo de Inventario Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -1562,7 +1591,7 @@ try {
             // ==========================================================================
             // FUNCIONALIDADES GLOBALES DEL INVENTARIO
             // ==========================================================================
-            window.openEditModal = function(id) {
+            window.openEditModal = function (id) {
                 if (window.inventory && window.inventory.manager) {
                     window.inventory.manager.loadMedicineData(id);
                     document.getElementById('editMedicineModal').classList.add('active');
@@ -1603,7 +1632,7 @@ try {
                 // Mostrar estado de carga
                 const btn = document.querySelector('#receiveMedicineModal .action-btn.success');
                 if (!btn) return;
-                
+
                 const originalHtml = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
@@ -1937,7 +1966,8 @@ try {
                 <h5 class="custom-modal-title">
                     <i class="bi bi-file-earmark-bar-graph me-2"></i>Reporte Insumos
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body p-4">
                 <form action="report_insumos.php" method="GET" target="_blank">
@@ -1970,13 +2000,15 @@ try {
                 <h5 class="custom-modal-title">
                     <i class="bi bi-calendar-check me-2"></i>Reporte Mensual de Insumos
                 </h5>
-                <button type="button" class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
             </div>
             <div class="custom-modal-body p-4">
                 <form method="GET" class="d-flex gap-3 align-items-end mb-4">
                     <div class="form-group flex-grow-1">
                         <label class="form-label small fw-bold text-muted text-uppercase">Mes</label>
-                        <input type="month" name="report_month" class="form-control" value="<?php echo htmlspecialchars($report_month); ?>">
+                        <input type="month" name="report_month" class="form-control"
+                            value="<?php echo htmlspecialchars($report_month); ?>">
                     </div>
                     <button type="submit" class="action-btn">
                         <i class="bi bi-search me-1"></i>Filtrar
@@ -1984,45 +2016,48 @@ try {
                 </form>
 
                 <?php if (count($monthly_supplies) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Medicamento</th>
-                                    <th>Presentación</th>
-                                    <th>Casa Farm.</th>
-                                    <th class="text-center">Cant. Total</th>
-                                    <th class="text-center"># Compras</th>
-                                    <th class="text-end">Costo Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($monthly_supplies as $ms): ?>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
                                     <tr>
-                                        <td class="fw-semibold"><?php echo htmlspecialchars($ms['nom_medicamento']); ?></td>
-                                        <td class="text-muted small"><?php echo htmlspecialchars($ms['presentacion_med']); ?></td>
-                                        <td class="small"><?php echo htmlspecialchars($ms['casa_farmaceutica']); ?></td>
-                                        <td class="text-center fw-bold"><?php echo $ms['cantidad_total']; ?></td>
-                                        <td class="text-center"><?php echo $ms['num_compras']; ?></td>
-                                        <td class="text-end fw-bold text-primary">Q<?php echo number_format($ms['costo_total'], 2); ?></td>
+                                        <th>Medicamento</th>
+                                        <th>Presentación</th>
+                                        <th>Casa Farm.</th>
+                                        <th class="text-center">Cant. Total</th>
+                                        <th class="text-center"># Compras</th>
+                                        <th class="text-end">Costo Total</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr class="table-light">
-                                    <td colspan="3" class="text-end fw-bold">TOTALES</td>
-                                    <td class="text-center fw-bold"><?php echo $monthly_total_qty; ?></td>
-                                    <td></td>
-                                    <td class="text-end fw-bold text-success fs-5">Q<?php echo number_format($monthly_total_cost, 2); ?></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($monthly_supplies as $ms): ?>
+                                            <tr>
+                                                <td class="fw-semibold"><?php echo htmlspecialchars($ms['nom_medicamento']); ?></td>
+                                                <td class="text-muted small"><?php echo htmlspecialchars($ms['presentacion_med']); ?>
+                                                </td>
+                                                <td class="small"><?php echo htmlspecialchars($ms['casa_farmaceutica']); ?></td>
+                                                <td class="text-center fw-bold"><?php echo $ms['cantidad_total']; ?></td>
+                                                <td class="text-center"><?php echo $ms['num_compras']; ?></td>
+                                                <td class="text-end fw-bold text-primary">
+                                                    Q<?php echo number_format($ms['costo_total'], 2); ?></td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-light">
+                                        <td colspan="3" class="text-end fw-bold">TOTALES</td>
+                                        <td class="text-center fw-bold"><?php echo $monthly_total_qty; ?></td>
+                                        <td></td>
+                                        <td class="text-end fw-bold text-success fs-5">
+                                            Q<?php echo number_format($monthly_total_cost, 2); ?></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                 <?php else: ?>
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
-                        <p>No hay compras registradas para <?php echo date('F Y', strtotime($month_start)); ?></p>
-                    </div>
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+                            <p>No hay compras registradas para <?php echo date('F Y', strtotime($month_start)); ?></p>
+                        </div>
                 <?php endif; ?>
             </div>
         </div>

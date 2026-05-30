@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 if (!isset($_SESSION['user_id'])) {
     die("Acceso no autorizado");
@@ -49,7 +49,7 @@ try {
 
 } catch (Exception $e) {
     error_log("php/inventory/report_insumos_mensual.php error: " . $e->getMessage());
-        die("Error: " . 'Error del servidor.');
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>
@@ -60,8 +60,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reporte de Insumos - <?php echo $date; ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <?php include '../../includes/theme_head.php'; ?>
 
@@ -81,7 +81,8 @@ try {
                 display: none !important;
             }
 
-            body, html {
+            body,
+            html {
                 background: white !important;
                 color: black !important;
                 padding: 0 !important;
@@ -131,7 +132,7 @@ try {
                 border-bottom: 1px solid #ddd !important;
                 padding: 0.5rem !important;
             }
-            
+
             .signature-line {
                 border-top: 1.5px solid #000 !important;
             }
@@ -146,9 +147,10 @@ try {
         <!-- Header Superior no-print -->
         <header class="dashboard-header no-print">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -167,7 +169,8 @@ try {
                             <?php echo isset($_SESSION['nombre']) ? strtoupper(substr($_SESSION['nombre'], 0, 1)) : 'U'; ?>
                         </div>
                         <div class="header-details">
-                            <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
+                            <span
+                                class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
                             <span class="header-role">Inventario</span>
                         </div>
                     </div>
@@ -196,7 +199,8 @@ try {
                             <i class="bi bi-receipt section-title-icon"></i>
                             Reporte de Insumos Descargados
                         </h3>
-                        <p class="text-muted small mb-0">Jornada: <strong class="text-primary"><?php echo $shift_name; ?></strong></p>
+                        <p class="text-muted small mb-0">Jornada: <strong
+                                class="text-primary"><?php echo $shift_name; ?></strong></p>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="action-btn" onclick="window.print()">
@@ -229,33 +233,34 @@ try {
                         </thead>
                         <tbody>
                             <?php if (count($insumos) > 0): ?>
-                                <?php foreach ($insumos as $row): ?>
-                                    <tr>
-                                        <td>
-                                            <i class="bi bi-clock me-1 text-muted"></i>
-                                            <?php echo date('H:i', strtotime($row['fecha'])); ?>
-                                        </td>
-                                        <td class="fw-semibold">
-                                            <?php echo htmlspecialchars($row['nombre']); ?>
-                                        </td>
-                                        <td>
-                                            <?php echo htmlspecialchars($row['usuario']); ?>
-                                        </td>
-                                        <td class="text-center fw-bold text-muted">
-                                            <?php echo $row['cantidad']; ?>
-                                        </td>
-                                        <td class="text-end">
-                                            Q<?php echo number_format($row['precio_venta'], 2); ?>
-                                        </td>
-                                        <td class="text-end fw-bold text-primary">
-                                            Q<?php echo number_format($row['subtotal'], 2); ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                                    <?php foreach ($insumos as $row): ?>
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-clock me-1 text-muted"></i>
+                                                    <?php echo date('H:i', strtotime($row['fecha'])); ?>
+                                                </td>
+                                                <td class="fw-semibold">
+                                                    <?php echo htmlspecialchars($row['nombre']); ?>
+                                                </td>
+                                                <td>
+                                                    <?php echo htmlspecialchars($row['usuario']); ?>
+                                                </td>
+                                                <td class="text-center fw-bold text-muted">
+                                                    <?php echo $row['cantidad']; ?>
+                                                </td>
+                                                <td class="text-end">
+                                                    Q<?php echo number_format($row['precio_venta'], 2); ?>
+                                                </td>
+                                                <td class="text-end fw-bold text-primary">
+                                                    Q<?php echo number_format($row['subtotal'], 2); ?>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
                             <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">No hay insumos registrados en este turno.</td>
-                                </tr>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">No hay insumos registrados en este
+                                            turno.</td>
+                                    </tr>
                             <?php endif; ?>
                         </tbody>
                         <tfoot>

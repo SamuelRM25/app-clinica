@@ -1,6 +1,6 @@
 <?php
 // print_inventory_cut.php - Corte de Inventario Físico Interactivo
-// Centro Médico RS - Sistema de Gestión Médica
+// Centro Médico Herrera Saenz - Sistema de Gestión Médica
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -97,7 +97,7 @@ try {
 
 } catch (Exception $e) {
     error_log("php/inventory/print_inventory_cut.php error: " . $e->getMessage());
-        die("Error: " . 'Error del servidor.');
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>
@@ -108,7 +108,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corte de Inventario Físico - <?php echo date('d/m/Y'); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -332,7 +332,7 @@ try {
         <header class="dashboard-header no-print">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">
@@ -453,91 +453,96 @@ try {
                         </thead>
                         <tbody id="inventoryBody">
                             <?php if (count($inventory) > 0): ?>
-                                <?php foreach ($inventory as $row): ?>
-                                    <?php
-                                    $id = $row['id_inventario'];
-                                    $sys_qty = $row['cantidad_med'];
-                                    $has_count = isset($counts_map[$id]);
-                                    $phy_qty = $has_count ? $counts_map[$id]['cantidad_fisica'] : '';
-                                    $diff = $has_count ? $counts_map[$id]['diferencia'] : '';
-                                    $status = $has_count ? $counts_map[$id]['estado'] : 'Pendiente';
-                                    $is_balanced = $has_count && $counts_map[$id]['fecha_equilibrado'] !== null;
+                                        <?php foreach ($inventory as $row): ?>
+                                                    <?php
+                                                    $id = $row['id_inventario'];
+                                                    $sys_qty = $row['cantidad_med'];
+                                                    $has_count = isset($counts_map[$id]);
+                                                    $phy_qty = $has_count ? $counts_map[$id]['cantidad_fisica'] : '';
+                                                    $diff = $has_count ? $counts_map[$id]['diferencia'] : '';
+                                                    $status = $has_count ? $counts_map[$id]['estado'] : 'Pendiente';
+                                                    $is_balanced = $has_count && $counts_map[$id]['fecha_equilibrado'] !== null;
 
-                                    $row_class = '';
-                                    if ($is_balanced) $row_class = 'row-balanced';
-                                    elseif ($has_count) $row_class = 'row-has-count';
+                                                    $row_class = '';
+                                                    if ($is_balanced)
+                                                        $row_class = 'row-balanced';
+                                                    elseif ($has_count)
+                                                        $row_class = 'row-has-count';
 
-                                    $status_class = strtolower($status);
-                                    if ($is_balanced) $status_class = 'equilibrado';
+                                                    $status_class = strtolower($status);
+                                                    if ($is_balanced)
+                                                        $status_class = 'equilibrado';
 
-                                    $diff_class = 'zero';
-                                    if ($has_count) {
-                                        if ($diff < 0) $diff_class = 'negative';
-                                        elseif ($diff > 0) $diff_class = 'positive';
-                                    }
-                                    ?>
-                                    <tr class="<?php echo $row_class; ?>" 
-                                        data-id="<?php echo $id; ?>"
-                                        data-status="<?php echo $has_count ? 'counted' : 'pending'; ?>"
-                                        data-diff="<?php echo $has_count ? $diff : ''; ?>"
-                                        data-balanced="<?php echo $is_balanced ? '1' : '0'; ?>">
-                                        <td><?php echo htmlspecialchars($row['codigo_barras'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <div class="fw-semibold"><?php echo htmlspecialchars($row['nom_medicamento']); ?></div>
-                                            <div class="small text-muted"><?php echo htmlspecialchars($row['mol_medicamento'] . ' • ' . $row['presentacion_med']); ?></div>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($row['document_number'] ?: ($row['document_type'] ?: 'N/A')); ?></td>
-                                        <td><?php echo $row['fecha_vencimiento'] ? date('d/m/y', strtotime($row['fecha_vencimiento'])) : 'N/A'; ?></td>
-                                        <td class="text-center fw-bold text-muted bg-light sys-qty">
-                                            <?php echo $sys_qty; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="number" 
-                                                   class="count-input <?php echo $has_count ? 'counted' : ''; ?>" 
-                                                   data-id="<?php echo $id; ?>"
-                                                   data-sys="<?php echo $sys_qty; ?>"
-                                                   value="<?php echo $phy_qty; ?>"
-                                                   min="0"
-                                                   placeholder="-"
-                                                   <?php echo $is_balanced ? 'disabled' : ''; ?>>
-                                        </td>
-                                        <td class="text-center diff-cell">
-                                            <?php if ($has_count): ?>
-                                                <span class="diff-badge <?php echo $diff_class; ?>">
-                                                    <?php echo $diff > 0 ? '+' : ''; ?><?php echo $diff; ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="status-badge <?php echo $status_class; ?>">
-                                                <?php if ($is_balanced): ?>
-                                                    <i class="bi bi-check2-circle"></i> Equilibrado
-                                                <?php elseif ($status === 'Listo'): ?>
-                                                    <i class="bi bi-check-circle"></i> Listo
-                                                <?php else: ?>
-                                                    <i class="bi bi-clock"></i> Pendiente
-                                                <?php endif; ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center no-print">
-                                            <?php if ($has_count && $diff != 0 && !$is_balanced): ?>
-                                                <button class="balance-btn" data-id="<?php echo $id; ?>" onclick="balanceItem(<?php echo $id; ?>)">
-                                                    <i class="bi bi-arrow-left-right"></i> Equilibrar
-                                                </button>
-                                            <?php elseif ($is_balanced): ?>
-                                                <span class="text-muted small"><i class="bi bi-check-all"></i> OK</span>
-                                            <?php else: ?>
-                                                <span class="text-muted small">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                                                    $diff_class = 'zero';
+                                                    if ($has_count) {
+                                                        if ($diff < 0)
+                                                            $diff_class = 'negative';
+                                                        elseif ($diff > 0)
+                                                            $diff_class = 'positive';
+                                                    }
+                                                    ?>
+                                                    <tr class="<?php echo $row_class; ?>" 
+                                                        data-id="<?php echo $id; ?>"
+                                                        data-status="<?php echo $has_count ? 'counted' : 'pending'; ?>"
+                                                        data-diff="<?php echo $has_count ? $diff : ''; ?>"
+                                                        data-balanced="<?php echo $is_balanced ? '1' : '0'; ?>">
+                                                        <td><?php echo htmlspecialchars($row['codigo_barras'] ?? 'N/A'); ?></td>
+                                                        <td>
+                                                            <div class="fw-semibold"><?php echo htmlspecialchars($row['nom_medicamento']); ?></div>
+                                                            <div class="small text-muted"><?php echo htmlspecialchars($row['mol_medicamento'] . ' • ' . $row['presentacion_med']); ?></div>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($row['document_number'] ?: ($row['document_type'] ?: 'N/A')); ?></td>
+                                                        <td><?php echo $row['fecha_vencimiento'] ? date('d/m/y', strtotime($row['fecha_vencimiento'])) : 'N/A'; ?></td>
+                                                        <td class="text-center fw-bold text-muted bg-light sys-qty">
+                                                            <?php echo $sys_qty; ?>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <input type="number" 
+                                                                   class="count-input <?php echo $has_count ? 'counted' : ''; ?>" 
+                                                                   data-id="<?php echo $id; ?>"
+                                                                   data-sys="<?php echo $sys_qty; ?>"
+                                                                   value="<?php echo $phy_qty; ?>"
+                                                                   min="0"
+                                                                   placeholder="-"
+                                                                   <?php echo $is_balanced ? 'disabled' : ''; ?>>
+                                                        </td>
+                                                        <td class="text-center diff-cell">
+                                                            <?php if ($has_count): ?>
+                                                                        <span class="diff-badge <?php echo $diff_class; ?>">
+                                                                            <?php echo $diff > 0 ? '+' : ''; ?>                        <?php echo $diff; ?>
+                                                                        </span>
+                                                            <?php else: ?>
+                                                                        <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="status-badge <?php echo $status_class; ?>">
+                                                                <?php if ($is_balanced): ?>
+                                                                            <i class="bi bi-check2-circle"></i> Equilibrado
+                                                                <?php elseif ($status === 'Listo'): ?>
+                                                                            <i class="bi bi-check-circle"></i> Listo
+                                                                <?php else: ?>
+                                                                            <i class="bi bi-clock"></i> Pendiente
+                                                                <?php endif; ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center no-print">
+                                                            <?php if ($has_count && $diff != 0 && !$is_balanced): ?>
+                                                                        <button class="balance-btn" data-id="<?php echo $id; ?>" onclick="balanceItem(<?php echo $id; ?>)">
+                                                                            <i class="bi bi-arrow-left-right"></i> Equilibrar
+                                                                        </button>
+                                                            <?php elseif ($is_balanced): ?>
+                                                                        <span class="text-muted small"><i class="bi bi-check-all"></i> OK</span>
+                                                            <?php else: ?>
+                                                                        <span class="text-muted small">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                        <?php endforeach; ?>
                             <?php else: ?>
-                                <tr>
-                                    <td colspan="9" class="text-center py-4 text-muted">No hay insumos registrados en el sistema.</td>
-                                </tr>
+                                        <tr>
+                                            <td colspan="9" class="text-center py-4 text-muted">No hay insumos registrados en el sistema.</td>
+                                        </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

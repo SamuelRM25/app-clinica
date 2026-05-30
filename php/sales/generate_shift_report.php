@@ -1,12 +1,12 @@
 <?php
-// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro Médico RS
+// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro Médico Herrera Saenz
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -94,7 +94,7 @@ $user_name = $_SESSION['nombre'];
 $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
 // Título de la página
-$page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
+$page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -102,14 +102,14 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Ventas por Jornada - Centro Médico RS">
+    <meta name="description" content="Reporte de Ventas por Jornada - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<link
+    <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
 
@@ -141,7 +141,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
     <div class="report-container">
         <!-- Encabezado -->
         <div class="report-header animate-in">
-            <h1 class="clinic-name">Centro Médico RS</h1>
+            <h1 class="clinic-name">Centro Médico Herrera Saenz</h1>
             <h2 class="report-title">Reporte de Ventas por Jornada</h2>
             <div class="period-info">
                 <i class="bi bi-calendar-range"></i>
@@ -392,7 +392,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico RS";
                 <?php echo htmlspecialchars($user_specialty); ?>
             </p>
             <p class="text-muted">
-                Centro Médico RS - Sistema de Gestión Médica v4.0
+                Centro Médico Herrera Saenz - Sistema de Gestión Médica v4.0
             </p>
         </div>
     </div>

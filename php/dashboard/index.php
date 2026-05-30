@@ -1,5 +1,5 @@
 <?php
-// dashboard.php - Dashboard Centro Médico RS
+// dashboard.php - Dashboard Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -17,7 +17,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -59,7 +59,7 @@ try {
     $stmtDoc->execute([$id_hospital]);
     $doctores = $stmtDoc->fetchAll(PDO::FETCH_ASSOC);
 
-    // Obtener Catálogo de Pruebas (para Laboratorio)
+    // Obtener catálogo de Pruebas (para Laboratorio)
     $stmtCat = $conn->prepare("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, precio FROM catalogo_pruebas WHERE id_hospital = ? ORDER BY categoria, nombre_prueba");
     $stmtCat->execute([$id_hospital]);
     $catalogo = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
@@ -130,7 +130,7 @@ try {
     $total_medications = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
     // 8. Medicamentos próximos a caducar (Configurable)
-    $expiring_days = isset($_COOKIE['config_expiring_days']) ? (int)$_COOKIE['config_expiring_days'] : 180; // 6 months default
+    $expiring_days = isset($_COOKIE['config_expiring_days']) ? (int) $_COOKIE['config_expiring_days'] : 180; // 6 months default
     $next_month = date('Y-m-d', strtotime("+$expiring_days days"));
     $stmt = $conn->prepare("
         SELECT id_inventario, nom_medicamento, fecha_vencimiento, cantidad_med 
@@ -142,7 +142,7 @@ try {
     $expiring_medications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 9. Medicamentos con stock bajo (Configurable)
-    $low_stock_limit = isset($_COOKIE['config_low_stock']) ? (int)$_COOKIE['config_low_stock'] : 5;
+    $low_stock_limit = isset($_COOKIE['config_low_stock']) ? (int) $_COOKIE['config_low_stock'] : 5;
     $stmt = $conn->prepare("
         SELECT id_inventario, nom_medicamento, cantidad_med 
         FROM inventario 
@@ -186,7 +186,7 @@ try {
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Dashboard - Centro Médico RS";
+    $page_title = "Dashboard - Centro Médico Herrera Saenz";
 
     // ============ WIDGET SETTINGS ============
     $hospital_id = $_SESSION['id_hospital'] ?? 1;
@@ -195,16 +195,16 @@ try {
     $widget_settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
     // Default values if not set
-    $show_quick_actions = isset($widget_settings['widget-quick-actions']) ? (int)$widget_settings['widget-quick-actions'] : 1;
-    $show_stats         = isset($widget_settings['widget-stats']) ? (int)$widget_settings['widget-stats'] : 1;
-    $show_appointments  = isset($widget_settings['widget-appointments']) ? (int)$widget_settings['widget-appointments'] : 1;
-    $show_hospitalized  = isset($widget_settings['widget-hospitalized']) ? (int)$widget_settings['widget-hospitalized'] : 1;
-    $show_alerts        = isset($widget_settings['widget-alerts']) ? (int)$widget_settings['widget-alerts'] : 1;
-    $show_revenue       = isset($widget_settings['widget-revenue']) ? (int)$widget_settings['widget-revenue'] : 1;
-    $show_inventory     = isset($widget_settings['widget-inventory']) ? (int)$widget_settings['widget-inventory'] : 1;
-    $show_patients      = isset($widget_settings['widget-patients']) ? (int)$widget_settings['widget-patients'] : 1;
-    $show_calendar      = isset($widget_settings['widget-calendar']) ? (int)$widget_settings['widget-calendar'] : 1;
-    $show_labs          = isset($widget_settings['widget-labs']) ? (int)$widget_settings['widget-labs'] : 1;
+    $show_quick_actions = isset($widget_settings['widget-quick-actions']) ? (int) $widget_settings['widget-quick-actions'] : 1;
+    $show_stats = isset($widget_settings['widget-stats']) ? (int) $widget_settings['widget-stats'] : 1;
+    $show_appointments = isset($widget_settings['widget-appointments']) ? (int) $widget_settings['widget-appointments'] : 1;
+    $show_hospitalized = isset($widget_settings['widget-hospitalized']) ? (int) $widget_settings['widget-hospitalized'] : 1;
+    $show_alerts = isset($widget_settings['widget-alerts']) ? (int) $widget_settings['widget-alerts'] : 1;
+    $show_revenue = isset($widget_settings['widget-revenue']) ? (int) $widget_settings['widget-revenue'] : 1;
+    $show_inventory = isset($widget_settings['widget-inventory']) ? (int) $widget_settings['widget-inventory'] : 1;
+    $show_patients = isset($widget_settings['widget-patients']) ? (int) $widget_settings['widget-patients'] : 1;
+    $show_calendar = isset($widget_settings['widget-calendar']) ? (int) $widget_settings['widget-calendar'] : 1;
+    $show_labs = isset($widget_settings['widget-labs']) ? (int) $widget_settings['widget-labs'] : 1;
 
     // ============ DATA FOR ADDITIONAL WIDGETS ============
     // 1. Revenue data
@@ -213,36 +213,41 @@ try {
     $revenue_exams = 0;
     $revenue_consults = 0;
     $revenue_hosp = 0;
-    
+
     try {
         $stmt = $conn->prepare("SELECT SUM(total) FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND id_hospital = ?");
         $stmt->execute([$hospital_id]);
-        $revenue_ventas = (float)$stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {}
+        $revenue_ventas = (float) $stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {
+    }
 
     try {
         $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE MONTH(fecha_procedimiento) = MONTH(CURDATE()) AND YEAR(fecha_procedimiento) = YEAR(CURDATE()) AND id_hospital = ?");
         $stmt->execute([$id_hospital]);
-        $revenue_proc = (float)$stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {}
+        $revenue_proc = (float) $stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {
+    }
 
     try {
         $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE MONTH(fecha_examen) = MONTH(CURDATE()) AND YEAR(fecha_examen) = YEAR(CURDATE()) AND id_hospital = ?");
         $stmt->execute([$id_hospital]);
-        $revenue_exams = (float)$stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {}
+        $revenue_exams = (float) $stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {
+    }
 
     try {
         $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND YEAR(fecha_consulta) = YEAR(CURDATE()) AND id_hospital = ?");
         $stmt->execute([$id_hospital]);
-        $revenue_consults = (float)$stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {}
+        $revenue_consults = (float) $stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {
+    }
 
     try {
         $stmt = $conn->prepare("SELECT SUM(total_general) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE MONTH(e.fecha_alta) = MONTH(CURDATE()) AND YEAR(e.fecha_alta) = YEAR(CURDATE()) AND e.id_hospital = ?");
         $stmt->execute([$id_hospital]);
-        $revenue_hosp = (float)$stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {}
+        $revenue_hosp = (float) $stmt->fetchColumn() ?: 0;
+    } catch (\Exception $e) {
+    }
 
     $total_monthly_revenue = $revenue_ventas + $revenue_proc + $revenue_exams + $revenue_consults + $revenue_hosp;
 
@@ -252,12 +257,13 @@ try {
     try {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM pacientes WHERE id_hospital = ?");
         $stmt->execute([$hospital_id]);
-        $total_patients_count = (int)$stmt->fetchColumn() ?: 0;
+        $total_patients_count = (int) $stmt->fetchColumn() ?: 0;
 
         $stmt = $conn->prepare("SELECT id_paciente, nombre, apellido, nit, telefono, fecha_registro FROM pacientes WHERE id_hospital = ? ORDER BY id_paciente DESC LIMIT 5");
         $stmt->execute([$hospital_id]);
         $latest_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (\Exception $e) {}
+    } catch (\Exception $e) {
+    }
 
     // 3. Laboratory widget data
     $pending_labs_count = 0;
@@ -266,25 +272,27 @@ try {
     try {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM ordenes_laboratorio WHERE estado = 'Pendiente' AND id_hospital = ?");
         $stmt->execute([$hospital_id]);
-        $pending_labs_count = (int)$stmt->fetchColumn() ?: 0;
+        $pending_labs_count = (int) $stmt->fetchColumn() ?: 0;
 
         $stmt = $conn->prepare("SELECT COUNT(*) FROM ordenes_laboratorio WHERE estado = 'Completada' AND id_hospital = ?");
         $stmt->execute([$hospital_id]);
-        $completed_labs_count = (int)$stmt->fetchColumn() ?: 0;
+        $completed_labs_count = (int) $stmt->fetchColumn() ?: 0;
 
         $stmt = $conn->prepare("SELECT ol.id_orden, ol.numero_orden, ol.estado, ol.fecha_orden, p.nombre, p.apellido FROM ordenes_laboratorio ol JOIN pacientes p ON ol.id_paciente = p.id_paciente WHERE ol.id_hospital = ? ORDER BY ol.id_orden DESC LIMIT 5");
         $stmt->execute([$hospital_id]);
         $latest_lab_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (\Exception $e) {}
+    } catch (\Exception $e) {
+    }
 
 } catch (Exception $e) {
-    // Manejo de errores
-    error_log("Error en dashboard: " . $e->getMessage());
-    die("Error al cargar el dashboard. Por favor, contacte al administrador.");
+    // Manejo de errores — registra el detalle completo en el log del servidor
+    error_log("Error en dashboard: " . $e->getMessage() . " | File: " . $e->getFile() . ":" . $e->getLine() . " | Trace: " . $e->getTraceAsString());
+    die("Error al cargar el dashboard. Por favor, contacte al administrador. (Código: " . substr(md5($e->getMessage()), 0, 6) . ")");
 }
 
+
 // Código de autorización para corte de turno (configurable vía variable de entorno)
-$shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
+$shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'logo';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -292,22 +300,25 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard del Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Dashboard del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- SweetAlert2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print"
+        onload="this.media='all'">
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Bootstrap CSS y JS Bundle -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" media="print"
+        onload="this.media='all'">
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+        media="print" onload="this.media='all'">
 
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <!-- Seguridad y Protección de Código -->
@@ -316,9 +327,449 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <!-- Responsive fixes for mobile -->
+    <style>
+        @media (max-width: 767px) {
+            .dashboard-header {
+                position: relative;
+                padding-bottom: 0.5rem;
+            }
+
+            .header-content {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 0.5rem !important;
+            }
+
+            .header-controls {
+                gap: 0.4rem;
+            }
+
+            .header-user .header-details {
+                display: none;
+            }
+
+            .header-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+
+            .brand-logo {
+                height: 28px;
+            }
+
+            .shift-cut-btn-container {
+                position: static !important;
+                margin-top: 0.5rem;
+                text-align: center;
+            }
+
+            .shift-cut-btn-container .btn {
+                width: 100%;
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem !important;
+            }
+
+            .stats-grid {
+                gap: 0.75rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .stat-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1.15rem;
+            }
+
+            .appointments-section,
+            .billing-section {
+                padding: 1rem;
+            }
+
+            .appointments-table th,
+            .appointments-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .patient-cell {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+
+            .patient-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+
+            .appointments-table thead th:nth-child(3),
+            .appointments-table td:nth-child(3) {
+                display: none;
+            }
+
+            .alert-card {
+                padding: 0.75rem;
+            }
+
+            .alert-title {
+                font-size: 0.95rem;
+            }
+
+            .alert-item {
+                padding: 0.5rem;
+            }
+
+            .alerts-grid {
+                gap: 0.75rem;
+            }
+
+            .section-header .badge {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+
+            #greeting {
+                font-size: 1.1rem !important;
+            }
+
+            .greeting-meta .mx-2 {
+                display: none;
+            }
+
+            .greeting-meta {
+                font-size: 0.75rem;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+
+            .btn-group.w-100 {
+                flex-wrap: wrap;
+            }
+
+            .btn-group.w-100 .btn {
+                flex: 1 1 auto;
+                font-size: 0.75rem;
+                padding: 0.35rem 0.4rem;
+            }
+
+            .btn-group.w-100 .btn i {
+                display: none;
+            }
+
+            .modal-dialog.modal-xl .lab-summary-panel {
+                min-width: 100% !important;
+                border-left: none !important;
+                border-top: 1px solid var(--color-border);
+                padding: 0.75rem !important;
+            }
+
+            .modal-body.p-4 {
+                padding: 0.75rem !important;
+            }
+
+            .modal-header {
+                padding: 0.75rem;
+            }
+
+            .modal-footer {
+                padding: 0.75rem;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .d-flex.gap-2.align-items-center {
+                flex-wrap: wrap;
+            }
+
+            .lab-summary-panel .btn-group .btn {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.4rem;
+            }
+
+            .lab-summary-panel .btn-primary.w-100 {
+                font-size: 0.85rem;
+                padding: 0.6rem !important;
+            }
+
+            #shiftContent .table-responsive table {
+                min-width: 500px;
+            }
+
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .row.g-3.p-3>.col-md-4,
+            .row.g-3.p-3>.col-md-6 {
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+            }
+
+            .row.g-3.p-3 {
+                padding: 0.5rem !important;
+                margin: 0;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+
+            .section-title-icon {
+                font-size: 1.2rem;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+                font-size: 0.85rem;
+                padding: 0.5rem 1rem !important;
+            }
+
+            .stat-card.border-start {
+                padding: 0.75rem;
+            }
+
+            .stat-card.border-start .stat-value {
+                font-size: 1rem;
+            }
+
+            .stat-card.border-start .stat-title {
+                font-size: 0.8rem;
+            }
+
+            .test-card-v2 .fw-semibold {
+                font-size: 0.75rem;
+            }
+
+            .test-card-v2 .text-success {
+                font-size: 0.75rem;
+            }
+
+            .accordion-button {
+                font-size: 0.85rem;
+                padding: 0.6rem;
+            }
+
+            .accordion-body.p-2 .row.g-2 {
+                margin: 0;
+            }
+
+            .accordion-body.p-2 .row.g-2>.col-md-6 {
+                padding: 0.15rem;
+            }
+
+            .test-card-v2 {
+                padding: 0.4rem !important;
+            }
+
+            .test-card-v2 .check-indicator .form-check-input {
+                width: 14px;
+                height: 14px;
+            }
+
+            .modal-header .modal-title .d-block.fw-bold {
+                font-size: 0.9rem;
+            }
+
+            .modal-header .modal-title small {
+                font-size: 0.7rem;
+            }
+
+            .input-group-lg .form-control {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+
+            .input-group-lg .input-group-text {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+
+            .form-label.fw-bold.small.text-uppercase.text-muted {
+                font-size: 0.65rem !important;
+            }
+
+            .form-control,
+            .form-select {
+                font-size: 0.8rem;
+                padding: 0.45rem 0.6rem;
+            }
+
+            .row.g-3.mb-4.p-3 {
+                padding: 0.75rem !important;
+                margin: 0 -0.25rem;
+            }
+
+            .row.g-3.mb-4.p-3>.col-md-6,
+            .row.g-3.mb-4.p-3>.col-md-12 {
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+            }
+
+            #widget-patients .patient-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 0.75rem;
+            }
+
+            .empty-state {
+                padding: 1.5rem 0.75rem;
+            }
+
+            .empty-icon {
+                font-size: 2.5rem;
+            }
+
+            .modal-dialog.modal-lg .modal-content .modal-body .d-flex.h-100 {
+                flex-direction: column !important;
+                min-height: auto !important;
+            }
+
+            .modal-dialog.modal-lg .modal-content .modal-body .d-flex.h-100>div:first-child {
+                padding: 0.5rem !important;
+            }
+
+            .sticky-top.bg-white.py-2 {
+                position: static;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .stats-grid {
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 0.5rem;
+            }
+
+            .stat-value {
+                font-size: 1.2rem;
+            }
+
+            .stat-icon {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
+
+            .stat-title {
+                font-size: 0.7rem;
+            }
+
+            .appointments-table th,
+            .appointments-table td {
+                padding: 0.3rem 0.4rem;
+                font-size: 0.7rem;
+            }
+
+            .patient-avatar {
+                width: 26px;
+                height: 26px;
+                font-size: 0.7rem;
+            }
+
+            .appointments-table thead th:nth-child(3),
+            .appointments-table td:nth-child(3) {
+                display: none;
+            }
+
+            .theme-btn {
+                width: 34px;
+                height: 34px;
+            }
+
+            .header-controls {
+                gap: 0.3rem;
+            }
+
+            .logout-btn span {
+                display: none;
+            }
+
+            .logout-btn {
+                padding: 0.3rem;
+            }
+
+            .action-btn {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.75rem !important;
+            }
+
+            #greeting {
+                font-size: 1rem !important;
+            }
+
+            .badge.p-2.fs-6 {
+                font-size: 0.8rem !important;
+                padding: 0.3rem 0.6rem !important;
+            }
+
+            .section-title {
+                font-size: 0.85rem;
+            }
+
+            .alert-card,
+            .appointments-section {
+                padding: 0.5rem;
+            }
+
+            .modal-header .modal-title .d-block.fw-bold {
+                font-size: 0.85rem;
+            }
+
+            .modal-header .icon-shape {
+                width: 32px;
+                height: 32px;
+            }
+
+            .modal-header .icon-shape i {
+                font-size: 1rem;
+            }
+
+            .modal-header .modal-title .me-3 {
+                margin-right: 0.5rem !important;
+            }
+
+            .btn-group.w-100 .btn {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.35rem;
+            }
+
+            .btn-group.w-100 .btn i {
+                display: none;
+            }
+        }
+    </style>
     <!-- Theme Loader: aplica el tema guardado antes del primer paint -->
     <?php include '../../includes/theme_head.php'; ?>
-    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"></noscript>
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    </noscript>
 </head>
 
 <body>
@@ -344,16 +795,16 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                 <!-- Punto de Venta (Dispensario) -->
                 <li class="nav-item">
                     <?php if (is_module_active('pharmacy')): ?>
-                        <a href="../dispensary/index.php" class="nav-link">
-                            <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
-                            <span class="nav-text">Punto de Venta</span>
-                        </a>
+                            <a href="../dispensary/index.php" class="nav-link">
+                                <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
+                                <span class="nav-text">Punto de Venta</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked"
-                            onclick="lockedModule('Punto de Venta / Farmacia')">
-                            <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
-                            <span class="nav-text">Punto de Venta</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked"
+                                onclick="lockedModule('Punto de Venta / Farmacia')">
+                                <span class="nav-icon" style="font-weight: 900; font-family: serif; font-size: 1.5rem;">Q</span>
+                                <span class="nav-text">Punto de Venta</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
@@ -375,137 +826,137 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                 <!-- Hospitalización -->
                 <li class="nav-item">
                     <?php if (is_module_active('hospitalization')): ?>
-                        <a href="../hospitalization/index.php" class="nav-link">
-                            <i class="bi bi-hospital nav-icon"></i>
-                            <span class="nav-text">Hospitalización</span>
-                            <span class="badge bg-info"><?php echo $active_hospitalizations; ?></span>
-                        </a>
+                            <a href="../hospitalization/index.php" class="nav-link">
+                                <i class="bi bi-hospital nav-icon"></i>
+                                <span class="nav-text">Hospitalización</span>
+                                <span class="badge bg-info"><?php echo $active_hospitalizations; ?></span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Hospitalización')">
-                            <i class="bi bi-hospital nav-icon"></i>
-                            <span class="nav-text">Hospitalización</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Hospitalización')">
+                                <i class="bi bi-hospital nav-icon"></i>
+                                <span class="nav-text">Hospitalización</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <!-- Laboratorio -->
                 <li class="nav-item">
                     <?php if (is_module_active('laboratory')): ?>
-                        <a href="../laboratory/index.php" class="nav-link">
-                            <i class="bi bi-flask nav-icon"></i>
-                            <span class="nav-text">Laboratorio</span>
-                        </a>
+                            <a href="../laboratory/index.php" class="nav-link">
+                                <i class="bi bi-flask nav-icon"></i>
+                                <span class="nav-text">Laboratorio</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Laboratorio Clínico')">
-                            <i class="bi bi-flask nav-icon"></i>
-                            <span class="nav-text">Laboratorio</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Laboratorio Clínico')">
+                                <i class="bi bi-flask nav-icon"></i>
+                                <span class="nav-text">Laboratorio</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <!-- Inventario -->
                 <li class="nav-item">
                     <?php if (is_module_active('inventory')): ?>
-                        <a href="../inventory/index.php" class="nav-link">
-                            <i class="bi bi-box-seam nav-icon"></i>
-                            <span class="nav-text">Inventario</span>
-                            <?php if ($pending_purchases > 0): ?>
-                                <span class="badge bg-warning"><?php echo $pending_purchases; ?></span>
-                            <?php endif; ?>
-                        </a>
+                            <a href="../inventory/index.php" class="nav-link">
+                                <i class="bi bi-box-seam nav-icon"></i>
+                                <span class="nav-text">Inventario</span>
+                                <?php if ($pending_purchases > 0): ?>
+                                        <span class="badge bg-warning"><?php echo $pending_purchases; ?></span>
+                                <?php endif; ?>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Inventario')">
-                            <i class="bi bi-box-seam nav-icon"></i>
-                            <span class="nav-text">Inventario</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Inventario')">
+                                <i class="bi bi-box-seam nav-icon"></i>
+                                <span class="nav-text">Inventario</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <!-- Otros Módulos -->
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
-                        <a href="../minor_procedures/index.php" class="nav-link">
-                            <i class="bi bi-bandaid nav-icon"></i>
-                            <span class="nav-text">Procedimientos</span>
-                        </a>
+                            <a href="../minor_procedures/index.php" class="nav-link">
+                                <i class="bi bi-bandaid nav-icon"></i>
+                                <span class="nav-text">Procedimientos</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked"
-                            onclick="lockedModule('Procedimientos Menores')">
-                            <i class="bi bi-bandaid nav-icon"></i>
-                            <span class="nav-text">Procedimientos</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked"
+                                onclick="lockedModule('Procedimientos Menores')">
+                                <i class="bi bi-bandaid nav-icon"></i>
+                                <span class="nav-text">Procedimientos</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
-                        <a href="../examinations/index.php" class="nav-link">
-                            <i class="bi bi-file-earmark-medical nav-icon"></i>
-                            <span class="nav-text">Exámenes</span>
-                        </a>
+                            <a href="../examinations/index.php" class="nav-link">
+                                <i class="bi bi-file-earmark-medical nav-icon"></i>
+                                <span class="nav-text">Exámenes</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked"
-                            onclick="lockedModule('Exámenes Especializados')">
-                            <i class="bi bi-file-earmark-medical nav-icon"></i>
-                            <span class="nav-text">Exámenes</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked"
+                                onclick="lockedModule('Exámenes Especializados')">
+                                <i class="bi bi-file-earmark-medical nav-icon"></i>
+                                <span class="nav-text">Exámenes</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <li class="nav-item">
                     <?php if (is_module_active('purchases')): ?>
-                        <a href="../purchases/index.php" class="nav-link">
-                            <i class="bi bi-cart nav-icon"></i>
-                            <span class="nav-text">Compras</span>
-                        </a>
+                            <a href="../purchases/index.php" class="nav-link">
+                                <i class="bi bi-cart nav-icon"></i>
+                                <span class="nav-text">Compras</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Compras')">
-                            <i class="bi bi-cart nav-icon"></i>
-                            <span class="nav-text">Compras</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Compras')">
+                                <i class="bi bi-cart nav-icon"></i>
+                                <span class="nav-text">Compras</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <li class="nav-item">
                     <?php if (is_module_active('sales')): ?>
-                        <a href="../sales/index.php" class="nav-link">
-                            <i class="bi bi-receipt nav-icon"></i>
-                            <span class="nav-text">Ventas</span>
-                        </a>
+                            <a href="../sales/index.php" class="nav-link">
+                                <i class="bi bi-receipt nav-icon"></i>
+                                <span class="nav-text">Ventas</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Ventas y Facturación')">
-                            <i class="bi bi-receipt nav-icon"></i>
-                            <span class="nav-text">Ventas</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Ventas y Facturación')">
+                                <i class="bi bi-receipt nav-icon"></i>
+                                <span class="nav-text">Ventas</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <li class="nav-item">
                     <?php if (is_module_active('finances')): ?>
-                        <a href="../billing/index.php" class="nav-link">
-                            <i class="bi bi-cash-coin nav-icon"></i>
-                            <span class="nav-text">Cobros</span>
-                        </a>
+                            <a href="../billing/index.php" class="nav-link">
+                                <i class="bi bi-cash-coin nav-icon"></i>
+                                <span class="nav-text">Cobros</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Finanzas')">
-                            <i class="bi bi-cash-coin nav-icon"></i>
-                            <span class="nav-text">Cobros</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Finanzas')">
+                                <i class="bi bi-cash-coin nav-icon"></i>
+                                <span class="nav-text">Cobros</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
                 <li class="nav-item">
                     <?php if (is_module_active('reports')): ?>
-                        <a href="../reports/index.php" class="nav-link">
-                            <i class="bi bi-graph-up nav-icon"></i>
-                            <span class="nav-text">Reportes</span>
-                        </a>
+                            <a href="../reports/index.php" class="nav-link">
+                                <i class="bi bi-graph-up nav-icon"></i>
+                                <span class="nav-text">Reportes</span>
+                            </a>
                     <?php else: ?>
-                        <a href="javascript:void(0)" class="nav-link locked"
-                            onclick="lockedModule('Reportes Estadísticos')">
-                            <i class="bi bi-graph-up nav-icon"></i>
-                            <span class="nav-text">Reportes</span>
-                        </a>
+                            <a href="javascript:void(0)" class="nav-link locked"
+                                onclick="lockedModule('Reportes Estadísticos')">
+                                <i class="bi bi-graph-up nav-icon"></i>
+                                <span class="nav-text">Reportes</span>
+                            </a>
                     <?php endif; ?>
                 </li>
 
@@ -534,11 +985,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
     <!-- Contenedor Principal -->
     <div class="dashboard-container">
         <?php if (isset($subscription_warning) && $subscription_warning): ?>
-            <div class="alert alert-warning alert-dismissible fade show m-3" role="alert" style="z-index: 1000;">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Atención:</strong> Su suscripción ha vencido o el hospital está inactivo. Contacte al administrador.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+                <div class="alert alert-warning alert-dismissible fade show m-3" role="alert" style="z-index: 1000;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Atención:</strong> Su suscripción ha vencido o el hospital está inactivo. Contacte al administrador.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
         <?php endif; ?>
         <!-- Header Superior -->
         <header class="dashboard-header">
@@ -548,9 +999,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -579,23 +1031,24 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Salir</span>
                     </a>
-                    
+
                     <!-- Botón de Configuración del Dashboard -->
-                    <button class="theme-btn ms-2" onclick="openDashboardConfig()" aria-label="Configurar Dashboard" title="Personalizar Widgets">
+                    <button class="theme-btn ms-2" onclick="openDashboardConfig()" aria-label="Configurar Dashboard"
+                        title="Personalizar Widgets">
                         <i class="bi bi-sliders theme-icon" style="color: var(--color-primary);"></i>
                     </button>
                 </div>
             </div>
             <!-- Botón Corte de Turno -->
             <?php if ($user_type === 'admin'): ?>
-                <div style="position: absolute; right: 2rem; bottom: -3.5rem;">
-                    <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
-                        style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
-                        onclick="verifyShiftCode()">
-                        <i class="bi bi-receipt-cutoff me-2"></i>
-                        Corte de Turno
-                    </button>
-                </div>
+                    <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem;">
+                        <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
+                            style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
+                            onclick="verifyShiftCode()">
+                            <i class="bi bi-receipt-cutoff me-2"></i>
+                            Corte de Turno
+                        </button>
+                    </div>
             <?php endif; ?>
         </header>
 
@@ -1019,20 +1472,20 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
         <main class="main-content">
             <!-- Notificación de compras pendientes -->
             <?php if ($pending_purchases > 0 && $user_type === 'user'): ?>
-                <div class="alert-card mb-4 animate-in delay-1">
-                    <div class="alert-header">
-                        <div class="alert-icon warning">
-                            <i class="bi bi-box-seam"></i>
+                    <div class="alert-card mb-4 animate-in delay-1">
+                        <div class="alert-header">
+                            <div class="alert-icon warning">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <h3 class="alert-title">Compras Pendientes</h3>
                         </div>
-                        <h3 class="alert-title">Compras Pendientes</h3>
+                        <p class="text-muted mb-0">
+                            Hay <strong><?php echo $pending_purchases; ?></strong> productos por recibir en inventario.
+                            <a href="../inventory/index.php" class="text-primary text-decoration-none ms-1">
+                                Revisar inventario <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </p>
                     </div>
-                    <p class="text-muted mb-0">
-                        Hay <strong><?php echo $pending_purchases; ?></strong> productos por recibir en inventario.
-                        <a href="../inventory/index.php" class="text-primary text-decoration-none ms-1">
-                            Revisar inventario <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </p>
-                </div>
             <?php endif; ?>
 
             <!-- Bienvenida personalizada -->
@@ -1042,12 +1495,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                         <h2 id="greeting" class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
                             <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
                         </h2>
-                        <p class="text-muted mb-0">
+                        <p class="text-muted mb-0 greeting-meta">
                             <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
-                            <span class="mx-2">•</span>
-                            <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
-                            <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-clock mx-2"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
+                            <i class="bi bi-building mx-2"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -1058,695 +1509,713 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
 
             <!-- Acciones Rápidas -->
             <?php if ($user_type === 'user' || $user_type === 'admin' && $show_quick_actions): ?>
-                <div class="stats-grid mb-4 animate-in delay-1" id="widget-quick-actions">
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-success);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-success fw-bold">Cobros</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Registrar Cobro</div>
+                    <div class="stats-grid mb-4 animate-in delay-1" id="widget-quick-actions">
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-success);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-success fw-bold">Cobros</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Registrar Cobro</div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-cash-coin"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-cash-coin"></i>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#electroBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-danger);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-danger fw-bold">Electro</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Cobrar Electro</div>
+                                </div>
+                                <div class="stat-icon danger">
+                                    <i class="bi bi-heart-pulse"></i>
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#electroBillingModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-danger);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-danger fw-bold">Electro</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Cobrar Electro</div>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newLabOrderModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-info);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-info fw-bold">Laboratorio</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Nueva Orden</div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-virus"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon danger">
-                                <i class="bi bi-heart-pulse"></i>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#procedureBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-warning);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-warning fw-bold">Procedimientos</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Cobro Proc.</div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-bandaid"></i>
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newLabOrderModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-info);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-info fw-bold">Laboratorio</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Nueva Orden</div>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#xrayBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-secondary);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-secondary fw-bold">Rayos X</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Cobro RX</div>
+                                </div>
+                                <div class="stat-icon secondary">
+                                    <i class="bi bi-file-medical"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-virus"></i>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#ultrasoundBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-primary);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-primary fw-bold">Ultrasonido</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Cobro US</div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-activity"></i>
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#procedureBillingModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-warning);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-warning fw-bold">Procedimientos</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Cobro Proc.</div>
-                            </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-bandaid"></i>
-                            </div>
-                        </div>
-                    </a>
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#xrayBillingModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-secondary);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-secondary fw-bold">Rayos X</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Cobro RX</div>
-                            </div>
-                            <div class="stat-icon secondary">
-                                <i class="bi bi-file-medical"></i>
-                            </div>
-                        </div>
-                    </a>
-                    <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#ultrasoundBillingModal"
-                        style="text-decoration: none; border-left: 4px solid var(--color-primary);">
-                        <div class="stat-header mb-0">
-                            <div>
-                                <div class="stat-title text-primary fw-bold">Ultrasonido</div>
-                                <div class="stat-value" style="font-size: 1.25rem;">Cobro US</div>
-                            </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-activity"></i>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                        </a>
+                    </div>
             <?php endif; ?>
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin' && $show_stats): ?>
-                <div class="stats-grid" id="widget-stats">
-                    <!-- Citas de hoy -->
-                    <div class="stat-card animate-in delay-1">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Citas Hoy</div>
-                                <div class="stat-value"><?php echo $today_appointments; ?></div>
+                    <div class="stats-grid" id="widget-stats">
+                        <!-- Citas de hoy -->
+                        <div class="stat-card animate-in delay-1">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Citas Hoy</div>
+                                    <div class="stat-value"><?php echo $today_appointments; ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-calendar-check"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Programadas para hoy</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-arrow-up-right"></i>
-                            <span>Programadas para hoy</span>
-                        </div>
-                    </div>
 
-                    <!-- Pacientes del año -->
-                    <div class="stat-card animate-in delay-2">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Pacientes Año</div>
-                                <div class="stat-value"><?php echo $year_patients; ?></div>
+                        <!-- Pacientes del año -->
+                        <div class="stat-card animate-in delay-2">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Pacientes Año</div>
+                                    <div class="stat-value"><?php echo $year_patients; ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-people"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-people"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Año <?php echo date('Y'); ?></span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-person-plus"></i>
-                            <span>Año <?php echo date('Y'); ?></span>
-                        </div>
-                    </div>
 
-                    <!-- Citas pendientes -->
-                    <div class="stat-card animate-in delay-3">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Citas Pendientes</div>
-                                <div class="stat-value"><?php echo $pending_appointments; ?></div>
+                        <!-- Citas pendientes -->
+                        <div class="stat-card animate-in delay-3">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Citas Pendientes</div>
+                                    <div class="stat-value"><?php echo $pending_appointments; ?></div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-clock-history"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-plus"></i>
+                                <span>Próximas citas</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-plus"></i>
-                            <span>Próximas citas</span>
-                        </div>
-                    </div>
 
-                    <!-- Consultas del mes -->
-                    <div class="stat-card animate-in delay-4">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Consultas Mes</div>
-                                <div class="stat-value"><?php echo $month_consultations; ?></div>
+                        <!-- Consultas del mes -->
+                        <div class="stat-card animate-in delay-4">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Consultas Mes</div>
+                                    <div class="stat-value"><?php echo $month_consultations; ?></div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-graph-up-arrow"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-month"></i>
+                                <span>Mes actual</span>
                             </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-month"></i>
-                            <span>Mes actual</span>
                         </div>
                     </div>
-                </div>
             <?php endif; ?>
 
             <!-- Sección de citas de hoy -->
             <?php if ($show_appointments): ?>
-            <section class="appointments-section animate-in delay-1" id="widget-appointments">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-calendar-day section-title-icon"></i>
-                        Citas de Hoy
-                    </h3>
-                    <a href="../appointments/index.php" class="action-btn">
-                        <i class="bi bi-plus-lg"></i>
-                        Nueva Cita
-                    </a>
-                </div>
-
-                <?php if (count($todays_appointments) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Hora</th>
-                                    <th>Contacto</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($todays_appointments as $appointment): ?>
-                                    <?php
-                                    $patient_name = htmlspecialchars($appointment['nombre_pac'] . ' ' . $appointment['apellido_pac']);
-                                    $patient_initials = strtoupper(
-                                        substr($appointment['nombre_pac'], 0, 1) .
-                                        substr($appointment['apellido_pac'], 0, 1)
-                                    );
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge">
-                                                <i class="bi bi-clock"></i>
-                                                <?php echo htmlspecialchars($appointment['hora_cita']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="patient-contact">
-                                                <?php echo htmlspecialchars($appointment['telefono'] ?? 'No disponible'); ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <a href="#" class="btn-icon history check-patient" title="Ver historial"
-                                                    data-nombre="<?php echo htmlspecialchars($appointment['nombre_pac']); ?>"
-                                                    data-apellido="<?php echo htmlspecialchars($appointment['apellido_pac']); ?>">
-                                                    <i class="bi bi-file-medical"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-calendar-x"></i>
+                    <section class="appointments-section animate-in delay-1" id="widget-appointments">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-calendar-day section-title-icon"></i>
+                                Citas de Hoy
+                            </h3>
+                            <a href="../appointments/index.php" class="action-btn">
+                                <i class="bi bi-plus-lg"></i>
+                                Nueva Cita
+                            </a>
                         </div>
-                        <h4 class="text-muted mb-2">No hay citas programadas para hoy</h4>
-                        <p class="text-muted mb-3">Total de citas en sistema: <?php echo $total_appointments; ?></p>
-                    </div>
-                <?php endif; ?>
-            </section>
+
+                        <?php if (count($todays_appointments) > 0): ?>
+                                <div class="table-responsive">
+                                    <table class="appointments-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Paciente</th>
+                                                <th>Hora</th>
+                                                <th>Contacto</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($todays_appointments as $appointment): ?>
+                                                    <?php
+                                                    $patient_name = htmlspecialchars($appointment['nombre_pac'] . ' ' . $appointment['apellido_pac']);
+                                                    $patient_initials = strtoupper(
+                                                        substr($appointment['nombre_pac'], 0, 1) .
+                                                        substr($appointment['apellido_pac'], 0, 1)
+                                                    );
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="patient-cell">
+                                                                <div class="patient-avatar">
+                                                                    <?php echo $patient_initials; ?>
+                                                                </div>
+                                                                <div class="patient-info">
+                                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="time-badge">
+                                                                <i class="bi bi-clock"></i>
+                                                                <?php echo htmlspecialchars($appointment['hora_cita']); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="patient-contact">
+                                                                <?php echo htmlspecialchars($appointment['telefono'] ?? 'No disponible'); ?>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="action-buttons">
+                                                                <a href="#" class="btn-icon history check-patient" title="Ver historial"
+                                                                    data-nombre="<?php echo htmlspecialchars($appointment['nombre_pac']); ?>"
+                                                                    data-apellido="<?php echo htmlspecialchars($appointment['apellido_pac']); ?>">
+                                                                    <i class="bi bi-file-medical"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                        <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-calendar-x"></i>
+                                    </div>
+                                    <h4 class="text-muted mb-2">No hay citas programadas para hoy</h4>
+                                    <p class="text-muted mb-3">Total de citas en sistema: <?php echo $total_appointments; ?></p>
+                                </div>
+                        <?php endif; ?>
+                    </section>
             <?php endif; ?>
 
             <?php if ($user_type === 'admin' && $show_hospitalized): ?>
-                <!-- Sección de Hospitalización -->
-                <section class="appointments-section animate-in delay-2" id="widget-hospitalized">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-hospital text-primary section-title-icon"></i>
-                            Pacientes Hospitalizados
-                        </h3>
-                        <div class="d-flex gap-2">
-                            <div class="badge bg-primary d-flex align-items-center p-2">
-                                <i class="bi bi-people-fill me-2"></i>
-                                <?php echo $active_hospitalizations; ?> Activos
-                            </div>
-                            <div class="badge bg-success d-flex align-items-center p-2">
-                                <i class="bi bi-hospital-fill me-2"></i>
-                                <?php echo $available_beds_count; ?> Camas Disp.
+                    <!-- Sección de Hospitalización -->
+                    <section class="appointments-section animate-in delay-2" id="widget-hospitalized">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-hospital text-primary section-title-icon"></i>
+                                Pacientes Hospitalizados
+                            </h3>
+                            <div class="d-flex gap-2">
+                                <div class="badge bg-primary d-flex align-items-center p-2">
+                                    <i class="bi bi-people-fill me-2"></i>
+                                    <?php echo $active_hospitalizations; ?> Activos
+                                </div>
+                                <div class="badge bg-success d-flex align-items-center p-2">
+                                    <i class="bi bi-hospital-fill me-2"></i>
+                                    <?php echo $available_beds_count; ?> Camas Disp.
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <?php if (count($hospitalized_patients) > 0): ?>
-                        <div class="table-responsive">
-                            <table class="appointments-table">
-                                <thead>
-                                    <tr>
-                                        <th>Paciente</th>
-                                        <th>Habitación</th>
-                                        <th>Ingreso</th>
-                                        <th>Diagnóstico</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($hospitalized_patients as $hosp): ?>
-                                        <?php
-                                        $patient_name = htmlspecialchars($hosp['nombre'] . ' ' . $hosp['apellido']);
-                                        $patient_initials = strtoupper(
-                                            substr($hosp['nombre'], 0, 1) .
-                                            substr($hosp['apellido'], 0, 1)
-                                        );
-                                        ?>
-                                        <tr>
-                                            <td>
-                                                <div class="patient-cell">
-                                                    <div class="patient-avatar" style="background: var(--color-secondary);">
-                                                        <?php echo $patient_initials; ?>
-                                                    </div>
-                                                    <div class="patient-info">
-                                                        <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                        <small class="text-muted">ID:
-                                                            #<?php echo $hosp['id_encamamiento']; ?></small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info text-white">
-                                                    Hab. <?php echo htmlspecialchars($hosp['numero_habitacion']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php echo date('d/m/Y', strtotime($hosp['fecha_ingreso'])); ?>
-                                                <br>
-                                                <small
-                                                    class="text-muted"><?php echo date('H:i', strtotime($hosp['fecha_ingreso'])); ?></small>
-                                            </td>
-                                            <td>
-                                                <small class="d-block text-truncate" style="max-width: 150px;">
-                                                    <?php echo htmlspecialchars($hosp['diagnostico_ingreso']); ?>
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <a href="../hospitalization/detalle_encamamiento.php?id=<?php echo $hosp['id_encamamiento']; ?>"
-                                                    class="btn-icon" title="Ver detalles"
-                                                    style="color: var(--color-primary); border-color: var(--color-primary);">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3 text-center">
-                            <a href="../hospitalization/index.php" class="text-primary text-decoration-none">
-                                Ver todos los pacientes hospitalizados <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-hospital"></i>
-                            </div>
-                            <h4 class="text-muted mb-2">No hay hospitalizaciones activas</h4>
-                            <p class="text-muted mb-3">Todas las camas están disponibles</p>
-                            <a href="../hospitalization/ingresar_paciente.php" class="action-btn">
-                                <i class="bi bi-plus-lg"></i>
-                                Ingresar Paciente
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                </section>
+                        <?php if (count($hospitalized_patients) > 0): ?>
+                                <div class="table-responsive">
+                                    <table class="appointments-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Paciente</th>
+                                                <th>Habitación</th>
+                                                <th>Ingreso</th>
+                                                <th>Diagnóstico</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($hospitalized_patients as $hosp): ?>
+                                                    <?php
+                                                    $patient_name = htmlspecialchars($hosp['nombre'] . ' ' . $hosp['apellido']);
+                                                    $patient_initials = strtoupper(
+                                                        substr($hosp['nombre'], 0, 1) .
+                                                        substr($hosp['apellido'], 0, 1)
+                                                    );
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="patient-cell">
+                                                                <div class="patient-avatar" style="background: var(--color-secondary);">
+                                                                    <?php echo $patient_initials; ?>
+                                                                </div>
+                                                                <div class="patient-info">
+                                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                                    <small class="text-muted">ID:
+                                                                        #<?php echo $hosp['id_encamamiento']; ?></small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-info text-white">
+                                                                Hab. <?php echo htmlspecialchars($hosp['numero_habitacion']); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <?php echo date('d/m/Y', strtotime($hosp['fecha_ingreso'])); ?>
+                                                            <br>
+                                                            <small
+                                                                class="text-muted"><?php echo date('H:i', strtotime($hosp['fecha_ingreso'])); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <small class="d-block text-truncate" style="max-width: 150px;">
+                                                                <?php echo htmlspecialchars($hosp['diagnostico_ingreso']); ?>
+                                                            </small>
+                                                        </td>
+                                                        <td>
+                                                            <a href="../hospitalization/detalle_encamamiento.php?id=<?php echo $hosp['id_encamamiento']; ?>"
+                                                                class="btn-icon" title="Ver detalles"
+                                                                style="color: var(--color-primary); border-color: var(--color-primary);">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 text-center">
+                                    <a href="../hospitalization/index.php" class="text-primary text-decoration-none">
+                                        Ver todos los pacientes hospitalizados <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                        <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-hospital"></i>
+                                    </div>
+                                    <h4 class="text-muted mb-2">No hay hospitalizaciones activas</h4>
+                                    <p class="text-muted mb-3">Todas las camas están disponibles</p>
+                                    <a href="../hospitalization/ingresar_paciente.php" class="action-btn">
+                                        <i class="bi bi-plus-lg"></i>
+                                        Ingresar Paciente
+                                    </a>
+                                </div>
+                        <?php endif; ?>
+                    </section>
             <?php endif; ?>
 
             <!-- Panel de alertas -->
             <?php if ($show_alerts): ?>
-            <div class="alerts-grid animate-in delay-3" id="widget-alerts">
-                <!-- Medicamentos por caducar -->
-                <div class="alert-card">
-                    <div class="alert-header">
-                        <div class="alert-icon warning">
-                            <i class="bi bi-exclamation-triangle"></i>
+                    <div class="alerts-grid animate-in delay-3" id="widget-alerts">
+                        <!-- Medicamentos por caducar -->
+                        <div class="alert-card">
+                            <div class="alert-header">
+                                <div class="alert-icon warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <h3 class="alert-title">Caducidad Próxima</h3>
+                            </div>
+
+                            <?php if (count($expiring_medications) > 0): ?>
+                                    <ul class="alert-list">
+                                        <?php foreach (array_slice($expiring_medications, 0, 5) as $medication): ?>
+                                                <?php
+                                                $expiry_date = new DateTime($medication['fecha_vencimiento']);
+                                                $today = new DateTime();
+                                                $days_diff = $today->diff($expiry_date)->days;
+                                                $is_expired = $expiry_date < $today;
+                                                ?>
+                                                <li class="alert-item">
+                                                    <div class="alert-item-header">
+                                                        <span
+                                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
+                                                        <span class="alert-badge <?php echo $is_expired ? 'expired' : 'warning'; ?>">
+                                                            <?php echo $is_expired ? 'Vencido' : $days_diff . ' días'; ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="alert-item-details">
+                                                        <span>Vence: <?php echo $expiry_date->format('d/m/Y'); ?></span>
+                                                        <span>Stock: <?php echo $medication['cantidad_med']; ?></span>
+                                                    </div>
+                                                </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+
+                                    <?php if (count($expiring_medications) > 5): ?>
+                                            <div class="text-center mt-3">
+                                                <a href="../inventory/index.php?filter=expiring" class="text-primary text-decoration-none">
+                                                    Ver todas (<?php echo count($expiring_medications); ?>) <i class="bi bi-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                    <?php endif; ?>
+                            <?php else: ?>
+                                    <div class="no-alerts">
+                                        <div class="no-alerts-icon">
+                                            <i class="bi bi-check-circle"></i>
+                                        </div>
+                                        <p class="text-muted mb-0">Sin medicamentos próximos a caducar</p>
+                                    </div>
+                            <?php endif; ?>
                         </div>
-                        <h3 class="alert-title">Caducidad Próxima</h3>
+
+                        <!-- Stock bajo -->
+                        <div class="alert-card">
+                            <div class="alert-header">
+                                <div class="alert-icon danger">
+                                    <i class="bi bi-arrow-down-circle"></i>
+                                </div>
+                                <h3 class="alert-title">Stock Bajo</h3>
+                            </div>
+
+                            <?php if (count($low_stock_medications) > 0): ?>
+                                    <ul class="alert-list">
+                                        <?php foreach (array_slice($low_stock_medications, 0, 5) as $medication): ?>
+                                                <li class="alert-item">
+                                                    <div class="alert-item-header">
+                                                        <span
+                                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
+                                                        <span class="alert-badge danger">
+                                                            <?php echo $medication['cantidad_med']; ?> unidades
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+
+                                    <?php if (count($low_stock_medications) > 5): ?>
+                                            <div class="text-center mt-3">
+                                                <a href="../inventory/index.php?filter=low_stock" class="text-primary text-decoration-none">
+                                                    Ver todas (<?php echo count($low_stock_medications); ?>) <i class="bi bi-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                    <?php endif; ?>
+                            <?php else: ?>
+                                    <div class="no-alerts">
+                                        <div class="no-alerts-icon">
+                                            <i class="bi bi-check-circle"></i>
+                                        </div>
+                                        <p class="text-muted mb-0">Inventario con stock suficiente</p>
+                                    </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-
-                    <?php if (count($expiring_medications) > 0): ?>
-                        <ul class="alert-list">
-                            <?php foreach (array_slice($expiring_medications, 0, 5) as $medication): ?>
-                                <?php
-                                $expiry_date = new DateTime($medication['fecha_vencimiento']);
-                                $today = new DateTime();
-                                $days_diff = $today->diff($expiry_date)->days;
-                                $is_expired = $expiry_date < $today;
-                                ?>
-                                <li class="alert-item">
-                                    <div class="alert-item-header">
-                                        <span
-                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
-                                        <span class="alert-badge <?php echo $is_expired ? 'expired' : 'warning'; ?>">
-                                            <?php echo $is_expired ? 'Vencido' : $days_diff . ' días'; ?>
-                                        </span>
-                                    </div>
-                                    <div class="alert-item-details">
-                                        <span>Vence: <?php echo $expiry_date->format('d/m/Y'); ?></span>
-                                        <span>Stock: <?php echo $medication['cantidad_med']; ?></span>
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-
-                        <?php if (count($expiring_medications) > 5): ?>
-                            <div class="text-center mt-3">
-                                <a href="../inventory/index.php?filter=expiring" class="text-primary text-decoration-none">
-                                    Ver todas (<?php echo count($expiring_medications); ?>) <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <div class="no-alerts">
-                            <div class="no-alerts-icon">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                            <p class="text-muted mb-0">Sin medicamentos próximos a caducar</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Stock bajo -->
-                <div class="alert-card">
-                    <div class="alert-header">
-                        <div class="alert-icon danger">
-                            <i class="bi bi-arrow-down-circle"></i>
-                        </div>
-                        <h3 class="alert-title">Stock Bajo</h3>
-                    </div>
-
-                    <?php if (count($low_stock_medications) > 0): ?>
-                        <ul class="alert-list">
-                            <?php foreach (array_slice($low_stock_medications, 0, 5) as $medication): ?>
-                                <li class="alert-item">
-                                    <div class="alert-item-header">
-                                        <span
-                                            class="alert-item-name"><?php echo htmlspecialchars($medication['nom_medicamento']); ?></span>
-                                        <span class="alert-badge danger">
-                                            <?php echo $medication['cantidad_med']; ?> unidades
-                                        </span>
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-
-                        <?php if (count($low_stock_medications) > 5): ?>
-                            <div class="text-center mt-3">
-                                <a href="../inventory/index.php?filter=low_stock" class="text-primary text-decoration-none">
-                                    Ver todas (<?php echo count($low_stock_medications); ?>) <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <div class="no-alerts">
-                            <div class="no-alerts-icon">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                            <p class="text-muted mb-0">Inventario con stock suficiente</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
             <?php endif; ?>
 
             <!-- ============ NEW WIDGETS ============ -->
-            
+
             <!-- 1. WIDGET REVENUE (Ingresos del Mes) -->
             <?php if ($show_revenue): ?>
-            <section class="appointments-section animate-in delay-3" id="widget-revenue">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-currency-dollar text-success section-title-icon"></i>
-                        Ingresos Generales del Mes (Estimado)
-                    </h3>
-                    <div class="badge bg-success p-2 fs-6">
-                        Total: Q<?php echo number_format($total_monthly_revenue, 2); ?>
-                    </div>
-                </div>
-                
-                <div class="row g-3 p-3">
-                    <div class="col-md-4">
-                        <div class="stat-card border-start border-success border-4 shadow-sm h-100 mb-0">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title text-success">Ventas de Farmacia</div>
-                                    <div class="stat-value text-success" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_ventas, 2); ?></div>
+                    <section class="appointments-section animate-in delay-3" id="widget-revenue">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-currency-dollar text-success section-title-icon"></i>
+                                Ingresos Generales del Mes (Estimado)
+                            </h3>
+                            <div class="badge bg-success p-2 fs-6">
+                                Total: Q<?php echo number_format($total_monthly_revenue, 2); ?>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 p-3">
+                            <div class="col-md-4">
+                                <div class="stat-card border-start border-success border-4 shadow-sm h-100 mb-0">
+                                    <div class="stat-header">
+                                        <div>
+                                            <div class="stat-title text-success">Ventas de Farmacia</div>
+                                            <div class="stat-value text-success" style="font-size: 1.25rem;">
+                                                Q<?php echo number_format($revenue_ventas, 2); ?></div>
+                                        </div>
+                                        <div class="stat-icon success">
+                                            <i class="bi bi-capsule"></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="stat-icon success">
-                                    <i class="bi bi-capsule"></i>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card border-start border-primary border-4 shadow-sm h-100 mb-0">
+                                    <div class="stat-header">
+                                        <div>
+                                            <div class="stat-title text-primary">Consultas Médicas</div>
+                                            <div class="stat-value text-primary" style="font-size: 1.25rem;">
+                                                Q<?php echo number_format($revenue_consults, 2); ?></div>
+                                        </div>
+                                        <div class="stat-icon primary">
+                                            <i class="bi bi-people-fill"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card border-start border-warning border-4 shadow-sm h-100 mb-0">
+                                    <div class="stat-header">
+                                        <div>
+                                            <div class="stat-title text-warning">Procedimientos Menores</div>
+                                            <div class="stat-value text-warning" style="font-size: 1.25rem;">
+                                                Q<?php echo number_format($revenue_proc, 2); ?></div>
+                                        </div>
+                                        <div class="stat-icon warning">
+                                            <i class="bi bi-bandaid-fill"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <div class="stat-card border-start border-info border-4 shadow-sm h-100 mb-0">
+                                    <div class="stat-header">
+                                        <div>
+                                            <div class="stat-title text-info">Exámenes de Laboratorio</div>
+                                            <div class="stat-value text-info" style="font-size: 1.25rem;">
+                                                Q<?php echo number_format($revenue_exams, 2); ?></div>
+                                        </div>
+                                        <div class="stat-icon info">
+                                            <i class="bi bi-droplet-fill"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <div class="stat-card border-start border-secondary border-4 shadow-sm h-100 mb-0">
+                                    <div class="stat-header">
+                                        <div>
+                                            <div class="stat-title text-secondary">Cuentas de Hospitalización</div>
+                                            <div class="stat-value text-secondary" style="font-size: 1.25rem;">
+                                                Q<?php echo number_format($revenue_hosp, 2); ?></div>
+                                        </div>
+                                        <div class="stat-icon secondary">
+                                            <i class="bi bi-hospital"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card border-start border-primary border-4 shadow-sm h-100 mb-0">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title text-primary">Consultas Médicas</div>
-                                    <div class="stat-value text-primary" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_consults, 2); ?></div>
-                                </div>
-                                <div class="stat-icon primary">
-                                    <i class="bi bi-people-fill"></i>
-                                </div>
-                            </div>
+                        <div class="text-center mt-3 p-2">
+                            <a href="../reports/index.php" class="text-primary text-decoration-none fw-bold">
+                                Ir al Centro de Analítica <i class="bi bi-arrow-right"></i>
+                            </a>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card border-start border-warning border-4 shadow-sm h-100 mb-0">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title text-warning">Procedimientos Menores</div>
-                                    <div class="stat-value text-warning" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_proc, 2); ?></div>
-                                </div>
-                                <div class="stat-icon warning">
-                                    <i class="bi bi-bandaid-fill"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <div class="stat-card border-start border-info border-4 shadow-sm h-100 mb-0">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title text-info">Exámenes de Laboratorio</div>
-                                    <div class="stat-value text-info" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_exams, 2); ?></div>
-                                </div>
-                                <div class="stat-icon info">
-                                    <i class="bi bi-droplet-fill"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <div class="stat-card border-start border-secondary border-4 shadow-sm h-100 mb-0">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title text-secondary">Cuentas de Hospitalización</div>
-                                    <div class="stat-value text-secondary" style="font-size: 1.25rem;">Q<?php echo number_format($revenue_hosp, 2); ?></div>
-                                </div>
-                                <div class="stat-icon secondary">
-                                    <i class="bi bi-hospital"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-center mt-3 p-2">
-                    <a href="../reports/index.php" class="text-primary text-decoration-none fw-bold">
-                        Ir al Centro de Analítica <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-            </section>
+                    </section>
             <?php endif; ?>
 
             <!-- 2. WIDGET INVENTORY (Resumen de Inventario) -->
             <?php if ($show_inventory): ?>
-            <section class="appointments-section animate-in delay-3" id="widget-inventory">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-box-seam text-info section-title-icon"></i>
-                        Monitoreo de Inventario
-                    </h3>
-                </div>
-                <div class="row g-3 p-3">
-                    <div class="col-md-4">
-                        <div class="stat-card text-center shadow-sm">
-                            <h4 class="text-muted">Total de Productos</h4>
-                            <div class="fs-2 fw-bold text-dark mt-2"><?php echo $total_medications; ?></div>
+                    <section class="appointments-section animate-in delay-3" id="widget-inventory">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-box-seam text-info section-title-icon"></i>
+                                Monitoreo de Inventario
+                            </h3>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card text-center shadow-sm">
-                            <h4 class="text-muted">Próximos a Vencer</h4>
-                            <div class="fs-2 fw-bold text-warning mt-2"><?php echo count($expiring_medications); ?></div>
+                        <div class="row g-3 p-3">
+                            <div class="col-md-4">
+                                <div class="stat-card text-center shadow-sm">
+                                    <h4 class="text-muted">Total de Productos</h4>
+                                    <div class="fs-2 fw-bold text-dark mt-2"><?php echo $total_medications; ?></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card text-center shadow-sm">
+                                    <h4 class="text-muted">Próximos a Vencer</h4>
+                                    <div class="fs-2 fw-bold text-warning mt-2"><?php echo count($expiring_medications); ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card text-center shadow-sm">
+                                    <h4 class="text-muted">Stock Bajo</h4>
+                                    <div class="fs-2 fw-bold text-danger mt-2"><?php echo count($low_stock_medications); ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card text-center shadow-sm">
-                            <h4 class="text-muted">Stock Bajo</h4>
-                            <div class="fs-2 fw-bold text-danger mt-2"><?php echo count($low_stock_medications); ?></div>
+                        <div class="text-center mt-2 p-2">
+                            <a href="../inventory/index.php" class="text-primary text-decoration-none fw-bold">
+                                Gestionar Inventario <i class="bi bi-arrow-right"></i>
+                            </a>
                         </div>
-                    </div>
-                </div>
-                <div class="text-center mt-2 p-2">
-                    <a href="../inventory/index.php" class="text-primary text-decoration-none fw-bold">
-                        Gestionar Inventario <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-            </section>
+                    </section>
             <?php endif; ?>
 
             <!-- 3. WIDGET PATIENTS (Pacientes Registrados) -->
             <?php if ($show_patients): ?>
-            <section class="appointments-section animate-in delay-3" id="widget-patients">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-people text-primary section-title-icon"></i>
-                        Últimos Pacientes Registrados
-                    </h3>
-                    <div class="badge bg-primary p-2">
-                        Total en Sistema: <?php echo $total_patients_count; ?>
-                    </div>
-                </div>
-                <?php if (count($latest_patients) > 0): ?>
-                    <div class="table-responsive p-3">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre del Paciente</th>
-                                    <th>NIT</th>
-                                    <th>Teléfono</th>
-                                    <th>Registro</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($latest_patients as $pat): ?>
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="patient-avatar me-2" style="background: var(--color-primary); color: white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                                                    <?php echo strtoupper(substr($pat['nombre'],0,1).substr($pat['apellido'],0,1)); ?>
-                                                </div>
-                                                <span class="fw-bold"><?php echo htmlspecialchars($pat['nombre'] . ' ' . $pat['apellido']); ?></span>
-                                            </div>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($pat['nit'] ?: 'C/F'); ?></td>
-                                        <td><?php echo htmlspecialchars($pat['telefono'] ?: 'No asignado'); ?></td>
-                                        <td><small class="text-muted"><?php echo date('d/m/Y', strtotime($pat['fecha_registro'])); ?></small></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state p-4">
-                        <p class="text-muted">No hay pacientes registrados aún.</p>
-                    </div>
-                <?php endif; ?>
-            </section>
+                    <section class="appointments-section animate-in delay-3" id="widget-patients">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-people text-primary section-title-icon"></i>
+                                Últimos Pacientes Registrados
+                            </h3>
+                            <div class="badge bg-primary p-2">
+                                Total en Sistema: <?php echo $total_patients_count; ?>
+                            </div>
+                        </div>
+                        <?php if (count($latest_patients) > 0): ?>
+                                <div class="table-responsive p-3">
+                                    <table class="appointments-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre del Paciente</th>
+                                                <th>NIT</th>
+                                                <th>Teléfono</th>
+                                                <th>Registro</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($latest_patients as $pat): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="patient-avatar me-2"
+                                                                    style="background: var(--color-primary); color: white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                                                    <?php echo strtoupper(substr($pat['nombre'], 0, 1) . substr($pat['apellido'], 0, 1)); ?>
+                                                                </div>
+                                                                <span
+                                                                    class="fw-bold"><?php echo htmlspecialchars($pat['nombre'] . ' ' . $pat['apellido']); ?></span>
+                                                            </div>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($pat['nit'] ?: 'C/F'); ?></td>
+                                                        <td><?php echo htmlspecialchars($pat['telefono'] ?: 'No asignado'); ?></td>
+                                                        <td><small
+                                                                class="text-muted"><?php echo date('d/m/Y', strtotime($pat['fecha_registro'])); ?></small>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                        <?php else: ?>
+                                <div class="empty-state p-4">
+                                    <p class="text-muted">No hay pacientes registrados aún.</p>
+                                </div>
+                        <?php endif; ?>
+                    </section>
             <?php endif; ?>
 
             <!-- 4. WIDGET CALENDAR (Calendario y Horarios) -->
             <?php if ($show_calendar): ?>
-            <section class="appointments-section animate-in delay-3" id="widget-calendar">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-calendar3 text-primary section-title-icon"></i>
-                        Agenda Semanal de Citas
-                    </h3>
-                </div>
-                <div class="p-3">
-                    <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
-                        <i class="bi bi-info-circle-fill fs-5 me-2"></i>
-                        <div>
-                            Visualización rápida del estado de citas semanales. Utilice el módulo principal para gestionar reconsultas de pacientes sin demoras en la respuesta del servidor.
+                    <section class="appointments-section animate-in delay-3" id="widget-calendar">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-calendar3 text-primary section-title-icon"></i>
+                                Agenda Semanal de Citas
+                            </h3>
                         </div>
-                    </div>
-                </div>
-                <div class="text-center mt-1 p-2">
-                    <a href="../appointments/index.php" class="text-primary text-decoration-none fw-bold">
-                        Ir al Módulo de Citas <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-            </section>
+                        <div class="p-3">
+                            <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+                                <i class="bi bi-info-circle-fill fs-5 me-2"></i>
+                                <div>
+                                    Visualización rápida del estado de citas semanales. Utilice el módulo principal para
+                                    gestionar reconsultas de pacientes sin demoras en la respuesta del servidor.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-1 p-2">
+                            <a href="../appointments/index.php" class="text-primary text-decoration-none fw-bold">
+                                Ir al Módulo de Citas <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </section>
             <?php endif; ?>
 
             <!-- 5. WIDGET LABS (Órdenes de Laboratorio) -->
             <?php if ($show_labs): ?>
-            <section class="appointments-section animate-in delay-3" id="widget-labs">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-droplet-half text-info section-title-icon"></i>
-                        Órdenes de Laboratorio Recientes
-                    </h3>
-                    <div class="d-flex gap-2">
-                        <span class="badge bg-warning text-dark p-2">Pendientes: <?php echo $pending_labs_count; ?></span>
-                        <span class="badge bg-success text-white p-2">Completadas: <?php echo $completed_labs_count; ?></span>
-                    </div>
-                </div>
-                <?php if (count($latest_lab_orders) > 0): ?>
-                    <div class="table-responsive p-3">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Orden #</th>
-                                    <th>Paciente</th>
-                                    <th>Estado</th>
-                                    <th>Fecha</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($latest_lab_orders as $lab): ?>
-                                    <?php
-                                    $lab_status_class = 'bg-warning';
-                                    if ($lab['estado'] === 'Completada') $lab_status_class = 'bg-success';
-                                    if ($lab['estado'] === 'Cancelada') $lab_status_class = 'bg-danger';
-                                    ?>
-                                    <tr>
-                                        <td><strong><?php echo htmlspecialchars($lab['numero_orden']); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($lab['nombre'] . ' ' . $lab['apellido']); ?></td>
-                                        <td>
-                                            <span class="badge <?php echo $lab_status_class; ?> text-white">
-                                                <?php echo htmlspecialchars($lab['estado']); ?>
-                                            </span>
-                                        </td>
-                                        <td><small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($lab['fecha_orden'])); ?></small></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="empty-state p-4">
-                        <p class="text-muted">No hay órdenes de laboratorio en el sistema.</p>
-                    </div>
-                <?php endif; ?>
-                <div class="text-center mt-1 p-2">
-                    <a href="../laboratory/index.php" class="text-primary text-decoration-none fw-bold">
-                        Ir al Módulo de Laboratorio <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-            </section>
+                    <section class="appointments-section animate-in delay-3" id="widget-labs">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-droplet-half text-info section-title-icon"></i>
+                                Órdenes de Laboratorio Recientes
+                            </h3>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-warning text-dark p-2">Pendientes:
+                                    <?php echo $pending_labs_count; ?></span>
+                                <span class="badge bg-success text-white p-2">Completadas:
+                                    <?php echo $completed_labs_count; ?></span>
+                            </div>
+                        </div>
+                        <?php if (count($latest_lab_orders) > 0): ?>
+                                <div class="table-responsive p-3">
+                                    <table class="appointments-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Orden #</th>
+                                                <th>Paciente</th>
+                                                <th>Estado</th>
+                                                <th>Fecha</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($latest_lab_orders as $lab): ?>
+                                                    <?php
+                                                    $lab_status_class = 'bg-warning';
+                                                    if ($lab['estado'] === 'Completada')
+                                                        $lab_status_class = 'bg-success';
+                                                    if ($lab['estado'] === 'Cancelada')
+                                                        $lab_status_class = 'bg-danger';
+                                                    ?>
+                                                    <tr>
+                                                        <td><strong><?php echo htmlspecialchars($lab['numero_orden']); ?></strong></td>
+                                                        <td><?php echo htmlspecialchars($lab['nombre'] . ' ' . $lab['apellido']); ?></td>
+                                                        <td>
+                                                            <span class="badge <?php echo $lab_status_class; ?> text-white">
+                                                                <?php echo htmlspecialchars($lab['estado']); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td><small
+                                                                class="text-muted"><?php echo date('d/m/Y H:i', strtotime($lab['fecha_orden'])); ?></small>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                        <?php else: ?>
+                                <div class="empty-state p-4">
+                                    <p class="text-muted">No hay órdenes de laboratorio en el sistema.</p>
+                                </div>
+                        <?php endif; ?>
+                        <div class="text-center mt-1 p-2">
+                            <a href="../laboratory/index.php" class="text-primary text-decoration-none fw-bold">
+                                Ir al Módulo de Laboratorio <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </section>
             <?php endif; ?>
         </main>
     </div>
@@ -1773,8 +2242,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 autocomplete="off">
                             <datalist id="billingDatalistOptions">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="billing_paciente" name="paciente">
@@ -1785,10 +2254,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                             <select class="form-select" id="billing_id_doctor" name="id_doctor" required>
                                 <option value="">Seleccione un médico...</option>
                                 <?php foreach ($doctores as $doctor): ?>
-                                    <option value="<?php echo $doctor['idUsuario']; ?>">
-                                        Dr(a).
-                                        <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                    </option>
+                                        <option value="<?php echo $doctor['idUsuario']; ?>">
+                                            Dr(a).
+                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                        </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -1892,8 +2361,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                         </div>
                                         <datalist id="labDatalistOptions">
                                             <?php foreach ($pacientes as $paciente): ?>
-                                                <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                                    value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                                 <?php endforeach; ?>
                                         </datalist>
                                         <input type="hidden" id="lab_id_paciente" name="id_paciente">
@@ -1908,10 +2377,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                                 name="id_doctor" required>
                                                 <option value="">Seleccionar doctor...</option>
                                                 <?php foreach ($doctores as $doctor): ?>
-                                                    <option value="<?php echo $doctor['idUsuario']; ?>">
-                                                        Dr(a).
-                                                        <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                                    </option>
+                                                        <option value="<?php echo $doctor['idUsuario']; ?>">
+                                                            Dr(a).
+                                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                                        </option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -1938,59 +2407,60 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 <!-- Listado de Pruebas -->
                                 <div class="accordion accordion-flush" id="testsAccordion">
                                     <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
-                                        <?php $catID = 'cat_v2_' . md5($categoria); ?>
-                                        <div class="accordion-item border rounded-3 mb-2 category-container"
-                                            data-category="<?php echo htmlspecialchars($categoria); ?>">
-                                            <h2 class="accordion-header" id="heading_<?php echo $catID; ?>">
-                                                <button class="accordion-button rounded-3 fw-bold" type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target="#collapse_<?php echo $catID; ?>" aria-expanded="true">
-                                                    <i class="bi bi-tags me-2 text-primary"></i>
-                                                    <?php echo htmlspecialchars($categoria); ?>
-                                                    <span
-                                                        class="badge bg-light text-primary ms-2 border"><?php echo count($pruebas); ?></span>
-                                                </button>
-                                            </h2>
-                                            <div id="collapse_<?php echo $catID; ?>"
-                                                class="accordion-collapse collapse show" data-bs-parent="#testsAccordion">
-                                                <div class="accordion-body p-2">
-                                                    <div class="row g-2">
-                                                        <?php foreach ($pruebas as $prueba): ?>
-                                                            <div class="col-md-6 test-item"
-                                                                data-name="<?php echo strtolower(htmlspecialchars($prueba['nombre_prueba'])); ?>">
-                                                                <div
-                                                                    class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer">
-                                                                    <div class="check-indicator">
-                                                                        <input
-                                                                            class="form-check-input test-checkbox stretched-link"
-                                                                            type="checkbox" name="pruebas[]"
-                                                                            value="<?php echo $prueba['id_prueba']; ?>"
-                                                                            id="test_v2_<?php echo $prueba['id_prueba']; ?>"
-                                                                            data-price="<?php echo $prueba['precio']; ?>"
-                                                                            data-name="<?php echo htmlspecialchars($prueba['nombre_prueba']); ?>">
-                                                                    </div>
-                                                                    <div class="flex-grow-1">
-                                                                        <div class="fw-semibold small lh-1 mb-1">
-                                                                            <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
+                                            <?php $catID = 'cat_v2_' . md5($categoria); ?>
+                                            <div class="accordion-item border rounded-3 mb-2 category-container"
+                                                data-category="<?php echo htmlspecialchars($categoria); ?>">
+                                                <h2 class="accordion-header" id="heading_<?php echo $catID; ?>">
+                                                    <button class="accordion-button rounded-3 fw-bold" type="button"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#collapse_<?php echo $catID; ?>" aria-expanded="true">
+                                                        <i class="bi bi-tags me-2 text-primary"></i>
+                                                        <?php echo htmlspecialchars($categoria); ?>
+                                                        <span
+                                                            class="badge bg-light text-primary ms-2 border"><?php echo count($pruebas); ?></span>
+                                                    </button>
+                                                </h2>
+                                                <div id="collapse_<?php echo $catID; ?>"
+                                                    class="accordion-collapse collapse show" data-bs-parent="#testsAccordion">
+                                                    <div class="accordion-body p-2">
+                                                        <div class="row g-2">
+                                                            <?php foreach ($pruebas as $prueba): ?>
+                                                                    <div class="col-md-6 test-item"
+                                                                        data-name="<?php echo strtolower(htmlspecialchars($prueba['nombre_prueba'])); ?>">
+                                                                        <div
+                                                                            class="test-card-v2 p-2 border rounded-3 position-relative transition-all d-flex align-items-center gap-3 h-100 hover-shadow cursor-pointer">
+                                                                            <div class="check-indicator">
+                                                                                <input
+                                                                                    class="form-check-input test-checkbox stretched-link"
+                                                                                    type="checkbox" name="pruebas[]"
+                                                                                    value="<?php echo $prueba['id_prueba']; ?>"
+                                                                                    id="test_v2_<?php echo $prueba['id_prueba']; ?>"
+                                                                                    data-price="<?php echo $prueba['precio']; ?>"
+                                                                                    data-name="<?php echo htmlspecialchars($prueba['nombre_prueba']); ?>">
+                                                                            </div>
+                                                                            <div class="flex-grow-1">
+                                                                                <div class="fw-semibold small lh-1 mb-1">
+                                                                                    <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
+                                                                                </div>
+                                                                                <div class="text-success fw-bold small">
+                                                                                    Q<?php echo number_format($prueba['precio'], 2); ?>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                        <div class="text-success fw-bold small">
-                                                                            Q<?php echo number_format($prueba['precio'], 2); ?>
-                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            </div>
-                                                        <?php endforeach; ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
                                     <?php endforeach; ?>
                                 </div>
                             </form>
                         </div>
 
                         <!-- Panel Derecho: Resumen -->
-                        <div class="bg-light border-start p-4 d-flex flex-column" style="min-width: 350px;">
+                        <div class="bg-light border-start p-4 d-flex flex-column lab-summary-panel"
+                            style="min-width: 350px;">
                             <div class="flex-grow-1">
                                 <h6 class="fw-bold d-flex justify-content-between align-items-center mb-3">
                                     <span>Resumen de Selección</span>
@@ -2073,7 +2543,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico RS
+        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -3141,11 +3611,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
     <?php output_keep_alive_script(); ?>
     <!-- Auto-refresh dashboard cada 60s -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            location.reload();
-        }, 60000);
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                location.reload();
+            }, 60000);
+        });
     </script>
     <!-- Modal Cobro Procedimientos -->
     <div class="modal fade" id="procedureBillingModal" tabindex="-1">
@@ -3163,8 +3633,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 placeholder="Buscar paciente..." required autocomplete="off">
                             <datalist id="procedurePatientDatalist">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="procedure_patient_id" name="patient_id">
@@ -3256,8 +3726,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 placeholder="Buscar paciente..." required autocomplete="off">
                             <datalist id="ultrasoundPatientDatalist">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="ultrasound_patient_id" name="patient_id">
@@ -3425,8 +3895,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 placeholder="Buscar paciente..." required autocomplete="off">
                             <datalist id="electroDatalistOptions">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="electro_paciente" name="id_paciente">
@@ -3436,9 +3906,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                             <select class="form-select" id="electro_doctor" name="id_doctor">
                                 <option value="">Seleccione Doctor</option>
                                 <?php foreach ($doctores as $doc): ?>
-                                    <option value="<?php echo $doc['idUsuario']; ?>">
-                                        <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
-                                    </option>
+                                        <option value="<?php echo $doc['idUsuario']; ?>">
+                                            <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
+                                        </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -3493,8 +3963,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                                 placeholder="Buscar paciente..." required autocomplete="off">
                             <datalist id="xrayPatientDatalist">
                                 <?php foreach ($pacientes as $paciente): ?>
-                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
+                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
+                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
                                     <?php endforeach; ?>
                             </datalist>
                             <input type="hidden" id="xray_patient_id" name="patient_id">
@@ -3653,13 +4123,15 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                     <h5 class="modal-title">
                         <i class="bi bi-sliders me-2"></i>Configuración de Widgets
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <h6 class="fw-bold mb-3 border-bottom pb-2">Widgets Visibles</h6>
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="toggle-quick-actions" checked>
-                        <label class="form-check-label" for="toggle-quick-actions">Acciones Rápidas (Cobros, etc.)</label>
+                        <label class="form-check-label" for="toggle-quick-actions">Acciones Rápidas (Cobros,
+                            etc.)</label>
                     </div>
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="toggle-stats" checked>
@@ -3690,7 +4162,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary px-4" onclick="saveDashboardConfig()">Guardar y Aplicar</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="saveDashboardConfig()">Guardar y
+                        Aplicar</button>
                 </div>
             </div>
         </div>
@@ -3701,10 +4174,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
             var expires = "";
             if (days) {
                 var date = new Date();
-                date.setTime(date.getTime() + (days*24*60*60*1000));
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
                 expires = "; expires=" + date.toUTCString();
             }
-            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
         }
 
         // Apply widget visibility on load without reloading
@@ -3750,7 +4223,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                 { id: 'widget-calendar', name: 'Agenda Semanal' },
                 { id: 'widget-labs', name: 'Órdenes de Laboratorio' }
             ];
-            
+
             let html = '<div class="text-start p-2" style="max-height: 400px; overflow-y: auto;">';
             widgets.forEach(w => {
                 const el = document.getElementById(w.id);
@@ -3784,10 +4257,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
             }).then((result) => {
                 if (result.isConfirmed) {
                     const config = result.value;
-                    
+
                     // Guardar en LocalStorage para actualización reactiva al instante
                     localStorage.setItem('dashboard_widgets_config', JSON.stringify(config));
-                    
+
                     // Sincronizar legacy config para backwards compatibility
                     const legacy = {
                         'quick-actions': config['widget-quick-actions'] !== false,
@@ -3797,28 +4270,28 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                         'alerts': config['widget-alerts'] !== false
                     };
                     localStorage.setItem('dashboard-widgets', JSON.stringify(legacy));
-                    
+
                     applyWidgetVisibility();
-                    
+
                     // Enviar al servidor mediante AJAX para persistencia en BD
                     apiPost('api/update_widget_visibility.php', { config: config })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Guardado en el Servidor!',
-                                text: 'Tu dashboard personalizado se ha sincronizado correctamente.',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                        } else {
-                            console.error('Error al guardar en BD:', data.error);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error de red:', err);
-                    });
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Guardado en el Servidor!',
+                                    text: 'Tu dashboard personalizado se ha sincronizado correctamente.',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                console.error('Error al guardar en BD:', data.error);
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error de red:', err);
+                        });
                 }
             });
         }
@@ -3831,7 +4304,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
         // ==========================================
         // Prevención de doble submit en formularios
         // ==========================================
-        document.addEventListener('submit', function(e) {
+        document.addEventListener('submit', function (e) {
             const form = e.target;
             if (form.closest('.modal')) {
                 const btn = form.querySelector('button[type="submit"]');
@@ -3843,7 +4316,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'cmhs';
                     btn.disabled = true;
                     const originalText = btn.innerHTML;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
-                    
+
                     // Fallback para restaurar el botón si la página no recarga
                     setTimeout(() => {
                         if (btn) {

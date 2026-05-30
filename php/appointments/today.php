@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -39,9 +39,9 @@ try {
     <!-- Header Superior -->
     <header class="dashboard-header">
         <div class="header-content">
-            <!-- Logo -->
+            <!-- logo -->
             <div class="brand-container">
-                <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
             </div>
 
             <!-- Controles -->
@@ -60,7 +60,8 @@ try {
                         <?php echo isset($_SESSION['nombre']) ? htmlspecialchars(strtoupper(substr($_SESSION['nombre'], 0, 1))) : 'U'; ?>
                     </div>
                     <div class="header-details">
-                        <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
+                        <span
+                            class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
                         <span class="header-role">Agenda</span>
                     </div>
                 </div>
@@ -111,21 +112,24 @@ try {
                         <tbody>
                             <?php if (empty($citas)): ?>
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">No hay citas programadas para hoy</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">No hay citas programadas para hoy
+                                    </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($citas as $cita): ?>
                                     <tr>
                                         <td class="fw-semibold"><?php echo htmlspecialchars($cita['nombre_paciente']); ?></td>
                                         <td>
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                            <span
+                                                class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                                                 <i class="bi bi-clock me-1"></i>
                                                 <?php echo htmlspecialchars(date('H:i', strtotime($cita['hora_cita']))); ?>
                                             </span>
                                         </td>
                                         <td>
                                             <?php if (!empty($cita['telefono']) && $cita['telefono'] !== 'N/A'): ?>
-                                                <a href="tel:<?php echo htmlspecialchars($cita['telefono']); ?>" class="text-decoration-none text-muted">
+                                                <a href="tel:<?php echo htmlspecialchars($cita['telefono']); ?>"
+                                                    class="text-decoration-none text-muted">
                                                     <i class="bi bi-telephone me-1"></i>
                                                     <?php echo htmlspecialchars($cita['telefono']); ?>
                                                 </a>
@@ -172,11 +176,13 @@ try {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
-                        <input type="text" class="form-control" name="nombre" id="modal-nombre" required placeholder="Ej. Juan">
+                        <input type="text" class="form-control" name="nombre" id="modal-nombre" required
+                            placeholder="Ej. Juan">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Apellido</label>
-                        <input type="text" class="form-control" name="apellido" id="modal-apellido" required placeholder="Ej. Pérez">
+                        <input type="text" class="form-control" name="apellido" id="modal-apellido" required
+                            placeholder="Ej. Pérez">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Fecha de Nacimiento</label>

@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 if (!isset($_SESSION['user_id'])) {
     die("No autorizado");
@@ -28,7 +28,7 @@ try {
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     error_log("php/inventory/export_inventory_pdf.php error: " . $e->getMessage());
-        die("Error: " . 'Error del servidor.');
+    die("Error: " . 'Error del servidor.');
 }
 ?>
 <!DOCTYPE html>
@@ -37,14 +37,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Inventario - Centro Médico RS</title>
-    
+    <title>Reporte de Inventario - Centro Médico Herrera Saenz</title>
+
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    
+
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-    
+
     <style>
         :root {
             --report-padding: 30px;
@@ -59,11 +59,12 @@ try {
 
         .report-page {
             background: white;
-            width: 297mm; /* Landscape */
+            width: 297mm;
+            /* Landscape */
             min-height: 210mm;
             margin: 0 auto;
             padding: var(--report-padding);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             position: relative;
             display: flex;
@@ -166,16 +167,19 @@ try {
                 size: landscape;
                 margin: 1cm;
             }
+
             body {
                 background: white;
                 padding: 0;
             }
+
             .report-page {
                 box-shadow: none;
                 margin: 0;
                 width: 100%;
                 padding: 0;
             }
+
             .no-print {
                 display: none;
             }
@@ -185,10 +189,12 @@ try {
 
 <body>
     <div class="floating-actions no-print">
-        <button onclick="window.print()" class="action-btn" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.print()" class="action-btn"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-printer-fill" style="font-size: 1.2rem;"></i>
         </button>
-        <button onclick="window.close()" class="action-btn secondary" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.close()" class="action-btn secondary"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
@@ -196,12 +202,13 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico RS</h1>
+                <h1>Centro Médico Herrera Saenz</h1>
                 <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
                 <p><i class="bi bi-person"></i> Generado por: <?php echo $_SESSION['nombre']; ?></p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;" width="50" height="50">
+                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
+                    height="50">
                 <h2>REPORTE DE EXISTENCIAS</h2>
                 <p><?php echo date('d/m/Y H:i'); ?></p>
             </div>
@@ -223,34 +230,35 @@ try {
             </thead>
             <tbody>
                 <?php foreach ($items as $item): ?>
-                    <tr>
-                        <td><code style="font-size: 10px;"><?php echo $item['codigo_barras'] ?: '-'; ?></code></td>
-                        <td><strong><?php echo htmlspecialchars($item['nom_medicamento']); ?></strong></td>
-                        <td style="color: #64748b;"><?php echo htmlspecialchars($item['mol_medicamento']); ?></td>
-                        <td><?php echo htmlspecialchars($item['presentacion_med']); ?></td>
-                        <td class="val-stock"><?php echo $item['cantidad_med']; ?></td>
-                        <td>
-                            <?php 
-                            $vence = strtotime($item['fecha_vencimiento']);
-                            $vence_str = date('d/m/Y', $vence);
-                            $color = ($vence < time()) ? '#ef4444' : (($vence < strtotime('+6 months')) ? '#f59e0b' : 'inherit');
-                            echo "<span style='color: $color; font-weight: 500;'>$vence_str</span>";
-                            ?>
-                        </td>
-                        <td><?php echo htmlspecialchars($item['document_number'] ?? 'N/A'); ?></td>
-                        <td>Q<?php echo number_format($item['unit_cost'] ?? $item['precio_compra'], 2); ?></td>
-                        <td style="font-weight: 600;">Q<?php echo number_format($item['precio_venta'], 2); ?></td>
-                    </tr>
+                        <tr>
+                            <td><code style="font-size: 10px;"><?php echo $item['codigo_barras'] ?: '-'; ?></code></td>
+                            <td><strong><?php echo htmlspecialchars($item['nom_medicamento']); ?></strong></td>
+                            <td style="color: #64748b;"><?php echo htmlspecialchars($item['mol_medicamento']); ?></td>
+                            <td><?php echo htmlspecialchars($item['presentacion_med']); ?></td>
+                            <td class="val-stock"><?php echo $item['cantidad_med']; ?></td>
+                            <td>
+                                <?php
+                                $vence = strtotime($item['fecha_vencimiento']);
+                                $vence_str = date('d/m/Y', $vence);
+                                $color = ($vence < time()) ? '#ef4444' : (($vence < strtotime('+6 months')) ? '#f59e0b' : 'inherit');
+                                echo "<span style='color: $color; font-weight: 500;'>$vence_str</span>";
+                                ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($item['document_number'] ?? 'N/A'); ?></td>
+                            <td>Q<?php echo number_format($item['unit_cost'] ?? $item['precio_compra'], 2); ?></td>
+                            <td style="font-weight: 600;">Q<?php echo number_format($item['precio_venta'], 2); ?></td>
+                        </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
 
         <footer class="report-footer">
-            <p>Documento oficial de control de inventario - Centro Médico RS</p>
+            <p>Documento oficial de control de inventario - Centro Médico Herrera Saenz</p>
             <p>Página 1 de 1 - Generado el <?php echo date('d/m/Y H:i:s'); ?></p>
         </footer>
     </div>
 </body>
+
 </html>
 
 </html>

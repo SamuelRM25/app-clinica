@@ -13,7 +13,7 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Obtener compras con sus items
     $query = "SELECT 
@@ -58,14 +58,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Compras - Centro Médico RS</title>
-    
+    <title>Reporte de Compras - Centro Médico Herrera Saenz</title>
+
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    
+
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-    
+
     <style>
         :root {
             --report-padding: 30px;
@@ -80,11 +80,12 @@ try {
 
         .report-page {
             background: white;
-            width: 210mm; /* A4 Portrait */
+            width: 210mm;
+            /* A4 Portrait */
             min-height: 297mm;
             margin: 0 auto;
             padding: var(--report-padding);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             position: relative;
             display: flex;
@@ -219,16 +220,19 @@ try {
                 size: portrait;
                 margin: 1cm;
             }
+
             body {
                 background: white;
                 padding: 0;
             }
+
             .report-page {
                 box-shadow: none;
                 margin: 0;
                 width: 100%;
                 padding: 0;
             }
+
             .no-print {
                 display: none;
             }
@@ -238,10 +242,12 @@ try {
 
 <body>
     <div class="floating-actions no-print">
-        <button onclick="window.print()" class="action-btn" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.print()" class="action-btn"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-printer-fill" style="font-size: 1.2rem;"></i>
         </button>
-        <button onclick="window.close()" class="action-btn secondary" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.close()" class="action-btn secondary"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
@@ -249,63 +255,70 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico RS</h1>
+                <h1>Centro Médico Herrera Saenz</h1>
                 <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
                 <p><i class="bi bi-person"></i> Generado por: <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 50px; margin-bottom: 8px;" width="50" height="50">
+                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
+                    height="50">
                 <h2>HISTORIAL DE COMPRAS</h2>
                 <p><?php echo date('d/m/Y H:i'); ?></p>
             </div>
         </header>
 
         <?php foreach ($purchases as $id => $p): ?>
-            <div class="purchase-box">
-                <div class="purchase-header-box">
-                    <div>
-                        <span class="purchase-id">#CP-<?php echo str_pad($id, 5, '0', STR_PAD_LEFT); ?></span>
-                        <span class="mx-2 text-muted">|</span>
-                        <span class="purchase-provider"><?php echo htmlspecialchars($p['provider']); ?></span>
+                <div class="purchase-box">
+                    <div class="purchase-header-box">
+                        <div>
+                            <span class="purchase-id">#CP-<?php echo str_pad($id, 5, '0', STR_PAD_LEFT); ?></span>
+                            <span class="mx-2 text-muted">|</span>
+                            <span class="purchase-provider"><?php echo htmlspecialchars($p['provider']); ?></span>
+                        </div>
+                        <div class="text-muted" style="font-size: 11px;">
+                            <i class="bi bi-calendar3 me-1"></i> <?php echo date('d/m/Y', strtotime($p['date'])); ?>
+                        </div>
                     </div>
-                    <div class="text-muted" style="font-size: 11px;">
-                        <i class="bi bi-calendar3 me-1"></i> <?php echo date('d/m/Y', strtotime($p['date'])); ?>
-                    </div>
-                </div>
-                <table class="purchase-table">
-                    <thead>
-                        <tr>
-                            <th>Producto / Medicamento</th>
-                            <th style="text-align: center;">Cantidad</th>
-                            <th style="text-align: right;">Costo U.</th>
-                            <th style="text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($p['items'] as $item): ?>
+                    <table class="purchase-table">
+                        <thead>
                             <tr>
-                                <td><strong><?php echo htmlspecialchars($item['name']); ?></strong></td>
-                                <td style="text-align: center;"><?php echo $item['qty']; ?></td>
-                                <td style="text-align: right;">Q<?php echo number_format($item['cost'], 2); ?></td>
-                                <td style="text-align: right;">Q<?php echo number_format($item['total'], 2); ?></td>
+                                <th>Producto / Medicamento</th>
+                                <th style="text-align: center;">Cantidad</th>
+                                <th style="text-align: right;">Costo U.</th>
+                                <th style="text-align: right;">Subtotal</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <div class="purchase-footer-box">
-                    <div>Estado: <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['status']; ?></span></div>
-                    <div>Pago: <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['payment']; ?></span></div>
-                    <div>Total Compra: <span class="purchase-total-val">Q<?php echo number_format($p['total'], 2); ?></span></div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($p['items'] as $item): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($item['name']); ?></strong></td>
+                                        <td style="text-align: center;"><?php echo $item['qty']; ?></td>
+                                        <td style="text-align: right;">Q<?php echo number_format($item['cost'], 2); ?></td>
+                                        <td style="text-align: right;">Q<?php echo number_format($item['total'], 2); ?></td>
+                                    </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <div class="purchase-footer-box">
+                        <div>Estado: <span class="badge"
+                                style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['status']; ?></span>
+                        </div>
+                        <div>Pago: <span class="badge"
+                                style="background: #f1f5f9; color: #64748b; font-size: 10px;"><?php echo $p['payment']; ?></span>
+                        </div>
+                        <div>Total Compra: <span class="purchase-total-val">Q<?php echo number_format($p['total'], 2); ?></span>
+                        </div>
+                    </div>
                 </div>
-            </div>
         <?php endforeach; ?>
 
         <footer class="report-footer">
-            <p>Documento oficial de control de compras - Centro Médico RS</p>
+            <p>Documento oficial de control de compras - Centro Médico Herrera Saenz</p>
             <p>Generado el <?php echo date('d/m/Y H:i:s'); ?> - CMS v4.0</p>
         </footer>
     </div>
 </body>
+
 </html>
 
 </html>

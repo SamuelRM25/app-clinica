@@ -89,7 +89,7 @@ try {
     // Legacy support for single physical order if it exists but isn't in the new table
     $tiene_archivo_legacy = !empty($orden['archivo_resultados']);
 
-    $page_title = "Procesar Orden #" . $orden['numero_orden'] . " - Centro Médico RS";
+    $page_title = "Procesar Orden #" . $orden['numero_orden'] . " - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -103,14 +103,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Procesar Orden de Laboratorio - Centro Médico RS">
+    <meta name="description" content="Procesar Orden de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- SweetAlert2 -->
@@ -134,9 +134,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -256,8 +257,9 @@ try {
                                                     <div class="card-body p-0 d-flex flex-column align-items-center justify-content-center bg-light"
                                                         style="min-height: 200px; overflow: hidden;">
                                                         <?php if (strpos($mime_type, 'image') !== false): ?>
-                                                                <img src="<?php echo htmlspecialchars($file_url); ?>" class="img-fluid" loading="lazy"
-                                                                    style="width: 100%; height: 200px; object-fit: cover;" alt="Resultado">
+                                                                <img src="<?php echo htmlspecialchars($file_url); ?>" class="img-fluid"
+                                                                    loading="lazy" style="width: 100%; height: 200px; object-fit: cover;"
+                                                                    alt="Resultado">
                                                         <?php elseif (strpos($mime_type, 'pdf') !== false): ?>
                                                                 <div class="text-danger py-4"><i class="bi bi-file-earmark-pdf-fill"
                                                                         style="font-size: 3rem;"></i></div>

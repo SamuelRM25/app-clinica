@@ -15,7 +15,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("ID inválido");
 }
 $id_rx = $_GET['id'];
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
@@ -59,7 +59,7 @@ try {
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">Centro Médico RS</h2>
+            <h2 class="fw-bold">Centro Médico Herrera Saenz</h2>
             <div class="clinic-info">
                 <p>7a Av 7-25 Zona 1 HH</p>
                 <p>Tel: (502) 5214-8836</p>

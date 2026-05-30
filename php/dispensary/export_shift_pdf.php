@@ -93,8 +93,8 @@ try {
     </div>
 
     <div class="header">
-        <img src="../../assets/img/Logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
-        <h1>Centro Médico RS</h1>
+        <img src="../../assets/img/cmhs.png" class="logo" alt="logo" onerror="this.style.display='none'">
+        <h1>Centro Médico Herrera Saenz</h1>
         <p>Corte de Jornada - Dispensario</p>
         <div class="meta">
             Turno:
@@ -168,7 +168,7 @@ try {
     </div>
 
     <div class="footer">
-        Sistema de Gestión Médica - Centro Médico RS
+        Sistema de Gestión Médica - Centro Médico Herrera Saenz
     </div>
 
     <script>

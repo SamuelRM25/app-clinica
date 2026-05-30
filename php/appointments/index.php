@@ -1,5 +1,5 @@
 <?php
-// index.php - Calendario de Citas - Centro Médico RS
+// index.php - Calendario de Citas - Centro Médico Herrera Saenz
 // Versión: 4.0 - Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -47,7 +47,7 @@ try {
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Calendario de Citas - Centro Médico RS";
+    $page_title = "Calendario de Citas - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -61,14 +61,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calendario de Citas del Centro Médico RS - Sistema de gestión de agenda médica">
+    <meta name="description" content="Calendario de Citas del Centro Médico Herrera Saenz - Sistema de gestión de agenda médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap 5 CSS -->
@@ -82,7 +82,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-    
+
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
@@ -95,21 +95,25 @@ try {
             background: var(--color-card);
             color: var(--color-text);
         }
+
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             color: var(--color-text);
             line-height: 48px;
             padding-left: 1rem;
         }
+
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: 48px;
         }
+
         .select2-dropdown {
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
             background: var(--color-card);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
             overflow: hidden;
         }
+
         .select2-container--default .select2-search--dropdown .select2-search__field {
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
@@ -118,13 +122,16 @@ try {
             color: var(--color-text);
             font-family: var(--font-family);
         }
+
         .select2-container--default .select2-results__option--highlighted {
             background: var(--color-primary);
         }
+
         .select2-container--default .select2-results__option {
             padding: 0.625rem 1rem;
             color: var(--color-text);
         }
+
         .reconsulta-toggle-container {
             background: rgba(var(--color-primary-rgb), 0.05);
             padding: 1rem 1.25rem;
@@ -132,14 +139,17 @@ try {
             border: 1.5px dashed var(--color-primary);
             transition: background 0.2s;
         }
+
         .reconsulta-toggle-container:has(#reconsultaToggle:checked) {
             background: rgba(var(--color-primary-rgb), 0.1);
             border-style: solid;
         }
+
         .input-icon-wrapper {
             position: relative;
         }
-        .input-icon-wrapper > i {
+
+        .input-icon-wrapper>i {
             position: absolute;
             left: 1rem;
             top: 50%;
@@ -148,6 +158,7 @@ try {
             pointer-events: none;
             z-index: 2;
         }
+
         .input-icon-wrapper .ps-5 {
             padding-left: 2.75rem !important;
         }
@@ -164,9 +175,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -214,75 +226,75 @@ try {
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
-                <div class="stats-grid">
-                    <!-- Citas de hoy -->
-                    <div class="stat-card animate-in delay-1">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Citas Hoy</div>
-                                <div class="stat-value"><?php echo $today_appointments; ?></div>
+                    <div class="stats-grid">
+                        <!-- Citas de hoy -->
+                        <div class="stat-card animate-in delay-1">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Citas Hoy</div>
+                                    <div class="stat-value"><?php echo $today_appointments; ?></div>
+                                </div>
+                                <div class="stat-icon calendar">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon calendar">
-                                <i class="bi bi-calendar-check"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Programadas para hoy</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-arrow-up-right"></i>
-                            <span>Programadas para hoy</span>
-                        </div>
-                    </div>
 
-                    <!-- Citas totales -->
-                    <div class="stat-card animate-in delay-2">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Citas Totales</div>
-                                <div class="stat-value"><?php echo $total_appointments; ?></div>
+                        <!-- Citas totales -->
+                        <div class="stat-card animate-in delay-2">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Citas Totales</div>
+                                    <div class="stat-value"><?php echo $total_appointments; ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-calendar-week"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-calendar-week"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-plus"></i>
+                                <span>En el sistema</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-plus"></i>
-                            <span>En el sistema</span>
-                        </div>
-                    </div>
 
-                    <!-- Doctores disponibles -->
-                    <div class="stat-card animate-in delay-3">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Doctores</div>
-                                <div class="stat-value"><?php echo count($doctors); ?></div>
+                        <!-- Doctores disponibles -->
+                        <div class="stat-card animate-in delay-3">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Doctores</div>
+                                    <div class="stat-value"><?php echo count($doctors); ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-person-badge"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-person-badge"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Disponibles</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-person-plus"></i>
-                            <span>Disponibles</span>
-                        </div>
-                    </div>
 
-                    <!-- Horario -->
-                    <div class="stat-card animate-in delay-4">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Horario</div>
-                                <div class="stat-value">8-20h</div>
+                        <!-- Horario -->
+                        <div class="stat-card animate-in delay-4">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Horario</div>
+                                    <div class="stat-value">8-20h</div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-clock"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-clock"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Lunes a Sábado</span>
                             </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-clock-history"></i>
-                            <span>Lunes a Sábado</span>
                         </div>
                     </div>
-                </div>
             <?php endif; ?>
 
             <!-- Bienvenida personalizada -->
@@ -297,7 +309,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico RS
+                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -348,7 +360,8 @@ try {
                                 <small class="text-muted">Active para buscar un paciente ya registrado</small>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="reconsultaToggle" style="width: 3rem; height: 1.5rem;">
+                                <input class="form-check-input" type="checkbox" id="reconsultaToggle"
+                                    style="width: 3rem; height: 1.5rem;">
                             </div>
                         </div>
 
@@ -369,16 +382,16 @@ try {
                                 <label class="form-label">Nombre del Paciente</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-person"></i>
-                                    <input type="text" class="form-control" name="nombre_pac" id="nombre_pac" placeholder="Ej. Juan"
-                                        required>
+                                    <input type="text" class="form-control" name="nombre_pac" id="nombre_pac"
+                                        placeholder="Ej. Juan" required>
                                 </div>
                             </div>
                             <div class="col-md-6 name-field">
                                 <label class="form-label">Apellido del Paciente</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-person"></i>
-                                    <input type="text" class="form-control" name="apellido_pac" id="apellido_pac" placeholder="Ej. Pérez"
-                                        required>
+                                    <input type="text" class="form-control" name="apellido_pac" id="apellido_pac"
+                                        placeholder="Ej. Pérez" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -399,7 +412,8 @@ try {
                                 <label class="form-label">Teléfono de Contacto</label>
                                 <div class="input-icon-wrapper">
                                     <i class="bi bi-telephone"></i>
-                                    <input type="tel" class="form-control" name="telefono" id="telefono" placeholder="Ej. 5555-5555">
+                                    <input type="tel" class="form-control" name="telefono" id="telefono"
+                                        placeholder="Ej. 5555-5555">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -409,10 +423,10 @@ try {
                                     <select class="form-select ps-5" name="id_doctor" required>
                                         <option value="">Seleccionar médico...</option>
                                         <?php foreach ($doctors as $doc): ?>
-                                            <option value="<?php echo $doc['idUsuario']; ?>">
-                                                Dr(a).
-                                                <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
-                                            </option>
+                                                <option value="<?php echo $doc['idUsuario']; ?>">
+                                                    Dr(a).
+                                                    <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
+                                                </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -493,10 +507,10 @@ try {
                                     <select class="form-select ps-5" name="id_doctor" id="edit_id_doctor" required>
                                         <option value="">Seleccionar médico...</option>
                                         <?php foreach ($doctors as $doc): ?>
-                                            <option value="<?php echo $doc['idUsuario']; ?>">
-                                                Dr(a).
-                                                <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
-                                            </option>
+                                                <option value="<?php echo $doc['idUsuario']; ?>">
+                                                    Dr(a).
+                                                    <?php echo htmlspecialchars($doc['nombre'] . ' ' . $doc['apellido']); ?>
+                                                </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -545,7 +559,7 @@ try {
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
     <script>
-        // Calendario de Citas Reingenierizado - Centro Médico RS
+        // Calendario de Citas Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -693,30 +707,30 @@ try {
                             data: function (params) {
                                 return { q: params.term };
                             },
-                                    processResults: function (data) {
-                                        if (!Array.isArray(data)) return { results: [] };
-                                        return {
-                                            results: data.map(p => ({
-                                                id: p.id_paciente,
-                                                text: `${p.nombre} ${p.apellido}${p.dpi ? ' — ' + p.dpi : ''}`,
-                                                nombre: p.nombre,
-                                                apellido: p.apellido,
-                                                telefono: p.telefono || '',
-                                                dpi: p.dpi || ''
-                                            }))
-                                        };
-                                    },
-                                    cache: true,
-                                    error: function() {
-                                        console.warn('Error searching patients');
-                                    }
-                                }
-                            }).on('select2:select', function (e) {
-                                const data = e.params.data;
-                                document.getElementById('selectedPatientId').value = data.id;
-                                document.getElementById('nombre_pac').value = data.nombre;
-                                document.getElementById('apellido_pac').value = data.apellido;
-                                document.getElementById('telefono').value = data.telefono;
+                            processResults: function (data) {
+                                if (!Array.isArray(data)) return { results: [] };
+                                return {
+                                    results: data.map(p => ({
+                                        id: p.id_paciente,
+                                        text: `${p.nombre} ${p.apellido}${p.dpi ? ' — ' + p.dpi : ''}`,
+                                        nombre: p.nombre,
+                                        apellido: p.apellido,
+                                        telefono: p.telefono || '',
+                                        dpi: p.dpi || ''
+                                    }))
+                                };
+                            },
+                            cache: true,
+                            error: function () {
+                                console.warn('Error searching patients');
+                            }
+                        }
+                    }).on('select2:select', function (e) {
+                        const data = e.params.data;
+                        document.getElementById('selectedPatientId').value = data.id;
+                        document.getElementById('nombre_pac').value = data.nombre;
+                        document.getElementById('apellido_pac').value = data.apellido;
+                        document.getElementById('telefono').value = data.telefono;
                     });
                 }
             }
@@ -820,7 +834,7 @@ try {
                         if (cell) {
                             e.preventDefault();
                             let dateStr = cell.getAttribute('data-date');
-                            
+
                             if (dateStr) {
                                 this.currentEvent = null; // No hay evento seleccionado
                                 this.currentDateStr = dateStr;
@@ -847,16 +861,16 @@ try {
                     // Mostrar/ocultar opciones según el contexto
                     if (this.currentEvent) {
                         // Click derecho en un evento
-                        if(DOM.contextNew) DOM.contextNew.style.display = 'none';
-                        if(DOM.contextHistory) DOM.contextHistory.style.display = 'flex';
-                        if(DOM.contextEdit) DOM.contextEdit.style.display = 'flex';
-                        if(DOM.contextDelete) DOM.contextDelete.style.display = 'flex';
+                        if (DOM.contextNew) DOM.contextNew.style.display = 'none';
+                        if (DOM.contextHistory) DOM.contextHistory.style.display = 'flex';
+                        if (DOM.contextEdit) DOM.contextEdit.style.display = 'flex';
+                        if (DOM.contextDelete) DOM.contextDelete.style.display = 'flex';
                     } else {
                         // Click derecho en un espacio vacío
-                        if(DOM.contextNew) DOM.contextNew.style.display = 'flex';
-                        if(DOM.contextHistory) DOM.contextHistory.style.display = 'none';
-                        if(DOM.contextEdit) DOM.contextEdit.style.display = 'none';
-                        if(DOM.contextDelete) DOM.contextDelete.style.display = 'none';
+                        if (DOM.contextNew) DOM.contextNew.style.display = 'flex';
+                        if (DOM.contextHistory) DOM.contextHistory.style.display = 'none';
+                        if (DOM.contextEdit) DOM.contextEdit.style.display = 'none';
+                        if (DOM.contextDelete) DOM.contextDelete.style.display = 'none';
                     }
 
                     // Ajustar posición si sale de la ventana
@@ -883,8 +897,8 @@ try {
                         // Prellenar fecha y hora
                         const dateParts = this.currentDateStr.split('T');
                         document.querySelector('#newAppointmentModal input[name="fecha_cita"]').value = dateParts[0];
-                        if(dateParts[1]) {
-                            document.querySelector('#newAppointmentModal input[name="hora_cita"]').value = dateParts[1].substring(0,5);
+                        if (dateParts[1]) {
+                            document.querySelector('#newAppointmentModal input[name="hora_cita"]').value = dateParts[1].substring(0, 5);
                         } else {
                             document.querySelector('#newAppointmentModal input[name="hora_cita"]').value = '';
                         }

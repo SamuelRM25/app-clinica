@@ -56,8 +56,8 @@ try {
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, email, clinica, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico RS', $id_hospital]);
-        
+        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico Herrera Saenz', $id_hospital]);
+
         echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
     } else {
         if (!empty($password)) {
@@ -68,7 +68,7 @@ try {
             $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
             $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
         }
-        
+
         echo json_encode(['success' => true, 'message' => 'Usuario actualizado correctamente']);
     }
 

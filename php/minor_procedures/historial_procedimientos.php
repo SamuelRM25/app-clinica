@@ -1,5 +1,5 @@
 <?php
-// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico RS
+// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -19,7 +19,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 // Título de la página
-$page_title = "Historial de Procedimientos - Centro Médico RS";
+$page_title = "Historial de Procedimientos - Centro Médico Herrera Saenz";
 
 // Configuración de paginación
 $limit = 20; // Registros por página
@@ -36,7 +36,7 @@ try {
     $user_type = $_SESSION['tipoUsuario'];
     $user_name = $_SESSION['nombre'];
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Obtener total de registros
     $stmt_count = $conn->prepare("SELECT COUNT(*) as total FROM procedimientos_menores WHERE id_hospital = ?");
@@ -76,7 +76,7 @@ try {
     $total_paginas = 1;
     $today_revenue = 0;
     $week_revenue = 0;
-error_log('Error en historial_procedimientos: ' . $e->getMessage());
+    error_log('Error en historial_procedimientos: ' . $e->getMessage());
     $error_message = "Error al cargar el historial: Error del servidor.";
 }
 ?>
@@ -86,14 +86,14 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico RS">
+    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
@@ -117,9 +117,10 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
                     <i class="bi bi-list"></i>
                 </button>
 
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -179,75 +180,75 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
 
             <!-- Estadísticas principales -->
             <?php if ($user_type === 'admin'): ?>
-                <div class="stats-grid">
-                    <!-- Total de procedimientos -->
-                    <div class="stat-card animate-in delay-1">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Total Registros</div>
-                                <div class="stat-value"><?php echo $total_registros; ?></div>
+                    <div class="stats-grid">
+                        <!-- Total de procedimientos -->
+                        <div class="stat-card animate-in delay-1">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Total Registros</div>
+                                    <div class="stat-value"><?php echo $total_registros; ?></div>
+                                </div>
+                                <div class="stat-icon primary">
+                                    <i class="bi bi-bandaid"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon primary">
-                                <i class="bi bi-bandaid"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-arrow-up-right"></i>
+                                <span>Total en sistema</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-arrow-up-right"></i>
-                            <span>Total en sistema</span>
-                        </div>
-                    </div>
 
-                    <!-- Ingresos de hoy -->
-                    <div class="stat-card animate-in delay-2">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Ingresos Hoy</div>
-                                <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                        <!-- Ingresos de hoy -->
+                        <div class="stat-card animate-in delay-2">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Ingresos Hoy</div>
+                                    <div class="stat-value">Q<?php echo number_format($today_revenue, 2); ?></div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon success">
-                                <i class="bi bi-currency-dollar"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-cash-stack"></i>
+                                <span>Recaudado hoy</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-cash-stack"></i>
-                            <span>Recaudado hoy</span>
-                        </div>
-                    </div>
 
-                    <!-- Ingresos de la semana -->
-                    <div class="stat-card animate-in delay-3">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Ingresos Semana</div>
-                                <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                        <!-- Ingresos de la semana -->
+                        <div class="stat-card animate-in delay-3">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Ingresos Semana</div>
+                                    <div class="stat-value">Q<?php echo number_format($week_revenue, 2); ?></div>
+                                </div>
+                                <div class="stat-icon warning">
+                                    <i class="bi bi-calendar-week"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon warning">
-                                <i class="bi bi-calendar-week"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-calendar-range"></i>
+                                <span>Esta semana</span>
                             </div>
                         </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-calendar-range"></i>
-                            <span>Esta semana</span>
-                        </div>
-                    </div>
 
-                    <!-- Página actual -->
-                    <div class="stat-card animate-in delay-4">
-                        <div class="stat-header">
-                            <div>
-                                <div class="stat-title">Página Actual</div>
-                                <div class="stat-value"><?php echo $page; ?>/<?php echo $total_paginas; ?></div>
+                        <!-- Página actual -->
+                        <div class="stat-card animate-in delay-4">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-title">Página Actual</div>
+                                    <div class="stat-value"><?php echo $page; ?>/<?php echo $total_paginas; ?></div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-file-text"></i>
+                                </div>
                             </div>
-                            <div class="stat-icon info">
-                                <i class="bi bi-file-text"></i>
+                            <div class="stat-change positive">
+                                <i class="bi bi-book"></i>
+                                <span>Mostrando <?php echo $limit; ?> por página</span>
                             </div>
-                        </div>
-                        <div class="stat-change positive">
-                            <i class="bi bi-book"></i>
-                            <span>Mostrando <?php echo $limit; ?> por página</span>
                         </div>
                     </div>
-                </div>
             <?php endif; ?>
 
             <!-- Historial de procedimientos -->
@@ -263,143 +264,143 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
                             <span>Regresar</span>
                         </a>
                         <?php if ($user_type === 'admin'): ?>
-                            <button type="button" class="action-btn" id="btnGenerateReport">
-                                <i class="bi bi-file-earmark-pdf"></i>
-                                <span>Reporte PDF</span>
-                            </button>
+                                <button type="button" class="action-btn" id="btnGenerateReport">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                    <span>Reporte PDF</span>
+                                </button>
                         <?php endif; ?>
                     </div>
                 </div>
 
                 <?php if (!empty($error_message)): ?>
-                    <div class="alert alert-danger border-0 mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <?php echo htmlspecialchars($error_message); ?>
-                    </div>
+                        <div class="alert alert-danger border-0 mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <?php echo htmlspecialchars($error_message); ?>
+                        </div>
                 <?php endif; ?>
 
                 <?php if (empty($procedimientos)): ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-bandaid"></i>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-bandaid"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">No se encontraron registros</h4>
+                            <p class="text-muted mb-3">No hay procedimientos registrados en el sistema.</p>
+                            <a href="index.php" class="action-btn">
+                                <i class="bi bi-plus-lg"></i>
+                                Registrar primer procedimiento
+                            </a>
                         </div>
-                        <h4 class="text-muted mb-2">No se encontraron registros</h4>
-                        <p class="text-muted mb-3">No hay procedimientos registrados en el sistema.</p>
-                        <a href="index.php" class="action-btn">
-                            <i class="bi bi-plus-lg"></i>
-                            Registrar primer procedimiento
-                        </a>
-                    </div>
                 <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="appointments-table">
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Tipo de Procedimiento</th>
-                                    <th>Cobro</th>
-                                    <th>Fecha y Hora</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $prev_jornada = null;
-                                foreach ($procedimientos as $proc):
-                                    // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
-                                    $timestamp = strtotime($proc['fecha_procedimiento']);
-                                    $hora = (int) date('H', $timestamp);
-                                    $fecha_base = date('Y-m-d', $timestamp);
-
-                                    if ($hora < 8) {
-                                        $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
-                                    } else {
-                                        $jornada_date = $fecha_base;
-                                    }
-
-                                    // Mostrar divisor si cambia la jornada
-                                    if ($jornada_date !== $prev_jornada):
-                                        $display_date = date('d/m/Y', strtotime($jornada_date));
-                                        // Formato amigable: Hoy, Ayer, o fecha
-                                        if ($jornada_date == date('Y-m-d')) {
-                                            $display_text = "Jornada de Hoy ($display_date)";
-                                        } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
-                                            $display_text = "Jornada de Ayer ($display_date)";
-                                        } else {
-                                            $display_text = "Jornada del " . $display_date;
-                                        }
-                                        ?>
-                                        <tr class="jornada-row">
-                                            <td colspan="4" class="jornada-cell">
-                                                <i class="bi bi-calendar-range jornada-icon"></i>
-                                                <?php echo $display_text; ?>
-                                            </td>
-                                        </tr>
-                                        <?php
-                                        $prev_jornada = $jornada_date;
-                                    endif;
-
-                                    // Obtener iniciales del paciente
-                                    $patient_name = htmlspecialchars($proc['nombre_paciente']);
-                                    $patient_initials = strtoupper(substr($patient_name, 0, 2));
-                                    ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="patient-cell">
-                                                <div class="patient-avatar">
-                                                    <?php echo $patient_initials; ?>
-                                                </div>
-                                                <div class="patient-info">
-                                                    <div class="patient-name"><?php echo $patient_name; ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span
-                                                class="procedure-type"><?php echo htmlspecialchars($proc['procedimiento']); ?></span>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge bg-success text-white">
-                                                Q<?php echo number_format($proc['cobro'], 2); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="time-badge">
-                                                <i class="bi bi-clock"></i>
-                                                <?php echo date('h:i A', strtotime($proc['fecha_procedimiento'])); ?>
-                                            </span>
-                                        </td>
+                                        <th>Paciente</th>
+                                        <th>Tipo de Procedimiento</th>
+                                        <th>Cobro</th>
+                                        <th>Fecha y Hora</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $prev_jornada = null;
+                                    foreach ($procedimientos as $proc):
+                                        // Calcular fecha de jornada (Si es antes de las 8am, pertenece al día anterior)
+                                        $timestamp = strtotime($proc['fecha_procedimiento']);
+                                        $hora = (int) date('H', $timestamp);
+                                        $fecha_base = date('Y-m-d', $timestamp);
 
-                    <!-- Paginación -->
-                    <?php if ($total_paginas > 1): ?>
-                        <div class="pagination-container">
-                            <ul class="pagination">
-                                <?php if ($page > 1): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
+                                        if ($hora < 8) {
+                                            $jornada_date = date('Y-m-d', strtotime('-1 day', $timestamp));
+                                        } else {
+                                            $jornada_date = $fecha_base;
+                                        }
 
-                                <li class="page-item active">
-                                    <span class="page-link"><?php echo $page; ?></span>
-                                </li>
+                                        // Mostrar divisor si cambia la jornada
+                                        if ($jornada_date !== $prev_jornada):
+                                            $display_date = date('d/m/Y', strtotime($jornada_date));
+                                            // Formato amigable: Hoy, Ayer, o fecha
+                                            if ($jornada_date == date('Y-m-d')) {
+                                                $display_text = "Jornada de Hoy ($display_date)";
+                                            } elseif ($jornada_date == date('Y-m-d', strtotime('-1 day'))) {
+                                                $display_text = "Jornada de Ayer ($display_date)";
+                                            } else {
+                                                $display_text = "Jornada del " . $display_date;
+                                            }
+                                            ?>
+                                                    <tr class="jornada-row">
+                                                        <td colspan="4" class="jornada-cell">
+                                                            <i class="bi bi-calendar-range jornada-icon"></i>
+                                                            <?php echo $display_text; ?>
+                                                        </td>
+                                                    </tr>
+                                                    <?php
+                                                    $prev_jornada = $jornada_date;
+                                        endif;
 
-                                <?php if ($page < $total_paginas): ?>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
-                            </ul>
+                                        // Obtener iniciales del paciente
+                                        $patient_name = htmlspecialchars($proc['nombre_paciente']);
+                                        $patient_initials = strtoupper(substr($patient_name, 0, 2));
+                                        ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="patient-cell">
+                                                        <div class="patient-avatar">
+                                                            <?php echo $patient_initials; ?>
+                                                        </div>
+                                                        <div class="patient-info">
+                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        class="procedure-type"><?php echo htmlspecialchars($proc['procedimiento']); ?></span>
+                                                </td>
+                                                <td>
+                                                    <span class="time-badge bg-success text-white">
+                                                        Q<?php echo number_format($proc['cobro'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="time-badge">
+                                                        <i class="bi bi-clock"></i>
+                                                        <?php echo date('h:i A', strtotime($proc['fecha_procedimiento'])); ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endif; ?>
+
+                        <!-- Paginación -->
+                        <?php if ($total_paginas > 1): ?>
+                                <div class="pagination-container">
+                                    <ul class="pagination">
+                                        <?php if ($page > 1): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">
+                                                        <i class="bi bi-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                        <?php endif; ?>
+
+                                        <li class="page-item active">
+                                            <span class="page-link"><?php echo $page; ?></span>
+                                        </li>
+
+                                        <?php if ($page < $total_paginas): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">
+                                                        <i class="bi bi-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </div>
+                        <?php endif; ?>
                 <?php endif; ?>
             </section>
 
@@ -434,7 +435,7 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Historial de Procedimientos Reingenierizado - Centro Médico RS
+        // Historial de Procedimientos Reingenierizado - Centro Médico Herrera Saenz
 
         (function () {
             'use strict';
@@ -729,7 +730,7 @@ error_log('Error en historial_procedimientos: ' . $e->getMessage());
                     // Crear contenido del reporte
                     const reportContent = `
                     Reporte de Procedimientos Menores
-                    Centro Médico RS
+                    Centro Médico Herrera Saenz
                     Fecha: ${date}
                     ========================================
                     

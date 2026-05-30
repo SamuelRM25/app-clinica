@@ -17,8 +17,8 @@ $page_title = "Buscar Paciente - Laboratorio";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
     <style>
@@ -78,7 +78,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/Logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
                 <div class="header-controls">
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn">

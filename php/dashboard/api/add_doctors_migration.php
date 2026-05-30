@@ -59,9 +59,9 @@ try {
                 $doc['apellido'],
                 $doc['tipoUsuario'],
                 $doc['especialidad'],
-                'Centro Médico RS',
+                'Centro Médico Herrera Saenz',
                 '0000',
-                $doc['usuario'] . '@cmhs.com',
+                $doc['usuario'] . '@logo.com',
                 $id_hospital
             ]);
             echo "Doctor agregado: " . $doc['nombre'] . " " . $doc['apellido'] . "\n";

@@ -29,8 +29,8 @@ if (!$patientData || !$existingPatientId) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
     <!-- Google Fonts -->
-<!-- Favicon -->
-    <link rel="icon" type="image/png" href="Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="cmhs.png">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>

@@ -1,6 +1,6 @@
 <?php
 // inventory/hospital_medications.php - Módulo de Inventario Reingenierizado
-// Centro Médico RS - Sistema de Gestión Médica
+// Centro Médico Herrera Saenz - Sistema de Gestión Médica
 
 session_start();
 
@@ -16,7 +16,7 @@ require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -77,10 +77,10 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <!-- Google Fonts -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

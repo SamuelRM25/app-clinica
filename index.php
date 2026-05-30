@@ -14,7 +14,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Configuración inicial
-$page_title = "Login - Centro Médico RS";
+$page_title = "Login - Centro Médico Herrera Saenz";
 date_default_timezone_set('America/Guatemala');
 ?>
 <!DOCTYPE html>
@@ -25,11 +25,12 @@ date_default_timezone_set('America/Guatemala');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/img/favicon.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="assets/img/cmhs.png">
 
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+        media="print" onload="this.media='all'">
 
     <style>
         :root {
@@ -83,14 +84,33 @@ date_default_timezone_set('America/Guatemala');
             animation: blob-float 20s infinite alternate;
         }
 
-        .blob-1 { top: -100px; right: -100px; }
-        .blob-2 { bottom: -100px; left: -100px; animation-delay: -5s; }
+        .blob-1 {
+            top: -100px;
+            right: -100px;
+        }
+
+        .blob-2 {
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -5s;
+        }
 
         @keyframes blob-float {
-            0% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0, 0) scale(1); }
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
         }
 
         .login-container {
@@ -120,7 +140,7 @@ date_default_timezone_set('America/Guatemala');
             width: 80px;
             height: auto;
             margin-bottom: 1rem;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
         }
 
         .login-header h1 {
@@ -237,8 +257,13 @@ date_default_timezone_set('America/Guatemala');
             }
         }
 
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
 
         /* Theme Toggle */
         .theme-toggle {
@@ -269,10 +294,21 @@ date_default_timezone_set('America/Guatemala');
         }
 
         /* Theme toggle display rules */
-        [data-theme="light"] .sun-icon { display: block; }
-        [data-theme="light"] .moon-icon { display: none; }
-        [data-theme="dark"] .sun-icon { display: none; }
-        [data-theme="dark"] .moon-icon { display: block; }
+        [data-theme="light"] .sun-icon {
+            display: block;
+        }
+
+        [data-theme="light"] .moon-icon {
+            display: none;
+        }
+
+        [data-theme="dark"] .sun-icon {
+            display: none;
+        }
+
+        [data-theme="dark"] .moon-icon {
+            display: block;
+        }
 
         /* Password Toggle */
         .password-toggle {
@@ -328,7 +364,9 @@ date_default_timezone_set('America/Guatemala');
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -347,9 +385,9 @@ date_default_timezone_set('America/Guatemala');
     <main class="login-container">
         <div class="login-card animate-up">
             <div class="logo-section">
-                <img src="assets/img/Logo.png" alt="Logo" class="logo-img" width="40" height="40">
+                <img src="assets/img/cmhs.png" alt="logo" class="logo-img" width="40" height="40">
                 <div class="login-header">
-                    <h1>Centro Médico RS</h1>
+                    <h1>Centro Médico Herrera Saenz</h1>
                     <p>Gestión Clínica Inteligente</p>
                 </div>
             </div>
@@ -367,7 +405,8 @@ date_default_timezone_set('America/Guatemala');
                     <label class="form-label" for="usuario">Usuario</label>
                     <div class="input-wrapper">
                         <i class="bi bi-person input-icon"></i>
-                        <input type="text" id="usuario" name="usuario" class="form-input" placeholder="Nombre de usuario" required>
+                        <input type="text" id="usuario" name="usuario" class="form-input"
+                            placeholder="Nombre de usuario" required>
                     </div>
                 </div>
 
@@ -375,10 +414,12 @@ date_default_timezone_set('America/Guatemala');
                     <label class="form-label" for="password">Contraseña</label>
                     <div class="input-wrapper">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" id="password" name="password" class="form-input" style="padding-right: 2.75rem;" placeholder="••••••••" required>
+                        <input type="password" id="password" name="password" class="form-input"
+                            style="padding-right: 2.75rem;" placeholder="••••••••" required>
                         <button type="button" class="password-toggle">
                             <svg class="eye-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z"/>
+                                <path
+                                    d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z" />
                             </svg>
                         </button>
                     </div>
@@ -405,12 +446,15 @@ date_default_timezone_set('America/Guatemala');
 
     <!-- Estilos CSS integrados para mejor rendimiento -->
     <link rel="stylesheet" href="assets/css/global_dashboard.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="assets/css/global_dashboard.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"></noscript>
+    <noscript>
+        <link rel="stylesheet" href="assets/css/global_dashboard.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    </noscript>
 
     <!-- JavaScript para funcionalidades -->
     <script>
         // Sistema de Gestión Médica - JavaScript
-        // Centro Médico RS
+        // Centro Médico Herrera Saenz
 
         // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function () {
@@ -581,7 +625,7 @@ date_default_timezone_set('America/Guatemala');
             });
 
             // Mostrar mensaje de bienvenida
-            console.log('Sistema de Gestión Médica - Centro Médico RS');
+            console.log('Sistema de Gestión Médica - Centro Médico Herrera Saenz');
             console.log('Versión 2.0 - Diseño Minimalista con Modo Nocturno');
         });
     </script>

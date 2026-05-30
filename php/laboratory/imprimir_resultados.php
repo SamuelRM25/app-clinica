@@ -64,13 +64,13 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informe de Laboratorio - <?php echo $orden['numero_orden']; ?></title>
-    
+
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    
+
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-    
+
     <style>
         :root {
             --report-padding: 40px;
@@ -89,7 +89,7 @@ try {
             min-height: 297mm;
             margin: 0 auto;
             padding: var(--report-padding);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             position: relative;
             display: flex;
@@ -205,8 +205,13 @@ try {
             font-weight: 700;
         }
 
-        .flag-H { color: #ef4444; }
-        .flag-L { color: #3b82f6; }
+        .flag-H {
+            color: #ef4444;
+        }
+
+        .flag-L {
+            color: #3b82f6;
+        }
 
         .signatures-area {
             margin-top: auto;
@@ -239,12 +244,14 @@ try {
                 background: white;
                 padding: 0;
             }
+
             .report-page {
                 box-shadow: none;
                 margin: 0;
                 width: 100%;
                 padding: 0;
             }
+
             .no-print {
                 display: none;
             }
@@ -264,10 +271,12 @@ try {
 
 <body>
     <div class="floating-actions no-print">
-        <button onclick="window.print()" class="action-btn" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.print()" class="action-btn"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-printer-fill" style="font-size: 1.2rem;"></i>
         </button>
-        <button onclick="window.close()" class="action-btn secondary" style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
+        <button onclick="window.close()" class="action-btn secondary"
+            style="height: 50px; width: 50px; border-radius: 50%; padding: 0;">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
@@ -275,13 +284,14 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico RS</h1>
+                <h1>Centro Médico Herrera Saenz</h1>
                 <p>Excelencia en Servicios de Salud</p>
                 <p>Laboratorio Clínico Automatizado</p>
                 <p><i class="bi bi-geo-alt"></i> Amatitlán, Guatemala | <i class="bi bi-telephone"></i> 6633-XXXX</p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/Logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;" width="60" height="60">
+                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 60px; margin-bottom: 10px;" width="60"
+                    height="60">
                 <h2>INFORME DE RESULTADOS</h2>
                 <p>Orden #<?php echo $orden['numero_orden']; ?></p>
             </div>
@@ -306,7 +316,8 @@ try {
             </div>
             <div class="data-item">
                 <label>Médico Solicitante</label>
-                <span>Dr. <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></span>
+                <span>Dr.
+                    <?php echo htmlspecialchars($orden['doctor_nombre'] . ' ' . $orden['doctor_apellido']); ?></span>
             </div>
             <div class="data-item">
                 <label>Fecha de Toma</label>
@@ -318,9 +329,10 @@ try {
                 <div class="test-result-block">
                     <div class="test-name-header">
                         <span><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></span>
-                        <span style="font-size: 11px; opacity: 0.7;"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span>
+                        <span
+                            style="font-size: 11px; opacity: 0.7;"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span>
                     </div>
-                    
+
                     <table class="results-table-premium">
                         <thead>
                             <tr>
@@ -346,34 +358,40 @@ try {
                             $resultados = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
                             foreach ($resultados as $res):
-                                $min = 0; $max = 0;
+                                $min = 0;
+                                $max = 0;
                                 if ($edad <= 12) {
-                                    $min = $res['valor_ref_pediatrico_min']; $max = $res['valor_ref_pediatrico_max'];
+                                    $min = $res['valor_ref_pediatrico_min'];
+                                    $max = $res['valor_ref_pediatrico_max'];
                                 } elseif ($genero === 'Masculino') {
-                                    $min = $res['valor_ref_hombre_min']; $max = $res['valor_ref_hombre_max'];
+                                    $min = $res['valor_ref_hombre_min'];
+                                    $max = $res['valor_ref_hombre_max'];
                                 } else {
-                                    $min = $res['valor_ref_mujer_min']; $max = $res['valor_ref_mujer_max'];
+                                    $min = $res['valor_ref_mujer_min'];
+                                    $max = $res['valor_ref_mujer_max'];
                                 }
                                 $ref_text = ($min !== null && $max !== null) ? "$min - $max" : "N/A";
                                 $flag_class = '';
-                                if ($res['fuera_rango'] === 'Alto') $flag_class = 'flag-H';
-                                elseif ($res['fuera_rango'] === 'Bajo') $flag_class = 'flag-L';
-                            ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($res['nombre_parametro']); ?></td>
-                                    <td>
-                                        <span class="val-result <?php echo $flag_class; ?>">
-                                            <?php echo htmlspecialchars($res['valor_resultado']); ?>
-                                        </span>
-                                        <?php if ($res['fuera_rango'] !== 'Normal'): ?>
-                                                <small class="<?php echo $flag_class; ?>" style="margin-left: 4px;">
-                                                    (<?php echo substr($res['fuera_rango'], 0, 1); ?>)
-                                                </small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($res['unidad_medida']); ?></td>
-                                    <td><span style="font-size: 12px; color: #64748b;"><?php echo $ref_text; ?></span></td>
-                                </tr>
+                                if ($res['fuera_rango'] === 'Alto')
+                                    $flag_class = 'flag-H';
+                                elseif ($res['fuera_rango'] === 'Bajo')
+                                    $flag_class = 'flag-L';
+                                ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($res['nombre_parametro']); ?></td>
+                                        <td>
+                                            <span class="val-result <?php echo $flag_class; ?>">
+                                                <?php echo htmlspecialchars($res['valor_resultado']); ?>
+                                            </span>
+                                            <?php if ($res['fuera_rango'] !== 'Normal'): ?>
+                                                    <small class="<?php echo $flag_class; ?>" style="margin-left: 4px;">
+                                                        (<?php echo substr($res['fuera_rango'], 0, 1); ?>)
+                                                    </small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($res['unidad_medida']); ?></td>
+                                        <td><span style="font-size: 12px; color: #64748b;"><?php echo $ref_text; ?></span></td>
+                                    </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -383,7 +401,8 @@ try {
         <?php if ($archivo_orden): ?>
                 <div class="no-print" style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
                     <p style="margin: 0; font-size: 13px; font-weight: 600;">
-                        <i class="bi bi-paperclip"></i> Esta orden tiene archivos adjuntos que no se muestran en la versión impresa.
+                        <i class="bi bi-paperclip"></i> Esta orden tiene archivos adjuntos que no se muestran en la versión
+                        impresa.
                     </p>
                 </div>
         <?php endif; ?>
@@ -400,9 +419,11 @@ try {
         </div>
 
         <footer class="report-footer">
-            <p>La interpretación de estos resultados debe ser realizada exclusivamente por un médico colegiado activo.</p>
-            <p><strong>Centro Médico RS</strong> - Tecnología al servicio de su salud.</p>
+            <p>La interpretación de estos resultados debe ser realizada exclusivamente por un médico colegiado activo.
+            </p>
+            <p><strong>Centro Médico Herrera Saenz</strong> - Tecnología al servicio de su salud.</p>
         </footer>
     </div>
 </body>
+
 </html>

@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
- require_once '../../config/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
@@ -79,8 +79,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 
@@ -90,7 +90,7 @@ try {
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Logo" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <a href="index.php" class="action-btn secondary">
@@ -105,7 +105,9 @@ try {
                 <div>
                     <h1 class="page-title" style="display: flex; align-items: center; gap: 0.5rem;">
                         Orden #<?php echo htmlspecialchars($orden['numero_orden']); ?>
-                        <span class="badge <?php echo $orden['estado'] == 'Completada' ? 'bg-success' : 'bg-warning'; ?>" style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: var(--radius-full);">
+                        <span
+                            class="badge <?php echo $orden['estado'] == 'Completada' ? 'bg-success' : 'bg-warning'; ?>"
+                            style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: var(--radius-full);">
                             <?php echo $orden['estado']; ?>
                         </span>
                     </h1>
@@ -116,17 +118,22 @@ try {
             <div class="row g-4 mb-4">
                 <div class="col-lg-6">
                     <div class="content-section h-100" style="margin:0;">
-                        <h3 class="section-title"><i class="bi bi-person section-title-icon text-primary"></i> Información del Paciente</h3>
+                        <h3 class="section-title"><i class="bi bi-person section-title-icon text-primary"></i>
+                            Información del Paciente</h3>
                         <div class="table-responsive">
                             <table class="table table-borderless">
                                 <tbody>
                                     <tr>
                                         <td class="text-muted" style="width: 40%;">Paciente</td>
-                                        <td class="fw-bold fs-5 text-dark"><?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?></td>
+                                        <td class="fw-bold fs-5 text-dark">
+                                            <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="text-muted">Fecha de Nacimiento</td>
-                                        <td class="fw-medium text-dark"><?php echo date('d/m/Y', strtotime($orden['fecha_nacimiento'])); ?></td>
+                                        <td class="fw-medium text-dark">
+                                            <?php echo date('d/m/Y', strtotime($orden['fecha_nacimiento'])); ?>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="text-muted">Doctor Solicitante</td>
@@ -136,7 +143,9 @@ try {
                                     </tr>
                                     <tr>
                                         <td class="text-muted">Fecha de Orden</td>
-                                        <td class="fw-medium text-dark"><?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?></td>
+                                        <td class="fw-medium text-dark">
+                                            <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -146,7 +155,8 @@ try {
 
                 <div class="col-lg-6">
                     <div class="content-section h-100" style="margin:0;">
-                        <h3 class="section-title"><i class="bi bi-list-check section-title-icon text-info"></i> Pruebas Solicitadas</h3>
+                        <h3 class="section-title"><i class="bi bi-list-check section-title-icon text-info"></i> Pruebas
+                            Solicitadas</h3>
                         <div class="table-responsive">
                             <table class="data-table">
                                 <thead>
@@ -165,19 +175,24 @@ try {
                                         $total += $precio;
                                         ?>
                                         <tr>
-                                            <td><span class="badge bg-light text-dark border"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span></td>
+                                            <td><span
+                                                    class="badge bg-light text-dark border"><?php echo htmlspecialchars($prueba['codigo_prueba']); ?></span>
+                                            </td>
                                             <td><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></td>
                                             <td>
                                                 <span class="badge bg-secondary"><?php echo $prueba['estado']; ?></span>
                                             </td>
-                                            <td class="text-end fw-medium"><?php echo 'Q' . number_format($precio, 2); ?></td>
+                                            <td class="text-end fw-medium"><?php echo 'Q' . number_format($precio, 2); ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                                 <tfoot>
                                     <tr style="background-color: var(--color-bg);">
                                         <td colspan="3" class="text-end fw-bold">TOTAL:</td>
-                                        <td class="text-end fw-bold text-primary fs-5"><?php echo 'Q' . number_format($total, 2); ?></td>
+                                        <td class="text-end fw-bold text-primary fs-5">
+                                            <?php echo 'Q' . number_format($total, 2); ?>
+                                        </td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -188,7 +203,8 @@ try {
 
             <?php if (!empty($orden['observaciones'])): ?>
                 <div class="content-section mb-4">
-                    <h3 class="section-title"><i class="bi bi-journal-text section-title-icon text-warning"></i> Observaciones</h3>
+                    <h3 class="section-title"><i class="bi bi-journal-text section-title-icon text-warning"></i>
+                        Observaciones</h3>
                     <div class="p-3 bg-light rounded" style="border-left: 4px solid var(--color-warning);">
                         <p class="mb-0 text-dark"><?php echo nl2br(htmlspecialchars($orden['observaciones'])); ?></p>
                     </div>
@@ -197,8 +213,9 @@ try {
 
             <?php if (!empty($orden['archivo_resultados'])): ?>
                 <div class="content-section mb-4">
-                    <h3 class="section-title"><i class="bi bi-paperclip section-title-icon text-success"></i> Resultados Adjuntos</h3>
-                    
+                    <h3 class="section-title"><i class="bi bi-paperclip section-title-icon text-success"></i> Resultados
+                        Adjuntos</h3>
+
                     <div class="d-flex align-items-center p-3 border rounded mb-3 bg-light">
                         <div class="me-3">
                             <i class="bi bi-file-earmark-pdf" style="font-size: 2.5rem; color: var(--color-danger)"></i>
@@ -208,7 +225,8 @@ try {
                             <div class="text-muted small">Adjunto procesado por el laboratorio</div>
                         </div>
                         <div>
-                            <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank" class="action-btn">
+                            <a href="<?php echo htmlspecialchars($orden['archivo_resultados']); ?>" target="_blank"
+                                class="action-btn">
                                 <i class="bi bi-download me-2"></i> Ver / Descargar
                             </a>
                         </div>
@@ -228,4 +246,5 @@ try {
         </main>
     </div>
 </body>
+
 </html>

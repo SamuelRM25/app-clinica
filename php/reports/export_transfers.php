@@ -1,5 +1,5 @@
 <?php
-// export_transfers.php - Reporte de Traslados (Restringido) - Centro Médico RS
+// export_transfers.php - Reporte de Traslados (Restringido) - Centro Médico Herrera Saenz
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -32,7 +32,7 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     $stmt_transfers = $conn->prepare("
         SELECT 

@@ -13,7 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Set timezone
 date_default_timezone_set('America/Guatemala');
@@ -152,7 +152,7 @@ try {
             $imported_params++;
 
         } catch (Exception $e) {
-error_log('Error en import_lims_data.php row: ' . $e->getMessage());
+            error_log('Error en import_lims_data.php row: ' . $e->getMessage());
             $errors[] = "Row error: Error del servidor.";
         }
     }
@@ -181,7 +181,7 @@ error_log('Error en import_lims_data.php row: ' . $e->getMessage());
 
     echo json_encode([
         'status' => 'error',
-'message' => 'Error del servidor.',
+        'message' => 'Error del servidor.',
         'errors' => isset($errors) ? $errors : []
     ]);
 }

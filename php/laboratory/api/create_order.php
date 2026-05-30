@@ -43,7 +43,7 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
     $conn->beginTransaction();
-    
+
     // 1. Generate unique order number
     $today = date('Ymd');
 
@@ -66,39 +66,39 @@ try {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente', NOW(), ?)
     ");
     $stmt->execute([
-        $numero_orden, 
-        $id_paciente, 
-        $id_doctor, 
-        $id_encamamiento, 
-        $prioridad, 
-        $indicaciones, 
+        $numero_orden,
+        $id_paciente,
+        $id_doctor,
+        $id_encamamiento,
+        $prioridad,
+        $indicaciones,
         $observaciones,
         $id_hospital
     ]);
     $id_orden = $conn->lastInsertId();
-    
+
     // 4. Add Tests to Order and calculate bill
     $total_order = 0;
     $stmt_prueba = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
     $stmt_price = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ?");
-    
+
     $items_for_billing = [];
-    
+
     foreach ($pruebas_ids as $id_prueba) {
         $stmt_prueba->execute([$id_orden, $id_prueba]);
-        
+
         $stmt_price->execute([$id_prueba]);
         $test_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
         if ($test_info) {
             $total_order += $test_info['precio'];
-            
+
             $items_for_billing[] = [
                 'nombre' => $test_info['nombre_prueba'],
                 'precio' => $test_info['precio']
             ];
         }
     }
-    
+
     // 5. Billing Integration (if hospitalized)
     if ($id_encamamiento) {
         $stmt_cargo = $conn->prepare("
@@ -108,9 +108,9 @@ try {
                 'Laboratorio', ?, ?, NOW(), ?, ?
             )
         ");
-        
+
         $user_id = $_SESSION['user_id'] ?? 1;
-        
+
         foreach ($items_for_billing as $item) {
             $stmt_cargo->execute([
                 $id_encamamiento,
@@ -124,14 +124,15 @@ try {
         // Outpatient, create a general bill entry (if your system handles it this way)
         // For now, we'll just log it in the order total
     }
-    
+
     $conn->commit();
-    
+
     // Redirect to index with success message
     header("Location: ../index.php?success=1&order=" . $numero_orden);
-    
+
 } catch (Exception $e) {
-    if (isset($conn)) $conn->rollBack();
+    if (isset($conn))
+        $conn->rollBack();
     error_log('Error en laboratory/api/create_order.php: ' . $e->getMessage());
     die("Error: " . 'Error del servidor.');
 }

@@ -42,8 +42,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <?php include '../../includes/theme_head.php'; ?>
 
@@ -95,9 +95,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -116,7 +117,8 @@ try {
                             <?php echo isset($_SESSION['nombre']) ? strtoupper(substr($_SESSION['nombre'], 0, 1)) : 'U'; ?>
                         </div>
                         <div class="header-details">
-                            <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
+                            <span
+                                class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
                             <span class="header-role">Laboratorio</span>
                         </div>
                     </div>
@@ -156,49 +158,55 @@ try {
                         </div>
 
                         <?php if (count($ordenes_pendientes) > 0): ?>
-                            <div class="pe-2" style="max-height: 70vh; overflow-y: auto;">
-                                <?php foreach ($ordenes_pendientes as $orden): ?>
-                                    <div class="order-card animate-in">
-                                        <div class="order-header">
-                                            <div>
-                                                <div class="order-number">
-                                                    <i class="bi bi-hash"></i><?php echo htmlspecialchars($orden['numero_orden']); ?>
+                                <div class="pe-2" style="max-height: 70vh; overflow-y: auto;">
+                                    <?php foreach ($ordenes_pendientes as $orden): ?>
+                                            <div class="order-card animate-in">
+                                                <div class="order-header">
+                                                    <div>
+                                                        <div class="order-number">
+                                                            <i
+                                                                class="bi bi-hash"></i><?php echo htmlspecialchars($orden['numero_orden']); ?>
+                                                        </div>
+                                                        <div class="patient-name">
+                                                            <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                                        </div>
+                                                        <?php if (!empty($orden['dpi'])): ?>
+                                                                <small class="text-muted d-block mt-1">
+                                                                    <i class="bi bi-card-text me-1"></i>DPI:
+                                                                    <?php echo htmlspecialchars($orden['dpi']); ?>
+                                                                </small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div>
+                                                        <span
+                                                            class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded">
+                                                            <i class="bi bi-check2-all me-1"></i><?php echo $orden['num_pruebas']; ?>
+                                                            Pruebas
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div class="patient-name">
-                                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                                <div
+                                                    class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-dashed">
+                                                    <span class="text-muted small">
+                                                        <i class="bi bi-calendar-event me-1"></i>
+                                                        <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
+                                                    </span>
+                                                    <button class="action-btn"
+                                                        onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
+                                                        <i class="bi bi-droplet-half me-1"></i>
+                                                        Registrar Muestra
+                                                    </button>
                                                 </div>
-                                                <?php if(!empty($orden['dpi'])): ?>
-                                                    <small class="text-muted d-block mt-1">
-                                                        <i class="bi bi-card-text me-1"></i>DPI: <?php echo htmlspecialchars($orden['dpi']); ?>
-                                                    </small>
-                                                <?php endif; ?>
                                             </div>
-                                            <div>
-                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded">
-                                                    <i class="bi bi-check2-all me-1"></i><?php echo $orden['num_pruebas']; ?> Pruebas
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-dashed">
-                                            <span class="text-muted small">
-                                                <i class="bi bi-calendar-event me-1"></i>
-                                                <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
-                                            </span>
-                                            <button class="action-btn"
-                                                onclick="registerSample(<?php echo $orden['id_orden']; ?>, '<?php echo htmlspecialchars($orden['numero_orden']); ?>')">
-                                                <i class="bi bi-droplet-half me-1"></i>
-                                                Registrar Muestra
-                                            </button>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                                    <?php endforeach; ?>
+                                </div>
                         <?php else: ?>
-                            <div class="text-center py-5">
-                                <i class="bi bi-inbox text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
-                                <h4 class="text-muted mt-3 fw-medium">No hay muestras pendientes</h4>
-                                <p class="text-muted small">Todas las muestras del día han sido recepcionadas correctamente.</p>
-                            </div>
+                                <div class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
+                                    <h4 class="text-muted mt-3 fw-medium">No hay muestras pendientes</h4>
+                                    <p class="text-muted small">Todas las muestras del día han sido recepcionadas correctamente.
+                                    </p>
+                                </div>
                         <?php endif; ?>
                     </section>
                 </div>

@@ -1,5 +1,5 @@
 <?php
-// inventory/print_receipt.php - Recibo de Venta - Centro Médico RS
+// inventory/print_receipt.php - Recibo de Venta - Centro Médico Herrera Saenz
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -13,7 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -74,7 +74,7 @@ try {
     $month_sales = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico RS";
+    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico Herrera Saenz";
 
 } catch (Exception $e) {
     error_log('Error en dispensary/print_receipt.php: ' . $e->getMessage());
@@ -92,14 +92,14 @@ $hora_formateada = $fecha->format('H:i');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Recibo de venta del Centro Médico RS - Sistema de gestión médica">
+    <meta name="description" content="Recibo de venta del Centro Médico Herrera Saenz - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- SweetAlert2 -->
@@ -125,14 +125,22 @@ $hora_formateada = $fecha->format('H:i');
             max-width: 320px;
             padding: 1.5rem 1.25rem;
             border-radius: 8px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
             color: #111;
         }
 
-        .clinic-header h2 { font-size: 16px; margin: 0 0 0.25rem; }
-        .clinic-info p { margin: 0; font-size: 11px; color: #555; }
+        .clinic-header h2 {
+            font-size: 16px;
+            margin: 0 0 0.25rem;
+        }
+
+        .clinic-info p {
+            margin: 0;
+            font-size: 11px;
+            color: #555;
+        }
 
         .divider {
             border: none;
@@ -140,9 +148,16 @@ $hora_formateada = $fecha->format('H:i');
             margin: 0.75rem 0;
         }
 
-        .receipt-details { line-height: 1.8; font-size: 11px; }
+        .receipt-details {
+            line-height: 1.8;
+            font-size: 11px;
+        }
 
-        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
         .items-table th {
             border-bottom: 1px solid #ccc;
             padding: 4px 2px;
@@ -150,9 +165,20 @@ $hora_formateada = $fecha->format('H:i');
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-        .items-table td { padding: 4px 2px; font-size: 11px; vertical-align: top; }
-        .text-center { text-align: center; }
-        .text-right  { text-align: right; }
+
+        .items-table td {
+            padding: 4px 2px;
+            font-size: 11px;
+            vertical-align: top;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
 
         .total-section {
             display: flex;
@@ -162,7 +188,12 @@ $hora_formateada = $fecha->format('H:i');
             padding: 0.5rem 0;
         }
 
-        .footer { text-align: center; margin-top: 0.75rem; font-size: 11px; color: #444; }
+        .footer {
+            text-align: center;
+            margin-top: 0.75rem;
+            font-size: 11px;
+            color: #444;
+        }
 
         /* Print controls bar */
         .print-actions {
@@ -172,6 +203,7 @@ $hora_formateada = $fecha->format('H:i');
             gap: 0.5rem;
             margin: 1rem auto 0;
         }
+
         .print-actions button {
             flex: 1;
             padding: 0.6rem;
@@ -181,15 +213,30 @@ $hora_formateada = $fecha->format('H:i');
             cursor: pointer;
             font-size: 13px;
         }
-        .btn-print { background: #0d6efd; color: white; }
-        .btn-close-win { background: #f0f4f8; color: #444; border: 1px solid #ccc; }
+
+        .btn-print {
+            background: #0d6efd;
+            color: white;
+        }
+
+        .btn-close-win {
+            background: #f0f4f8;
+            color: #444;
+            border: 1px solid #ccc;
+        }
 
         /* ===== PRINT MEDIA — ONE PAGE ONLY ===== */
         @media print {
-            /* Reset everything from global CSS */
-            * { margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
 
-            html, body {
+            /* Reset everything from global CSS */
+            * {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+
+            html,
+            body {
                 width: 80mm;
                 height: auto;
                 background: white !important;
@@ -199,8 +246,13 @@ $hora_formateada = $fecha->format('H:i');
             }
 
             /* Hide everything not the receipt */
-            body > *:not(.receipt-container) { display: none !important; }
-            .print-actions { display: none !important; }
+            body>*:not(.receipt-container) {
+                display: none !important;
+            }
+
+            .print-actions {
+                display: none !important;
+            }
 
             .receipt-container {
                 width: 80mm;
@@ -225,7 +277,7 @@ $hora_formateada = $fecha->format('H:i');
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">Centro Médico RS</h2>
+            <h2 class="fw-bold">Centro Médico Herrera Saenz</h2>
             <div class="clinic-info">
                 <p>7a Av 7-25 Zona 1 HH</p>
                 <p>Tel: (+502) 5214-8836</p>

@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
@@ -41,7 +41,7 @@ try {
     $total_pruebas = count($catalogo);
     $total_categorias = count($pruebas_por_categoria);
 
-    $page_title = "Catálogo de Pruebas - Laboratorio";
+    $page_title = "catálogo de Pruebas - Laboratorio";
 } catch (Exception $e) {
     error_log('Error en laboratory/catalogo_pruebas.php: ' . $e->getMessage());
     die("Error: " . 'Error del servidor.');
@@ -53,14 +53,14 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Catálogo de Pruebas de Laboratorio - Centro Médico RS">
+    <meta name="description" content="catálogo de Pruebas de Laboratorio - Centro Médico Herrera Saenz">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
+    <!-- logo -->
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
     <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Bootstrap CSS -->
@@ -87,9 +87,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -126,7 +127,7 @@ try {
         <main class="main-content">
             <!-- Banner de bienvenida -->
             <div class="welcome-banner animate-in">
-                <h1>Catálogo de Pruebas</h1>
+                <h1>catálogo de Pruebas</h1>
                 <p>Administre las pruebas disponibles en el laboratorio</p>
             </div>
 
@@ -497,7 +498,7 @@ try {
                     components: dynamicComponents
                 };
 
-                console.log('Catálogo de Pruebas inicializado');
+                console.log('catálogo de Pruebas inicializado');
             });
 
             // ==========================================================================
@@ -510,7 +511,7 @@ try {
         })();
 
         // ==========================================================================
-        // FUNCIONES ESPECÍFICAS DEL CATÁLOGO
+        // FUNCIONES ESPECÍFICAS DEL catálogo
         // ==========================================================================
 
         function openTestModal(data = null) {

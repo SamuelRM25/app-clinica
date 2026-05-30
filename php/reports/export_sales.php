@@ -1,5 +1,5 @@
 <?php
-// export_sales.php - Reporte de Rentabilidad - Centro Médico RS
+// export_sales.php - Reporte de Rentabilidad - Centro Médico Herrera Saenz
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -29,7 +29,7 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Consulta principal
     $stmt = $conn->prepare("
@@ -151,113 +151,113 @@ try {
     // Vista de Impresión (PDF)
     // Usamos HTML limpio que el navegador imprime bien
     ?>
-        <!DOCTYPE html>
-        <html lang="es">
+    <!DOCTYPE html>
+    <html lang="es">
 
-        <head>
-            <meta charset="UTF-8">
-            <title>Reporte Rentabilidad - CMHS</title>
-            <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-        </head>
+    <head>
+        <meta charset="UTF-8">
+        <title>Reporte Rentabilidad - logo</title>
+        <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    </head>
 
-        <body>
-            <div class="no-print" style="margin-bottom: 20px;">
-                <button onclick="window.print()" class="print-btn">🖨️ Imprimir / Guardar como PDF</button>
-                <button onclick="window.close()" class="print-btn" style="background: #6c757d;">Cerrar</button>
-            </div>
+    <body>
+        <div class="no-print" style="margin-bottom: 20px;">
+            <button onclick="window.print()" class="print-btn">🖨️ Imprimir / Guardar como PDF</button>
+            <button onclick="window.close()" class="print-btn" style="background: #6c757d;">Cerrar</button>
+        </div>
 
-            <div class="header">
-                <h1>Centro Médico RS</h1>
-                <h2>Reporte de Rentabilidad en Farmacia</h2>
-                <p>Periodo:
-                    <?php echo date('d/m/Y', strtotime($start_date)); ?> al
-                    <?php echo date('d/m/Y', strtotime($end_date)); ?>
-                </p>
-            </div>
+        <div class="header">
+            <h1>Centro Médico Herrera Saenz</h1>
+            <h2>Reporte de Rentabilidad en Farmacia</h2>
+            <p>Periodo:
+                <?php echo date('d/m/Y', strtotime($start_date)); ?> al
+                <?php echo date('d/m/Y', strtotime($end_date)); ?>
+            </p>
+        </div>
 
-            <table>
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Medicamento</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">P. Venta</th>
+                    <th class="text-right">Costo</th>
+                    <th class="text-right">Total Venta</th>
+                    <th class="text-right">Total Costo</th>
+                    <th class="text-right">Ganancia</th>
+                    <th class="text-right">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($data as $row):
+                    $ganancia = $row['total_venta'] - $row['total_costo'];
+                    $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+                    $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
+                    $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
+                    ?>
                     <tr>
-                        <th>Código</th>
-                        <th>Medicamento</th>
-                        <th class="text-right">Cant.</th>
-                        <th class="text-right">P. Venta</th>
-                        <th class="text-right">Costo</th>
-                        <th class="text-right">Total Venta</th>
-                        <th class="text-right">Total Costo</th>
-                        <th class="text-right">Ganancia</th>
-                        <th class="text-right">%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($data as $row):
-                        $ganancia = $row['total_venta'] - $row['total_costo'];
-                        $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
-                        $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
-                        $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
-                        ?>
-                            <tr>
-                                <td>
-                                    <?php echo $row['codigo_barras']; ?>
-                                </td>
-                                <td>
-                                    <?php echo htmlspecialchars($row['nom_medicamento']); ?>
-                                </td>
-                                <td class="text-right">
-                                    <?php echo $row['cantidad_total']; ?>
-                                </td>
-                                <td class="text-right">Q
-                                    <?php echo number_format($p_venta, 2); ?>
-                                </td>
-                                <td class="text-right">Q
-                                    <?php echo number_format($p_costo, 2); ?>
-                                </td>
-                                <td class="text-right">Q
-                                    <?php echo number_format($row['total_venta'], 2); ?>
-                                </td>
-                                <td class="text-right">Q
-                                    <?php echo number_format($row['total_costo'], 2); ?>
-                                </td>
-                                <td class="text-right">Q
-                                    <?php echo number_format($ganancia, 2); ?>
-                                </td>
-                                <td class="text-right">
-                                    <?php echo number_format($margen, 1); ?>%
-                                </td>
-                            </tr>
-                    <?php endforeach; ?>
-                    <tr class="totals">
-                        <td colspan="5" class="text-right">TOTALES GENERALES</td>
-                        <td class="text-right">Q
-                            <?php echo number_format($total_revenue, 2); ?>
+                        <td>
+                            <?php echo $row['codigo_barras']; ?>
                         </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($total_cost, 2); ?>
-                        </td>
-                        <td class="text-right">Q
-                            <?php echo number_format($total_profit, 2); ?>
+                        <td>
+                            <?php echo htmlspecialchars($row['nom_medicamento']); ?>
                         </td>
                         <td class="text-right">
-                            <?php echo number_format($total_margin, 1); ?>%
+                            <?php echo $row['cantidad_total']; ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($p_venta, 2); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($p_costo, 2); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($row['total_venta'], 2); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($row['total_costo'], 2); ?>
+                        </td>
+                        <td class="text-right">Q
+                            <?php echo number_format($ganancia, 2); ?>
+                        </td>
+                        <td class="text-right">
+                            <?php echo number_format($margen, 1); ?>%
                         </td>
                     </tr>
-                </tbody>
-            </table>
+                <?php endforeach; ?>
+                <tr class="totals">
+                    <td colspan="5" class="text-right">TOTALES GENERALES</td>
+                    <td class="text-right">Q
+                        <?php echo number_format($total_revenue, 2); ?>
+                    </td>
+                    <td class="text-right">Q
+                        <?php echo number_format($total_cost, 2); ?>
+                    </td>
+                    <td class="text-right">Q
+                        <?php echo number_format($total_profit, 2); ?>
+                    </td>
+                    <td class="text-right">
+                        <?php echo number_format($total_margin, 1); ?>%
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-            <div style="font-size: 10px; color: #888; text-align: center; margin-top: 30px;">
-                Generado por Sistema CMHS el
-                <?php echo date('d/m/Y H:i:s'); ?> por
-                <?php echo htmlspecialchars($_SESSION['nombre']); ?>
-            </div>
+        <div style="font-size: 10px; color: #888; text-align: center; margin-top: 30px;">
+            Generado por Sistema logo el
+            <?php echo date('d/m/Y H:i:s'); ?> por
+            <?php echo htmlspecialchars($_SESSION['nombre']); ?>
+        </div>
 
-            <script>
-                // Auto-print on load if desired, or just let user click button
-                // window.onload = function() { window.print(); }
-            </script>
-        </body>
+        <script>
+            // Auto-print on load if desired, or just let user click button
+            // window.onload = function() { window.print(); }
+        </script>
+    </body>
 
-        </html>
-        <?php
+    </html>
+    <?php
 
 } catch (PDOException $e) {
     error_log('Error en reports/export_sales.php: ' . $e->getMessage());

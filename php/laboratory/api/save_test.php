@@ -24,7 +24,7 @@ $precio = (float) ($_POST['precio'] ?? 0);
 $muestra = $_POST['muestra_requerida'] ?? ''; // Fixed mapping
 $tiempo = (int) ($_POST['tiempo_procesamiento_horas'] ?? 0); // Fixed mapping
 $notas = $_POST['descripcion'] ?? ''; // Map description to notas
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 if (empty($nombre) || empty($codigo)) {
     echo json_encode(['success' => false, 'message' => 'El nombre y el código son obligatorios']);

@@ -63,8 +63,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/Logo.png">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <?php include '../../includes/theme_head.php'; ?>
 
@@ -74,7 +74,8 @@ try {
                 display: none !important;
             }
 
-            body, html {
+            body,
+            html {
                 background: white !important;
                 color: black !important;
             }
@@ -130,9 +131,10 @@ try {
         <!-- Header Superior -->
         <header class="dashboard-header no-print">
             <div class="header-content">
-                <!-- Logo -->
+                <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/Logo.png" alt="Centro Médico RS" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                        height="40">
                 </div>
 
                 <!-- Controles -->
@@ -151,7 +153,8 @@ try {
                             <?php echo isset($_SESSION['nombre']) ? strtoupper(substr($_SESSION['nombre'], 0, 1)) : 'U'; ?>
                         </div>
                         <div class="header-details">
-                            <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
+                            <span
+                                class="header-name"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Usuario'); ?></span>
                             <span class="header-role">Laboratorio</span>
                         </div>
                     </div>
@@ -185,10 +188,12 @@ try {
                             <i class="bi bi-file-earmark-text section-title-icon"></i>
                             Reporte de Actividades
                         </h3>
-                        <p class="text-muted small mb-0">Fecha seleccionada: <strong class="text-primary"><?php echo date('d/m/Y', strtotime($fecha)); ?></strong></p>
+                        <p class="text-muted small mb-0">Fecha seleccionada: <strong
+                                class="text-primary"><?php echo date('d/m/Y', strtotime($fecha)); ?></strong></p>
                     </div>
                     <div class="d-flex gap-2 no-print">
-                        <input type="date" id="fecha" class="form-control" style="width: auto;" value="<?php echo $fecha; ?>" onchange="cambiarFecha()">
+                        <input type="date" id="fecha" class="form-control" style="width: auto;"
+                            value="<?php echo $fecha; ?>" onchange="cambiarFecha()">
                         <button class="action-btn" onclick="window.print()">
                             <i class="bi bi-printer me-1"></i> Imprimir
                         </button>
@@ -286,7 +291,8 @@ try {
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Ingresos Estimados</div>
-                            <div class="stat-value">Q<?php echo number_format($stats['ingresos_estimados'] ?? 0, 2); ?></div>
+                            <div class="stat-value">Q<?php echo number_format($stats['ingresos_estimados'] ?? 0, 2); ?>
+                            </div>
                         </div>
                         <div class="stat-icon success">
                             <i class="bi bi-currency-dollar"></i>
@@ -305,80 +311,83 @@ try {
                 </div>
 
                 <?php if (count($ordenes) > 0): ?>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Orden #</th>
-                                    <th>Paciente</th>
-                                    <th>Hora</th>
-                                    <th>Pruebas</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($ordenes as $orden): ?>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
                                     <tr>
-                                        <td class="fw-bold text-primary">
-                                            <i class="bi bi-hash"></i><?php echo htmlspecialchars($orden['numero_orden']); ?>
-                                        </td>
-                                        <td class="fw-semibold">
-                                            <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
-                                        </td>
-                                        <td class="text-muted">
-                                            <i class="bi bi-clock me-1"></i><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                                <?php echo $orden['num_pruebas']; ?> Pruebas
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $estado_class = '';
-                                            $estado_text = '';
-                                            switch ($orden['estado']) {
-                                                case 'Pendiente':
-                                                    $estado_class = 'pendiente';
-                                                    $estado_text = 'Pendiente';
-                                                    break;
-                                                case 'Muestra_Recibida':
-                                                    $estado_class = 'info';
-                                                    $estado_text = 'Muestra Recibida';
-                                                    break;
-                                                case 'En_Proceso':
-                                                    $estado_class = 'en-proceso';
-                                                    $estado_text = 'En Proceso';
-                                                    break;
-                                                case 'Completada':
-                                                    $estado_class = 'activo';
-                                                    $estado_text = 'Completada';
-                                                    break;
-                                                case 'Validada':
-                                                    $estado_class = 'activo';
-                                                    $estado_text = 'Validada';
-                                                    break;
-                                                default:
-                                                    $estado_class = 'pendiente';
-                                                    $estado_text = $orden['estado'];
-                                                    break;
-                                            }
-                                            ?>
-                                            <span class="status-badge <?php echo $estado_class; ?>">
-                                                <?php echo $estado_text; ?>
-                                            </span>
-                                        </td>
+                                        <th>Orden #</th>
+                                        <th>Paciente</th>
+                                        <th>Hora</th>
+                                        <th>Pruebas</th>
+                                        <th>Estado</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($ordenes as $orden): ?>
+                                            <tr>
+                                                <td class="fw-bold text-primary">
+                                                    <i class="bi bi-hash"></i><?php echo htmlspecialchars($orden['numero_orden']); ?>
+                                                </td>
+                                                <td class="fw-semibold">
+                                                    <?php echo htmlspecialchars($orden['nombre'] . ' ' . $orden['apellido']); ?>
+                                                </td>
+                                                <td class="text-muted">
+                                                    <i
+                                                        class="bi bi-clock me-1"></i><?php echo date('H:i', strtotime($orden['fecha_orden'])); ?>
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                                        <?php echo $orden['num_pruebas']; ?> Pruebas
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $estado_class = '';
+                                                    $estado_text = '';
+                                                    switch ($orden['estado']) {
+                                                        case 'Pendiente':
+                                                            $estado_class = 'pendiente';
+                                                            $estado_text = 'Pendiente';
+                                                            break;
+                                                        case 'Muestra_Recibida':
+                                                            $estado_class = 'info';
+                                                            $estado_text = 'Muestra Recibida';
+                                                            break;
+                                                        case 'En_Proceso':
+                                                            $estado_class = 'en-proceso';
+                                                            $estado_text = 'En Proceso';
+                                                            break;
+                                                        case 'Completada':
+                                                            $estado_class = 'activo';
+                                                            $estado_text = 'Completada';
+                                                            break;
+                                                        case 'Validada':
+                                                            $estado_class = 'activo';
+                                                            $estado_text = 'Validada';
+                                                            break;
+                                                        default:
+                                                            $estado_class = 'pendiente';
+                                                            $estado_text = $orden['estado'];
+                                                            break;
+                                                    }
+                                                    ?>
+                                                    <span class="status-badge <?php echo $estado_class; ?>">
+                                                        <?php echo $estado_text; ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                 <?php else: ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
-                        <h4 class="text-muted mt-3 fw-medium">No se encontraron órdenes</h4>
-                        <p class="text-muted small">No hay transacciones ni órdenes de laboratorio para la fecha seleccionada.</p>
-                    </div>
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 4rem; opacity: 0.4;"></i>
+                            <h4 class="text-muted mt-3 fw-medium">No se encontraron órdenes</h4>
+                            <p class="text-muted small">No hay transacciones ni órdenes de laboratorio para la fecha
+                                seleccionada.</p>
+                        </div>
                 <?php endif; ?>
             </section>
         </main>
