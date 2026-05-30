@@ -26,11 +26,10 @@ date_default_timezone_set('America/Guatemala');
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/img/Logo.png">
+    <link rel="icon" type="image/png" href="assets/img/favicon.png">
 
-    <!-- Google Fonts - Inter -->
-<!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" media="print" onload="this.media='all'">
 
     <style>
         :root {
@@ -405,7 +404,8 @@ date_default_timezone_set('America/Guatemala');
     </main>
 
     <!-- Estilos CSS integrados para mejor rendimiento -->
-    <link rel="stylesheet" href="assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="assets/css/global_dashboard.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="assets/css/global_dashboard.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"></noscript>
 
     <!-- JavaScript para funcionalidades -->
     <script>
