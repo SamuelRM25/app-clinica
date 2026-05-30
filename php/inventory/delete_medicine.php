@@ -8,6 +8,15 @@ $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
+// CSRF validation (accepts POST/header/GET parameter)
+$csrf_token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_GET['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+    $_SESSION['inventory_message'] = 'Token CSRF inválido';
+    $_SESSION['inventory_status'] = 'error';
+    header('Location: index.php');
+    exit;
+}
+
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     try {
         $database = new Database();

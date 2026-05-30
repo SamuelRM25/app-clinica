@@ -1427,7 +1427,7 @@ try {
 
                 deleteMedicine(id) {
                     if (confirm('¿Está seguro de eliminar este medicamento? Esta acción no se puede deshacer.')) {
-                        window.location.href = `delete_medicine.php?id=${id}`;
+                        window.location.href = `delete_medicine.php?id=${id}&csrf_token=${window.CSRF_TOKEN}`;
                     }
                 }
 

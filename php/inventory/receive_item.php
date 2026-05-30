@@ -13,6 +13,13 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// CSRF validation
+$csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (empty($csrf_header) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_header)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
 try {
     $database = new Database();
     $conn = $database->getConnection();

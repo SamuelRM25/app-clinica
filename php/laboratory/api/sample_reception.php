@@ -7,6 +7,12 @@ require_once '../../../includes/multitenant.php';
 
 verify_session();
 
+// CSRF validation
+$csrf_token = $_GET['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+    die("Token CSRF inválido");
+}
+
 $id_hospital = hospital_id();
 
 $id_orden_prueba = $_GET['id'] ?? null;

@@ -14,6 +14,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('imaging');
 
@@ -183,6 +184,10 @@ try {
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Exámenes'],
+            ]); ?>
             <!-- Bienvenida personalizada -->
             <div class="stat-card mb-4 animate-in">
                 <div class="stat-header">

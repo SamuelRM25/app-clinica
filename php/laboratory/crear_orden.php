@@ -5,6 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
+require_once '../../includes/module_guard.php';
 
 $id_hospital = hospital_id();
 
@@ -472,19 +473,7 @@ try {
                 }
 
                 setupFormValidation() {
-                    const form = document.getElementById('orderForm');
-                    if (form) {
-                        form.addEventListener('submit', function (e) {
-                            const paciente = $('#id_paciente').val();
-                            const selectedTests = window.selectedTests || [];
-
-                            if (!paciente) {
-                                e.preventDefault();
-                                showError('Debe seleccionar un paciente');
-                                return;
-                            }
-                        });
-                    }
+                    // Validación centralizada en handler de SweetAlert2
                 }
             }
 
@@ -686,6 +675,8 @@ try {
         document.getElementById('orderForm')?.addEventListener('submit', function (e) {
             e.preventDefault();
 
+            const submitBtn = this.querySelector('button[type=submit]');
+
             if (selectedTests.length === 0) {
                 Swal.fire({
                     icon: 'error',
@@ -707,6 +698,9 @@ try {
                 return;
             }
 
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Generando...';
+
             Swal.fire({
                 title: '¿Confirmar Orden?',
                 html: `
@@ -722,7 +716,6 @@ try {
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Mostrar carga
                     Swal.fire({
                         title: 'Generando orden...',
                         text: 'Por favor espere',
@@ -732,10 +725,12 @@ try {
                         }
                     });
 
-                    // Enviar formulario
                     setTimeout(() => {
                         e.target.submit();
                     }, 500);
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> Generar Orden de Laboratorio';
                 }
             });
         });

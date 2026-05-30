@@ -50,6 +50,7 @@ try {
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND id_hospital = ?");
     $stmt->execute([$id_hospital]);
     $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] + 1;
+    $numero_orden = "LAB-" . $today . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
 
     $stmt_hosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ? LIMIT 1");
     $stmt_hosp->execute([$id_paciente, $id_hospital]);

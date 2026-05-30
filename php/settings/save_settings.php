@@ -8,6 +8,7 @@ require_once '../../includes/multitenant.php';
 
 
 verify_session();
+verify_csrf_token();
 
 if ($_SESSION['tipoUsuario'] !== 'admin' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: index.php");
@@ -44,7 +45,7 @@ try {
     )");
 
     // 2. Procesar datos del formulario
-    $nombre = $_POST['nombre'] ?? '';
+    $nombre = $_POST['nombre_clinica'] ?? '';
     $email = $_POST['email'] ?? '';
     $direccion = $_POST['direccion'] ?? '';
     $telefono = $_POST['telefono'] ?? '';

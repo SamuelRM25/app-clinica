@@ -6,6 +6,12 @@ require_once '../../../includes/functions.php';
 
 verify_session();
 
+// CSRF validation
+$csrf_token = $_GET['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
+    die("Token CSRF inválido");
+}
+
 $id_orden = $_GET['id'] ?? null;
 
 if (!$id_orden) {

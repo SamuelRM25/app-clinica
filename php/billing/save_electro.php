@@ -11,6 +11,13 @@ verify_session();
 
 header('Content-Type: application/json');
 
+// CSRF validation
+$csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+if (empty($csrf_header) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_header)) {
+    echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
 $data = [];
 if (!empty($_POST)) {
     $data = $_POST;

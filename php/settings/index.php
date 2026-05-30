@@ -225,7 +225,8 @@ $page_title = "Configuración del Sistema";
                     <div class="tab-pane fade show active" id="general" role="tabpanel">
                         <div class="settings-content-card">
                             <h3 class="section-title mb-4">Información de la Clínica</h3>
-                            <form id="generalSettingsForm">
+                            <form id="generalSettingsForm" action="save_settings.php" method="POST">
+                                <?php echo csrf_field(); ?>
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Nombre de la Institución</label>
@@ -538,6 +539,7 @@ $page_title = "Configuración del Sistema";
                 </div>
                 <div class="modal-body p-4">
                     <form id="userForm">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="idUsuario" id="userId">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -641,7 +643,11 @@ $page_title = "Configuración del Sistema";
 
             if (result.isConfirmed) {
                 try {
-                    const response = await fetch(`api/delete_user.php?id=${id}`);
+                    const response = await fetch('api/delete_user.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'id=' + id
+                    });
                     const res = await response.json();
                     if (res.success) {
                         Swal.fire('Eliminado', res.message, 'success').then(() => location.reload());
@@ -713,6 +719,7 @@ $page_title = "Configuración del Sistema";
             }
         });
     </script>
+    <?php output_keep_alive_script(); ?>
 </body>
 
 </html>

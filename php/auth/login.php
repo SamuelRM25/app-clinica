@@ -19,12 +19,12 @@ require_once '../../config/hospital.php'; // Identidad de la carpeta
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
 
-    // Rate limiting: max 5 attempts per 60 seconds
+    // Rate limiting: max 3 attempts per 60 seconds
     if (!isset($_SESSION['login_attempts'])) {
         $_SESSION['login_attempts'] = 0;
         $_SESSION['login_attempt_time'] = 0;
     }
-    if ($_SESSION['login_attempts'] >= 5 && time() - $_SESSION['login_attempt_time'] < 60) {
+    if ($_SESSION['login_attempts'] >= 3 && time() - $_SESSION['login_attempt_time'] < 60) {
         header("Location: ../../index.php?error=2");
         exit;
     }

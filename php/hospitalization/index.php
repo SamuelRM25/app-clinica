@@ -13,6 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
 
 check_module_access('hospitalization');
 
@@ -388,6 +389,10 @@ $page_title = "Gestión de Hospitalización - Centro Médico RS";
 
         <!-- Main Content -->
         <main class="main-content">
+            <?php render_breadcrumbs([
+                ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
+                ['label' => 'Hospitalización'],
+            ]); ?>
             <!-- Page Header -->
             <div class="page-header">
                 <h1 class="page-title">

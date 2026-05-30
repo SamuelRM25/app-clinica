@@ -661,7 +661,7 @@ try {
                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#e2e8f0' : '#1a1a1a'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `api/validate_order.php?id=<?php echo $id_orden; ?>`;
+                    window.location.href = `api/validate_order.php?id=<?php echo $id_orden; ?>&csrf_token=${window.CSRF_TOKEN}`;
                 }
             });
         }

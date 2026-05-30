@@ -11,19 +11,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {
     exit;
 }
 
-if (!isset($_GET['id'])) {
+$idUsuario = $_POST['id'] ?? $_GET['id'] ?? null;
+if (!$idUsuario) {
     echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
     exit;
 }
 
-// CSRF validation via X-CSRF-Token header
-$csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-if (empty($csrf_header) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_header)) {
+// CSRF validation: accepts header (from fetch monkey-patch) or GET parameter
+$csrf_token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_GET['csrf_token'] ?? '';
+if (empty($csrf_token) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf_token)) {
     echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
     exit;
 }
 
-$idUsuario = $_GET['id'];
+$idUsuario = (int)$idUsuario;
 
 // No permitir borrarse a sí mismo
 if ($idUsuario == $_SESSION['user_id']) {

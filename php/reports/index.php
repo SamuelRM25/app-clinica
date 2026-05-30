@@ -271,7 +271,7 @@ try {
         $labs_params = [date('Y-m-t 23:59:59', strtotime($labs_end_month . '-01'))];
     }
 
-    $labs_where .= ($labs_where ? " AND" : "WHERE") . " ol.id_hospital = ?";
+    $labs_where .= " AND ol.id_hospital = ?";
     $labs_params[] = $id_hospital;
 
     $stmt_labs_detail = $conn->prepare("

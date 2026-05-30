@@ -768,7 +768,7 @@ try {
                 </h5>
                 <button type="button" class="custom-modal-close" onclick="document.getElementById('newMedicalRecordModal').classList.remove('active')">&times;</button>
             </div>
-            <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST">
+            <form id="newMedicalRecordForm" action="save_medical_record.php" method="POST" onsubmit="document.querySelector('#newMedicalRecordForm button[type=submit]').disabled = true; document.querySelector('#newMedicalRecordForm button[type=submit]').innerHTML = '<i class=\'bi bi-hourglass-split me-2\'></i> Guardando...';">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="id_paciente" value="<?php echo $patient_id; ?>">
                 
