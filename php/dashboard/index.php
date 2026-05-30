@@ -292,7 +292,7 @@ try {
 
 
 // Código de autorización para corte de turno (configurable vía variable de entorno)
-$shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: 'logo';
+$shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
