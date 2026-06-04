@@ -119,6 +119,9 @@ try {
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -906,6 +909,12 @@ try {
                             <div class="form-group mb-4">
                                 <label for="proxima_cita" class="form-label fw-semibold">Próxima Cita</label>
                                 <input type="date" id="proxima_cita" name="proxima_cita" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label for="hora_proxima_cita" class="form-label fw-semibold">Hora</label>
+                                <input type="time" id="hora_proxima_cita" name="hora_proxima_cita" class="form-control">
                             </div>
                         </div>
                         <div class="col-md-3">

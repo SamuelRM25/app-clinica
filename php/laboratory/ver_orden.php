@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 
 $id_hospital = hospital_id();
 
@@ -64,6 +65,16 @@ try {
     ");
     $stmt->execute([$id_orden, $id_hospital]);
     $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Get uploaded result files from archivos_resultados_laboratorio
+    $stmt_files = $conn->prepare("
+        SELECT id_archivo, nombre_archivo, tipo_archivo, categoria, fecha_subida
+        FROM archivos_resultados_laboratorio
+        WHERE id_orden = ? AND id_hospital = ?
+        ORDER BY fecha_subida DESC
+    ");
+    $stmt_files->execute([$id_orden, $id_hospital]);
+    $archivos_resultados = $stmt_files->fetchAll(PDO::FETCH_ASSOC);
 
     $page_title = "Ver Orden #" . $orden['numero_orden'];
 
@@ -241,6 +252,28 @@ try {
                                 class="img-fluid rounded shadow-sm border" style="max-height: 500px;">
                         </div>
                     <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($archivos_resultados)): ?>
+                <div class="content-section mb-4">
+                    <h3 class="section-title"><i class="bi bi-files section-title-icon text-success"></i> Archivos de Resultados</h3>
+                    <?php foreach ($archivos_resultados as $archivo): ?>
+                        <div class="d-flex align-items-center p-3 border rounded mb-2 bg-light">
+                            <div class="me-3">
+                                <i class="bi <?php echo in_array(strtolower(pathinfo($archivo['nombre_archivo'], PATHINFO_EXTENSION)), ['jpg','jpeg','png','gif']) ? 'bi-file-earmark-image' : 'bi-file-earmark-pdf'; ?>" style="font-size: 2rem; color: var(--color-info)"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($archivo['nombre_archivo']); ?></div>
+                                <div class="text-muted small"><?php echo htmlspecialchars($archivo['categoria'] ?? ''); ?> - <?php echo date('d/m/Y H:i', strtotime($archivo['fecha_subida'])); ?></div>
+                            </div>
+                            <div>
+                                <a href="api/get_result_file.php?id=<?php echo $archivo['id_archivo']; ?>" target="_blank" class="action-btn">
+                                    <i class="bi bi-eye me-2"></i> Ver
+                                </a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </main>

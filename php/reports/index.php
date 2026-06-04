@@ -111,10 +111,44 @@ try {
     $stmt_proc->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_procedures = $stmt_proc->fetchColumn() ?: 0;
 
-    // 5. Exámenes realizados
-    $stmt_exams = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?");
-    $stmt_exams->execute([$start_datetime, $end_datetime, $id_hospital]);
-    $total_exams_revenue = $stmt_exams->fetchColumn() ?: 0;
+    // 5. Ingresos por servicios clínicos (desglosados)
+    $stmt_lab = $conn->prepare("
+        SELECT SUM(cobro) FROM examenes_realizados
+        WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?
+        AND tipo_examen NOT LIKE '%ultrasonido%'
+        AND tipo_examen NOT LIKE '%rayos x%' AND tipo_examen NOT LIKE '%rx%'
+    ");
+    $stmt_lab->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_laboratory = (float) ($stmt_lab->fetchColumn() ?: 0);
+
+    $stmt_us = $conn->prepare("SELECT SUM(cobro) FROM ultrasonidos WHERE fecha_ultrasonido BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_us->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_ultrasound = (float) ($stmt_us->fetchColumn() ?: 0);
+
+    $stmt_us_legacy = $conn->prepare("
+        SELECT SUM(cobro) FROM examenes_realizados
+        WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ? AND tipo_examen LIKE '%ultrasonido%'
+    ");
+    $stmt_us_legacy->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_ultrasound += (float) ($stmt_us_legacy->fetchColumn() ?: 0);
+
+    $stmt_rx = $conn->prepare("SELECT SUM(cobro) FROM rayos_x WHERE fecha_estudio BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_rx->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_xray = (float) ($stmt_rx->fetchColumn() ?: 0);
+
+    $stmt_rx_legacy = $conn->prepare("
+        SELECT SUM(cobro) FROM examenes_realizados
+        WHERE fecha_examen BETWEEN ? AND ? AND id_hospital = ?
+        AND (tipo_examen LIKE '%rayos x%' OR tipo_examen LIKE '%rx%')
+    ");
+    $stmt_rx_legacy->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_xray += (float) ($stmt_rx_legacy->fetchColumn() ?: 0);
+
+    $stmt_electro = $conn->prepare("SELECT SUM(precio) FROM electrocardiogramas WHERE fecha_realizado BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_electro->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_electro = (float) ($stmt_electro->fetchColumn() ?: 0);
+
+    $total_exams_revenue = $total_laboratory + $total_ultrasound + $total_xray;
 
     // 6. Cobros de consultas
     $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ?");
@@ -133,7 +167,23 @@ try {
     $total_hospitalization = $stmt_hosp->fetchColumn() ?: 0;
 
     // 7. Ingresos brutos totales
-    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_exams_revenue + $total_billings + $total_hospitalization;
+    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound
+        + $total_xray + $total_electro + $total_billings + $total_hospitalization;
+
+    $ingresos_categorias = [
+        ['label' => 'Ventas Farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $total_sales_meds],
+        ['label' => 'Consultas Médicas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings],
+        ['label' => 'Laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory],
+        ['label' => 'Ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound],
+        ['label' => 'Rayos X', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray],
+        ['label' => 'Electrocardiograma', 'icon' => 'bi-heart-pulse', 'badge' => 'charge-electro', 'monto' => $total_electro],
+        ['label' => 'Procedimientos', 'icon' => 'bi-bandaid', 'badge' => 'charge-procedimiento', 'monto' => (float) $total_procedures],
+        ['label' => 'Hospitalización', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization],
+    ];
+
+    $egresos_categorias = [
+        ['label' => 'Adquisición Inventario', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
+    ];
 
     // 8. Utilidad Bruta
     $total_gross_profit = $total_gross_revenue - $sales_cost;
@@ -159,9 +209,12 @@ try {
     $category_data = [
         'Ventas' => (float) $total_sales_meds,
         'Consultas' => (float) $total_billings,
+        'Laboratorio' => $total_laboratory,
+        'Ultrasonido' => $total_ultrasound,
+        'Rayos X' => $total_xray,
+        'Electro' => $total_electro,
         'Procedimientos' => (float) $total_procedures,
-        'Exámenes' => (float) $total_exams_revenue,
-        'Hospitalización' => (float) $total_hospitalization
+        'Hospitalización' => (float) $total_hospitalization,
     ];
 
     // C. Top 5 Medicamentos más vendidos
@@ -894,6 +947,368 @@ try {
             font-size: 0.95rem;
         }
 
+        /* Content sections: tables & headers */
+        .content-section .section-header {
+            flex-wrap: wrap;
+            gap: 0.75rem 1rem;
+            padding: 1.25rem 1.5rem 0;
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .content-section > .table-responsive,
+        .content-section > .custom-accordion-wrapper {
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        .content-section .data-table {
+            margin: 0;
+        }
+
+        .content-section .table thead.bg-light,
+        .content-section .table thead.bg-light th {
+            background: var(--color-surface) !important;
+            color: var(--color-text-secondary) !important;
+        }
+
+        [data-theme="dark"] .content-section .badge.bg-light,
+        [data-theme="dark"] .content-section .badge.bg-secondary {
+            background: var(--color-surface) !important;
+            color: var(--color-text) !important;
+            border: 1px solid var(--color-border);
+        }
+
+        .custom-summary {
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+        }
+
+        .custom-summary > span:last-child,
+        .custom-summary .amount-badge {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .report-details-body .table {
+            --bs-table-bg: transparent;
+            color: var(--color-text);
+        }
+
+        .report-details-body .table thead {
+            background: var(--color-surface) !important;
+        }
+
+        .report-details-body .table td,
+        .report-details-body .table th {
+            border-color: var(--color-border) !important;
+            color: var(--color-text);
+        }
+
+        .empty-report-hint {
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border: 1px dashed var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+
+        .empty-report-hint i {
+            font-size: 2rem;
+            opacity: 0.45;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .reports-tab-btn {
+                min-width: 120px;
+                font-size: 0.78rem;
+                padding: 0.6rem 0.75rem;
+            }
+
+            .custom-summary {
+                padding-right: 2.5rem !important;
+            }
+
+            .section-header .amount-badge {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* ===== CONTABILIDAD DETALLADA ===== */
+        .accounting-body {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        .accounting-period-hint {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin: -0.25rem 0 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .accounting-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 991px) {
+            .accounting-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .accounting-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .accounting-card--income {
+            border-top: 3px solid var(--color-success);
+        }
+
+        .accounting-card--expense {
+            border-top: 3px solid var(--color-danger);
+        }
+
+        .accounting-card--performance {
+            border-top: 3px solid var(--color-primary);
+        }
+
+        .accounting-card__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-card);
+        }
+
+        .accounting-card__title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0;
+        }
+
+        .accounting-card__title i {
+            font-size: 1.25rem;
+        }
+
+        .accounting-card__total {
+            font-size: 1rem;
+            font-weight: 800;
+            padding: 0.4rem 0.9rem;
+            border-radius: 50px;
+            white-space: nowrap;
+        }
+
+        .accounting-card__total--income {
+            background: rgba(var(--color-success-rgb), 0.12);
+            color: var(--color-success);
+            border: 1px solid rgba(var(--color-success-rgb), 0.3);
+        }
+
+        .accounting-card__total--expense {
+            background: rgba(var(--color-danger-rgb), 0.12);
+            color: var(--color-danger);
+            border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+        }
+
+        .accounting-ledger {
+            list-style: none;
+            margin: 0;
+            padding: 0.5rem 0;
+        }
+
+        .accounting-ledger__row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 1rem 1.5rem;
+            align-items: center;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.15s ease;
+        }
+
+        .accounting-ledger__row:last-child {
+            border-bottom: none;
+        }
+
+        .accounting-ledger__row:hover {
+            background: rgba(var(--color-primary-rgb), 0.04);
+        }
+
+        .accounting-ledger__label {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 0;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+
+        .accounting-ledger__label .charge-type-badge {
+            flex-shrink: 0;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.7rem;
+        }
+
+        .accounting-ledger__label-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .accounting-ledger__values {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.35rem;
+            min-width: 140px;
+        }
+
+        .accounting-ledger__amount {
+            font-size: 0.95rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text);
+            white-space: nowrap;
+        }
+
+        .accounting-ledger__amount--income {
+            color: var(--color-success);
+        }
+
+        .accounting-ledger__amount--expense {
+            color: var(--color-danger);
+        }
+
+        .accounting-ledger__pct {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .accounting-ledger__bar {
+            width: 100%;
+            max-width: 120px;
+            height: 4px;
+            background: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .accounting-ledger__bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--color-primary);
+            transition: width 0.3s ease;
+        }
+
+        .accounting-ledger__bar-fill--income {
+            background: var(--color-success);
+        }
+
+        .accounting-ledger__bar-fill--expense {
+            background: var(--color-danger);
+        }
+
+        .accounting-empty-note {
+            padding: 1.5rem 1.25rem;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--color-text-secondary);
+        }
+
+        .accounting-empty-note i {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.5;
+        }
+
+        .accounting-performance {
+            margin-top: 1.25rem;
+        }
+
+        .accounting-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            padding: 1rem 1.25rem 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .accounting-metric-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .accounting-ledger__row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .accounting-ledger__values {
+                align-items: flex-start;
+                min-width: 0;
+            }
+
+            .accounting-ledger__bar {
+                max-width: 100%;
+            }
+        }
+
+        .accounting-metric {
+            padding: 1rem 1.1rem;
+            border-radius: var(--radius-md);
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+        }
+
+        .accounting-metric__label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .accounting-metric__value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+
+        .accounting-metric__meta {
+            font-size: 0.78rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.35rem;
+        }
+
+        .accounting-metric--highlight {
+            grid-column: 1 / -1;
+            background: rgba(var(--color-primary-rgb), 0.06);
+            border-color: rgba(var(--color-primary-rgb), 0.25);
+        }
+
         /* Hide tabs in print mode */
         @media print {
 
@@ -1344,182 +1759,150 @@ try {
                         <span class="amount-badge <?php echo $total_gross_profit >= 0 ? 'income' : 'expense'; ?>">
                             <i
                                 class="bi <?php echo $total_gross_profit >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'; ?>"></i>
-                            Q<?php echo number_format($total_gross_profit, 2); ?>
+                            Utilidad: Q<?php echo number_format($total_gross_profit, 2); ?>
                         </span>
                     </div>
 
-                    <div class="row g-4">
-                        <!-- Ingresos -->
-                        <div class="col-md-6">
-                            <div class="card h-100 shadow-sm border-0"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <div class="card-header bg-transparent border-0 p-4">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
-                                            <i class="bi bi-arrow-down-left-circle-fill text-success me-2"></i>
-                                            Fuentes de Ingresos
-                                        </h4>
-                                        <span
-                                            class="badge rounded-pill bg-success-subtle text-success px-3 py-2 border border-success">
-                                            Q<?php echo number_format($total_gross_revenue, 2); ?>
-                                        </span>
-                                    </div>
+                    <div class="accounting-body">
+                        <p class="accounting-period-hint">
+                            <i class="bi bi-calendar3"></i>
+                            Jornada del <?php echo date('d/m/Y', strtotime($fecha_filtro)); ?>
+                            (08:00 – 07:59 del día siguiente)
+                        </p>
+
+                        <div class="accounting-grid">
+                            <!-- Ingresos -->
+                            <div class="accounting-card accounting-card--income">
+                                <div class="accounting-card__head">
+                                    <h4 class="accounting-card__title">
+                                        <i class="bi bi-arrow-down-left-circle-fill text-success"></i>
+                                        Fuentes de Ingresos
+                                    </h4>
+                                    <span class="accounting-card__total accounting-card__total--income">
+                                        Q<?php echo number_format($total_gross_revenue, 2); ?>
+                                    </span>
                                 </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead class="bg-light">
-                                                <tr>
-                                                    <th class="ps-4 py-3 text-muted small text-uppercase">Categoría</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3">Ventas Farmacia</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_sales_meds, 2); ?></td>
-                                                </tr>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3">Consultas Médicas</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_billings, 2); ?></td>
-                                                </tr>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3">Procedimientos</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_procedures, 2); ?></td>
-                                                </tr>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3">Servicios Laboratorio</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_exams_revenue, 2); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="ps-4 py-3">Hospitalización</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_hospitalization, 2); ?></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                <ul class="accounting-ledger">
+                                    <?php foreach ($ingresos_categorias as $cat):
+                                        $pct = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
+                                        ?>
+                                            <li class="accounting-ledger__row">
+                                                <div class="accounting-ledger__label">
+                                                    <span class="charge-type-badge <?php echo htmlspecialchars($cat['badge']); ?>">
+                                                        <i class="bi <?php echo htmlspecialchars($cat['icon']); ?>"></i>
+                                                    </span>
+                                                    <span class="accounting-ledger__label-text">
+                                                        <?php echo htmlspecialchars($cat['label']); ?>
+                                                    </span>
+                                                </div>
+                                                <div class="accounting-ledger__values">
+                                                    <div class="accounting-ledger__bar" title="<?php echo number_format($pct, 1); ?>% del total">
+                                                        <div class="accounting-ledger__bar-fill accounting-ledger__bar-fill--income"
+                                                            style="width: <?php echo min(100, max(0, $pct)); ?>%;"></div>
+                                                    </div>
+                                                    <span class="accounting-ledger__amount accounting-ledger__amount--income">
+                                                        Q<?php echo number_format($cat['monto'], 2); ?>
+                                                    </span>
+                                                    <span class="accounting-ledger__pct">
+                                                        <?php echo number_format($pct, 1); ?>% del total
+                                                    </span>
+                                                </div>
+                                            </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+
+                            <!-- Egresos -->
+                            <div class="accounting-card accounting-card--expense">
+                                <div class="accounting-card__head">
+                                    <h4 class="accounting-card__title">
+                                        <i class="bi bi-arrow-up-right-circle-fill text-danger"></i>
+                                        Egresos e Inversión
+                                    </h4>
+                                    <span class="accounting-card__total accounting-card__total--expense">
+                                        Q<?php echo number_format($total_purchases_meds, 2); ?>
+                                    </span>
+                                </div>
+                                <ul class="accounting-ledger">
+                                    <?php foreach ($egresos_categorias as $cat):
+                                        $pct_eg = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
+                                        ?>
+                                            <li class="accounting-ledger__row">
+                                                <div class="accounting-ledger__label">
+                                                    <span class="charge-type-badge charge-otro">
+                                                        <i class="bi <?php echo htmlspecialchars($cat['icon']); ?>"></i>
+                                                    </span>
+                                                    <span class="accounting-ledger__label-text">
+                                                        <?php echo htmlspecialchars($cat['label']); ?>
+                                                    </span>
+                                                </div>
+                                                <div class="accounting-ledger__values">
+                                                    <div class="accounting-ledger__bar">
+                                                        <div class="accounting-ledger__bar-fill accounting-ledger__bar-fill--expense"
+                                                            style="width: <?php echo min(100, max(0, $pct_eg)); ?>%;"></div>
+                                                    </div>
+                                                    <span class="accounting-ledger__amount accounting-ledger__amount--expense">
+                                                        Q<?php echo number_format($cat['monto'], 2); ?>
+                                                    </span>
+                                                    <span class="accounting-ledger__pct">
+                                                        <?php echo number_format($pct_eg, 1); ?>% vs ingresos
+                                                    </span>
+                                                </div>
+                                            </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                                <div class="accounting-empty-note">
+                                    <i class="bi bi-info-circle"></i>
+                                    No se registran otros egresos automáticos en este período.
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Egresos -->
-                        <div class="col-md-6">
-                            <div class="card h-100 shadow-sm border-0"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <div class="card-header bg-transparent border-0 p-4">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
-                                            <i class="bi bi-arrow-up-right-circle-fill text-danger me-2"></i>
-                                            Egresos e Inversión
-                                        </h4>
-                                        <span
-                                            class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2 border border-danger">
-                                            Q<?php echo number_format($total_purchases_meds, 2); ?>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead class="bg-light">
-                                                <tr>
-                                                    <th class="ps-4 py-3 text-muted small text-uppercase">Concepto</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">Monto
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3">Adquisición Inventario</td>
-                                                    <td class="pe-4 py-3 text-end fw-semibold">
-                                                        Q<?php echo number_format($total_purchases_meds, 2); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td colspan="2" class="text-center py-5">
-                                                        <div class="text-muted small">
-                                                            <i class="bi bi-info-circle me-1"></i>
-                                                            No se registran otros egresos automáticos
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Resumen de desempeño -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card shadow-sm border-0"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <div class="card-header bg-transparent border-0 p-4">
-                                    <h4 class="mb-0 fw-bold" style="color: var(--color-text);">
-                                        <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                        <!-- Rentabilidad operativa -->
+                        <div class="accounting-performance">
+                            <div class="accounting-card accounting-card--performance">
+                                <div class="accounting-card__head">
+                                    <h4 class="accounting-card__title">
+                                        <i class="bi bi-graph-up-arrow text-primary"></i>
                                         Análisis de Rentabilidad Operativa
                                     </h4>
                                 </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead class="bg-light">
-                                                <tr>
-                                                    <th class="ps-4 py-3 text-muted small text-uppercase">Métrica de
-                                                        Desempeño</th>
-                                                    <th class="py-3 text-end text-muted small text-uppercase">Valor
-                                                        Nominal</th>
-                                                    <th class="pe-4 py-3 text-end text-muted small text-uppercase">
-                                                        Impacto / Margen</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3 fw-medium">Ingresos Brutos Acumulados</td>
-                                                    <td class="text-end fw-bold text-success">
-                                                        Q<?php echo number_format($total_gross_revenue, 2); ?></td>
-                                                    <td class="pe-4 text-end"><span
-                                                            class="badge bg-light text-dark border">100%</span></td>
-                                                </tr>
-                                                <tr class="border-bottom">
-                                                    <td class="ps-4 py-3 fw-medium">Costo de Ventas (Farmacia)</td>
-                                                    <td class="text-end text-danger">-
-                                                        Q<?php echo number_format($sales_cost, 2); ?></td>
-                                                    <td class="pe-4 text-end text-muted small">
-                                                        <?php echo $total_gross_revenue > 0 ? number_format(($sales_cost / $total_gross_revenue) * 100, 1) : '0'; ?>%
-                                                    </td>
-                                                </tr>
-                                                <tr class="border-bottom" style="background: var(--color-surface);">
-                                                    <td class="ps-4 py-3 fw-bold">Utilidad Bruta de Operación</td>
-                                                    <td
-                                                        class="text-end fw-bold <?php echo $total_gross_profit >= 0 ? 'text-success' : 'text-danger'; ?>">
-                                                        Q<?php echo number_format($total_gross_profit, 2); ?>
-                                                    </td>
-                                                    <td class="pe-4 text-end">
-                                                        <span
-                                                            class="badge <?php echo $total_gross_profit >= 0 ? 'bg-success' : 'bg-danger'; ?>">
-                                                            <?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="ps-4 py-3 fw-medium">Flujo de Efectivo Neto (Periodo)
-                                                    </td>
-                                                    <td
-                                                        class="text-end fw-bold <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
-                                                        Q<?php echo number_format($net_cash_flow, 2); ?>
-                                                    </td>
-                                                    <td class="pe-4 text-end text-muted small">Ingresos - Compras</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                <div class="accounting-metric-grid">
+                                    <div class="accounting-metric">
+                                        <div class="accounting-metric__label">Ingresos brutos</div>
+                                        <div class="accounting-metric__value text-success">
+                                            Q<?php echo number_format($total_gross_revenue, 2); ?>
+                                        </div>
+                                        <div class="accounting-metric__meta">100% base del período</div>
+                                    </div>
+                                    <div class="accounting-metric">
+                                        <div class="accounting-metric__label">Costo ventas (farmacia)</div>
+                                        <div class="accounting-metric__value text-danger">
+                                            Q<?php echo number_format($sales_cost, 2); ?>
+                                        </div>
+                                        <div class="accounting-metric__meta">
+                                            <?php echo $total_gross_revenue > 0 ? number_format(($sales_cost / $total_gross_revenue) * 100, 1) : '0'; ?>%
+                                            del ingreso bruto
+                                        </div>
+                                    </div>
+                                    <div class="accounting-metric accounting-metric--highlight">
+                                        <div class="accounting-metric__label">Utilidad bruta de operación</div>
+                                        <div class="accounting-metric__value <?php echo $total_gross_profit >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                            Q<?php echo number_format($total_gross_profit, 2); ?>
+                                        </div>
+                                        <div class="accounting-metric__meta">
+                                            Margen:
+                                            <span class="charge-type-badge <?php echo $total_gross_profit >= 0 ? 'charge-consulta' : 'charge-electro'; ?>">
+                                                <?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="accounting-metric">
+                                        <div class="accounting-metric__label">Flujo de efectivo neto</div>
+                                        <div class="accounting-metric__value <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
+                                            Q<?php echo number_format($net_cash_flow, 2); ?>
+                                        </div>
+                                        <div class="accounting-metric__meta">Ingresos − compras de inventario</div>
                                     </div>
                                 </div>
                             </div>
@@ -1733,9 +2116,8 @@ try {
 
                     <div class="custom-accordion-wrapper" id="labsAccordion">
                         <?php if (empty($grouped_labs)): ?>
-                                <div class="text-center py-4 text-muted border rounded"
-                                    style="background: var(--color-surface);">
-                                    <i class="bi bi-info-circle me-2"></i>
+                                <div class="empty-report-hint">
+                                    <i class="bi bi-droplet-half"></i>
                                     No se encontraron laboratorios realizados en este período.
                                 </div>
                         <?php else: ?>
@@ -1794,33 +2176,30 @@ try {
                                                                             </summary>
                                                                             <div class="report-details-body p-0">
                                                                                 <div class="table-responsive">
-                                                                                    <table class="table table-sm table-hover mb-0"
-                                                                                        style="font-size: 0.9rem; background: transparent; color: var(--color-text);">
-                                                                                        <thead style="background: var(--color-surface);">
+                                                                                    <table class="lab-items-table">
+                                                                                        <thead>
                                                                                             <tr>
-                                                                                                <th class="ps-3 border-0">Examen (Prueba)</th>
-                                                                                                <th class="border-0">Hora</th>
-                                                                                                <th class="text-end pe-3 border-0">Precio</th>
+                                                                                                <th>Examen (Prueba)</th>
+                                                                                                <th>Hora</th>
+                                                                                                <th class="text-end">Precio</th>
                                                                                             </tr>
                                                                                         </thead>
                                                                                         <tbody>
                                                                                             <?php foreach ($pac_data['labs'] as $lab): ?>
                                                                                                     <tr>
-                                                                                                        <td class="ps-3 border-bottom"
-                                                                                                            style="border-color: var(--color-border);">
-                                                                                                            <span class="badge"
-                                                                                                                style="background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border);">
+                                                                                                        <td>
+                                                                                                            <span class="charge-type-badge charge-laboratorio">
+                                                                                                                <i class="bi bi-droplet-half"></i>
                                                                                                                 <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
                                                                                                             </span>
                                                                                                         </td>
-                                                                                                        <td class="border-bottom"
-                                                                                                            style="border-color: var(--color-border);">
-                                                                                                            <small
-                                                                                                                style="color: var(--color-text-secondary);"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
+                                                                                                        <td>
+                                                                                                            <small class="text-muted"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
                                                                                                         </td>
-                                                                                                        <td class="text-end pe-3 fw-bold text-success border-bottom"
-                                                                                                            style="border-color: var(--color-border);">
-                                                                                                            Q <?php echo number_format($lab['precio'], 2); ?>
+                                                                                                        <td class="text-end">
+                                                                                                            <span class="amount-badge income">
+                                                                                                                Q<?php echo number_format($lab['precio'], 2); ?>
+                                                                                                            </span>
                                                                                                         </td>
                                                                                                     </tr>
                                                                                             <?php endforeach; ?>
@@ -1945,9 +2324,9 @@ try {
                                         <?php endforeach; ?>
                                     </div>
                             <?php else: ?>
-                                    <div class="text-center py-5 text-muted">
-                                        <i class="bi bi-info-circle fs-1 d-block mb-3 opacity-50"></i>
-                                        <p>No se encontraron traslados en este período.</p>
+                                    <div class="empty-report-hint">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                        <p class="mb-0">No se encontraron traslados en este período.</p>
                                     </div>
                             <?php endif; ?>
                         </div>

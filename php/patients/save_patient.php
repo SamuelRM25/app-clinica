@@ -60,8 +60,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // 2. UPDATE OR INSERT
+        // 2. HANDLE CONFIRMED ACTIONS FROM DUPLICATE SCREEN
+        if (isset($_POST['confirm_action'])) {
+            $existing_patient_id = $_POST['existing_patient_id'] ?? null;
+
+            if ($_POST['confirm_action'] === 'cancel') {
+                $_SESSION['message'] = "Operación cancelada.";
+                $_SESSION['message_type'] = "info";
+                header("Location: index.php");
+                exit;
+            }
+
+            if ($_POST['confirm_action'] === 'replace' && $existing_patient_id) {
+                // Delete existing patient and all related records
+                $conn->beginTransaction();
+                try {
+                    $stmt_del = $conn->prepare("DELETE FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+                    $stmt_del->execute([$existing_patient_id, $id_hospital]);
+                    audit_log('delete', 'patients', "Paciente eliminado (reemplazo): $nombre $apellido", [
+                        'table_name' => 'pacientes', 'record_id' => $existing_patient_id
+                    ]);
+                    $conn->commit();
+                } catch (Exception $e) {
+                    $conn->rollBack();
+                    throw $e;
+                }
+            }
+
+            if ($_POST['confirm_action'] === 'overwrite' && $existing_patient_id) {
+                // Update existing patient with new data (keeps history)
+                $id_paciente = $existing_patient_id;
+            }
+        }
+
+        // 3. UPDATE OR INSERT
         if ($id_paciente) {
+            // Fetch old data for audit
+            $oldStmt = $conn->prepare("SELECT nombre, apellido, fecha_nacimiento, genero, dpi, direccion, telefono, correo FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+            $oldStmt->execute([$id_paciente, $id_hospital]);
+            $oldData = $oldStmt->fetch(PDO::FETCH_ASSOC);
+
             // Updating existing patient
             $stmt = $conn->prepare("
                 UPDATE pacientes SET
@@ -76,6 +114,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id_paciente = ? AND id_hospital = ?
             ");
             $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $dpi, $direccion, $telefono, $correo, $id_paciente, $id_hospital]);
+
+            audit_log('update', 'patients', "Paciente actualizado: $nombre $apellido", [
+                'table_name' => 'pacientes',
+                'record_id' => $id_paciente,
+                'old_data' => $oldData,
+                'new_data' => [
+                    'nombre' => $nombre,
+                    'apellido' => $apellido,
+                    'fecha_nacimiento' => $fecha_nacimiento,
+                    'genero' => $genero,
+                    'dpi' => $dpi,
+                    'direccion' => $direccion,
+                    'telefono' => $telefono,
+                    'correo' => $correo
+                ]
+            ]);
 
             $_SESSION['message'] = "Paciente actualizado correctamente";
             $_SESSION['message_type'] = "success";
@@ -93,11 +147,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     direccion, 
                     telefono, 
                     correo,
+                    fecha_registro,
                     id_hospital
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
             ");
             $stmt->execute([$nombre, $apellido, $fecha_nacimiento, $genero, $dpi, $direccion, $telefono, $correo, $id_hospital]);
             $id_paciente = $conn->lastInsertId();
+
+            audit_log('create', 'patients', "Nuevo paciente registrado: $nombre $apellido", [
+                'table_name' => 'pacientes',
+                'record_id' => $id_paciente,
+                'new_data' => [
+                    'nombre' => $nombre,
+                    'apellido' => $apellido,
+                    'fecha_nacimiento' => $fecha_nacimiento,
+                    'genero' => $genero,
+                    'dpi' => $dpi,
+                    'telefono' => $telefono,
+                    'correo' => $correo
+                ]
+            ]);
 
             $_SESSION['message'] = "Paciente agregado correctamente";
             $_SESSION['message_type'] = "success";
@@ -107,7 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } catch (Exception $e) {
         error_log('Error en patients/save_patient.php: ' . $e->getMessage());
-        $_SESSION['message'] = "Error: " . 'Error del servidor.';
+        $errorMsg = $e->getMessage();
+        $_SESSION['message'] = "Error al guardar paciente: $errorMsg";
         $_SESSION['message_type'] = "danger";
         header("Location: index.php");
         exit;

@@ -1,16 +1,17 @@
 <?php
-// laboratory/api/create_order.php - Process new laboratory order
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
+
+header('Content-Type: application/json');
 
 verify_session();
 
 $id_hospital = hospital_id();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: ../index.php");
+    echo json_encode(['success' => false, 'message' => 'Método no permitido']);
     exit;
 }
 
@@ -20,8 +21,8 @@ $prioridad_raw = $_POST['prioridad'] ?? 'Normal';
 $indicaciones = $_POST['instrucciones'] ?? '';
 $observaciones = $_POST['observaciones'] ?? '';
 $pruebas_ids = $_POST['pruebas'] ?? [];
+$is_embedded = isset($_POST['is_embedded']) && $_POST['is_embedded'] == '1';
 
-// Mapear prioridades al enum de la BD
 $priority_map = [
     'Normal' => 'Rutina',
     'Urgente' => 'Urgente',
@@ -29,12 +30,12 @@ $priority_map = [
 ];
 $prioridad = $priority_map[$prioridad_raw] ?? 'Rutina';
 
-if (!$id_paciente || empty($pruebas_ids)) {
-    die("Datos incompletos");
+if (!$id_paciente || empty($pruebas_ids) || !is_array($pruebas_ids)) {
+    echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+    exit;
 }
 
 try {
-    // CSRF validation
     $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
     if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
         throw new Exception('Token CSRF inválido');
@@ -44,9 +45,7 @@ try {
     $conn = $database->getConnection();
     $conn->beginTransaction();
 
-    // 1. Generate unique order number
     $today = date('Ymd');
-
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND id_hospital = ?");
     $stmt->execute([$id_hospital]);
     $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] + 1;
@@ -57,7 +56,6 @@ try {
     $hosp = $stmt_hosp->fetch(PDO::FETCH_ASSOC);
     $id_encamamiento = $hosp ? $hosp['id_encamamiento'] : null;
 
-    // 3. Create Order
     $stmt = $conn->prepare("
         INSERT INTO ordenes_laboratorio (
             numero_orden, id_paciente, id_doctor, id_encamamiento, 
@@ -77,21 +75,22 @@ try {
     ]);
     $id_orden = $conn->lastInsertId();
 
-    // 4. Add Tests to Order and calculate bill
     $total_order = 0;
     $stmt_prueba = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
-    $stmt_price = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ?");
+    $stmt_price = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
 
     $items_for_billing = [];
 
     foreach ($pruebas_ids as $id_prueba) {
+        $id_prueba = intval($id_prueba);
+        if ($id_prueba <= 0) continue;
+
         $stmt_prueba->execute([$id_orden, $id_prueba]);
 
-        $stmt_price->execute([$id_prueba]);
+        $stmt_price->execute([$id_prueba, $id_hospital]);
         $test_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
         if ($test_info) {
             $total_order += $test_info['precio'];
-
             $items_for_billing[] = [
                 'nombre' => $test_info['nombre_prueba'],
                 'precio' => $test_info['precio']
@@ -99,7 +98,6 @@ try {
         }
     }
 
-    // 5. Billing Integration (if hospitalized)
     if ($id_encamamiento) {
         $stmt_cargo = $conn->prepare("
             INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por, id_hospital)
@@ -120,19 +118,23 @@ try {
                 $id_hospital
             ]);
         }
-    } else {
-        // Outpatient, create a general bill entry (if your system handles it this way)
-        // For now, we'll just log it in the order total
     }
 
     $conn->commit();
 
-    // Redirect to index with success message
-    header("Location: ../index.php?success=1&order=" . $numero_orden);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Orden generada correctamente',
+        'order_number' => $numero_orden,
+        'redirect' => !$is_embedded ? '../index.php?success=1&order=' . $numero_orden : null
+    ]);
+    exit;
 
 } catch (Exception $e) {
-    if (isset($conn))
+    if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
+    }
     error_log('Error en laboratory/api/create_order.php: ' . $e->getMessage());
-    die("Error: " . 'Error del servidor.');
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    exit;
 }

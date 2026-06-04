@@ -4,6 +4,8 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+csrf_token();
+
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 header('Content-Type: application/json');

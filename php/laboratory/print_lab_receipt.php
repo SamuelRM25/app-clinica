@@ -7,9 +7,9 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 
 $id_hospital = hospital_id();
-
 verify_session();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -45,63 +45,68 @@ try {
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo Laboratorio #<?php echo htmlspecialchars($id_examen); ?></title>
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
-
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">Centro Médico Herrera Saenz</h2>
-            <div class="clinic-info">
-                <p>7a Av 7-25 Zona 1 HH</p>
-                <p>Tel: (+502) (+502) 5214-8836</p>
-            </div>
+            <h2 class="fw-bold">CENTRO MEDICO HERRERA SAENZ</h2>
+            <p>7a Av 7-25 Zona 1 HH</p>
+            <p>Tel: (+502) 5214-8836</p>
         </div>
-        <div class="divider"></div>
+        <hr class="divider">
         <div class="receipt-details">
-            <div style="display:flex; justify-content:space-between">
+            <div class="row">
                 <span>Fecha: <?php echo $fecha_formateada; ?></span>
-                <span class="text-right"><?php echo $hora_formateada; ?></span>
+                <span><?php echo $hora_formateada; ?></span>
             </div>
-            <div>Recibo #: <?php echo str_pad($id_examen, 5, '0', STR_PAD_LEFT); ?></div>
-            <div>Paciente: <?php echo htmlspecialchars($paciente); ?></div>
+            <div class="row">
+                <span>Recibo #: <?php echo str_pad($id_examen, 5, '0', STR_PAD_LEFT); ?></span>
+            </div>
+            <div class="row">
+                <span>Paciente:</span>
+            </div>
+            <div class="row">
+                <span class="fw-bold"><?php echo htmlspecialchars($paciente); ?></span>
+            </div>
         </div>
-        <div class="divider"></div>
+        <hr class="divider">
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 65%">Descripción</th>
-                    <th style="width: 35%" class="text-right">Total</th>
+                    <th>Descripcion</th>
+                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="font-size: 9px;">
-                        <?php echo htmlspecialchars($orden['tipo_examen']); ?>
-                    </td>
-                    <td class="text-right">Q<?php echo number_format($orden['cobro'], 2); ?></td>
+                    <td><?php echo htmlspecialchars($orden['tipo_examen']); ?></td>
+                    <td>Q<?php echo number_format($orden['cobro'], 2); ?></td>
                 </tr>
             </tbody>
         </table>
-        <div class="divider"></div>
+        <hr class="divider">
         <div class="total-section">
             <span>TOTAL</span>
             <span>Q<?php echo number_format($orden['cobro'], 2); ?></span>
         </div>
         <div class="footer">
             <p>Pago: <?php echo htmlspecialchars($orden['tipo_pago']); ?></p>
-            <p>¡Gracias por su visita!</p>
-            <p>Atendió: <?php echo htmlspecialchars($user_name); ?></p>
+            <p>Gracias por su visita!</p>
+            <p>Atendio: <?php echo htmlspecialchars($user_name); ?></p>
         </div>
     </div>
     <script>
-        window.onload = function () { window.print(); };
+        window.onload = function () {
+            window.print();
+            setTimeout(function() {
+                window.close();
+            }, 1000);
+        };
     </script>
 </body>
-
 </html>

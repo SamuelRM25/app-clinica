@@ -1,7 +1,6 @@
 <?php
 // inventory/insumos.php - Módulo de Insumos
 // Centro Médico Herrera Saenz
-// Restringido a Admin (1) e YSantos (12)
 
 session_start();
 
@@ -13,19 +12,15 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
+
+check_module_access('inventory');
+verify_session();
 
 $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 date_default_timezone_set('America/Guatemala');
-
-$user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['nombre'];
-
-// Restricción de acceso: Solo admin (1) e ysantos (12)
-if (!in_array($user_id, [1, 12])) {
-    die("Acceso denegado. No tiene permisos para acceder a este módulo.");
-}
 
 try {
     $database = new Database();

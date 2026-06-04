@@ -2,9 +2,9 @@
 // api/check_consultation_history.php
 session_start();
 header('Content-Type: application/json');
-require_once '../../config/database.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/multitenant.php';
+require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+require_once '../../../includes/multitenant.php';
 
 verify_session();
 

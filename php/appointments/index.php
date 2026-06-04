@@ -63,6 +63,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Calendario de Citas del Centro Médico Herrera Saenz - Sistema de gestión de agenda médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 
     <!-- logo -->
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -549,6 +550,30 @@ try {
         </div>
     </div>
 
+    <!-- Modal de click en cita -->
+    <div class="modal fade" id="appointmentClickModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="clickModalTitle">Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="clickModalInfo" class="mb-3"></div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="action-btn secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="action-btn" id="clickModalEditBtn">
+                            <i class="bi bi-pencil"></i> Editar
+                        </button>
+                        <button type="button" class="action-btn" style="background: var(--color-danger);" id="clickModalDeleteBtn">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Optimizado -->
     <!-- jQuery & Select2 JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -815,33 +840,16 @@ try {
 
                             info.el.title = `${title}\n${time}\n${doctor}`;
 
-                            // Manejar click derecho
-                            info.el.addEventListener('contextmenu', (e) => {
+                            // Click en evento → abrir modal de edición
+                            info.el.addEventListener('click', (e) => {
                                 e.preventDefault();
                                 this.currentEvent = info.event;
-                                this.showContextMenu(e.pageX, e.pageY);
-                                return false;
+                                this.showEventClickModal(info.event, info.el);
                             });
                         }
                     });
 
                     this.calendar.render();
-
-                    // Manejar click derecho en espacios vacíos del calendario
-                    DOM.calendar.addEventListener('contextmenu', (e) => {
-                        // Buscar el elemento de fecha/hora más cercano
-                        const cell = e.target.closest('.fc-daygrid-day, .fc-timegrid-slot, .fc-timegrid-col');
-                        if (cell) {
-                            e.preventDefault();
-                            let dateStr = cell.getAttribute('data-date');
-
-                            if (dateStr) {
-                                this.currentEvent = null; // No hay evento seleccionado
-                                this.currentDateStr = dateStr;
-                                this.showContextMenu(e.pageX, e.pageY);
-                            }
-                        }
-                    });
 
                     // Exponer calendario globalmente
                     window.calendar = this.calendar;
@@ -907,6 +915,35 @@ try {
                     modal.show();
                 }
 
+                showEventClickModal(event, element) {
+                    const eventId = event.id;
+                    const eventTitle = event.title;
+                    const eventStart = event.start ? event.start.toLocaleString('es-GT') : 'N/A';
+                    const doctor = event.extendedProps.doctor || 'No asignado';
+                    const telefono = event.extendedProps.telefono || '';
+                    const estado = event.extendedProps.estado || 'Programada';
+
+                    const modal = new bootstrap.Modal(document.getElementById('appointmentClickModal'));
+                    document.getElementById('clickModalTitle').textContent = eventTitle;
+                    document.getElementById('clickModalInfo').innerHTML = `
+                        <div class="mb-2"><strong>Fecha/Hora:</strong> ${eventStart}</div>
+                        <div class="mb-2"><strong>Médico:</strong> ${doctor}</div>
+                        ${telefono ? `<div class="mb-2"><strong>Teléfono:</strong> ${telefono}</div>` : ''}
+                        <div class="mb-2"><strong>Estado:</strong> <span class="badge bg-info">${estado}</span></div>
+                    `;
+                    document.getElementById('clickModalEditBtn').onclick = () => {
+                        modal.hide();
+                        this.currentEvent = event;
+                        this.editCurrentEvent();
+                    };
+                    document.getElementById('clickModalDeleteBtn').onclick = () => {
+                        modal.hide();
+                        this.currentEvent = event;
+                        this.deleteCurrentEvent();
+                    };
+                    modal.show();
+                }
+
                 editCurrentEvent() {
                     if (!this.currentEvent) return;
 
@@ -932,14 +969,10 @@ try {
                             console.error('Error:', error);
                             this.showNotification('Error al cargar los detalles de la cita', 'error');
                         });
-
-                    this.hideContextMenu();
                 }
 
                 deleteCurrentEvent() {
                     if (!this.currentEvent) return;
-
-                    this.hideContextMenu();
 
                     Swal.fire({
                         title: '¿Eliminar cita?',
@@ -1171,19 +1204,20 @@ try {
                 const calendarManager = new CalendarManager();
                 const dynamicComponents = new DynamicComponents();
 
-                // Configurar menú contextual
-                if (DOM.contextEdit && DOM.contextDelete) {
-                    DOM.contextNew?.addEventListener('click', () => calendarManager.newAppointmentFromContext());
-                    DOM.contextHistory?.addEventListener('click', () => calendarManager.viewPatientHistory()); // Bind history action
-                    DOM.contextEdit.addEventListener('click', () => calendarManager.editCurrentEvent());
-                    DOM.contextDelete.addEventListener('click', () => calendarManager.deleteCurrentEvent());
+                setTimeout(() => {
+                    if (DOM.contextEdit && DOM.contextDelete) {
+                        DOM.contextNew?.addEventListener('click', () => calendarManager.newAppointmentFromContext());
+                        DOM.contextHistory?.addEventListener('click', () => calendarManager.viewPatientHistory());
+                        DOM.contextEdit.addEventListener('click', () => calendarManager.editCurrentEvent());
+                        DOM.contextDelete.addEventListener('click', () => calendarManager.deleteCurrentEvent());
 
-                    document.addEventListener('click', (e) => {
-                        if (!DOM.contextMenu.contains(e.target)) {
-                            calendarManager.hideContextMenu();
-                        }
-                    });
-                }
+                        document.addEventListener('click', (e) => {
+                            if (!DOM.contextMenu.contains(e.target)) {
+                                calendarManager.hideContextMenu();
+                            }
+                        });
+                    }
+                }, 100);
 
                 // Exponer APIs necesarias globalmente
                 window.app = {
@@ -1242,6 +1276,7 @@ try {
     `;
         document.head.appendChild(style);
     </script>
+    <?php output_keep_alive_script(); ?>
 </body>
 
 </html>

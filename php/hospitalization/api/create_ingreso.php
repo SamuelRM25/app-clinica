@@ -231,6 +231,21 @@ try {
     // Commit transaction
     $conn->commit();
 
+    audit_log('create', 'hospitalization', "Ingreso hospitalario #$id_encamamiento - Paciente ID: $id_paciente - Cama: $id_cama", [
+        'table_name' => 'encamamientos',
+        'record_id' => (int)$id_encamamiento,
+        'new_data' => [
+            'id_paciente' => $id_paciente,
+            'id_cama' => $id_cama,
+            'id_doctor' => $id_doctor,
+            'fecha_ingreso' => $fecha_ingreso,
+            'tipo_ingreso' => $tipo_ingreso,
+            'motivo_ingreso' => $motivo_ingreso,
+            'diagnostico_ingreso' => $diagnostico_ingreso,
+            'estado' => $estado_inicial,
+        ]
+    ]);
+
     // Return success
     echo json_encode([
         'status' => 'success',

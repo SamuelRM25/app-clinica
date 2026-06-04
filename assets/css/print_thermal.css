@@ -1,0 +1,109 @@
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+    html, body {
+        width: 80mm;
+        min-width: 80mm;
+        max-width: 80mm;
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+    body > *:not(.receipt-container) {
+        display: none !important;
+    }
+}
+@media screen {
+    html, body {
+        background: #f1f5f9;
+        display: flex;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #000;
+    width: 80mm;
+    max-width: 80mm;
+    background: white;
+    padding: 3mm;
+}
+.receipt-container {
+    width: 100%;
+}
+.clinic-header {
+    text-align: center;
+    margin-bottom: 3mm;
+}
+.clinic-header h2 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 1mm;
+}
+.clinic-info p {
+    font-size: 10px;
+    margin: 0;
+}
+.divider {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 2mm 0;
+}
+.receipt-details {
+    margin-bottom: 2mm;
+}
+.receipt-details .row,
+.receipt-details > div {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+.receipt-details .row + .row,
+.receipt-details > div + div {
+    margin-top: 1mm;
+}
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2mm;
+}
+.items-table th,
+.items-table td {
+    font-size: 11px;
+    padding: 1mm 0;
+    text-align: left;
+}
+.items-table th:last-child,
+.items-table td:last-child {
+    text-align: right;
+}
+.total-section {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 2mm;
+}
+.footer {
+    text-align: center;
+    font-size: 10px;
+}
+.footer p {
+    margin: 1mm 0;
+}
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.fw-bold { font-weight: bold; }
+.mt-1 { margin-top: 1mm; }
+.mt-2 { margin-top: 2mm; }
+.mb-0 { margin-bottom: 0; }

@@ -130,7 +130,7 @@ try {
     // ============ INVENTARIO COMPLETO ============
 
     // Obtener todos los medicamentos para la tabla
-    $stmt = $conn->prepare("SELECT * FROM inventario WHERE id_hospital = ? ORDER BY fecha_vencimiento ASC");
+    $stmt = $conn->prepare("SELECT *, (CASE WHEN cantidad_med > 0 THEN 0 ELSE 1 END) AS stock_order FROM inventario WHERE id_hospital = ? ORDER BY stock_order ASC, fecha_vencimiento ASC");
     $stmt->execute([$hosp_id]);
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -142,6 +142,8 @@ try {
     error_log("Error en inventario: " . $e->getMessage());
     die("Error al cargar el inventario. Por favor, contacte al administrador.");
 }
+
+output_keep_alive_script();
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -629,11 +631,20 @@ try {
                         <i class="bi bi-box-seam section-title-icon"></i>
                         Inventario de Medicamentos
                     </h3>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <div class="badge bg-primary d-flex align-items-center p-2">
                             <i class="bi bi-box-seam me-2"></i>
                             <?php echo $total_items; ?> Items
                         </div>
+                        <button class="badge bg-warning text-dark d-flex align-items-center p-2 border-0" onclick="filterInventory('expiring')" title="Filtrar próximos a vencer">
+                            <i class="bi bi-clock me-1"></i> Próximos a vencer (<?php echo $expiring_soon; ?>)
+                        </button>
+                        <button class="badge bg-danger d-flex align-items-center p-2 border-0" onclick="filterInventory('expired')" title="Filtrar vencidos">
+                            <i class="bi bi-x-circle me-1"></i> Vencidos (<?php echo $expired; ?>)
+                        </button>
+                        <button class="badge bg-secondary d-flex align-items-center p-2 border-0" onclick="filterInventory('all')" title="Mostrar todos">
+                            <i class="bi bi-list me-1"></i> Todos
+                        </button>
                     </div>
                 </div>
 
@@ -739,6 +750,10 @@ try {
                                                             Q<?php echo number_format($item['precio_hospital'] ?? 0, 2); ?></span>
                                                         <span class="text-success">M:
                                                             Q<?php echo number_format($item['precio_medico'] ?? 0, 2); ?></span>
+                                                        <span class="text-secondary">E:
+                                                            Q<?php echo number_format($item['precio_especial'] ?? 0, 2); ?></span>
+                                                        <span class="text-warning">C:
+                                                            Q<?php echo number_format($item['precio_compra'] ?? 0, 2); ?></span>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -1008,6 +1023,14 @@ try {
                                     min="0" step="0.01" required>
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <label for="precio_especial" class="form-label">Precio Esp.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="precio_especial" name="precio_especial"
+                                    min="0" step="0.01" value="0.00">
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <label for="fecha_adquisicion" class="form-label">Fecha de Adquisición</label>
                             <input type="date" class="form-control" id="fecha_adquisicion" name="fecha_adquisicion"
@@ -1119,6 +1142,14 @@ try {
                                 <span class="input-group-text">Q</span>
                                 <input type="number" class="form-control" id="edit_precio_medico" name="precio_medico"
                                     min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_precio_especial" class="form-label">Precio Esp.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_especial" name="precio_especial"
+                                    min="0" step="0.01" value="0.00">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -1357,7 +1388,7 @@ try {
                         DOM.editButtons.forEach(button => {
                             button.addEventListener('click', (e) => {
                                 const id = e.target.closest('.btn-icon').getAttribute('data-id');
-                                this.loadMedicineData(id);
+                                if (id) this.loadMedicineData(id);
                             });
                         });
                     }
@@ -1415,6 +1446,10 @@ try {
                 }
 
                 loadMedicineData(id) {
+                    if (!id || isNaN(parseInt(id))) {
+                        console.error('loadMedicineData: ID no válido');
+                        return;
+                    }
                     fetch(`get_medicine.php?id=${id}`)
                         .then(response => response.json())
                         .then(data => {
@@ -1442,6 +1477,7 @@ try {
                             document.getElementById('edit_precio_venta').value = data.precio_venta || 0;
                             document.getElementById('edit_precio_hospital').value = data.precio_hospital || 0;
                             document.getElementById('edit_precio_medico').value = data.precio_medico || 0;
+                            document.getElementById('edit_precio_especial').value = data.precio_especial || 0;
                             document.getElementById('edit_fecha_adquisicion').value = data.fecha_adquisicion;
                             document.getElementById('edit_fecha_vencimiento').value = data.fecha_vencimiento;
                         })
@@ -1592,6 +1628,10 @@ try {
             // FUNCIONALIDADES GLOBALES DEL INVENTARIO
             // ==========================================================================
             window.openEditModal = function (id) {
+                if (!id || isNaN(parseInt(id))) {
+                    console.error('ID no válido');
+                    return;
+                }
                 if (window.inventory && window.inventory.manager) {
                     window.inventory.manager.loadMedicineData(id);
                     document.getElementById('editMedicineModal').classList.add('active');
@@ -2093,6 +2133,23 @@ try {
                 subtitleEl.textContent = 'Haz clic para ver el precio de compra';
                 iconContainer.classList.replace('success', 'primary');
             }
+        }
+
+        function filterInventory(filter) {
+            const rows = document.querySelectorAll('#inventoryTable tbody tr');
+            rows.forEach(row => {
+                const expiryClass = row.querySelector('.status-badge')?.className || '';
+                const isExpired = expiryClass.includes('status-danger') && !expiryClass.includes('status-good');
+                const isExpiring = expiryClass.includes('status-warning');
+
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'expiring') {
+                    row.style.display = isExpiring ? '' : 'none';
+                } else if (filter === 'expired') {
+                    row.style.display = isExpired ? '' : 'none';
+                }
+            });
         }
     </script>
     <?php flash_toast(); ?>

@@ -1,17 +1,104 @@
 <?php
 /**
- * Registers an audit event in the log file.
- * In a production environment, consider migrating to an audit_log DB table.
+ * Enhanced audit logging function that writes to both file and database.
+ *
+ * @param string $action Action type: login, logout, create, update, delete, etc.
+ * @param string $modulo Module name: patients, inventory, billing, auth, etc.
+ * @param string $descripcion Human-readable description of the event
+ * @param array $data Optional associative array with keys:
+ *   - table_name: string (affected table)
+ *   - record_id: int (affected record ID)
+ *   - old_data: array (previous values for updates/deletes)
+ *   - new_data: array (new values for creates/updates)
+ *   - result: string (exito, error, revertido)
+ *   - error_message: string (error message if result != exito)
+ * @param int|null $user_id Override user ID (null = use session)
  */
-function audit_log($action, $details = '', $user_id = null) {
-    if ($user_id === null && session_status() === PHP_SESSION_ACTIVE) {
-        $user_id = $_SESSION['user_id'] ?? 'anonymous';
+function audit_log($action, $modulo = 'system', $descripcion = '', $data = [], $user_id = null) {
+    try {
+        $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+
+        if ($user_id === null && session_status() === PHP_SESSION_ACTIVE) {
+            $user_id = $_SESSION['user_id'] ?? null;
+        }
+
+        $user_nombre = $_SESSION['nombre'] ?? null;
+        $user_tipo = $_SESSION['tipoUsuario'] ?? null;
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $user_agent = substr($_SERVER['HTTP_USER_AGENT'] ?? 'unknown', 0, 512);
+        $session_id = session_id();
+        $timestamp = date('Y-m-d H:i:s');
+
+        $tabla_afectada = $data['table_name'] ?? null;
+        $id_registro = isset($data['record_id']) ? (int)$data['record_id'] : null;
+        $datos_anteriores = isset($data['old_data']) ? json_encode($data['old_data'], JSON_UNESCAPED_UNICODE) : null;
+        $datos_nuevos = isset($data['new_data']) ? json_encode($data['new_data'], JSON_UNESCAPED_UNICODE) : null;
+        $resultado = $data['result'] ?? 'exito';
+        $mensaje_error = $data['error_message'] ?? null;
+
+        // 1. Always log to file (backup/debug)
+        $file_line = "[$timestamp] [hospital:$id_hospital] [user:$user_id] [ip:$ip] [$modulo|$action] $descripcion" . PHP_EOL;
+        error_log($file_line, 3, __DIR__ . '/../audit.log');
+
+        // 2. Log to database (audit_log table)
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        if ($conn) {
+            $stmt = $conn->prepare("
+                INSERT INTO audit_log (
+                    id_hospital, fecha_audit, user_id, user_nombre, user_tipo,
+                    ip_address, user_agent, session_id,
+                    accion, modulo, descripcion,
+                    tabla_afectada, id_registro,
+                    datos_anteriores, datos_nuevos,
+                    resultado, mensaje_error
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?
+                )
+            ");
+
+            $stmt->execute([
+                $id_hospital,
+                $timestamp,
+                $user_id,
+                $user_nombre,
+                $user_tipo,
+                $ip,
+                $user_agent,
+                $session_id,
+                $action,
+                $modulo,
+                $descripcion,
+                $tabla_afectada,
+                $id_registro,
+                $datos_anteriores,
+                $datos_nuevos,
+                $resultado,
+                $mensaje_error
+            ]);
+        }
+
+    } catch (Exception $e) {
+        // Never let audit logging failure break the application
+        error_log("Audit log error: " . $e->getMessage());
     }
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-    $timestamp = date('Y-m-d H:i:s');
-    $line = "[$timestamp] [user:$user_id] [ip:$ip] [$action] $details" . PHP_EOL;
-    error_log($line, 3, __DIR__ . '/../audit.log');
+}
+
+/**
+ * Shortcut for authentication audit events (login, logout).
+ */
+function audit_log_auth($action, $descripcion, $result = 'exito', $error_message = null) {
+    audit_log($action, 'auth', $descripcion, [
+        'result' => $result,
+        'error_message' => $error_message
+    ]);
 }
 
 /**
@@ -20,6 +107,67 @@ function audit_log($action, $details = '', $user_id = null) {
 function validar_tipo_pago($tipo) {
     $permitidos = ['Efectivo', 'Tarjeta', 'Transferencia', 'Traslado'];
     return in_array($tipo, $permitidos, true);
+}
+
+/**
+ * CSS class for charge-type badge by service category label.
+ */
+function charge_type_badge_class($tipo_cobro) {
+    $map = [
+        'Consulta' => 'charge-consulta',
+        'Reconsulta' => 'charge-reconsulta',
+        'Farmacia' => 'charge-farmacia',
+        'Laboratorio' => 'charge-laboratorio',
+        'Examen' => 'charge-examen',
+        'Procedimiento' => 'charge-procedimiento',
+        'Ultrasonido' => 'charge-ultrasonido',
+        'Rayos X' => 'charge-rayos-x',
+        'Electrocardiograma' => 'charge-electro',
+    ];
+    return $map[$tipo_cobro] ?? 'charge-otro';
+}
+
+/**
+ * Bootstrap icon class for charge-type badge.
+ */
+function charge_type_icon($tipo_cobro) {
+    $map = [
+        'Consulta' => 'bi-stethoscope',
+        'Reconsulta' => 'bi-arrow-repeat',
+        'Farmacia' => 'bi-capsule',
+        'Laboratorio' => 'bi-droplet-half',
+        'Examen' => 'bi-clipboard2-pulse',
+        'Procedimiento' => 'bi-bandaid',
+        'Ultrasonido' => 'bi-soundwave',
+        'Rayos X' => 'bi-radioactive',
+        'Electrocardiograma' => 'bi-heart-pulse',
+    ];
+    return $map[$tipo_cobro] ?? 'bi-receipt';
+}
+
+/**
+ * Print URL for a unified billing registry row.
+ */
+function billing_print_url($fuente, $id_registro) {
+    $id = (int) $id_registro;
+    switch ($fuente) {
+        case 'cobro':
+            return 'print_receipt.php?id=' . $id;
+        case 'venta':
+            return '../dispensary/print_receipt.php?id=' . $id;
+        case 'examen':
+            return '../laboratory/print_lab_receipt.php?id=' . $id;
+        case 'procedimiento':
+            return '../dashboard/print_procedure_receipt.php?id=' . $id;
+        case 'ultrasonido':
+            return '../ultrasonidos/print_us_receipt.php?id=' . $id;
+        case 'rayos_x':
+            return '../rayos_x/print_rx_receipt.php?id=' . $id;
+        case 'electro':
+            return 'print_electro.php?id=' . $id;
+        default:
+            return '#';
+    }
 }
 
 /**
@@ -169,13 +317,14 @@ function output_keep_alive_script()
         const origFetch = window.fetch;
         window.fetch = function(input, init) {
             init = init || {};
-            if (!init.method || init.method.toUpperCase() !== 'GET') {
+            const method = (init.method || 'GET').toUpperCase();
+            if (method !== 'GET') {
                 init.headers = init.headers || {};
                 if (init.headers instanceof Headers) {
                     if (!init.headers.has('X-CSRF-Token')) {
                         init.headers.set('X-CSRF-Token', window.CSRF_TOKEN);
                     }
-                } else {
+                } else if (!init.headers['X-CSRF-Token']) {
                     init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
                 }
             }
@@ -187,7 +336,7 @@ function output_keep_alive_script()
         // Keep-alive
         setInterval(function() {
             fetch('?keep_alive=1').catch(function() {});
-        }, 300000);
+        }, 60000);
 
         // Auto-disable submit buttons to prevent double-clicks
         document.addEventListener('submit', function(e) {

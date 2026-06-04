@@ -68,10 +68,28 @@ try {
         $id_hospital
     ]);
     
+    $id_signo = $conn->lastInsertId();
+
+    audit_log('create', 'hospitalization', "Signos vitales registrados - Encamamiento #$id_encamamiento", [
+        'table_name' => 'signos_vitales',
+        'record_id' => (int)$id_signo,
+        'new_data' => [
+            'id_encamamiento' => $id_encamamiento,
+            'fecha_registro' => $fecha_registro,
+            'temperatura' => $temperatura,
+            'presion_sistolica' => $presion_sistolica,
+            'presion_diastolica' => $presion_diastolica,
+            'pulso' => $pulso,
+            'frecuencia_respiratoria' => $frecuencia_respiratoria,
+            'saturacion_oxigeno' => $saturacion_oxigeno,
+            'glucometria' => $glucometria,
+        ]
+    ]);
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Signos vitales guardados correctamente',
-        'id_signo' => $conn->lastInsertId()
+        'id_signo' => $id_signo
     ]);
     
 } catch (Exception $e) {

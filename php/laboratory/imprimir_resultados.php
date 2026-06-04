@@ -4,10 +4,10 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
-
-$id_hospital = hospital_id();
+require_once '../../includes/module_guard.php';
 
 verify_session();
+$id_hospital = hospital_id();
 
 $id_orden = $_GET['id'] ?? null;
 if (!$id_orden) {
@@ -51,6 +51,7 @@ try {
     $stmt_archivo = $conn->prepare("SELECT * FROM archivos_resultados_laboratorio WHERE id_orden = ? ORDER BY id_archivo DESC LIMIT 1");
     $stmt_archivo->execute([$id_orden]);
     $archivo_orden = $stmt_archivo->fetch(PDO::FETCH_ASSOC);
+    $archivo_id = $archivo_orden['id_archivo'] ?? null;
 
 } catch (Exception $e) {
     error_log('Error en laboratory/imprimir_resultados.php: ' . $e->getMessage());
@@ -398,12 +399,14 @@ try {
                 </div>
         <?php endforeach; ?>
 
-        <?php if ($archivo_orden): ?>
+        <?php if ($archivo_orden && $archivo_id): ?>
                 <div class="no-print" style="margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px;">
-                    <p style="margin: 0; font-size: 13px; font-weight: 600;">
-                        <i class="bi bi-paperclip"></i> Esta orden tiene archivos adjuntos que no se muestran en la versión
-                        impresa.
+                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600;">
+                        <i class="bi bi-paperclip"></i> Archivo adjunto (PDF)
                     </p>
+                    <a href="api/ver_archivo.php?id=<?php echo $archivo_id; ?>" download="<?php echo htmlspecialchars($orden['numero_orden']); ?>.pdf" class="action-btn" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+                        <i class="bi bi-download"></i> Descargar PDF
+                    </a>
                 </div>
         <?php endif; ?>
 

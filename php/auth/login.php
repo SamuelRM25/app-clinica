@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['usuario'] = $user['usuario'];
         $_SESSION['login_attempts'] = 0;
 
-        audit_log('login_exitoso', 'Usuario: ' . $user['usuario'] . ' - Hospital ID: ' . $user['id_hospital'], $user['idUsuario']);
+        audit_log_auth('login_exitoso', 'Usuario: ' . $user['usuario'] . ' - Hospital ID: ' . $user['id_hospital']);
 
         error_log("LOGIN DEBUG: Redirecting to dashboard/index.php");
         header("Location: ../dashboard/index.php");
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $_SESSION['login_attempts']++;
     $_SESSION['login_attempt_time'] = time();
-    audit_log('login_fallido', 'Usuario intentado: ' . ($_POST['usuario'] ?? 'unknown'));
+    audit_log_auth('login_fallido', 'Usuario intentado: ' . ($_POST['usuario'] ?? 'unknown'), 'error');
     error_log("LOGIN DEBUG: Login failed. Redirecting back to index.php?error=1");
     header("Location: ../../index.php?error=1");
     exit();

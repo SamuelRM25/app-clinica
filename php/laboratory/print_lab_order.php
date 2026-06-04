@@ -71,7 +71,7 @@ try {
     <title>Orden Laboratorio #
         <?php echo htmlspecialchars($orden['numero_orden']); ?>
     </title>
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
 
 <body>

@@ -75,6 +75,17 @@ try {
     ");
     $stmtUpd->execute([$id_cuenta, $id_hospital, $id_cuenta, $id_hospital, $id_cuenta, $id_hospital]);
 
+    audit_log('create', 'hospitalization', "Abono registrado: Q$monto - Encamamiento #$id_encamamiento (ID Abono: $id_abono)", [
+        'table_name' => 'abonos_hospitalarios',
+        'record_id' => (int)$id_abono,
+        'new_data' => [
+            'id_cuenta' => $id_cuenta,
+            'monto' => $monto,
+            'metodo_pago' => $metodo_pago,
+            'notas' => $notas,
+        ]
+    ]);
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Abono registrado correctamente',

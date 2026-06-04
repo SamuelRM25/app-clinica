@@ -57,7 +57,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo Electrocardiograma #<?php echo htmlspecialchars($id_electro); ?></title>
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
 
 <body>

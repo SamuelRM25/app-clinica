@@ -46,7 +46,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
+            $id_cita = $conn->lastInsertId();
             $conn->commit();
+
+            audit_log('create', 'appointments', "Cita creada: {$_POST['nombre_pac']} {$_POST['apellido_pac']} - #$num_cita", [
+                'table_name' => 'citas',
+                'record_id' => (int)$id_cita,
+                'new_data' => [
+                    'id_paciente' => $id_paciente,
+                    'nombre_pac' => $_POST['nombre_pac'],
+                    'apellido_pac' => $_POST['apellido_pac'],
+                    'num_cita' => $num_cita,
+                    'fecha_cita' => $_POST['fecha_cita'],
+                    'hora_cita' => $_POST['hora_cita'],
+                    'id_doctor' => $_POST['id_doctor'],
+                ]
+            ]);
 
             // Check if patient exists
             $checkPatient = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");

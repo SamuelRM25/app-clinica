@@ -1,0 +1,154 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../auth/login.php");
+    exit;
+}
+
+require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
+
+verify_session();
+
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    die("ID de venta inválido");
+}
+
+$id_venta = $_GET['id'];
+
+try {
+    $database = new Database();
+    $conn = $database->getConnection();
+
+    $stmt = $conn->prepare("
+        SELECT v.*, u.nombre as Cajero
+        FROM ventas v
+        LEFT JOIN usuarios u ON v.id_usuario = u.idUsuario
+        WHERE v.id_venta = ? AND v.id_hospital = ?
+    ");
+    $stmt->execute([$id_venta, $id_hospital]);
+    $venta = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$venta) {
+        die("Venta no encontrada");
+    }
+
+    $cajero = $venta['Cajero'] ?? $_SESSION['nombre'];
+    $nit_cliente = $venta['nit_cliente'] ?? 'C/F';
+
+    $stmt = $conn->prepare("
+        SELECT dv.*, i.nom_medicamento, i.presentacion_med
+        FROM detalle_ventas dv
+        JOIN inventario i ON dv.id_inventario = i.id_inventario
+        WHERE dv.id_venta = ? AND dv.id_hospital = ?
+    ");
+    $stmt->execute([$id_venta, $id_hospital]);
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $total_ventas = 0;
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ventas WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
+    $total_ventas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+    $page_title = "Baucher #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT);
+
+} catch (Exception $e) {
+    error_log('Error en dispensary/print_baucher.php: ' . $e->getMessage());
+    die("Error del servidor.");
+}
+
+$fecha = new DateTime($venta['fecha_venta']);
+$fecha_formateada = $fecha->format('d/m/Y');
+$hora_formateada = $fecha->format('H:i');
+?>
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($page_title); ?> - CMHS</title>
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="clinic-header text-center">
+            <h2>Centro Médico Herrera Saenz</h2>
+            <div class="clinic-info">
+                <p>7a Av 7-25 Zona 1 HH</p>
+                <p>Tel: (+502) 5214-8836</p>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="receipt-details">
+            <div class="d-flex justify-content-between">
+                <span>Fecha: <?php echo $fecha_formateada; ?></span>
+                <span><?php echo $hora_formateada; ?></span>
+            </div>
+            <div>Baucher #: <?php echo str_pad($id_venta, 5, '0', STR_PAD_LEFT); ?></div>
+            <div>Cliente: <?php echo htmlspecialchars($venta['nombre_cliente']); ?></div>
+            <div>NIT: <?php echo htmlspecialchars($nit_cliente); ?></div>
+            <div>Pago: <?php echo htmlspecialchars($venta['tipo_pago']); ?></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%">Desc</th>
+                    <th style="width: 15%" class="text-center">Cant</th>
+                    <th style="width: 35%" class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($items as $item): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($item['nom_medicamento']); ?></td>
+                        <td class="text-center"><?php echo $item['cantidad_vendida']; ?></td>
+                        <td class="text-right">Q<?php echo number_format($item['subtotal'], 2); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <div class="divider"></div>
+
+        <div class="total-section">
+            <span>TOTAL</span>
+            <span>Q<?php echo number_format($venta['total'], 2); ?></span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="baucher-signature text-center" style="margin-top: 20px;">
+            <p style="border-top: 1px solid #000; width: 70%; margin: 30px auto 5px; padding-top: 8px;">
+                Firma del Cliente
+            </p>
+            <p style="margin-top: 20px;">Autorizado por: <?php echo htmlspecialchars($cajero); ?></p>
+        </div>
+
+        <div class="footer">
+            <p>¡Gracias por su compra!</p>
+        </div>
+    </div>
+
+    <div class="print-actions">
+        <button class="btn-print" onclick="window.print()">🖨 Imprimir</button>
+        <button class="btn-close-win" onclick="window.close()">✕ Cerrar</button>
+    </div>
+
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () { window.print(); }, 400);
+        });
+    </script>
+</body>
+</html>

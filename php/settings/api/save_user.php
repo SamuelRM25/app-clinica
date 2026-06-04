@@ -11,7 +11,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipoUsuario'] !== 'admin') {
     exit;
 }
 
-verify_csrf_token();
+// Validate CSRF token safely
+$token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
 
 try {
     $database = new Database();
@@ -57,9 +62,28 @@ try {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, email, clinica, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico Herrera Saenz', $id_hospital]);
+        $newId = $conn->lastInsertId();
+
+        audit_log('create', 'users', "Usuario creado: $usuario ($nombre $apellido)", [
+            'table_name' => 'usuarios',
+            'record_id' => (int)$newId,
+            'new_data' => [
+                'usuario' => $usuario,
+                'nombre' => $nombre,
+                'apellido' => $apellido,
+                'tipoUsuario' => $tipoUsuario,
+                'especialidad' => $especialidad,
+                'email' => $email
+            ]
+        ]);
 
         echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
     } else {
+        // Fetch old data for audit
+        $fetchStmt = $conn->prepare("SELECT usuario, nombre, apellido, tipoUsuario, especialidad, email FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
+        $fetchStmt->execute([$idUsuario, $id_hospital]);
+        $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
         if (!empty($password)) {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, password = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
@@ -68,6 +92,20 @@ try {
             $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
             $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
         }
+
+        audit_log('update', 'users', "Usuario actualizado: $usuario (ID: $idUsuario)", [
+            'table_name' => 'usuarios',
+            'record_id' => (int)$idUsuario,
+            'old_data' => $oldData,
+            'new_data' => [
+                'usuario' => $usuario,
+                'nombre' => $nombre,
+                'apellido' => $apellido,
+                'tipoUsuario' => $tipoUsuario,
+                'especialidad' => $especialidad,
+                'email' => $email
+            ]
+        ]);
 
         echo json_encode(['success' => true, 'message' => 'Usuario actualizado correctamente']);
     }

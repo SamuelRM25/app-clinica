@@ -22,11 +22,21 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         $database = new Database();
         $conn = $database->getConnection();
 
+        // Fetch old data before deleting for audit trail
+        $stmt_old = $conn->prepare("SELECT nom_medicamento, codigo_barras, mol_medicamento, presentacion_med, casa_farmaceutica, cantidad_med FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+        $stmt_old->execute([$_GET['id'], $id_hospital]);
+        $oldData = $stmt_old->fetch(PDO::FETCH_ASSOC);
+
         // Prepare and execute the delete statement
         $stmt = $conn->prepare("DELETE FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
         $result = $stmt->execute([$_GET['id'], $id_hospital]);
 
         if ($result) {
+            audit_log('delete', 'inventory', "Medicamento eliminado: {$oldData['nom_medicamento']} (ID: {$_GET['id']})", [
+                'table_name' => 'inventario',
+                'record_id' => (int)$_GET['id'],
+                'old_data' => $oldData
+            ]);
             $_SESSION['inventory_message'] = 'Medicamento eliminado correctamente';
             $_SESSION['inventory_status'] = 'success';
         } else {

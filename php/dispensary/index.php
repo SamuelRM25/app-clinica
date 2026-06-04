@@ -848,13 +848,9 @@ try {
                                         <option value="Nota de Envío">Nota de Envío</option>
                                         <option value="Factura">Factura</option>
                                     </select>
-                                </div>
-                                <div class="form-group" style="flex: 1;">
-                                    <label class="form-label">N° Correlativo</label>
-                                    <input type="text" class="form-input" id="documentNumber" placeholder="0001...">
-                                </div>
                             </div>
                         </div>
+                    </div>
                     </div>
 
                     <!-- Lista de items -->
@@ -958,6 +954,10 @@ try {
                             <div id="historyLoading" class="text-center py-5">
                                 <div class="spinner-border text-info" role="status"></div>
                                 <p class="mt-2 text-muted">Cargando historial...</p>
+                            </div>
+                            <div class="border-top px-4 py-3 d-flex justify-content-between align-items-center bg-light">
+                                <span class="fw-bold">Total de Jornada:</span>
+                                <span class="fs-4 fw-bold text-success" id="historyTotalSum">Q0.00</span>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="detail-pane" role="tabpanel">
@@ -1083,7 +1083,6 @@ try {
                 clientName: document.getElementById('clientName'),
                 paymentMethod: document.getElementById('paymentMethod'),
                 documentType: document.getElementById('documentType'),
-                documentNumber: document.getElementById('documentNumber'),
                 emptyCart: document.getElementById('emptyCart'),
                 cartTable: document.getElementById('cartTable'),
                 cartItemsBody: document.getElementById('cartItemsBody'),
@@ -1355,7 +1354,7 @@ try {
                             let price = parseFloat(item.precio_venta) || 0;
                             if (currentMode === 'hospital') price = parseFloat(item.precio_hospital) || 0;
                             if (currentMode === 'medical') price = parseFloat(item.precio_medico) || 0;
-                            if (currentMode === 'special') price = parseFloat(item.precio_compra) || 0;
+                            if (currentMode === 'special') price = parseFloat(item.precio_especial || item.precio_compra) || 0;
                             if (currentMode === 'transfer') price = 0;
 
                             const expiryDateObj = item.fecha_vencimiento ? new Date(item.fecha_vencimiento) : null;
@@ -1450,7 +1449,7 @@ try {
                     let price = parseFloat(item.precio_venta) || 0;
                     if (currentMode === 'hospital') price = parseFloat(item.precio_hospital) || 0;
                     if (currentMode === 'medical') price = parseFloat(item.precio_medico) || 0;
-                    if (currentMode === 'special') price = parseFloat(item.precio_compra) || 0;
+                    if (currentMode === 'special') price = parseFloat(item.precio_especial || item.precio_compra) || 0;
                     if (currentMode === 'transfer') price = 0;
 
                     DOM.unitPrice.value = price.toFixed(2);
@@ -1537,7 +1536,9 @@ try {
                     DOM.checkoutBtn.addEventListener('click', () => this.processSale());
 
                     // Cotización
-                    DOM.quoteBtn.addEventListener('click', () => this.processQuote());
+                    if (DOM.quoteBtn) {
+                        DOM.quoteBtn.addEventListener('click', () => this.processQuote());
+                    }
                 }
 
                 addToCart() {
@@ -1692,7 +1693,7 @@ try {
                         nit_cliente: document.getElementById('clientNIT').value.trim() || 'C/F',
                         tipo_pago: currentMode === 'transfer' ? 'Traslado' : DOM.paymentMethod.value,
                         document_type: DOM.documentType ? DOM.documentType.value : '',
-                        document_number: DOM.documentNumber ? DOM.documentNumber.value.trim() : '',
+                        document_number: '',
                         total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
                         estado: currentMode === 'transfer' ? 'Pagado' : 'Pagado',
                         items: cartItems.map(item => ({
@@ -1722,18 +1723,36 @@ try {
                         const data = await response.json();
 
                         if (data.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Venta completada!',
-                                text: 'Redirigiendo al comprobante...',
-                                timer: 2000,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 1000);
-                            });
+                            const isCard = saleData.tipo_pago === 'Tarjeta';
+                            if (isCard) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Venta completada!',
+                                    html: '<p>¿Desea imprimir el baucher para firma?</p>',
+                                    showCancelButton: true,
+                                    confirmButtonText: '<i class="bi bi-credit-card me-1"></i>Baucher + Recibo',
+                                    cancelButtonText: '<i class="bi bi-receipt me-1"></i>Solo Recibo',
+                                    confirmButtonColor: '#0d6efd',
+                                    cancelButtonColor: '#6c757d'
+                                }).then((result) => {
+                                    window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
+                                    if (result.isConfirmed) {
+                                        window.open(`print_baucher.php?id=${data.id_venta}`, '_blank');
+                                    }
+                                    setTimeout(() => location.reload(), 1000);
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Venta completada!',
+                                    text: 'Redirigiendo al comprobante...',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
+                                    setTimeout(() => location.reload(), 1000);
+                                });
+                            }
                         } else {
                             this.showAlert(data.message || 'Error al procesar la venta', 'error');
                         }
@@ -1900,8 +1919,11 @@ try {
                                 <td class="text-end fw-bold">Q${total.toFixed(2)}</td>
                                 <td class="text-center pe-4">
                                     <button class="btn btn-light btn-sm shadow-sm" onclick="window.open('print_receipt.php?id=${sale.id_venta}', '_blank')">
-                                        <i class="bi bi-printer"></i>
+                                        <i class="bi bi-receipt"></i>
                                     </button>
+                                    ${sale.tipo_pago === 'Tarjeta' ? `<button class="btn btn-outline-info btn-sm shadow-sm ms-1" onclick="window.open('print_baucher.php?id=${sale.id_venta}', '_blank')">
+                                        <i class="bi bi-credit-card"></i>
+                                    </button>` : ''}
                                 </td>
                             `;
                                 tbody.appendChild(row);

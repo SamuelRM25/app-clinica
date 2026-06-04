@@ -38,8 +38,19 @@ try {
 
     $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
+    // Fetch old data for audit
+    $fetchStmt = $conn->prepare("SELECT usuario, nombre, apellido, tipoUsuario, especialidad, email FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
+    $fetchStmt->execute([$idUsuario, $id_hospital]);
+    $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
     $stmt = $conn->prepare("DELETE FROM usuarios WHERE idUsuario = ? AND id_hospital = ?");
     $stmt->execute([$idUsuario, $id_hospital]);
+
+    audit_log('delete', 'users', "Usuario eliminado: {$oldData['usuario']} (ID: $idUsuario)", [
+        'table_name' => 'usuarios',
+        'record_id' => $idUsuario,
+        'old_data' => $oldData
+    ]);
 
     echo json_encode(['success' => true, 'message' => 'Usuario eliminado correctamente']);
 

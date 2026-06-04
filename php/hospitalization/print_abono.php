@@ -60,7 +60,7 @@ try {
     <title>Recibo Abono #
         <?php echo htmlspecialchars($id_abono); ?>
     </title>
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
 
 <body>

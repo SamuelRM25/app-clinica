@@ -143,6 +143,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css" media="print">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
 

@@ -52,6 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':id_hospital', $id_hospital);
 
         $stmt->execute();
+        $id_examen = $conn->lastInsertId();
+
+        audit_log('create', 'examinations', "Examen realizado: $examen_texto - Paciente: $nombre_paciente", [
+            'table_name' => 'examenes_realizados',
+            'record_id' => (int)$id_examen,
+            'new_data' => [
+                'id_paciente' => $id_paciente,
+                'nombre_paciente' => $nombre_paciente,
+                'tipo_examen' => $examen_texto,
+                'cobro' => $cobro,
+                'fecha_examen' => $fecha_actual,
+            ]
+        ]);
 
         header('Location: index.php?status=success&message=Examen guardado exitosamente.');
         exit;

@@ -73,6 +73,19 @@ try {
 
     $conn->commit();
 
+    audit_log('create', 'purchases', "Abono registrado a compra #$purchase_id: Q$amount - Estado: $payment_status", [
+        'table_name' => 'purchase_payments',
+        'new_data' => [
+            'purchase_header_id' => $purchase_id,
+            'amount' => $amount,
+            'payment_date' => $payment_date,
+            'payment_method' => $payment_method,
+            'notes' => $notes,
+            'new_paid_amount' => $new_paid_amount,
+            'payment_status' => $payment_status,
+        ]
+    ]);
+
     echo json_encode(['success' => true, 'message' => 'Abono registrado correctamente', 'new_balance' => $purchase['total_amount'] - $new_paid_amount]);
 
 } catch (Exception $e) {

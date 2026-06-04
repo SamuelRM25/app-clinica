@@ -122,9 +122,10 @@ try {
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
-    <script src="../../assets/js/security.js"></script>
+    <!-- <script src="../../assets/js/security.js"></script> -->
 
     <!-- CSS Crítico (mismo que el dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -708,161 +709,156 @@ try {
     </div>
 
     <!-- Modal para nuevo paciente -->
-    <div class="custom-modal-overlay" id="newPatientModal">
-        <div class="custom-modal">
-            <div class="custom-modal-header">
-                <h3 class="custom-modal-title">
-                    <i class="bi bi-person-plus"></i>
-                    Nuevo Paciente
-                </h3>
-                <button type="button" class="custom-modal-close" onclick="closeModal('newPatientModal')">
-                    <i class="bi bi-x"></i>
-                </button>
-            </div>
-            <form id="newPatientForm" action="save_patient.php" method="POST">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" id="edit_id_paciente" name="id_paciente">
-                <div class="custom-modal-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="nombre" class="form-label">Nombres *</label>
-                            <input type="text" id="nombre" name="nombre" class="form-input"
-                                placeholder="Ej: Juan Antonio" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="apellido" class="form-label">Apellidos *</label>
-                            <input type="text" id="apellido" name="apellido" class="form-input"
-                                placeholder="Ej: Pérez Sosa" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento *</label>
-                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input" required
-                                onchange="calculateAge(this.value)">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="edad_display" class="form-label">Edad Actual</label>
-                            <input type="text" id="edad_display" class="form-input" readonly
-                                placeholder="Calculada automáticamente...">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="genero" class="form-label">Género *</label>
-                            <select id="genero" name="genero" class="form-select" required>
-                                <option value="">Seleccionar...</option>
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="dpi" class="form-label">DPI</label>
-                            <div class="input-group">
-                                <i class="bi bi-card-text input-icon"></i>
-                                <input type="text" id="dpi" name="dpi" class="form-input"
-                                    placeholder="Ej: 1234567890123" maxlength="15">
+    <div class="modal fade" id="newPatientModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-person-plus"></i> Nuevo Paciente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <form id="newPatientForm" action="save_patient.php" method="POST">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" id="edit_id_paciente" name="id_paciente">
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="nombre" class="form-label small fw-bold">Nombres *</label>
+                                <input type="text" id="nombre" name="nombre" class="form-control" placeholder="Ej: Juan Antonio" required>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="telefono" class="form-label">Teléfono</label>
-                            <div class="input-group">
-                                <i class="bi bi-telephone input-icon"></i>
-                                <input type="tel" id="telefono" name="telefono" class="form-input"
-                                    placeholder="Ej: 46232418">
+                            <div class="col-md-6">
+                                <label for="apellido" class="form-label small fw-bold">Apellidos *</label>
+                                <input type="text" id="apellido" name="apellido" class="form-control" placeholder="Ej: Pérez Sosa" required>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="correo" class="form-label">Correo Electrónico</label>
-                            <div class="input-group">
-                                <i class="bi bi-envelope input-icon"></i>
-                                <input type="email" id="correo" name="correo" class="form-input"
-                                    placeholder="Ej: juan@gmail.com">
+                            <div class="col-md-6">
+                                <label for="fecha_nacimiento" class="form-label small fw-bold">Fecha de Nacimiento *</label>
+                                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-control" required onchange="calculateAge(this.value)">
                             </div>
-                        </div>
-
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label for="direccion" class="form-label">Dirección</label>
-                            <textarea id="direccion" name="direccion" class="form-textarea"
-                                placeholder="Ej: Barrio San Juan, Nentón" rows="3"></textarea>
+                            <div class="col-md-3">
+                                <label for="edad_display" class="form-label small fw-bold">Edad</label>
+                                <input type="text" id="edad_display" class="form-control" readonly placeholder="Automática">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="genero" class="form-label small fw-bold">Género *</label>
+                                <select id="genero" name="genero" class="form-select" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="dpi" class="form-label small fw-bold">DPI / CUI</label>
+                                <input type="text" id="dpi" name="dpi" class="form-control" placeholder="Ej: 1234567890123" maxlength="15">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="telefono" class="form-label small fw-bold">Teléfono</label>
+                                <input type="tel" id="telefono" name="telefono" class="form-control" placeholder="Ej: 46232418">
+                            </div>
+                            <div class="col-12">
+                                <label for="correo" class="form-label small fw-bold">Correo Electrónico</label>
+                                <input type="email" id="correo" name="correo" class="form-control" placeholder="Ej: juan@gmail.com">
+                            </div>
+                            <div class="col-12">
+                                <label for="direccion" class="form-label small fw-bold">Dirección</label>
+                                <textarea id="direccion" name="direccion" class="form-control" rows="2" placeholder="Ej: Barrio San Juan, Nentón"></textarea>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="custom-modal-footer">
-                    <button type="button" class="btn-outline" onclick="closeModal('newPatientModal')">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="action-btn" id="modalSubmitBtn">
-                        Guardar Paciente
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="action-btn" id="modalSubmitBtn">
+                            <i class="bi bi-check2-circle"></i> Guardar Paciente
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Modal para cita rápida -->
-    <div class="custom-modal-overlay" id="quickAppointmentModal">
-        <div class="custom-modal">
-            <div class="custom-modal-header">
-                <h3 class="custom-modal-title">
-                    <i class="bi bi-calendar-plus"></i>
-                    Nueva Cita Rápida
-                </h3>
-                <button type="button" class="custom-modal-close" onclick="closeModal('quickAppointmentModal')">
-                    <i class="bi bi-x"></i>
-                </button>
-            </div>
-            <form id="quickAppointmentForm">
-                <div class="custom-modal-body">
-                    <div class="form-grid">
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label class="form-label">Paciente</label>
-                            <input type="text" id="quickPatientName" class="form-input" readonly>
-                            <input type="hidden" id="quickPatientId" name="patient_id">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="quickDate" class="form-label">Fecha *</label>
-                            <input type="date" id="quickDate" name="fecha_cita" class="form-input" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="quickTime" class="form-label">Hora *</label>
-                            <input type="time" id="quickTime" name="hora_cita" class="form-input" required>
-                        </div>
-
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label for="quickDoctor" class="form-label">Médico *</label>
-                            <select id="quickDoctor" name="id_doctor" class="form-select" required>
-                                <option value="">Seleccionar Médico...</option>
-                                <?php foreach ($doctors as $doctor): ?>
-                                        <option value="<?php echo $doctor['idUsuario']; ?>">
-                                            Dr(a).
-                                            <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
-                                        </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label for="quickReason" class="form-label">Motivo de Consulta</label>
-                            <textarea id="quickReason" name="motivo_consulta" class="form-textarea"
-                                placeholder="Describa el motivo de la consulta" rows="3"></textarea>
+<!-- Modal para cita rápida -->
+    <div class="modal fade" id="quickAppointmentModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-calendar-plus"></i> Nueva Cita Rápida
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="quickAppointmentForm">
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Paciente</label>
+                                <input type="text" id="quickPatientName" class="form-control" readonly>
+                                <input type="hidden" id="quickPatientId" name="patient_id">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quickDate" class="form-label small fw-bold">Fecha *</label>
+                                <input type="date" id="quickDate" name="fecha_cita" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quickTime" class="form-label small fw-bold">Hora *</label>
+                                <input type="time" id="quickTime" name="hora_cita" class="form-control" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="quickDoctor" class="form-label small fw-bold">Médico *</label>
+                                <select id="quickDoctor" name="id_doctor" class="form-select" required>
+                                    <option value="">Seleccionar Médico...</option>
+                                    <?php foreach ($doctors as $doctor): ?>
+                                            <option value="<?php echo $doctor['idUsuario']; ?>">
+                                                Dr(a). <?php echo htmlspecialchars($doctor['nombre'] . ' ' . $doctor['apellido']); ?>
+                                            </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="quickReason" class="form-label small fw-bold">Motivo de Consulta</label>
+                                <textarea id="quickReason" name="motivo_consulta" class="form-control" rows="2" placeholder="Describa el motivo de la consulta"></textarea>
+                            </div>
                         </div>
                     </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="action-btn">Programar Cita</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para registro de nota rápida -->
+    <div class="modal fade" id="noteModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-journal-text"></i> Registrar Nota de Paciente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="custom-modal-footer">
-                    <button type="button" class="btn-outline" onclick="closeModal('quickAppointmentModal')">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="action-btn">
-                        Programar Cita
-                    </button>
-                </div>
-            </form>
+                <form id="noteForm" action="save_quick_note.php" method="POST">
+                    <?php echo csrf_field(); ?>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Paciente</label>
+                                <input type="text" id="notePatientName" class="form-control" readonly>
+                                <input type="hidden" id="notePatientId" name="id_paciente">
+                            </div>
+                            <div class="col-12">
+                                <label for="nota" class="form-label small fw-bold">Nota / Observaciones *</label>
+                                <textarea id="nota" name="nota" class="form-control" rows="4" placeholder="Escriba aquí la nota o registro sobre el paciente..." required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="action-btn">Guardar Nota</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1133,21 +1129,19 @@ try {
                 openModal(modalId) {
                     const modal = document.getElementById(modalId);
                     if (modal) {
-                        modal.classList.add('active');
-                        document.body.style.overflow = 'hidden';
+                        const bsModal = new bootstrap.Modal(modal);
+                        bsModal.show();
                     }
                 }
 
                 closeModal(modalId) {
                     const modal = document.getElementById(modalId);
                     if (modal) {
-                        modal.classList.remove('active');
-                        document.body.style.overflow = '';
-                        // Reset form if it was editing
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        if (bsModal) bsModal.hide();
                         if (modalId === 'newPatientModal') {
                             document.getElementById('edit_id_paciente').value = '';
-                            document.querySelector('#newPatientModal .custom-modal-title').innerHTML = '<i class="bi bi-person-plus"></i> Nuevo Paciente';
-                            document.getElementById('modalSubmitBtn').textContent = 'Guardar Paciente';
+                            document.getElementById('modalSubmitBtn').innerHTML = '<i class="bi bi-check2-circle"></i> Guardar Paciente';
                             document.getElementById('newPatientForm').reset();
                             document.getElementById('edad_display').value = '';
                         }
@@ -1170,8 +1164,8 @@ try {
                 document.getElementById('direccion').value = p.direction;
 
                 // Actualizar UI del modal
-                document.querySelector('#newPatientModal .custom-modal-title').innerHTML = '<i class="bi bi-pencil-square"></i> Editar Paciente';
-                document.getElementById('modalSubmitBtn').textContent = 'Actualizar Paciente';
+                document.querySelector('#newPatientModal .modal-title').innerHTML = '<i class="bi bi-pencil-square"></i> Editar Paciente';
+                document.getElementById('modalSubmitBtn').innerHTML = '<i class="bi bi-check2-circle"></i> Actualizar Paciente';
 
                 // Calcular edad
                 if (p.birth) window.calculateAge(p.birth);
@@ -1211,13 +1205,13 @@ try {
                 document.getElementById('quickDate').valueAsDate = tomorrow;
                 document.getElementById('quickTime').value = '09:00';
 
-                document.getElementById('quickAppointmentModal').classList.add('active');
-                document.body.style.overflow = 'hidden';
+                const modal = new bootstrap.Modal(document.getElementById('quickAppointmentModal'));
+                modal.show();
             };
 
             window.closeModal = function (modalId) {
-                document.getElementById(modalId).classList.remove('active');
-                document.body.style.overflow = '';
+                const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                if (modal) modal.hide();
             };
 
             window.openNoteModal = function (patientId, patientName, existingNote = '') {
@@ -1225,12 +1219,8 @@ try {
                 document.getElementById('notePatientName').value = patientName;
                 document.getElementById('nota').value = existingNote || '';
 
-                document.getElementById('noteModal').classList.add('active');
-                document.body.style.overflow = 'hidden';
-
-                setTimeout(() => {
-                    document.getElementById('nota').focus();
-                }, 300);
+                const modal = new bootstrap.Modal(document.getElementById('noteModal'));
+                modal.show();
             };
 
             window.calculateAge = function (birthDate) {
@@ -1383,6 +1373,7 @@ try {
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>
     <?php flash_toast(); ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

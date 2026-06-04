@@ -80,6 +80,17 @@ try {
     }
     
     $conn->commit();
+
+    audit_log('update', 'hospitalization', "Alta hospitalaria procesada - Encamamiento #$id_encamamiento", [
+        'table_name' => 'encamamientos',
+        'record_id' => (int)$id_encamamiento,
+        'new_data' => [
+            'estado' => 'Alta_Administrativa',
+            'fecha_alta' => date('Y-m-d H:i:s'),
+            'diagnostico_egreso' => $diagnostico_egreso,
+            'notas_alta' => $notas_alta,
+        ]
+    ]);
     
     echo json_encode([
         'status' => 'success',

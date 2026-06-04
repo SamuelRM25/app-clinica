@@ -4,6 +4,8 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+csrf_token();
+
 
 
 header('Content-Type: application/json');
@@ -74,8 +76,8 @@ try {
         $itemId = $conn->lastInsertId();
 
         // Insert into Inventory (Pendiente)
-        // fecha_vencimiento uses item expiry date if provided, otherwise NULL
-        $vencimiento = !empty($item['expiry_date']) ? $item['expiry_date'] : null;
+        // fecha_vencimiento uses item expiry date if provided, otherwise use far future date as placeholder
+        $vencimiento = !empty($item['expiry_date']) ? $item['expiry_date'] : '2099-12-31';
         $stmtInv->execute([
             $item['name'],
             $item['presentation'],
@@ -91,6 +93,20 @@ try {
     }
 
     $conn->commit();
+
+    audit_log('create', 'purchases', "Compra #$headerId - Proveedor: {$header['provider_name']} - Total: Q{$header['total_amount']}", [
+        'table_name' => 'purchase_headers',
+        'record_id' => (int)$headerId,
+        'new_data' => [
+            'provider_name' => $header['provider_name'],
+            'document_type' => $header['document_type'],
+            'document_number' => $header['document_number'],
+            'purchase_date' => $header['purchase_date'],
+            'total_amount' => $header['total_amount'],
+            'items_count' => count($items)
+        ]
+    ]);
+
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
@@ -98,6 +114,6 @@ try {
         $conn->rollBack();
     }
     error_log('Error en purchases/save_purchase.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error del servidor.']);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

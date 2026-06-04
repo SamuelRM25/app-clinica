@@ -8,6 +8,7 @@ require_once '../../includes/breadcrumbs.php';
 require_once '../../includes/module_guard.php';
 
 $id_hospital = hospital_id();
+$embedded_mode = isset($_GET['embedded']) && $_GET['embedded'] == '1';
 
 verify_session();
 
@@ -16,7 +17,8 @@ try {
     $conn = $database->getConnection();
 
     // Fetch all available tests grouped by category for selection
-    $stmt = $conn->query("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, notas, precio, tiempo_procesamiento_horas, muestra_requerida FROM catalogo_pruebas ORDER BY categoria, nombre_prueba");
+    $stmt = $conn->prepare("SELECT id_prueba, codigo_prueba, nombre_prueba, categoria, notas, precio, tiempo_procesamiento_horas, muestra_requerida FROM catalogo_pruebas WHERE id_hospital = ? ORDER BY categoria, nombre_prueba");
+    $stmt->execute([$id_hospital]);
     $catalogo = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $pruebas_por_categoria = [];
@@ -135,6 +137,7 @@ try {
             <!-- Formulario de orden -->
             <form id="orderForm" action="api/create_order.php" method="POST">
                 <?php echo csrf_field(); ?>
+                <input type="hidden" name="is_embedded" id="is_embedded" value="<?php echo $embedded_mode ? '1' : '0'; ?>">
                 <div class="order-form-container">
                     <!-- Panel izquierdo: Información y selección de pruebas -->
                     <div>
@@ -213,40 +216,84 @@ try {
                             </div>
 
                             <?php if (count($catalogo) > 0): ?>
-                                    <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
-                                            <div class="category-section">
-                                                <h4 class="category-title">
-                                                    <i class="bi bi-folder2"></i>
-                                                    <?php echo htmlspecialchars($categoria); ?>
-                                                </h4>
+                                <!-- Barra de búsqueda -->
+                                <div class="tests-search-bar">
+                                    <i class="bi bi-search search-icon"></i>
+                                    <input type="text" class="tests-search-input" id="labTestSearch"
+                                        placeholder="Buscar pruebas por nombre..." autocomplete="off">
+                                </div>
 
+                                <!-- Filtros rápidos por categoría -->
+                                <div class="category-filter-pills" id="categoryFilterPills">
+                                    <button class="category-pill active" data-category="all">Todas</button>
+                                    <?php foreach ($pruebas_por_categoria as $categoria => $pruebas): ?>
+                                        <button class="category-pill" data-category="<?php echo htmlspecialchars($categoria); ?>">
+                                            <?php echo htmlspecialchars($categoria); ?>
+                                            <span class="badge"><?php echo count($pruebas); ?></span>
+                                        </button>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <div class="tests-search-status" id="testsSearchStatus">
+                                    Mostrando <strong><?php echo count($catalogo); ?></strong> pruebas
+                                </div>
+
+                                <!-- Acordeón de categorías -->
+                                <div class="category-accordion" id="categoryAccordion">
+                                    <?php 
+                                    $catIndex = 0;
+                                    $categoryIcons = [
+                                        'Hematología' => 'bi-droplet',
+                                        'Química Sanguínea' => 'bi-flask',
+                                        'Urianálisis' => 'bi-cup-straw',
+                                        'Inmunología' => 'bi-shield-check',
+                                        'Microbiología' => 'bi-bug',
+                                        'Serología' => 'bi-heart-pulse',
+                                    ];
+                                    foreach ($pruebas_por_categoria as $categoria => $pruebas): 
+                                        $icon = $categoryIcons[$categoria] ?? 'bi-folder2';
+                                        $catIndex++;
+                                    ?>
+                                    <div class="category-accordion-item expanded" data-category="<?php echo htmlspecialchars($categoria); ?>">
+                                        <div class="category-accordion-header" onclick="toggleCategory(this)">
+                                            <div class="category-header-left">
+                                                <div class="category-icon"><i class="bi <?php echo $icon; ?>"></i></div>
+                                                <span class="category-name"><?php echo htmlspecialchars($categoria); ?></span>
+                                                <span class="category-count"><?php echo count($pruebas); ?></span>
+                                            </div>
+                                            <div class="category-header-right">
+                                                <span class="category-select-all" onclick="event.stopPropagation(); toggleCategorySelectAll(this, '<?php echo htmlspecialchars($categoria); ?>')">
+                                                    <i class="bi bi-check-all"></i> Todo
+                                                </span>
+                                                <i class="bi bi-chevron-down category-chevron"></i>
+                                            </div>
+                                        </div>
+                                        <div class="category-accordion-body">
+                                            <div class="category-accordion-body-inner">
                                                 <div class="tests-grid">
                                                     <?php foreach ($pruebas as $prueba): ?>
-                                                            <div class="test-selection-card"
-                                                                onclick="toggleTest(this, <?php echo htmlspecialchars(json_encode($prueba)); ?>)"
-                                                                data-id="<?php echo $prueba['id_prueba']; ?>">
-                                                                <input type="checkbox" name="pruebas[]"
-                                                                    value="<?php echo $prueba['id_prueba']; ?>" class="d-none">
-                                                                <div class="test-selection-checkbox"></div>
-                                                                <div class="test-selection-info">
-                                                                    <div class="test-selection-name">
-                                                                        <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>
-                                                                    </div>
-                                                                    <div class="test-selection-details">
-                                                                        <span class="test-selection-price">
-                                                                            Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?>
-                                                                        </span>
-                                                                        <span class="test-selection-time">
-                                                                            <i class="bi bi-clock"></i>
-                                                                            <?php echo $prueba['tiempo_procesamiento_horas']; ?>h
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
+                                                    <div class="test-card"
+                                                        onclick="toggleTest(this, <?php echo htmlspecialchars(json_encode($prueba)); ?>)"
+                                                        data-id="<?php echo $prueba['id_prueba']; ?>"
+                                                        data-category="<?php echo htmlspecialchars($categoria); ?>">
+                                                        <input type="checkbox" name="pruebas[]"
+                                                            value="<?php echo $prueba['id_prueba']; ?>" class="d-none">
+                                                        <div class="test-checkbox"><i class="bi bi-check"></i></div>
+                                                        <div class="test-info">
+                                                            <div class="test-name"><?php echo htmlspecialchars($prueba['nombre_prueba']); ?></div>
+                                                            <div class="test-meta">
+                                                                <span class="test-price">Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?></span>
+                                                                <span class="test-time"><i class="bi bi-clock"></i> <?php echo $prueba['tiempo_procesamiento_horas']; ?>h</span>
                                                             </div>
+                                                        </div>
+                                                    </div>
                                                     <?php endforeach; ?>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
                                     <?php endforeach; ?>
+                                </div>
                             <?php else: ?>
                                     <div class="empty-state text-center py-5">
                                         <i class="bi bi-clipboard-x empty-icon"></i>
@@ -263,10 +310,10 @@ try {
 
                     <!-- Panel derecho: Resumen -->
                     <div class="order-summary-card animate-in delay-3">
-                        <h3 class="section-title mb-4">
-                            <i class="bi bi-receipt section-title-icon"></i>
-                            Resumen de la Orden
-                        </h3>
+                        <div class="order-summary-header">
+                            <h3><i class="bi bi-receipt section-title-icon"></i> Resumen de la Orden</h3>
+                            <span class="selected-badge" id="selectedBadge">0</span>
+                        </div>
 
                         <div class="selected-tests-list" id="selectedTestsList">
                             <div class="empty-state text-center py-4">
@@ -274,6 +321,31 @@ try {
                                 <p class="text-muted mb-0">No hay pruebas seleccionadas</p>
                                 <small class="text-muted">Haga clic en las pruebas para agregarlas</small>
                             </div>
+                        </div>
+
+                        <div class="order-total-section">
+                            <span class="order-total-label">Total:</span>
+                            <span id="orderTotal" class="order-total-amount">Q0.00</span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <label class="form-label">Observaciones</label>
+                            <textarea name="observaciones" class="form-control" rows="2"
+                                placeholder="Observaciones adicionales..."></textarea>
+                        </div>
+
+                        <button type="submit" class="order-submit-btn mt-3">
+                            <i class="bi bi-file-earmark-check"></i>
+                            Generar Orden de Laboratorio
+                        </button>
+
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                La orden será creada en estado "Pendiente"
+                            </small>
+                        </div>
+                    </div>
                         </div>
 
                         <div class="order-total">
@@ -494,36 +566,66 @@ try {
                 if (searchInput) {
                     searchInput.addEventListener('input', function () {
                         const term = this.value.toLowerCase();
-                        const cards = document.querySelectorAll('.test-selection-card');
-                        const accordions = document.querySelectorAll('.accordion-item');
+                        const items = document.querySelectorAll('.category-accordion-item');
+                        let visibleTests = 0;
 
-                        accordions.forEach(acc => {
+                        items.forEach(item => {
+                            const cards = item.querySelectorAll('.test-card');
                             let someVisible = false;
-                            const accCards = acc.querySelectorAll('.test-selection-card');
-                            accCards.forEach(card => {
-                                const name = card.querySelector('.test-selection-name').textContent.toLowerCase();
+                            cards.forEach(card => {
+                                const name = card.querySelector('.test-name').textContent.toLowerCase();
                                 if (name.includes(term)) {
-                                    card.parentElement.classList.remove('d-none');
+                                    card.style.display = '';
                                     someVisible = true;
+                                    visibleTests++;
                                 } else {
-                                    card.parentElement.classList.add('d-none');
+                                    card.style.display = 'none';
                                 }
                             });
 
                             if (term === '') {
-                                acc.classList.remove('d-none');
-                                if (!acc.querySelector('.accordion-collapse').classList.contains('show')) {
-                                    // Keep current state
-                                }
+                                item.style.display = '';
                             } else if (someVisible) {
-                                acc.classList.remove('d-none');
-                                // Optionally auto-expand? Maybe too intrusive.
+                                item.style.display = '';
+                                if (!item.classList.contains('expanded')) {
+                                    item.classList.add('expanded');
+                                }
                             } else {
-                                acc.classList.add('d-none');
+                                item.style.display = 'none';
+                            }
+                        });
+
+                        const statusEl = document.getElementById('testsSearchStatus');
+                        if (statusEl) {
+                            if (term === '') {
+                                statusEl.innerHTML = 'Mostrando <strong>' + document.querySelectorAll('.test-card').length + '</strong> pruebas';
+                            } else {
+                                statusEl.innerHTML = 'Se encontraron <strong>' + visibleTests + '</strong> pruebas';
+                            }
+                        }
+                    });
+                }
+
+                // Filtros por categoría (píldoras)
+                const filterPills = document.querySelectorAll('.category-pill');
+                filterPills.forEach(pill => {
+                    pill.addEventListener('click', function () {
+                        filterPills.forEach(p => p.classList.remove('active'));
+                        this.classList.add('active');
+
+                        const category = this.dataset.category;
+                        const items = document.querySelectorAll('.category-accordion-item');
+
+                        items.forEach(item => {
+                            if (category === 'all') {
+                                item.style.display = '';
+                            } else {
+                                const cat = item.dataset.category;
+                                item.style.display = cat === category ? '' : 'none';
                             }
                         });
                     });
-                }
+                });
             });
 
             // ==========================================================================
@@ -595,6 +697,62 @@ try {
         // FUNCIONES ESPECÍFICAS PARA CREAR ORDEN
         // ========================================================================== */
 
+        function toggleCategory(headerEl) {
+            const item = headerEl.closest('.category-accordion-item');
+            if (item) {
+                item.classList.toggle('expanded');
+            }
+        }
+
+        function toggleCategorySelectAll(el, category) {
+            const items = document.querySelectorAll('.category-accordion-item');
+            let targetItem = null;
+            items.forEach(item => {
+                if (item.dataset.category === category) {
+                    targetItem = item;
+                }
+            });
+
+            if (!targetItem) return;
+
+            const cards = targetItem.querySelectorAll('.test-card');
+            const allSelected = Array.from(cards).every(c => c.classList.contains('selected'));
+
+            cards.forEach(card => {
+                const testId = card.dataset.id;
+                const testData = selectedTests.find(t => t.id_prueba == testId);
+
+                if (allSelected) {
+                    if (testData) {
+                        const checkbox = card.querySelector('input[type="checkbox"]');
+                        card.classList.remove('selected');
+                        checkbox.checked = false;
+                        const idx = selectedTests.findIndex(t => t.id_prueba == testId);
+                        if (idx !== -1) selectedTests.splice(idx, 1);
+                    }
+                } else {
+                    if (!testData) {
+                        const checkbox = card.querySelector('input[type="checkbox"]');
+                        card.classList.add('selected');
+                        checkbox.checked = true;
+                        // Reconstruct testData from the card's onclick attribute
+                        const onclickAttr = card.getAttribute('onclick');
+                        // Use a simpler approach: parse from the category's PHP data
+                        const allTests = <?php echo json_encode($catalogo); ?>;
+                        const found = allTests.find(t => t.id_prueba == testId);
+                        if (found) {
+                            selectedTests.push({
+                                ...found,
+                                precio: parseFloat(found.precio || found.price || 0)
+                            });
+                        }
+                    }
+                }
+            });
+
+            updateOrderSummary();
+        }
+
         let selectedTests = [];
 
         function toggleTest(card, testData) {
@@ -602,7 +760,6 @@ try {
             const index = selectedTests.findIndex(t => t.id_prueba === testData.id_prueba);
 
             if (index === -1) {
-                // Agregar prueba
                 selectedTests.push({
                     ...testData,
                     precio: parseFloat(testData.precio || testData.price || 0)
@@ -610,7 +767,6 @@ try {
                 card.classList.add('selected');
                 checkbox.checked = true;
             } else {
-                // Remover prueba
                 selectedTests.splice(index, 1);
                 card.classList.remove('selected');
                 checkbox.checked = false;
@@ -622,6 +778,11 @@ try {
         function updateOrderSummary() {
             const listContainer = document.getElementById('selectedTestsList');
             const totalElement = document.getElementById('orderTotal');
+            const badge = document.getElementById('selectedBadge');
+
+            if (badge) {
+                badge.textContent = selectedTests.length;
+            }
 
             if (selectedTests.length === 0) {
                 listContainer.innerHTML = `
@@ -635,21 +796,18 @@ try {
                 return;
             }
 
-            // Calcular total
             let total = 0;
             let html = '';
 
-            selectedTests.forEach((test, index) => {
+            selectedTests.forEach((test) => {
                 total += test.precio;
                 html += `
                 <div class="selected-test-item">
-                    <div class="test-name">${test.nombre_prueba}</div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="text-success fw-semibold">Q${test.precio.toFixed(2)}</span>
-                        <i class="bi bi-x-circle remove-test" 
-                           onclick="removeTest(${test.id_prueba})"
-                           title="Remover prueba"></i>
-                    </div>
+                    <span class="test-item-name" title="${test.nombre_prueba}">${test.nombre_prueba}</span>
+                    <span class="test-item-price">Q${test.precio.toFixed(2)}</span>
+                    <i class="bi bi-x-circle test-item-remove" 
+                       onclick="removeTest(${test.id_prueba})"
+                       title="Remover prueba"></i>
                 </div>
             `;
             });
@@ -659,7 +817,7 @@ try {
         }
 
         function removeTest(testId) {
-            const card = document.querySelector(`.test-selection-card[data-id="${testId}"]`);
+            const card = document.querySelector(`.test-card[data-id="${testId}"]`);
             if (card) {
                 const testData = selectedTests.find(t => t.id_prueba == testId);
                 if (testData) {
@@ -669,6 +827,8 @@ try {
         }
 
         // SweetAlert2 para confirmación
+        const isEmbedded = document.getElementById('is_embedded').value === '1';
+
         document.getElementById('orderForm')?.addEventListener('submit', function (e) {
             e.preventDefault();
 
@@ -717,14 +877,51 @@ try {
                         title: 'Generando orden...',
                         text: 'Por favor espere',
                         allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        didOpen: () => { Swal.showLoading(); }
                     });
 
-                    setTimeout(() => {
-                        e.target.submit();
-                    }, 500);
+                    const formData = new FormData(this);
+                    fetch('api/create_order.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Orden Generada!',
+                                text: 'Número de orden: ' + data.order_number,
+                                confirmButtonColor: '#0d6efd'
+                            }).then(() => {
+                                if (data.redirect) {
+                                    window.location.href = data.redirect;
+                                } else if (window.parent && window.parent.closeModal) {
+                                    window.parent.closeModal('labOrderModal');
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message || 'Error al generar la orden',
+                                confirmButtonColor: '#0d6efd'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error de conexión',
+                            confirmButtonColor: '#0d6efd'
+                        });
+                    })
+                    .finally(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> Generar Orden de Laboratorio';
+                    });
                 } else {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> Generar Orden de Laboratorio';

@@ -1,0 +1,168 @@
+<?php
+session_start();
+require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+
+header('Content-Type: application/json');
+
+verify_session();
+
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+if ($id_hospital === 0) {
+    echo json_encode(['success' => false, 'message' => 'Hospital no identificado']);
+    exit;
+}
+
+// Read JSON body and validate CSRF from JSON data
+$rawData = file_get_contents('php://input');
+$data = json_decode($rawData, true);
+
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $data['csrf_token'] ?? '')) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
+if (!$data || !isset($data['action'])) {
+    echo json_encode(['success' => false, 'message' => 'Acción no especificada']);
+    exit;
+}
+
+$action = $data['action'];
+
+try {
+    $database = new Database();
+    $conn = $database->getConnection();
+    $conn->beginTransaction();
+
+    if ($action === 'delete') {
+        $id_tarifa = (int)($data['id_tarifa'] ?? 0);
+        if ($id_tarifa === 0) {
+            echo json_encode(['success' => false, 'message' => 'ID de tarifa inválido']);
+            exit;
+        }
+
+        // Fetch old data for audit
+        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $fetchStmt->execute([$id_tarifa, $id_hospital]);
+        $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $conn->prepare("DELETE FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $stmt->execute([$id_tarifa, $id_hospital]);
+        $conn->commit();
+
+        audit_log('delete', 'tarifas', "Tarifa eliminada: tipo={$data['tipo_servicio']}", [
+            'table_name' => 'tarifas_servicios',
+            'record_id' => $id_tarifa,
+            'old_data' => $oldData
+        ]);
+
+        echo json_encode(['success' => true, 'message' => 'Tarifa eliminada']);
+        exit;
+    }
+
+    if ($action === 'create') {
+        $tipo = $data['tipo_servicio'] ?? '';
+        $id_medico = isset($data['id_medico']) && $data['id_medico'] > 0 ? (int)$data['id_medico'] : null;
+        $nombre = $data['nombre_servicio'] ?? null;
+        $normal = (float)($data['precio_normal'] ?? 0);
+        $inhabil = (float)($data['precio_inhabil'] ?? 0);
+        $radio = isset($data['precio_radio']) ? (float)$data['precio_radio'] : null;
+        $region = isset($data['region_count']) && $data['region_count'] > 0 ? (int)$data['region_count'] : null;
+
+        $stmt = $conn->prepare("
+            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, region_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre, $normal, $inhabil, $radio, $region]);
+        $newId = $conn->lastInsertId();
+        $conn->commit();
+
+        audit_log('create', 'tarifas', "Nueva tarifa creada: tipo=$tipo, precio=$normal", [
+            'table_name' => 'tarifas_servicios',
+            'record_id' => (int)$newId,
+            'new_data' => [
+                'tipo_servicio' => $tipo,
+                'id_medico' => $id_medico,
+                'nombre_servicio' => $nombre,
+                'precio_normal' => $normal,
+                'precio_inhabil' => $inhabil,
+                'precio_radio' => $radio,
+                'region_count' => $region
+            ]
+        ]);
+
+        echo json_encode(['success' => true, 'message' => 'Tarifa creada', 'id_tarifa' => (int)$newId]);
+        exit;
+    }
+
+    if ($action === 'update') {
+        $id_tarifa = (int)($data['id_tarifa'] ?? 0);
+        $normal = (float)($data['precio_normal'] ?? 0);
+        $inhabil = (float)($data['precio_inhabil'] ?? 0);
+        $radio = isset($data['precio_radio']) ? (float)$data['precio_radio'] : null;
+
+        // Fetch old data for audit
+        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $fetchStmt->execute([$id_tarifa, $id_hospital]);
+        $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $conn->prepare("
+            UPDATE tarifas_servicios
+            SET precio_normal = ?, precio_inhabil = ?, precio_radio = ?
+            WHERE id_tarifa = ? AND id_hospital = ?
+        ");
+        $stmt->execute([$normal, $inhabil, $radio, $id_tarifa, $id_hospital]);
+        $conn->commit();
+
+        audit_log('update', 'tarifas', "Tarifa actualizada: ID=$id_tarifa", [
+            'table_name' => 'tarifas_servicios',
+            'record_id' => $id_tarifa,
+            'old_data' => $oldData,
+            'new_data' => [
+                'precio_normal' => $normal,
+                'precio_inhabil' => $inhabil,
+                'precio_radio' => $radio
+            ]
+        ]);
+
+        echo json_encode(['success' => true, 'message' => 'Tarifa actualizada']);
+        exit;
+    }
+
+    if ($action === 'batch_save') {
+        $items = $data['tarifas'] ?? [];
+        $stmt = $conn->prepare("
+            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, region_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                precio_normal = VALUES(precio_normal),
+                precio_inhabil = VALUES(precio_inhabil),
+                precio_radio = VALUES(precio_radio)
+        ");
+
+        foreach ($items as $item) {
+            $tipo = $item['tipo_servicio'] ?? '';
+            $id_medico = isset($item['id_medico']) && $item['id_medico'] > 0 ? (int)$item['id_medico'] : null;
+            $nombre = $item['nombre_servicio'] ?? null;
+            $normal = (float)($item['precio_normal'] ?? 0);
+            $inhabil = (float)($item['precio_inhabil'] ?? 0);
+            $radio = isset($item['precio_radio']) ? (float)$item['precio_radio'] : null;
+            $region = isset($item['region_count']) && $item['region_count'] > 0 ? (int)$item['region_count'] : null;
+
+            $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre, $normal, $inhabil, $radio, $region]);
+        }
+
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Tarifas guardadas']);
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Acción desconocida']);
+
+} catch (Exception $e) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
+    error_log("Error en save_tarifas.php: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+}

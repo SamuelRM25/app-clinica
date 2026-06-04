@@ -153,6 +153,23 @@ try {
     // End file upload handling
 
     $conn->commit();
+
+    $resultCount = 0;
+    foreach ($results_data as $id_orden_prueba => $params) {
+        foreach ($params as $id_parametro => $valor) {
+            if ($valor !== '') $resultCount++;
+        }
+    }
+
+    audit_log('create', 'laboratory', "Resultados guardados para orden #$id_orden ($resultCount parámetros)", [
+        'table_name' => 'resultados_laboratorio',
+        'record_id' => (int)$id_orden,
+        'new_data' => [
+            'id_orden' => $id_orden,
+            'parametros_guardados' => $resultCount,
+        ]
+    ]);
+
     echo json_encode(['success' => true, 'message' => 'Resultados guardados correctamente']);
 
 } catch (Exception $e) {

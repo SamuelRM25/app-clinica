@@ -167,7 +167,7 @@ try {
         $stmt_sync->execute([$id_cuenta]);
 
         // Fetch updated account data
-        $stmt_cuenta->execute([$id_encamamiento]);
+        $stmt_cuenta->execute([$id_encamamiento, $id_hospital]);
         $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
 
         // Fetch charges
@@ -218,7 +218,7 @@ try {
 
 } catch (Exception $e) {
     error_log('Error en hospitalization/detalle_encamamiento.php: ' . $e->getMessage());
-    die("Error: " . 'Error del servidor.');
+    die("Error: " . htmlspecialchars($e->getMessage()));
 }
 ?>
 <!DOCTYPE html>

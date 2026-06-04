@@ -4,6 +4,8 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+csrf_token();
+
 
 
 // Establecer la zona horaria correcta
@@ -76,7 +78,7 @@ try {
     }
 
     $stmt = $conn->prepare("
-        INSERT INTO cobros (paciente_cobro, cantidad_consulta, fecha_consulta, id_doctor, tipo_consulta, tipo_pago, id_hospital) 
+        INSERT INTO cobros (paciente_cobro, cantidad_consulta, fecha_consulta, id_doctor, tipo_consulta, tipo_pago, id_hospital)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ");
 
@@ -90,10 +92,25 @@ try {
         $id_hospital
     ]);
 
+    $newId = $conn->lastInsertId();
+
+    audit_log('create', 'billing', "Cobro creado: Paciente ID=$paciente_id, Cantidad=$cantidad, Tipo=$tipo_consulta", [
+        'table_name' => 'cobros',
+        'record_id' => (int)$newId,
+        'new_data' => [
+            'paciente_cobro' => $paciente_id,
+            'cantidad_consulta' => $cantidad,
+            'fecha_consulta' => $fecha,
+            'id_doctor' => $id_doctor,
+            'tipo_consulta' => $tipo_consulta,
+            'tipo_pago' => $tipo_pago
+        ]
+    ]);
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Cobro guardado correctamente',
-        'id_cobro' => $conn->lastInsertId()
+        'id_cobro' => $newId
     ]);
 
 } catch (Exception $e) {

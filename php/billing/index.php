@@ -43,30 +43,116 @@ try {
     $stmtDoc->execute([hospital_id()]);
     $doctores = $stmtDoc->fetchAll(PDO::FETCH_ASSOC);
 
-    // Obtener cobros con paginación
-    $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+    // Registro unificado de cobros (todas las fuentes)
+    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     $limit = 25;
     $offset = ($page - 1) * $limit;
+    $tipo_filtro = isset($_GET['tipo']) ? trim($_GET['tipo']) : '';
+    $hid = hospital_id();
 
-    // Obtener total para paginación
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE id_hospital = ?");
-    $stmt->execute([hospital_id()]);
-    $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $total_pages = ceil($total_records / $limit);
+    $tipos_cobro_disponibles = [
+        '' => 'Todos',
+        'Consulta' => 'Consulta',
+        'Reconsulta' => 'Reconsulta',
+        'Farmacia' => 'Farmacia',
+        'Laboratorio' => 'Laboratorio',
+        'Examen' => 'Examen',
+        'Procedimiento' => 'Procedimiento',
+        'Ultrasonido' => 'Ultrasonido',
+        'Rayos X' => 'Rayos X',
+        'Electrocardiograma' => 'Electrocardiograma',
+    ];
 
-    // Obtener datos de cobros con nombre de paciente
-    $stmt = $conn->prepare("
-        SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) as nombre_paciente 
+    $union_sql = "
+        SELECT 'cobro' AS fuente, c.in_cobro AS id_registro,
+            CONCAT(p.nombre, ' ', p.apellido) AS nombre_paciente,
+            CASE WHEN COALESCE(c.tipo_consulta, '') = 'Reconsulta' THEN 'Reconsulta' ELSE 'Consulta' END AS tipo_cobro,
+            COALESCE(c.tipo_consulta, 'Consulta') AS detalle,
+            c.cantidad_consulta AS monto, COALESCE(c.tipo_pago, 'Efectivo') AS tipo_pago, c.fecha_consulta AS fecha
         FROM cobros c
-        JOIN pacientes p ON c.paciente_cobro = p.id_paciente
+        INNER JOIN pacientes p ON c.paciente_cobro = p.id_paciente
         WHERE c.id_hospital = ?
-        ORDER BY c.fecha_consulta DESC
-        LIMIT ? OFFSET ?
-    ");
-    $stmt->bindValue(1, hospital_id(), PDO::PARAM_INT);
-    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
-    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
-    $stmt->execute();
+
+        UNION ALL
+
+        SELECT 'venta', v.id_venta, COALESCE(v.nombre_cliente, 'Cliente general'), 'Farmacia',
+            'Venta de medicamentos', v.total, COALESCE(v.tipo_pago, 'Efectivo'), v.fecha_venta
+        FROM ventas v
+        WHERE v.id_hospital = ? AND v.tipo_pago != 'Traslado'
+
+        UNION ALL
+
+        SELECT 'examen', e.id_examen_realizado, e.nombre_paciente,
+            CASE
+                WHEN e.tipo_examen LIKE '%ultrasonido%' THEN 'Ultrasonido'
+                WHEN e.tipo_examen LIKE '%rayos x%' OR e.tipo_examen LIKE '%rx%' THEN 'Rayos X'
+                ELSE 'Laboratorio'
+            END,
+            COALESCE(e.tipo_examen, 'Examen de laboratorio'),
+            e.cobro, COALESCE(e.tipo_pago, 'Efectivo'), e.fecha_examen
+        FROM examenes_realizados e
+        WHERE e.id_hospital = ?
+
+        UNION ALL
+
+        SELECT 'procedimiento', pm.id_procedimiento, pm.nombre_paciente, 'Procedimiento',
+            COALESCE(pm.procedimiento, 'Procedimiento menor'),
+            pm.cobro, COALESCE(pm.tipo_pago, 'Efectivo'), pm.fecha_procedimiento
+        FROM procedimientos_menores pm
+        WHERE pm.id_hospital = ?
+
+        UNION ALL
+
+        SELECT 'ultrasonido', u.id_ultrasonido, u.nombre_paciente, 'Ultrasonido',
+            COALESCE(u.tipo_ultrasonido, 'Ultrasonido'),
+            u.cobro, COALESCE(u.tipo_pago, 'Efectivo'), u.fecha_ultrasonido
+        FROM ultrasonidos u
+        WHERE u.id_hospital = ?
+
+        UNION ALL
+
+        SELECT 'rayos_x', r.id_rayos_x, r.nombre_paciente, 'Rayos X',
+            COALESCE(r.tipo_estudio, 'Rayos X'),
+            r.cobro, COALESCE(r.tipo_pago, 'Efectivo'), r.fecha_estudio
+        FROM rayos_x r
+        WHERE r.id_hospital = ?
+
+        UNION ALL
+
+        SELECT 'electro', el.id_electro,
+            TRIM(CONCAT(COALESCE(p2.nombre, ''), ' ', COALESCE(p2.apellido, ''))),
+            'Electrocardiograma', 'Electrocardiograma',
+            el.precio, COALESCE(el.tipo_pago, 'Efectivo'),
+            COALESCE(el.fecha_realizado, NOW())
+        FROM electrocardiogramas el
+        LEFT JOIN pacientes p2 ON el.id_paciente = p2.id_paciente
+        WHERE el.id_hospital = ?
+    ";
+
+    $hospital_params = array_fill(0, 7, $hid);
+
+    $count_sql = "SELECT COUNT(*) FROM ($union_sql) AS registro";
+    $count_params = $hospital_params;
+    if ($tipo_filtro !== '' && isset($tipos_cobro_disponibles[$tipo_filtro])) {
+        $count_sql = "SELECT COUNT(*) FROM ($union_sql) AS registro WHERE tipo_cobro = ?";
+        $count_params[] = $tipo_filtro;
+    }
+    $stmt = $conn->prepare($count_sql);
+    $stmt->execute($count_params);
+    $total_records = (int) $stmt->fetchColumn();
+    $total_pages = max(1, (int) ceil($total_records / $limit));
+
+    $data_sql = "SELECT * FROM ($union_sql) AS registro";
+    $data_params = $hospital_params;
+    if ($tipo_filtro !== '' && isset($tipos_cobro_disponibles[$tipo_filtro])) {
+        $data_sql .= " WHERE tipo_cobro = ?";
+        $data_params[] = $tipo_filtro;
+    }
+    // LIMIT/OFFSET como enteros en SQL (PDO con ? los envía como string y MySQL falla)
+    $data_sql .= ' ORDER BY fecha DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+    $stmt = $conn->prepare($data_sql);
+    $stmt->execute($data_params);
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
@@ -82,9 +168,14 @@ try {
     $mes_total = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 } catch (Exception $e) {
-    // Manejo de errores
     error_log("Error en módulo de cobros: " . $e->getMessage());
-    die("Error al cargar el módulo de cobros. Por favor, contacte al administrador.");
+    $error_detail = ($_SESSION['tipoUsuario'] ?? '') === 'admin'
+        ? htmlspecialchars($e->getMessage())
+        : '';
+    die(
+        "Error al cargar el módulo de cobros. Por favor, contacte al administrador."
+        . ($error_detail ? "<br><small class=\"text-muted\">Detalles: {$error_detail}</small>" : '')
+    );
 }
 ?>
 <!DOCTYPE html>
@@ -95,6 +186,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
     <!-- logo -->
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -267,14 +359,31 @@ try {
                 </div>
             </div>
 
-            <!-- Sección de cobros -->
-            <section class="billing-section animate-in delay-1">
-                <div class="section-header">
-                    <h3 class="section-title">
-                        <i class="bi bi-receipt-cutoff section-title-icon"></i>
-                        Registro de Cobros
-                    </h3>
-                    <div class="d-flex gap-2">
+            <!-- Registro de Cobros (premium) -->
+            <section class="billing-section billing-registry animate-in delay-1">
+                <div class="billing-registry__head">
+                    <div class="billing-registry__title-wrap">
+                        <h3 class="billing-registry__title">
+                            <span class="billing-registry__title-icon">
+                                <i class="bi bi-receipt-cutoff"></i>
+                            </span>
+                            Registro de Cobros
+                        </h3>
+                        <p class="billing-registry__subtitle">
+                            Historial unificado de consultas, farmacia, laboratorio y más
+                            <span class="billing-registry__count">
+                                <i class="bi bi-collection"></i>
+                                <?php echo number_format($total_records); ?> registros
+                            </span>
+                            <?php if ($tipo_filtro !== ''): ?>
+                                    <span class="billing-registry__count">
+                                        <i class="bi bi-funnel"></i>
+                                        <?php echo htmlspecialchars($tipo_filtro); ?>
+                                    </span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <div class="billing-registry__actions">
                         <button type="button" class="action-btn" data-bs-toggle="modal"
                             data-bs-target="#newBillingModal">
                             <i class="bi bi-plus-lg"></i>
@@ -287,64 +396,136 @@ try {
                     </div>
                 </div>
 
+                <div class="billing-registry__filters-wrap">
+                    <div class="billing-filters" role="group" aria-label="Filtrar por tipo de cobro">
+                        <?php foreach ($tipos_cobro_disponibles as $tipo_key => $tipo_label): ?>
+                                <?php
+                                $filter_url = '?page=1' . ($tipo_key !== '' ? '&tipo=' . urlencode($tipo_key) : '');
+                                $is_active = ($tipo_filtro === $tipo_key) || ($tipo_filtro === '' && $tipo_key === '');
+                                ?>
+                                <a href="<?php echo htmlspecialchars($filter_url); ?>"
+                                    class="billing-btn-chip<?php echo $is_active ? ' active' : ''; ?>"
+                                    <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+                                    <?php if ($tipo_key !== ''): ?>
+                                            <i class="bi <?php echo charge_type_icon($tipo_key); ?>"></i>
+                                    <?php else: ?>
+                                            <i class="bi bi-grid"></i>
+                                    <?php endif; ?>
+                                    <?php echo htmlspecialchars($tipo_label); ?>
+                                </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <?php if (count($cobros) > 0): ?>
-                        <div class="table-responsive">
+                        <div class="billing-registry__table-card billing-card">
+                        <div class="billing-table-wrap">
+                            <div class="table-responsive">
                             <table class="billing-table">
                                 <thead>
                                     <tr>
-                                        <th>Paciente</th>
+                                        <th>Paciente / Cliente</th>
+                                        <th>Tipo de cobro</th>
+                                        <th>Método pago</th>
                                         <th>Monto</th>
                                         <th>Fecha</th>
-                                        <th>ID Cobro</th>
+                                        <th>Referencia</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($cobros as $cobro): ?>
                                             <?php
-                                            $patient_name = htmlspecialchars($cobro['nombre_paciente']);
+                                            $patient_name = trim($cobro['nombre_paciente'] ?? '') ?: 'Sin nombre';
+                                            $name_parts = preg_split('/\s+/', $patient_name, 2);
                                             $patient_initials = strtoupper(
-                                                substr(explode(' ', $cobro['nombre_paciente'])[0], 0, 1) .
-                                                (isset(explode(' ', $cobro['nombre_paciente'])[1]) ? substr(explode(' ', $cobro['nombre_paciente'])[1], 0, 1) : '')
+                                                substr($name_parts[0], 0, 1) .
+                                                (isset($name_parts[1]) ? substr($name_parts[1], 0, 1) : '')
                                             );
+                                            $tipo_cobro = $cobro['tipo_cobro'] ?? 'Consulta';
+                                            $badge_class = charge_type_badge_class($tipo_cobro);
+                                            $fecha_row = strtotime($cobro['fecha']);
+                                            $print_url = billing_print_url($cobro['fuente'], $cobro['id_registro']);
+                                            $ref_prefix = strtoupper(substr($cobro['fuente'], 0, 3));
                                             ?>
                                             <tr>
                                                 <td>
                                                     <div class="patient-cell">
                                                         <div class="patient-avatar">
-                                                            <?php echo $patient_initials; ?>
+                                                            <?php echo htmlspecialchars($patient_initials); ?>
                                                         </div>
                                                         <div class="patient-info">
-                                                            <div class="patient-name"><?php echo $patient_name; ?></div>
+                                                            <div class="patient-name">
+                                                                <?php echo htmlspecialchars($patient_name); ?>
+                                                            </div>
+                                                            <?php if (!empty($cobro['detalle']) && $cobro['detalle'] !== $tipo_cobro): ?>
+                                                                    <span class="charge-detail-text"
+                                                                        title="<?php echo htmlspecialchars($cobro['detalle']); ?>">
+                                                                        <?php echo htmlspecialchars($cobro['detalle']); ?>
+                                                                    </span>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span class="amount-badge">
-                                                        <i class="bi bi-currency-dollar"></i>
-                                                        Q<?php echo number_format($cobro['cantidad_consulta'], 2); ?>
+                                                    <span class="charge-type-badge <?php echo $badge_class; ?>">
+                                                        <i class="bi <?php echo charge_type_icon($tipo_cobro); ?>"></i>
+                                                        <?php echo htmlspecialchars($tipo_cobro); ?>
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>
+                                                    <span class="payment-badge">
+                                                        <i class="bi bi-wallet2"></i>
+                                                        <?php echo htmlspecialchars($cobro['tipo_pago'] ?? 'Efectivo'); ?>
+                                                    </span>
                                                 </td>
                                                 <td>
-                                                    <span
-                                                        class="badge bg-secondary">#<?php echo str_pad($cobro['in_cobro'], 5, '0', STR_PAD_LEFT); ?></span>
+                                                    <span class="amount-badge income">
+                                                        Q<?php echo number_format((float) $cobro['monto'], 2); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="billing-date-cell">
+                                                        <div class="billing-date-cell__day">
+                                                            <?php echo date('d/m/Y', $fecha_row); ?>
+                                                        </div>
+                                                        <div class="billing-date-cell__time">
+                                                            <i class="bi bi-clock"></i>
+                                                            <?php echo date('h:i A', $fecha_row); ?>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="charge-id-badge">
+                                                        #<?php echo htmlspecialchars($ref_prefix); ?>-<?php echo str_pad((int) $cobro['id_registro'], 5, '0', STR_PAD_LEFT); ?>
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <div class="action-buttons">
-                                                        <a href="print_receipt.php?id=<?php echo $cobro['in_cobro']; ?>" target="_blank"
-                                                            class="btn-icon print" title="Imprimir recibo">
-                                                            <i class="bi bi-printer"></i>
-                                                        </a>
+                                                        <?php if ($print_url !== '#'): ?>
+                                                                <a href="<?php echo htmlspecialchars($print_url); ?>" target="_blank"
+                                                                    class="btn-icon print" title="Imprimir recibo">
+                                                                    <i class="bi bi-printer"></i>
+                                                                </a>
+                                                        <?php endif; ?>
                                                         <button type="button" class="btn-icon view view-details"
-                                                            data-id="<?php echo $cobro['in_cobro']; ?>"
-                                                            data-nombre="<?php echo htmlspecialchars($cobro['nombre_paciente']); ?>"
-                                                            data-monto="<?php echo $cobro['cantidad_consulta']; ?>"
-                                                            data-fecha="<?php echo date('d/m/Y', strtotime($cobro['fecha_consulta'])); ?>"
+                                                            data-id="<?php echo (int) $cobro['id_registro']; ?>"
+                                                            data-fuente="<?php echo htmlspecialchars($cobro['fuente']); ?>"
+                                                            data-nombre="<?php echo htmlspecialchars($patient_name); ?>"
+                                                            data-tipo="<?php echo htmlspecialchars($tipo_cobro); ?>"
+                                                            data-detalle="<?php echo htmlspecialchars($cobro['detalle'] ?? ''); ?>"
+                                                            data-monto="<?php echo (float) $cobro['monto']; ?>"
+                                                            data-fecha="<?php echo date('d/m/Y h:i A', $fecha_row); ?>"
+                                                            data-pago="<?php echo htmlspecialchars($cobro['tipo_pago'] ?? 'Efectivo'); ?>"
+                                                            data-print="<?php echo htmlspecialchars($print_url); ?>"
                                                             title="Ver detalles">
                                                             <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="btn-icon delete"
+                                                            data-id="<?php echo (int) $cobro['id_registro']; ?>"
+                                                            data-fuente="<?php echo htmlspecialchars($cobro['fuente']); ?>"
+                                                            title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -352,63 +533,82 @@ try {
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            </div>
+                        </div>
                         </div>
 
-                        <!-- Paginación -->
-                        <?php if ($total_pages > 1): ?>
-                                <nav class="mt-4">
-                                    <ul class="pagination justify-content-center">
-                                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        </li>
-
-                                        <?php
-                                        $range = 2;
-                                        $start = max(1, $page - $range);
-                                        $end = min($total_pages, $page + $range);
-
-                                        if ($start > 1): ?>
-                                                <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
-                                                <?php if ($start > 2): ?>
-                                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+<div class="billing-registry__footer">
+                            <div class="billing-registry__page-hint">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Página <?php echo $page; ?> de <?php echo $total_pages; ?>
+                                &nbsp;·&nbsp;
+                                <span><?php echo count($cobros); ?> de <?php echo number_format($total_records); ?> registros</span>
+                            </div>
+                            <?php if ($total_pages > 1): ?>
+                                    <nav aria-label="Paginación de cobros">
+                                        <ul class="billing-pagination">
+                                            <?php $pag_tipo_qs = $tipo_filtro !== '' ? '&tipo=' . urlencode($tipo_filtro) : ''; ?>
+                                            <li class="billing-pagination__item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                                                <?php if ($page <= 1): ?>
+                                                        <span><i class="bi bi-chevron-left"></i></span>
+                                                <?php else: ?>
+                                                        <a href="?page=<?php echo $page - 1; ?><?php echo $pag_tipo_qs; ?>"
+                                                            aria-label="Página anterior"><i class="bi bi-chevron-left"></i></a>
                                                 <?php endif; ?>
-                                        <?php endif; ?>
+                                            </li>
 
-                                        <?php for ($i = $start; $i <= $end; $i++): ?>
-                                                <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                                    <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                                </li>
-                                        <?php endfor; ?>
+                                            <?php
+                                            $range = 2;
+                                            $start = max(1, $page - $range);
+                                            $end = min($total_pages, $page + $range);
 
-                                        <?php if ($end < $total_pages): ?>
-                                                <?php if ($end < $total_pages - 1): ?>
-                                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                            if ($start > 1): ?>
+                                                    <li class="billing-pagination__item">
+                                                        <a href="?page=1<?php echo $pag_tipo_qs; ?>">1</a>
+                                                    </li>
+                                                    <?php if ($start > 2): ?>
+                                                            <li class="billing-pagination__item disabled"><span>…</span></li>
+                                                    <?php endif; ?>
+                                            <?php endif; ?>
+
+                                            <?php for ($i = $start; $i <= $end; $i++): ?>
+                                                    <li class="billing-pagination__item <?php echo ($page == $i) ? 'active' : ''; ?>">
+                                                        <a href="?page=<?php echo $i; ?><?php echo $pag_tipo_qs; ?>"><?php echo $i; ?></a>
+                                                    </li>
+                                            <?php endfor; ?>
+
+                                            <?php if ($end < $total_pages): ?>
+                                                    <?php if ($end < $total_pages - 1): ?>
+                                                            <li class="billing-pagination__item disabled"><span>…</span></li>
+                                                    <?php endif; ?>
+                                                    <li class="billing-pagination__item">
+                                                        <a href="?page=<?php echo $total_pages; ?><?php echo $pag_tipo_qs; ?>"><?php echo $total_pages; ?></a>
+                                                    </li>
+                                            <?php endif; ?>
+
+                                            <li class="billing-pagination__item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
+                                                <?php if ($page >= $total_pages): ?>
+                                                        <span><i class="bi bi-chevron-right"></i></span>
+                                                <?php else: ?>
+                                                        <a href="?page=<?php echo $page + 1; ?><?php echo $pag_tipo_qs; ?>"
+                                                            aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></a>
                                                 <?php endif; ?>
-                                                <li class="page-item"><a class="page-link"
-                                                        href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a></li>
-                                        <?php endif; ?>
-
-                                        <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </nav>
-                        <?php endif; ?>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                            <?php endif; ?>
+                        </div>
 
                 <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-cash-coin"></i>
+                        <div class="billing-registry__empty">
+                            <div class="billing-registry__empty-icon">
+                                <i class="bi bi-receipt"></i>
                             </div>
-                            <h4 class="text-muted mb-2">No hay cobros registrados</h4>
-                            <p class="text-muted mb-3">Comience registrando un nuevo cobro</p>
+                            <h4>No hay cobros en este filtro</h4>
+                            <p>Registra un nuevo cobro o cambia el tipo de servicio en los filtros superiores.</p>
                             <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#newBillingModal">
                                 <i class="bi bi-plus-lg"></i>
-                                Registrar primer cobro
+                                Registrar cobro
                             </button>
                         </div>
                 <?php endif; ?>
@@ -493,8 +693,9 @@ try {
                         <i class="bi bi-check-lg me-1"></i>Guardar Cobro
                     </button>
                 </div>
-            </div>
-        </div>
+</div>
+                        </div>
+                        </div>
     </div>
 
     <!-- JavaScript Optimizado -->
@@ -599,6 +800,7 @@ try {
                     this.setupBillingHandlers();
                     this.setupAnimations();
                     this.setupModalDetails();
+                    this.setupDeleteHandlers();
                 }
 
                 setupGreeting() {
@@ -747,10 +949,12 @@ try {
                             DOM.saveBillingBtn.disabled = true;
 
                             try {
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
                                 const response = await fetch('save_billing.php', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/x-www-form-urlencoded',
+                                        'X-CSRF-TOKEN': csrfToken
                                     },
                                     body: new URLSearchParams(data)
                                 });
@@ -797,36 +1001,85 @@ try {
                 }
 
                 setupModalDetails() {
-                    // Mostrar detalles en modal
                     document.querySelectorAll('.view-details').forEach(btn => {
                         btn.addEventListener('click', function () {
-                            const id = this.getAttribute('data-id');
                             const nombre = this.getAttribute('data-nombre');
                             const monto = this.getAttribute('data-monto');
                             const fecha = this.getAttribute('data-fecha');
+                            const tipo = this.getAttribute('data-tipo');
+                            const detalle = this.getAttribute('data-detalle');
+                            const pago = this.getAttribute('data-pago');
+                            const printUrl = this.getAttribute('data-print');
 
                             Swal.fire({
                                 title: 'Detalles del Cobro',
                                 html: `
                                 <div class="text-start">
-                                    <p><strong>ID:</strong> #${id.toString().padStart(5, '0')}</p>
-                                    <p><strong>Paciente:</strong> ${nombre}</p>
+                                    <p><strong>Tipo:</strong> ${tipo}</p>
+                                    ${detalle ? `<p><strong>Detalle:</strong> ${detalle}</p>` : ''}
+                                    <p><strong>Paciente / Cliente:</strong> ${nombre}</p>
                                     <p><strong>Monto:</strong> Q${parseFloat(monto).toFixed(2)}</p>
+                                    <p><strong>Método de pago:</strong> ${pago}</p>
                                     <p><strong>Fecha:</strong> ${fecha}</p>
                                 </div>
                             `,
                                 icon: 'info',
                                 showCancelButton: true,
-                                confirmButtonText: 'Imprimir Recibo',
+                                confirmButtonText: printUrl && printUrl !== '#' ? 'Imprimir Recibo' : 'Cerrar',
                                 cancelButtonText: 'Cerrar',
                                 confirmButtonColor: 'var(--color-primary)',
                                 background: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1e293b' : '#ffffff',
                                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#e2e8f0' : '#1a1a1a'
                             }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.open(`print_receipt.php?id=${id}`, '_blank');
+                                if (result.isConfirmed && printUrl && printUrl !== '#') {
+                                    window.open(printUrl, '_blank');
                                 }
                             });
+                        });
+                    });
+                }
+
+                setupDeleteHandlers() {
+                    document.querySelectorAll('.btn-icon.delete').forEach(btn => {
+                        btn.addEventListener('click', async function () {
+                            const id = this.getAttribute('data-id');
+                            const fuente = this.getAttribute('data-fuente');
+
+                            const result = await Swal.fire({
+                                title: '¿Está seguro?',
+                                text: 'Esta acción eliminará el registro de cobro permanentemente.',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Sí, eliminar',
+                                cancelButtonText: 'Cancelar',
+                                confirmButtonColor: '#dc3545'
+                            });
+
+                            if (!result.isConfirmed) return;
+
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                            try {
+                                const response = await fetch('delete_cobro.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ id: id, fuente: fuente, csrf_token: csrfToken })
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    Swal.fire({
+                                        title: 'Eliminado',
+                                        text: 'Registro eliminado correctamente',
+                                        icon: 'success',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire({ title: 'Error', text: data.message, icon: 'error' });
+                                }
+                            } catch (e) {
+                                Swal.fire({ title: 'Error', text: 'Error de conexión con el servidor', icon: 'error' });
+                            }
                         });
                     });
                 }
@@ -937,55 +1190,141 @@ try {
 
         })();
 
-        // Estilos para spinner
+        // Estilos para spinner y billing premium
         const style = document.createElement('style');
         style.textContent = `
-        .spin {
-            animation: spin 1s linear infinite;
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* ── Billing Premium ── */
+        body { background: #f5f7fb; }
+        .billing-card {
+            background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .billing-table-wrap { padding: 0; width: 100%; }
+        .billing-table { width: 100%; table-layout: auto; }
+        .billing-table thead th {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            padding: 0.9rem 1rem; border: none;
         }
-        
-        /* Estilos para modal */
-        .modal-content {
-            background-color: var(--color-card);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+        .billing-table tbody tr {
+            border-bottom: 1px solid #f0f2f5; transition: background 0.15s;
         }
-        
-        .modal-header {
-            border-bottom: 1px solid var(--color-border);
+        .billing-table tbody tr:hover { background: rgba(37,99,235,0.03); }
+        .billing-table tbody td { padding: 0.85rem 1rem; vertical-align: middle; font-size: 0.85rem; border: none; }
+
+        /* Patient cell */
+        .patient-cell { display: flex; align-items: center; gap: 0.75rem; }
+        .patient-avatar {
+            width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+            background: linear-gradient(135deg, #2563eb, #8b5cf6);
+            color: #fff; font-weight: 700; font-size: 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.25);
         }
-        
-        .modal-footer {
-            border-top: 1px solid var(--color-border);
+        .patient-name { font-weight: 700; font-size: 0.92rem; color: #1a1d23; line-height: 1.2; }
+        .charge-detail-text { font-size: 0.72rem; color: #6b7280; display: block; margin-top: 1px; }
+
+        /* Badges de tipo */
+        .charge-type-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.7rem; border-radius: 50px; font-size: 0.72rem; font-weight: 700;
         }
-        
-        .btn-close {
-            filter: var(--data-theme) === 'dark' ? 'invert(1)' : 'none';
+        .charge-type-badge.consulta { background: rgba(37,99,235,0.1); color: #2563eb; }
+        .charge-type-badge.reconsulta { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .charge-type-badge.farmacia { background: rgba(16,185,129,0.1); color: #10b981; }
+        .charge-type-badge.laboratorio { background: rgba(6,182,212,0.1); color: #06b6d4; }
+        .charge-type-badge.procedimiento { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .charge-type-badge.rayosx { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+        .charge-type-badge.ultrasonido { background: rgba(236,72,153,0.1); color: #ec4899; }
+        .charge-type-badge.electro { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+        /* Badge método pago */
+        .payment-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.25rem 0.6rem; border-radius: 8px;
+            font-size: 0.72rem; font-weight: 600;
+            background: rgba(37,99,235,0.07); color: #2563eb;
         }
-        
-        .form-control {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+
+        /* Monto */
+        .amount-badge {
+            display: inline-flex; align-items: center;
+            padding: 0.3rem 0.75rem; border-radius: 10px;
+            font-weight: 800; font-size: 0.88rem;
+            background: rgba(16,185,129,0.1); color: #10b981;
         }
-        
-        .form-control:focus {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25);
+
+        /* Fecha */
+        .billing-date-cell__day { font-weight: 700; font-size: 0.88rem; color: #1a1d23; }
+        .billing-date-cell__time { font-size: 0.7rem; color: #9ca3af; margin-top: 1px; display: flex; align-items: center; gap: 0.25rem; }
+
+        /* Referencia */
+        .charge-id-badge {
+            font-family: monospace; font-size: 0.75rem; font-weight: 700;
+            background: #f3f4f6; color: #374151; padding: 0.2rem 0.5rem; border-radius: 6px;
+            border: 1px solid #e5e7eb;
         }
-        
-        .input-group-text {
-            background-color: var(--color-surface);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+
+        /* Acciones */
+        .action-buttons { display: flex; gap: 0.35rem; }
+        .btn-icon {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e9ecef;
+            background: transparent; color: #6b7280; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-size: 0.85rem;
         }
-    `;
+        .btn-icon:hover { background: rgba(37,99,235,0.08); color: #2563eb; border-color: #2563eb; }
+        .btn-icon.print:hover { background: rgba(16,185,129,0.08); color: #10b981; border-color: #10b981; }
+        .btn-icon.delete:hover { background: rgba(220,53,69,0.08); color: #dc3545; border-color: #dc3545; }
+
+        /* Zebra striping */
+        .billing-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.015); }
+        .billing-table tbody tr:nth-child(even):hover { background: rgba(37,99,235,0.04); }
+
+        .billing-registry__table-card { border-radius: 14px; overflow: hidden; padding: 0; border: none; }
+
+        /* ── Filter Chips ── */
+        .billing-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .billing-btn-chip {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.5rem 1.1rem; border-radius: 50px;
+            font-size: 0.78rem; font-weight: 600; border: 1px solid #e9ecef;
+            background: #fff; color: #6b7280; cursor: pointer; text-decoration: none;
+            transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .billing-btn-chip:hover { background: #f0f4ff; color: #2563eb; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.15); }
+        .billing-btn-chip.active { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+
+        /* ── Pagination ── */
+        .billing-registry__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem 0 0; }
+        .billing-registry__page-hint { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: #6b7280; font-weight: 600; }
+        .billing-pagination { display: flex; gap: 0.35rem; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; justify-content: center; }
+        .billing-pagination__item a,
+        .billing-pagination__item > span {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 2.5rem; height: 2.5rem; padding: 0 0.7rem;
+            border-radius: 10px; font-size: 0.82rem; font-weight: 700;
+            text-decoration: none; color: #6b7280; background: #fff;
+            border: 1px solid #e9ecef; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+        .billing-pagination__item a:hover { background: #f0f4ff; color: #2563eb; border-color: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.15); }
+        .billing-pagination__item.active a { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .billing-pagination__item.disabled > span { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Modal */
+        .modal-content { background-color: var(--color-card); color: var(--color-text); border: 1px solid var(--color-border); }
+        .modal-header { border-bottom: 1px solid var(--color-border); }
+        .modal-footer { border-top: 1px solid var(--color-border); }
+        .btn-close { filter: var(--data-theme) === 'dark' ? 'invert(1)' : 'none'; }
+        .form-control { background-color: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+        .form-control:focus { background-color: var(--color-surface); color: var(--color-text); border-color: var(--color-primary); box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25); }
+        .input-group-text { background-color: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+        `;
         document.head.appendChild(style);
 
         // Modales se inicializan automáticamente vía data-attributes en Bootstrap 5

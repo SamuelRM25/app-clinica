@@ -4,6 +4,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+csrf_token();
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 // Establecer la zona horaria correcta
@@ -113,7 +114,18 @@ try {
     // Commit transaction
     $conn->commit();
 
-    audit_log('venta_creada', 'Venta #' . $id_venta . ' - Total: Q' . $data['total'] . ' - Cliente: ' . $data['nombre_cliente'], $_SESSION['user_id'] ?? null);
+    audit_log('create', 'dispensary', "Venta #$id_venta - Total: Q{$data['total']} - Cliente: {$data['nombre_cliente']}", [
+        'table_name' => 'ventas',
+        'record_id' => (int)$id_venta,
+        'new_data' => [
+            'nombre_cliente' => $data['nombre_cliente'],
+            'nit_cliente' => $data['nit_cliente'] ?? 'C/F',
+            'tipo_pago' => $data['tipo_pago'],
+            'total' => $data['total'],
+            'estado' => $data['estado'],
+            'items_count' => count($data['items'])
+        ]
+    ]);
 
     echo json_encode(['status' => 'success', 'message' => 'Venta registrada correctamente', 'id_venta' => $id_venta]);
 

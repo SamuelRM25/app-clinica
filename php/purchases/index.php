@@ -116,6 +116,7 @@ try {
     <meta name="description"
         content="Módulo de Compras - Centro Médico Herrera Saenz - Gestión de compras de medicamentos e insumos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
     <!-- logo -->
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -132,7 +133,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
-    <script src="../../assets/js/security.js"></script>
+    <!-- <script src="../../assets/js/security.js"></script> -->
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -399,6 +400,10 @@ try {
                                                                         <i class="bi bi-cash-coin"></i>
                                                                     </a>
                                                             <?php endif; ?>
+                                                            <button type="button" class="btn-icon delete" title="Eliminar compra"
+                                                                onclick="deletePurchase(<?php echo $purchase['id']; ?>)">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -563,6 +568,7 @@ try {
                                             <th>Precio U.</th>
                                             <th>Total</th>
                                             <th>Estado</th>
+                                            <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -587,6 +593,12 @@ try {
                                                         Q<?php echo number_format($row['total_compra'], 2); ?></td>
                                                     <td><span
                                                             class="badge badge-<?php echo $statusClass; ?>"><?php echo $row['estado_compra']; ?></span>
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn-icon delete" title="Eliminar compra"
+                                                            onclick="deleteOldPurchase(<?php echo (int)$row['id_compras']; ?>)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                         <?php endforeach; ?>
@@ -1205,7 +1217,7 @@ try {
             // ==========================================================================
 
             // Variables globales para funcionalidad de compras
-            let purchaseItems = [];
+            window.purchaseItems = [];
 
             // Mostrar modal de nueva compra
             window.showNewPurchaseModal = function () {
@@ -1234,7 +1246,7 @@ try {
                 }
 
                 // Limpiar items
-                purchaseItems = [];
+                window.purchaseItems = [];
                 renderItems();
 
                 // Mostrar modal
@@ -1398,25 +1410,38 @@ try {
                     },
                     body: JSON.stringify(payload)
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             if (window.purchaseDraftManager) {
                                 window.purchaseDraftManager.clearDraft();
                             }
 
-                            Swal.fire({
-                                title: '¡Compra Registrada!',
-                                text: 'La compra se ha registrado correctamente. Los productos se han agregado al inventario como pendientes.',
-                                icon: 'success',
-                                confirmButtonText: 'Aceptar'
-                            }).then(() => {
-                                // Limpiar items y cerrar modal
-                                purchaseItems = [];
-                                renderItems();
-                                document.getElementById('newPurchaseModal').classList.remove('active');
-                                location.reload();
-                            });
+                            // Cerrar modal PRIMERO
+                            document.getElementById('newPurchaseModal').classList.remove('active');
+                            window.purchaseItems = [];
+                            if (window.purchaseDraftManager) {
+                                window.purchaseDraftManager.clearDraft();
+                            }
+                            renderItems();
+
+                            // Mostrar toast de éxito DESPUÉS de cerrar modal
+                            setTimeout(() => {
+                                Swal.fire({
+                                    title: '¡Compra Registrada!',
+                                    text: 'La compra se ha registrado correctamente. Los productos se han agregado al inventario como pendientes.',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            }, 300);
                         } else {
                             Swal.fire({
                                 title: 'Error',
@@ -1430,7 +1455,7 @@ try {
                         console.error('Error:', error);
                         Swal.fire({
                             title: 'Error de conexión',
-                            text: 'Ocurrió un error al procesar la solicitud',
+                            text: 'Ocurrió un error al procesar la solicitud: ' + error.message,
                             icon: 'error',
                             confirmButtonText: 'Entendido'
                         });
@@ -1535,6 +1560,63 @@ try {
                     </div>
                 `;
                     });
+            };
+
+            // Eliminar compra (nuevo sistema)
+            window.deletePurchase = async function (id) {
+                const result = await Swal.fire({
+                    title: '¿Está seguro?',
+                    text: 'Esta acción eliminará la compra y todos los registros relacionados.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
+                });
+
+                if (!result.isConfirmed) return;
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                try {
+                    const response = await fetch('delete_purchase_new.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: id, csrf_token: csrfToken })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Eliminado',
+                            text: 'Compra eliminada correctamente',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message, icon: 'error' });
+                    }
+                } catch (e) {
+                    Swal.fire({ title: 'Error', text: 'Error de conexión con el servidor', icon: 'error' });
+                }
+            };
+
+            // Eliminar compra (sistema antiguo)
+            window.deleteOldPurchase = function (id) {
+                Swal.fire({
+                    title: '¿Está seguro?',
+                    text: 'Esta acción eliminará la compra y todos los registros relacionados.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                        window.location.href = 'delete_purchase.php?id=' + id + '&csrf_token=' + encodeURIComponent(csrfToken);
+                    }
+                });
             };
 
             // Abrir modal de pagos

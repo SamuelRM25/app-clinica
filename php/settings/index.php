@@ -40,6 +40,29 @@ try {
     $stmt_users->execute([$id_hospital]);
     $users = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 
+    // Obtener habitaciones con conteo de camas
+    $stmt_rooms = $conn->prepare("
+        SELECT h.*,
+               COUNT(c.id_cama) as cama_count
+        FROM habitaciones h
+        LEFT JOIN camas c ON h.id_habitacion = c.id_habitacion
+        WHERE h.id_hospital = ?
+        GROUP BY h.id_habitacion
+        ORDER BY h.numero_habitacion
+    ");
+    $stmt_rooms->execute([$id_hospital]);
+    $rooms = $stmt_rooms->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener médicos para tarifas de consulta/reconsulta
+    $stmt_medicos = $conn->prepare("
+        SELECT idUsuario, nombre, apellido, especialidad
+        FROM usuarios
+        WHERE id_hospital = ? AND tipoUsuario = 'doc'
+        ORDER BY nombre
+    ");
+    $stmt_medicos->execute([$id_hospital]);
+    $medicos = $stmt_medicos->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (Exception $e) {
     error_log($e->getMessage());
 }
@@ -53,6 +76,7 @@ $page_title = "Configuración del Sistema";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -152,6 +176,14 @@ $page_title = "Configuración del Sistema";
             height: 100px;
             position: relative;
         }
+
+        /* Override global_dashboard.css to allow Bootstrap tabs to work */
+        #settingsTabContent.tab-content,
+        #settingsTabContent,
+        #tarifasTabContent.tab-content,
+        #tarifasTabContent {
+            display: block !important;
+        }
     </style>
 </head>
 
@@ -226,6 +258,14 @@ $page_title = "Configuración del Sistema";
                         <button class="nav-link" id="backup-tab" data-bs-toggle="pill" data-bs-target="#backup"
                             type="button" role="tab">
                             <i class="bi bi-database-fill-check"></i> Respaldo
+                        </button>
+                        <button class="nav-link" id="tarifas-tab" data-bs-toggle="pill" data-bs-target="#tarifas"
+                            type="button" role="tab">
+                            <i class="bi bi-currency-dollar"></i> Tarifas
+                        </button>
+                        <button class="nav-link" id="rooms-tab" data-bs-toggle="pill" data-bs-target="#rooms"
+                            type="button" role="tab">
+                            <i class="bi bi-door-open"></i> Habitaciones
                         </button>
                     </div>
                 </aside>
@@ -760,6 +800,237 @@ $page_title = "Configuración del Sistema";
                             </button>
                         </div>
                     </div>
+
+                    <div class="tab-pane fade" id="tarifas" role="tabpanel">
+                        <div class="settings-content-card">
+                            <h3 class="section-title mb-4">Tarifas de Servicios</h3>
+                            <p class="text-muted mb-3"><i class="bi bi-hospital"></i> Hospital: <strong id="currentHospitalName">-</strong></p>
+
+                            <ul class="nav nav-tabs mb-4" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="tarifas-consulta-tab" data-bs-toggle="tab" data-bs-target="#tarifas-consulta" type="button" role="tab">
+                                        <i class="bi bi-calendar-check me-1"></i>Consulta/Reconsulta
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tarifas-electro-tab" data-bs-toggle="tab" data-bs-target="#tarifas-electro" type="button" role="tab">
+                                        <i class="bi bi-heart-pulse me-1"></i>Electrocardiograma
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tarifas-procedimientos-tab" data-bs-toggle="tab" data-bs-target="#tarifas-procedimientos" type="button" role="tab">
+                                        <i class="bi bi-bandaid me-1"></i>Procedimientos
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tarifas-rayosx-tab" data-bs-toggle="tab" data-bs-target="#tarifas-rayosx" type="button" role="tab">
+                                        <i class="bi bi-file-x me-1"></i>Rayos X
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tarifas-ultrasonido-tab" data-bs-toggle="tab" data-bs-target="#tarifas-ultrasonido" type="button" role="tab">
+                                        <i class="bi bi-waveform me-1"></i>Ultrasonido
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="tarifasTabContent">
+                                <div class="tab-pane fade show active" id="tarifas-consulta" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Precios por Médico</h5>
+                                        <button class="action-btn primary btn-sm" onclick="openTarifaModal('consulta')">
+                                            <i class="bi bi-plus-circle"></i> Agregar Tarifa
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Médico</th>
+                                                    <th>Especialidad</th>
+                                                    <th>Consulta Normal (Q)</th>
+                                                    <th>Consulta Inhábil (Q)</th>
+                                                    <th>Reconsulta Normal (Q)</th>
+                                                    <th>Reconsulta Inhábil (Q)</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-consulta-body">
+                                                <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button class="action-btn primary" onclick="saveTarifaSection('tarifa-consulta-body')">
+                                            <i class="bi bi-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tarifas-electro" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Electrocardiograma</h5>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Precio Normal (Q)</th>
+                                                    <th>Precio Inhábil (Q)</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-electro-body">
+                                                <tr><td colspan="3" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button class="action-btn primary" onclick="saveTarifaSection('tarifa-electro-body')">
+                                            <i class="bi bi-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tarifas-procedimientos" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Procedimientos Menores</h5>
+                                        <button class="action-btn primary btn-sm" onclick="openTarifaModal('procedimiento')">
+                                            <i class="bi bi-plus-circle"></i> Agregar Procedimiento
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Procedimiento</th>
+                                                    <th>Precio Normal (Q)</th>
+                                                    <th>Precio Inhábil (Q)</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-procedimiento-body">
+                                                <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button class="action-btn primary" onclick="saveTarifaSection('tarifa-procedimiento-body')">
+                                            <i class="bi bi-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tarifas-rayosx" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Rayos X por Región</h5>
+                                        <button class="action-btn primary btn-sm" onclick="openTarifaModal('rayos_x')">
+                                            <i class="bi bi-plus-circle"></i> Agregar Región
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Región</th>
+                                                    <th>Precio Normal (Q)</th>
+                                                    <th>Precio Inhábil (Q)</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-rayos_x-body">
+                                                <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button class="action-btn primary" onclick="saveTarifaSection('tarifa-rayos_x-body')">
+                                            <i class="bi bi-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="tarifas-ultrasonido" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Ultrasonido</h5>
+                                        <button class="action-btn primary btn-sm" onclick="openTarifaModal('ultrasonido')">
+                                            <i class="bi bi-plus-circle"></i> Agregar Tipo
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipo</th>
+                                                    <th>Normal (Q)</th>
+                                                    <th>Inhábil (Q)</th>
+                                                    <th>Radio Normal (Q)</th>
+                                                    <th>Radio Inhábil (Q)</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-ultrasonido-body">
+                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button class="action-btn primary" onclick="saveTarifaSection('tarifa-ultrasonido-body')">
+                                            <i class="bi bi-save"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="rooms" role="tabpanel">
+                        <div class="settings-content-card">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="section-title mb-0">Gestión de Habitaciones</h3>
+                                <button class="action-btn primary" onclick="openRoomModal()">
+                                    <i class="bi bi-plus-circle"></i> Nueva Habitación
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="data-table" id="roomsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Número</th>
+                                            <th>Tipo</th>
+                                            <th>Tarifa/Noche</th>
+                                            <th>Camas</th>
+                                            <th>Estado</th>
+                                            <th class="text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roomsTableBody">
+                                        <?php
+                                        if (!empty($rooms)) {
+                                            foreach ($rooms as $room) {
+                                                echo '<tr>';
+                                                echo '<td><span class="fw-bold">HB-' . htmlspecialchars($room['numero_habitacion']) . '</span></td>';
+                                                echo '<td>' . htmlspecialchars($room['tipo_habitacion']) . '</td>';
+                                                echo '<td>Q' . number_format($room['tarifa_por_noche'], 2) . '</td>';
+                                                echo '<td>' . htmlspecialchars($room['cama_count']) . ' cama(s)</td>';
+                                                $statusClass = $room['estado'] === 'Activa' ? 'bg-success text-white' : 'bg-secondary text-white';
+                                                echo '<td><span class="badge ' . $statusClass . '">' . htmlspecialchars($room['estado']) . '</span></td>';
+                                                echo '<td class="text-center">
+                                                    <button class="action-btn sm secondary" onclick="editRoom(' . htmlspecialchars(json_encode($room)) . ')"><i class="bi bi-pencil"></i></button>
+                                                    <button class="action-btn sm danger" onclick="deleteRoom(' . $room['id_habitacion'] . ')"><i class="bi bi-trash"></i></button>
+                                                </td>';
+                                                echo '</tr>';
+                                            }
+                                        } else {
+                                            echo '<tr><td colspan="6" class="text-center text-muted py-4">No hay habitaciones registradas</td></tr>';
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -818,6 +1089,108 @@ $page_title = "Configuración del Sistema";
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="action-btn" onclick="saveUser()">Guardar Usuario</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Habitación -->
+    <div class="modal fade" id="roomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="roomModalTitle">Nueva Habitación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="roomForm">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="id_habitacion" id="roomId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Número de Habitación</label>
+                                <input type="text" name="numero_habitacion" id="roomNumber" class="form-control" required placeholder="101">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Tipo</label>
+                                <select name="tipo_habitacion" id="roomType" class="form-select" required>
+                                    <option value="Privada">Privada</option>
+                                    <option value="Semi-Privada">Semi-Privada</option>
+                                    <option value="Compartida">Compartida</option>
+                                    <option value="UCI">UCI</option>
+                                    <option value="Quirofano">Quirófano</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Tarifa por Noche (Q)</label>
+                                <input type="number" step="0.01" name="tarifa_por_noche" id="roomRate" class="form-control" required placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Estado</label>
+                                <select name="estado" id="roomStatus" class="form-select">
+                                    <option value="Activa">Activa</option>
+                                    <option value="Inactiva">Inactiva</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="action-btn" onclick="saveRoom()">Guardar Habitación</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tarifa -->
+    <div class="modal fade" id="tarifaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="tarifaModalTitle">Nueva Tarifa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="tarifaForm">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="id_tarifa" id="tarifaId">
+                        <input type="hidden" name="tipo_servicio" id="tarifaTipo">
+                        <div id="tarifa-fields-consulta" class="tarifa-fields d-none">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Médico</label>
+                                <select name="id_medico" id="tarifaMedico" class="form-select" required>
+                                    <option value="">Seleccione médico...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="tarifa-fields-nombre" class="tarifa-fields d-none mb-3">
+                            <label class="form-label small fw-bold">Nombre del Servicio</label>
+                            <input type="text" name="nombre_servicio" id="tarifaNombre" class="form-control" placeholder="Ej: Inyeccion, Ultrasonido Abdominal">
+                        </div>
+                        <div id="tarifa-fields-region" class="tarifa-fields d-none mb-3">
+                            <label class="form-label small fw-bold">Número de Regiones</label>
+                            <input type="number" name="region_count" id="tarifaRegion" class="form-control" min="1" max="10" placeholder="1">
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Precio Normal (Q)</label>
+                                <input type="number" step="0.01" name="precio_normal" id="tarifaNormal" class="form-control" required placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Precio Inhábil (Q)</label>
+                                <input type="number" step="0.01" name="precio_inhabil" id="tarifaInhabil" class="form-control" required placeholder="0.00">
+                            </div>
+                            <div class="col-12" id="tarifa-radio-field" class="d-none">
+                                <label class="form-label small fw-bold">Precio Radio Normal (Q)</label>
+                                <input type="number" step="0.01" name="precio_radio" id="tarifaRadio" class="form-control" placeholder="0.00">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="action-btn" onclick="saveTarifa()">Guardar Tarifa</button>
                 </div>
             </div>
         </div>
@@ -955,6 +1328,483 @@ $page_title = "Configuración del Sistema";
                 if (color) updateAppTheme(color);
             }
         });
+
+        // Room Management Functions
+        const roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
+
+        function openRoomModal() {
+            document.getElementById('roomForm').reset();
+            document.getElementById('roomId').value = '';
+            document.getElementById('roomModalTitle').innerText = 'Nueva Habitación';
+            roomModal.show();
+        }
+
+        function editRoom(room) {
+            document.getElementById('roomId').value = room.id_habitacion;
+            document.getElementById('roomNumber').value = room.numero_habitacion;
+            document.getElementById('roomType').value = room.tipo_habitacion;
+            document.getElementById('roomRate').value = room.tarifa_por_noche;
+            document.getElementById('roomStatus').value = room.estado;
+            document.getElementById('roomModalTitle').innerText = 'Editar Habitación';
+            roomModal.show();
+        }
+
+        async function saveRoom() {
+            const formData = new FormData(document.getElementById('roomForm'));
+            try {
+                const response = await fetch('api/save_room.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const res = await response.json();
+                if (res.success) {
+                    Swal.fire('Éxito', res.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo en la comunicación con el servidor', 'error');
+            }
+        }
+
+        async function deleteRoom(id) {
+            const result = await Swal.fire({
+                title: '¿Está seguro?',
+                text: "Esta acción eliminará la habitación y todas sus camas asociadas",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--color-danger)',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch('api/delete_room.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'id=' + id
+                    });
+                    const res = await response.json();
+                    if (res.success) {
+                        Swal.fire('Eliminado', res.message, 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'No se pudo eliminar la habitación', 'error');
+                }
+            }
+        }
+
+        const tarifaModal = new bootstrap.Modal(document.getElementById('tarifaModal'));
+        let currentMedicos = [];
+
+        async function loadTarifas() {
+            console.log('[ Tarifas] Iniciando carga...');
+            try {
+                const response = await fetch('api/get_tarifas.php');
+                console.log('[Tarifas] Response status:', response.status);
+                if (!response.ok) {
+                    console.error('HTTP error:', response.status, response.statusText);
+                    return;
+                }
+                const contentType = response.headers.get('content-type');
+                console.log('[Tarifas] Content-Type:', contentType);
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.slice(0, 200));
+                    return;
+                }
+                const res = await response.json();
+                console.log('[Tarifas] Response:', JSON.stringify(res).slice(0, 200));
+                if (!res.success || !res.tarifas) {
+                    console.error('API error:', res.message || 'Unknown error');
+                    return;
+                }
+                const t = res.tarifas;
+                currentMedicos = t.medicos || [];
+                console.log('[Tarifas] Medicos cargados:', currentMedicos.length);
+                console.log('[Tarifas] Tarifas:', { consulta: t.consulta.length, reconsulta: t.reconsulta.length, electro: !!t.electrocardiograma, proc: t.procedimiento.length, rx: t.rayos_x.length, us: t.ultrasonido.length });
+
+                renderConsultaReconsulta(t.consulta || [], t.reconsulta || []);
+                renderElectro(t.electrocardiograma);
+                renderProcedimientos(t.procedimiento || []);
+                renderRayosX(t.rayos_x || []);
+                renderUltrasonido(t.ultrasonido || []);
+                console.log('[Tarifas] Renderizado completo');
+            } catch (error) {
+                console.error('Error loading tarifas:', error);
+            }
+        }
+
+        function getMedicoName(idMedico) {
+            const id = Number(idMedico);
+            const m = currentMedicos.find(x => Number(x.idUsuario) === id);
+            return m ? `${m.nombre} ${m.apellido}` : `Médico #${idMedico}`;
+        }
+
+        function getMedicoEspecialidad(idMedico) {
+            const id = Number(idMedico);
+            const m = currentMedicos.find(x => Number(x.idUsuario) === id);
+            return m ? (m.especialidad || '-') : '-';
+        }
+
+        function renderConsultaReconsulta(consultas, reconsultas) {
+            const body = document.getElementById('tarifa-consulta-body');
+            if (consultas.length === 0 && reconsultas.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><em>No hay tarifas de consulta configuradas. Haga clic en "Agregar Tarifa" para crear una.</em></td></tr>';
+                return;
+            }
+            const map = {};
+            consultas.forEach(c => { map[c.id_medico] = map[c.id_medico] || {}; map[c.id_medico].consulta = c; });
+            reconsultas.forEach(r => { map[r.id_medico] = map[r.id_medico] || {}; map[r.id_medico].reconsulta = r; });
+
+            let html = '';
+            Object.keys(map).forEach(medId => {
+                const c = map[medId].consulta;
+                const r = map[medId].reconsulta;
+                const consultaNormal = c ? c.precio_normal : '';
+                const consultaInhabil = c ? c.precio_inhabil : '';
+                const reconsNormal = r ? r.precio_normal : '';
+                const reconsInhabil = r ? r.precio_inhabil : '';
+                const idTarifa = c ? c.id_tarifa : (r ? r.id_tarifa : '');
+
+                html += `<tr>
+                    <td>${getMedicoName(parseInt(medId))}</td>
+                    <td>${getMedicoEspecialidad(parseInt(medId))}</td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaNormal}"
+                            data-medico="${medId}" data-tipo="consulta" data-field="precio_normal"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaInhabil}"
+                            data-medico="${medId}" data-tipo="consulta" data-field="precio_inhabil"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsNormal}"
+                            data-medico="${medId}" data-tipo="reconsulta" data-field="precio_normal"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsInhabil}"
+                            data-medico="${medId}" data-tipo="reconsulta" data-field="precio_inhabil"
+                            placeholder="0.00">
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${idTarifa || 0}, 'consulta')" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function renderElectro(electro) {
+            const body = document.getElementById('tarifa-electro-body');
+            if (!electro || !electro.id_tarifa) {
+                body.innerHTML = `<tr>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
+                    </td>
+                </tr>`;
+            } else {
+                body.innerHTML = `<tr>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${electro.id_tarifa}, 'electrocardiograma')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            }
+        }
+
+        function renderProcedimientos(procedimientos) {
+            const body = document.getElementById('tarifa-procedimiento-body');
+            if (procedimientos.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><em>No hay procedimientos configurados. Haga clic en "Agregar Procedimiento" para crear uno.</em></td></tr>';
+                return;
+            }
+            let html = '';
+            procedimientos.forEach(p => {
+                html += `<tr>
+                    <td>${p.nombre_servicio || '-'}</td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_normal}"
+                        data-tipo="procedimiento" data-field="precio_normal" data-id="${p.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_inhabil}"
+                        data-tipo="procedimiento" data-field="precio_inhabil" data-id="${p.id_tarifa}" placeholder="0.00"></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${p.id_tarifa}, 'procedimiento')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function renderRayosX(rayos_x) {
+            const body = document.getElementById('tarifa-rayos_x-body');
+            if (rayos_x.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
+                return;
+            }
+            let html = '';
+            rayos_x.forEach(r => {
+                html += `<tr>
+                    <td>${r.region_count} región${r.region_count > 1 ? 'es' : ''}</td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
+                        data-tipo="rayos_x" data-field="precio_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
+                        data-tipo="rayos_x" data-field="precio_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${r.id_tarifa}, 'rayos_x')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function renderUltrasonido(ultrasonidos) {
+            const body = document.getElementById('tarifa-ultrasonido-body');
+            if (ultrasonidos.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay tipos de ultrasonido configurados. Haga clic en "Agregar Tipo" para crear uno.</em></td></tr>';
+                return;
+            }
+            let html = '';
+            ultrasonidos.forEach(u => {
+                html += `<tr>
+                    <td>${u.nombre_servicio || '-'}</td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_normal}"
+                        data-tipo="ultrasonido" data-field="precio_normal" data-id="${u.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_inhabil}"
+                        data-tipo="ultrasonido" data-field="precio_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_radio || 0}"
+                        data-tipo="ultrasonido" data-field="precio_radio" data-id="${u.id_tarifa}" placeholder="0.00"></td>
+                    <td>${u.precio_inhabil || '0.00'}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${u.id_tarifa}, 'ultrasonido')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function openTarifaModal(tipo) {
+            document.getElementById('tarifaForm').reset();
+            document.getElementById('tarifaId').value = '';
+            document.getElementById('tarifaTipo').value = tipo;
+            document.getElementById('tarifaModalTitle').innerText = 'Nueva Tarifa';
+
+            document.querySelectorAll('.tarifa-fields').forEach(el => el.classList.add('d-none'));
+            document.getElementById('tarifa-radio-field').classList.add('d-none');
+
+            if (tipo === 'consulta' || tipo === 'reconsulta') {
+                document.getElementById('tarifa-fields-consulta').classList.remove('d-none');
+                const select = document.getElementById('tarifaMedico');
+                select.innerHTML = '<option value="">Seleccione médico...</option>';
+                currentMedicos.forEach(m => {
+                    select.innerHTML += `<option value="${m.idUsuario}">${m.nombre} ${m.apellido}</option>`;
+                });
+            } else if (tipo === 'procedimiento' || tipo === 'ultrasonido') {
+                document.getElementById('tarifa-fields-nombre').classList.remove('d-none');
+                if (tipo === 'ultrasonido') {
+                    document.getElementById('tarifa-radio-field').classList.remove('d-none');
+                }
+            } else if (tipo === 'rayos_x') {
+                document.getElementById('tarifa-fields-region').classList.remove('d-none');
+            }
+
+            tarifaModal.show();
+        }
+
+        async function saveTarifa() {
+            const id_tarifa = document.getElementById('tarifaId').value;
+            const tipo = document.getElementById('tarifaTipo').value;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            let payload = {
+                action: id_tarifa ? 'update' : 'create',
+                tipo_servicio: tipo,
+                precio_normal: parseFloat(document.getElementById('tarifaNormal').value) || 0,
+                precio_inhabil: parseFloat(document.getElementById('tarifaInhabil').value) || 0,
+                csrf_token: csrfToken
+            };
+
+            if (id_tarifa) {
+                payload.id_tarifa = parseInt(id_tarifa);
+            }
+
+            if (tipo === 'consulta' || tipo === 'reconsulta') {
+                payload.id_medico = parseInt(document.getElementById('tarifaMedico').value) || 0;
+            } else if (tipo === 'procedimiento' || tipo === 'ultrasonido') {
+                payload.nombre_servicio = document.getElementById('tarifaNombre').value;
+                if (tipo === 'ultrasonido') {
+                    payload.precio_radio = parseFloat(document.getElementById('tarifaRadio').value) || 0;
+                }
+            } else if (tipo === 'rayos_x') {
+                payload.region_count = parseInt(document.getElementById('tarifaRegion').value) || 1;
+            }
+
+            try {
+                const response = await fetch('api/save_tarifas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                if (res.success) {
+                    Swal.fire('Éxito', res.message, 'success').then(() => {
+                        tarifaModal.hide();
+                        loadTarifas();
+                    });
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo en la comunicación con el servidor', 'error');
+            }
+        }
+
+        async function saveTarifaSection(sectionId) {
+            const container = document.getElementById(sectionId);
+            if (!container) return;
+            const inputs = container.querySelectorAll('.tarifa-input');
+            if (!inputs.length) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const items = [];
+
+            inputs.forEach(input => {
+                const tipo = input.dataset.tipo;
+                const field = input.dataset.field;
+                const value = parseFloat(input.value) || 0;
+                const medico = parseInt(input.dataset.medico) || null;
+                const id = parseInt(input.dataset.id) || null;
+
+                if (!tipo || !field) return;
+                if (id) return;
+
+                let item = items.find(i => i.tipo_servicio === tipo && (medico ? i.id_medico === medico : true));
+                if (!item) {
+                    item = {
+                        tipo_servicio: tipo,
+                        precio_normal: 0,
+                        precio_inhabil: 0,
+                        precio_radio: 0
+                    };
+                    if (medico) item.id_medico = medico;
+                    items.push(item);
+                }
+                item[field] = value;
+            });
+
+            inputs.forEach(input => {
+                const tipo = input.dataset.tipo;
+                const field = input.dataset.field;
+                const value = parseFloat(input.value) || 0;
+                const id = parseInt(input.dataset.id) || null;
+                if (!tipo || !field || !id) return;
+                let item = items.find(i => i.id_tarifa === id);
+                if (!item) {
+                    item = { id_tarifa: id, tipo_servicio: tipo, precio_normal: 0, precio_inhabil: 0, precio_radio: 0 };
+                    items.push(item);
+                }
+                item[field] = value;
+            });
+
+            if (!items.length) {
+                Swal.fire('Aviso', 'No hay datos para guardar', 'info');
+                return;
+            }
+
+            try {
+                const response = await fetch('api/save_tarifas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({
+                        action: 'batch_save',
+                        tarifas: items,
+                        csrf_token: csrfToken
+                    })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    Swal.fire('Éxito', 'Tarifas guardadas correctamente', 'success');
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo al guardar tarifas', 'error');
+            }
+        }
+
+        async function deleteTarifa(id_tarifa, tipo) {
+            if (!id_tarifa || id_tarifa === 0) return;
+            const result = await Swal.fire({
+                title: '¿Está seguro?',
+                text: 'Esta acción eliminará la tarifa seleccionada',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--color-danger)',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                try {
+                    const response = await fetch('api/save_tarifas.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify({ action: 'delete', id_tarifa: id_tarifa, csrf_token: csrfToken })
+                    });
+                    const res = await response.json();
+                    if (res.success) {
+                        Swal.fire('Eliminado', res.message, 'success').then(() => loadTarifas());
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'Fallo al eliminar tarifa', 'error');
+                }
+            }
+        }
+
+        async function saveElectroTarifa() {
+            const normal = parseFloat(document.getElementById('electro-normal').value) || 0;
+            const inutil = parseFloat(document.getElementById('electro-inhabil').value) || 0;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const existingId = document.querySelector('#tarifa-electro-body tr')?.querySelector('.btn-outline-danger')?.onclick?.toString()?.match(/\d+/)?.[0];
+
+            try {
+                const response = await fetch('api/save_tarifas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({
+                        action: 'create',
+                        tipo_servicio: 'electrocardiograma',
+                        precio_normal: normal,
+                        precio_inhabil: inutil,
+                        csrf_token: csrfToken
+                    })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    Swal.fire('Éxito', 'Tarifa actualizada', 'success').then(() => loadTarifas());
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo al guardar tarifa', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTarifas);
     </script>
     <?php output_keep_alive_script(); ?>
 </body>

@@ -13,16 +13,13 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
-    // Get input parameters
     $date = $_GET['date'] ?? date('Y-m-d');
     $shift = $_GET['shift'] ?? 'morning';
 
-    // Define shift ranges
     if ($shift === 'morning') {
         $start_datetime = $date . ' 08:00:00';
         $end_datetime = $date . ' 17:00:00';
@@ -31,30 +28,19 @@ try {
         $end_datetime = date('Y-m-d', strtotime($date . ' +1 day')) . ' 07:59:59';
     }
 
-    $id_hospital = $_SESSION['id_hospital'] ?? 0;
+    $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $methods = ['Efectivo', 'Tarjeta', 'Transferencia'];
 
-    $getDetailedData = function ($conn, $table, $column_amount, $column_date, $start, $end, $column_pago = 'tipo_pago', $extra_where = '', $select_extras = '', $joins = '') use ($methods, $shift, $date, $id_hospital) {
+    $getDetailedData = function ($conn, $table, $column_amount, $column_date, $start, $end, $column_pago = 'tipo_pago', $extra_where = '', $select_extras = '', $joins = '') use ($methods, $id_hospital) {
         $breakdown = [];
         $total = 0;
 
-        $hospital_filter = " AND $table.id_hospital = $id_hospital";
-
         foreach ($methods as $method) {
-            $sql = "SELECT SUM($column_amount) FROM $table $joins WHERE $column_pago = ?";
-            $params = [$method];
-            if ($shift === 'morning') {
-                $sql .= " AND $column_date BETWEEN ? AND ?";
-                $params[] = $start;
-                $params[] = $end;
-            } else {
-                $sql .= " AND $column_date BETWEEN ? AND ?";
-                $params[] = $start;
-                $params[] = $end;
-            }
-            $sql .= $hospital_filter;
-            if ($extra_where)
+            $sql = "SELECT SUM($column_amount) FROM $table $joins WHERE $column_pago = ? AND $column_date BETWEEN ? AND ? AND $table.id_hospital = ?";
+            $params = [$method, $start, $end, $id_hospital];
+            if ($extra_where) {
                 $sql .= " AND $extra_where";
+            }
 
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
@@ -63,18 +49,11 @@ try {
             $total += $val;
         }
 
-        $sql_rows = "SELECT $column_date as hora, $column_amount as monto, $column_pago as tipo_pago $select_extras FROM $table $joins WHERE ";
-        $params_rows = [];
-        if ($shift === 'morning') {
-            $sql_rows .= "$column_date BETWEEN ? AND ?";
-            $params_rows = [$start, $end];
-        } else {
-            $sql_rows .= "$column_date BETWEEN ? AND ?";
-            $params_rows = [$start, $end];
-        }
-        $sql_rows .= $hospital_filter;
-        if ($extra_where)
+        $sql_rows = "SELECT $column_date as hora, $column_amount as monto, $column_pago as tipo_pago $select_extras FROM $table $joins WHERE $column_date BETWEEN ? AND ? AND $table.id_hospital = ?";
+        $params_rows = [$start, $end, $id_hospital];
+        if ($extra_where) {
             $sql_rows .= " AND $extra_where";
+        }
         $sql_rows .= " ORDER BY $column_date ASC";
 
         $stmt_rows = $conn->prepare($sql_rows);
@@ -91,43 +70,23 @@ try {
     };
 
     // 1. Pharmacy Sales (ventas)
-    // Joined with detailing to get medication names
     $pharmacy = $getDetailedData(
-        $conn,
-        'ventas',
-        'total',
-        'fecha_venta',
-        $start_datetime,
-        $end_datetime,
-        'tipo_pago',
-        '',
-        ', nombre_cliente as cliente, (SELECT GROUP_CONCAT(i.nom_medicamento SEPARATOR ", ") 
-         FROM detalle_ventas dv 
-         JOIN inventario i ON dv.id_inventario = i.id_inventario 
-         WHERE dv.id_venta = ventas.id_venta) as detalle',
+        $conn, 'ventas', 'total', 'fecha_venta',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', nombre_cliente as cliente',
         ''
     );
 
     // 2. Consultations (cobros)
-    // Joined with appointments to get the scheduled time
-    // Fixed: cobros table doesn't have id_cita, using paciente_cobro and id_doctor instead
-    $consultations_raw = $getDetailedData(
-        $conn,
-        'cobros',
-        'cantidad_consulta',
-        'fecha_consulta',
-        $start_datetime,
-        $end_datetime,
-        'tipo_pago',
-        '',
-        ', CONCAT(u.nombre, " ", u.apellido) as medico, CONCAT(p.nombre, " ", p.apellido) as paciente, COALESCE(ci.hora_cita, DATE_FORMAT(cobros.fecha_consulta, "%H:%i")) as hora',
-        'JOIN usuarios u ON cobros.id_doctor = u.idUsuario 
-         JOIN pacientes p ON cobros.paciente_cobro = p.id_paciente 
-         LEFT JOIN citas ci ON cobros.paciente_cobro = ci.historial_id AND DATE(cobros.fecha_consulta) = ci.fecha_cita AND cobros.id_doctor = ci.id_doctor'
+    $consultations = $getDetailedData(
+        $conn, 'cobros', 'cantidad_consulta', 'fecha_consulta',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', CONCAT(u.nombre, " ", u.apellido) as medico, paciente_cobro as paciente_id, COALESCE(DATE_FORMAT(cobros.fecha_consulta, "%H:%i"), "N/A") as hora',
+        'JOIN usuarios u ON cobros.id_doctor = u.idUsuario'
     );
 
-    // We also need doctors breakdown for the consultations section
-    $doc_query = "SELECT DISTINCT u.idUsuario, u.nombre, u.apellido 
+    // Doctors breakdown
+    $doc_query = "SELECT DISTINCT u.idUsuario, u.nombre, u.apellido
                   FROM cobros c
                   JOIN usuarios u ON c.id_doctor = u.idUsuario
                   WHERE c.fecha_consulta BETWEEN ? AND ? AND c.id_hospital = ?";
@@ -140,32 +99,42 @@ try {
         $doc_total = 0;
         foreach ($methods as $method) {
             $q = "SELECT SUM(cantidad_consulta) FROM cobros WHERE id_doctor = ? AND tipo_pago = ? AND fecha_consulta BETWEEN ? AND ? AND id_hospital = ?";
-            $p = [$doc['idUsuario'], $method, $start_datetime, $end_datetime, $id_hospital];
             $stmt = $conn->prepare($q);
-            $stmt->execute($p);
+            $stmt->execute([$doc['idUsuario'], $method, $start_datetime, $end_datetime, $id_hospital]);
             $v = (float) ($stmt->fetchColumn() ?: 0);
             $doc_breakdown[$method] = $v;
             $doc_total += $v;
         }
         $by_doctor[] = ['doctor' => $doc['nombre'] . ' ' . $doc['apellido'], 'breakdown' => $doc_breakdown, 'total' => $doc_total];
     }
-    $consultations = [
-        'breakdown' => $consultations_raw['breakdown'],
-        'total' => $consultations_raw['total'],
-        'details' => $consultations_raw['details'],
-        'by_doctor' => $by_doctor
-    ];
+    $consultations['by_doctor'] = $by_doctor;
 
-    // 3. Laboratory (exclude US/RX)
+    // 3. Laboratory (examenes_realizados, excluding US and RX)
     $lab_extra = "tipo_examen NOT LIKE '%ultrasonido%' AND tipo_examen NOT LIKE '%rayos x%' AND tipo_examen NOT LIKE '%rx%'";
-    $laboratory = $getDetailedData($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', $lab_extra, ', nombre_paciente as paciente', '');
+    $laboratory = $getDetailedData(
+        $conn, 'examenes_realizados', 'cobro', 'fecha_examen',
+        $start_datetime, $end_datetime, 'tipo_pago', $lab_extra,
+        ', nombre_paciente as paciente', ''
+    );
 
     // 4. Procedures
-    $procedures = $getDetailedData($conn, 'procedimientos_menores', 'cobro', 'fecha_procedimiento', $start_datetime, $end_datetime, 'tipo_pago', '', ', nombre_paciente as paciente', '');
+    $procedures = $getDetailedData(
+        $conn, 'procedimientos_menores', 'cobro', 'fecha_procedimiento',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', nombre_paciente as paciente', ''
+    );
 
     // 5. Ultrasound
-    $us_new = $getDetailedData($conn, 'ultrasonidos', 'cobro', 'fecha_ultrasonido', $start_datetime, $end_datetime, 'tipo_pago', '', ', nombre_paciente as paciente', '');
-    $us_old = $getDetailedData($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "tipo_examen LIKE '%ultrasonido%'", ', nombre_paciente as paciente', '');
+    $us_new = $getDetailedData(
+        $conn, 'ultrasonidos', 'cobro', 'fecha_ultrasonido',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', nombre_paciente as paciente', ''
+    );
+    $us_old = $getDetailedData(
+        $conn, 'examenes_realizados', 'cobro', 'fecha_examen',
+        $start_datetime, $end_datetime, 'tipo_pago', "tipo_examen LIKE '%ultrasonido%'",
+        ', nombre_paciente as paciente', ''
+    );
     $ultrasound = [
         'total' => $us_new['total'] + $us_old['total'],
         'breakdown' => [
@@ -175,9 +144,18 @@ try {
         ],
         'details' => array_merge($us_new['details'], $us_old['details'])
     ];
+
     // 6. X-Rays
-    $rx_new = $getDetailedData($conn, 'rayos_x', 'cobro', 'fecha_estudio', $start_datetime, $end_datetime, 'tipo_pago', '', ', nombre_paciente as paciente', '');
-    $rx_old = $getDetailedData($conn, 'examenes_realizados', 'cobro', 'fecha_examen', $start_datetime, $end_datetime, 'tipo_pago', "(tipo_examen LIKE '%rayos x%' OR tipo_examen LIKE '%rx%')", ', nombre_paciente as paciente', '');
+    $rx_new = $getDetailedData(
+        $conn, 'rayos_x', 'cobro', 'fecha_estudio',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', nombre_paciente as paciente', ''
+    );
+    $rx_old = $getDetailedData(
+        $conn, 'examenes_realizados', 'cobro', 'fecha_examen',
+        $start_datetime, $end_datetime, 'tipo_pago', "(tipo_examen LIKE '%rayos x%' OR tipo_examen LIKE '%rx%')",
+        ', nombre_paciente as paciente', ''
+    );
     $xray = [
         'total' => $rx_new['total'] + $rx_old['total'],
         'breakdown' => [
@@ -190,22 +168,23 @@ try {
 
     // 7. Electrocardiograms
     $electro = $getDetailedData(
-        $conn,
-        'electrocardiogramas',
-        'precio',
-        'fecha_realizado',
-        $start_datetime,
-        $end_datetime,
-        'tipo_pago',
-        '',
-        ', CONCAT(p.nombre, " ", p.apellido) as paciente',
+        $conn, 'electrocardiogramas', 'precio', 'fecha_realizado',
+        $start_datetime, $end_datetime, 'tipo_pago', '',
+        ', p.id_paciente, CONCAT(p.nombre, " ", p.apellido) as paciente',
         'JOIN pacientes p ON electrocardiogramas.id_paciente = p.id_paciente'
     );
 
-    // 8. Hospitalization (Abonos)
-    $hospitalization = $getDetailedData($conn, 'abonos_hospitalarios', 'ah.monto', 'ah.fecha_abono', $start_datetime, $end_datetime, 'ah.metodo_pago', '', ", CONCAT(p.nombre, ' ', p.apellido) as paciente", "ah JOIN cuenta_hospitalaria ch ON ah.id_cuenta = ch.id_cuenta JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento JOIN pacientes p ON e.id_paciente = p.id_paciente");
+    // 8. Hospitalization (abonos)
+    $hospitalization = $getDetailedData(
+        $conn, 'abonos_hospitalarios', 'monto', 'fecha_abono',
+        $start_datetime, $end_datetime, 'metodo_pago', '',
+        ', abonos_hospitalarios.id_abono as extra_id',
+        ''
+    );
 
-    $grand_total = $pharmacy['total'] + $consultations['total'] + $laboratory['total'] + $procedures['total'] + $ultrasound['total'] + $xray['total'] + $electro['total'] + $hospitalization['total'];
+    $grand_total = $pharmacy['total'] + $consultations['total'] + $laboratory['total']
+        + $procedures['total'] + $ultrasound['total'] + $xray['total']
+        + $electro['total'] + $hospitalization['total'];
 
     echo json_encode([
         'success' => true,
@@ -224,6 +203,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    error_log('Error en php/dashboard/get_shift_cut_data.php: ' . $e->getMessage());
+    error_log('Error en php/dashboard/get_shift_cut_data.php: ' . $e->getMessage() . ' en línea ' . $e->getLine());
     echo json_encode(['success' => false, 'error' => 'Error del servidor.']);
 }

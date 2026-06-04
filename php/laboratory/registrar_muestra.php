@@ -16,10 +16,10 @@ try {
     // Get pending orders
     $stmt = $conn->prepare("
         SELECT o.*, p.nombre, p.apellido, p.dpi,
-               COUNT(od.id_detalle) as num_pruebas
+               COUNT(op.id_prueba) as num_pruebas
         FROM ordenes_laboratorio o
         JOIN pacientes p ON o.id_paciente = p.id_paciente
-        LEFT JOIN orden_detalles od ON o.id_orden = od.id_orden
+        LEFT JOIN orden_pruebas op ON o.id_orden = op.id_orden
         WHERE o.estado = 'Pendiente' AND o.id_hospital = ?
         GROUP BY o.id_orden
         ORDER BY o.fecha_orden DESC

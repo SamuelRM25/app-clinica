@@ -90,6 +90,20 @@ try {
     $stmt->bindParam(':id_hospital', $id_hospital, PDO::PARAM_INT);
 
     $stmt->execute();
+    $id_procedimiento = $conn->lastInsertId();
+
+    audit_log('create', 'minor_procedures', "Procedimiento registrado: $procedimiento_final - Paciente: $nombre_paciente", [
+        'table_name' => 'procedimientos_menores',
+        'record_id' => (int)$id_procedimiento,
+        'new_data' => [
+            'id_paciente' => $id_paciente,
+            'nombre_paciente' => $nombre_paciente,
+            'procedimiento' => $procedimiento_final,
+            'cobro' => $cobro,
+            'fecha_procedimiento' => $fecha_procedimiento,
+            'tipo_pago' => $tipo_pago,
+        ]
+    ]);
 
     // Limpiar buffer y enviar respuesta exitosa
     ob_clean();

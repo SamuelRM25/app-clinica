@@ -111,6 +111,14 @@ try {
 
     $conn->commit();
 
+    audit_log('create', 'hospitalization', count($cargos_to_process) . ' cargo(s) agregado(s) a encamamiento #' . $cargos_to_process[0]['id_encamamiento'], [
+        'table_name' => 'cargos_hospitalarios',
+        'new_data' => [
+            'cargos' => $cargos_to_process,
+            'total_cargos' => count($cargos_to_process),
+        ]
+    ]);
+
     echo json_encode([
         'status' => 'success',
         'message' => count($cargos_to_process) . ' cargo(s) agregado(s) correctamente'

@@ -322,10 +322,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <!-- Seguridad y Protección de Código -->
-    <script defer src="../../assets/js/security.js"></script>
+    <!-- <script defer src="../../assets/js/security.js"></script> -->
 
     <!-- CSS Crítico -->
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=20250602">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <!-- Responsive fixes for mobile -->
     <style>
@@ -430,14 +430,55 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             .modal-dialog.modal-xl {
                 margin: 0.25rem;
             }
-            .modal-dialog.modal-xl .lab-summary-panel {
-                min-width: 100% !important;
-                border-left: none !important;
-                border-top: 1px solid var(--color-border);
+            .modal-dialog.modal-premium {
+                width: 100% !important;
+                max-width: 1280px !important;
+                margin: 1rem auto !important;
             }
-            .modal-dialog.modal-xl .d-flex.h-100 {
-                flex-direction: column !important;
-                min-height: auto !important;
+            .modal-dialog.modal-premium .modal-content {
+                max-height: calc(100vh - 2rem);
+                display: flex;
+                flex-direction: column;
+            }
+            .modal-dialog.modal-premium .modal-body {
+                flex: 1;
+                overflow: hidden;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .modal-dialog.modal-premium .lab-modal-body .bg-white.p-4 {
+                flex: 1;
+                overflow-y: auto;
+            }
+            .modal-dialog.modal-premium .d-flex.h-100 {
+                flex-direction: row !important;
+                min-height: 70vh !important;
+            }
+            .modal-dialog.modal-premium .lab-summary-panel {
+                min-width: 320px !important;
+                max-width: 320px !important;
+                flex-shrink: 0;
+                border-left: 1px solid var(--color-border) !important;
+                border-top: none !important;
+                height: 100%;
+                overflow-y: auto;
+            }
+            @media (max-width: 1599.98px) {
+                .modal-dialog.modal-premium {
+                    max-width: calc(100vw - 1rem) !important;
+                    margin: 0.5rem auto !important;
+                }
+                .modal-dialog.modal-premium .lab-summary-panel {
+                    min-width: 100% !important;
+                    max-width: 100% !important;
+                    border-left: none !important;
+                    border-top: 1px solid var(--color-border) !important;
+                }
+                .modal-dialog.modal-premium .d-flex.h-100 {
+                    flex-direction: column !important;
+                    min-height: auto !important;
+                }
             }
             .btn-group.w-100 {
                 flex-wrap: wrap;
@@ -638,6 +679,19 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
         <!-- Navegación -->
         <nav class="sidebar-nav">
             <ul class="nav-list">
+                <?php
+                $role_scope = trim($user_specialty ?? '');
+                $allowed_modules = [];
+                if ($role_scope === 'farmacia') {
+                    $allowed_modules = ['inventory', 'pharmacy'];
+                } elseif ($role_scope === 'recepcion') {
+                    $allowed_modules = ['appointments', 'patients', 'pharmacy', 'laboratory', 'finances'];
+                } elseif ($role_scope === 'enfermeria') {
+                    $allowed_modules = ['pharmacy', 'inventory', 'finances'];
+                }
+                $is_restricted = !empty($allowed_modules);
+                ?>
+                
                 <li class="nav-item">
                     <a href="index.php" class="nav-link active">
                         <i class="bi bi-speedometer2 nav-icon"></i>
@@ -646,6 +700,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
 
                 <!-- Punto de Venta (Dispensario) -->
+                <?php if (!$is_restricted || in_array('pharmacy', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('pharmacy')): ?>
                             <a href="../dispensary/index.php" class="nav-link">
@@ -660,7 +715,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('appointments', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../appointments/index.php" class="nav-link">
                         <i class="bi bi-calendar-check nav-icon"></i>
@@ -668,15 +725,19 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         <span class="badge bg-primary"><?php echo $total_appointments; ?></span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('patients', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../patients/index.php" class="nav-link">
                         <i class="bi bi-people nav-icon"></i>
                         <span class="nav-text">Pacientes</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <!-- Hospitalización -->
+                <?php if (!$is_restricted || in_array('hospitalization', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('hospitalization')): ?>
                             <a href="../hospitalization/index.php" class="nav-link">
@@ -691,8 +752,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
                 <!-- Laboratorio -->
+                <?php if (!$is_restricted || in_array('laboratory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('laboratory')): ?>
                             <a href="../laboratory/index.php" class="nav-link">
@@ -706,8 +769,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
                 <!-- Inventario -->
+                <?php if (!$is_restricted || in_array('inventory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('inventory')): ?>
                             <a href="../inventory/index.php" class="nav-link">
@@ -724,8 +789,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
                 <!-- Otros Módulos -->
+                <?php if (!$is_restricted || in_array('imaging', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../minor_procedures/index.php" class="nav-link">
@@ -740,7 +807,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('imaging', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../examinations/index.php" class="nav-link">
@@ -755,7 +824,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('purchases', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('purchases')): ?>
                             <a href="../purchases/index.php" class="nav-link">
@@ -769,7 +840,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('sales', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('sales')): ?>
                             <a href="../sales/index.php" class="nav-link">
@@ -783,7 +856,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('finances', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('finances')): ?>
                             <a href="../billing/index.php" class="nav-link">
@@ -797,7 +872,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
+                <?php if (!$is_restricted || in_array('reports', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('reports')): ?>
                             <a href="../reports/index.php" class="nav-link">
@@ -812,6 +889,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
 
                 <li class="nav-item">
                     <a href="../settings/subscription.php" class="nav-link">
@@ -1361,7 +1439,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             </div>
 
             <!-- Acciones Rápidas -->
-            <?php if ($user_type === 'user' || $user_type === 'admin' && $show_quick_actions): ?>
+            <?php if ($user_type === 'user' || $user_type === 'admin' || $user_type === 'doc' && $show_quick_actions): ?>
                     <div class="stats-grid mb-4 animate-in delay-1" id="widget-quick-actions">
                         <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#newBillingModal"
                             style="text-decoration: none; border-left: 4px solid var(--color-success);">
@@ -1989,14 +2067,19 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 <i class="bi bi-calendar3 text-primary section-title-icon"></i>
                                 Agenda Semanal de Citas
                             </h3>
+                            <button class="btn btn-sm btn-link text-primary" onclick="refreshWeeklyAppointments()" title="Actualizar">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
                         </div>
-                        <div class="p-3">
-                            <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
-                                <i class="bi bi-info-circle-fill fs-5 me-2"></i>
-                                <div>
-                                    Visualización rápida del estado de citas semanales. Utilice el módulo principal para
-                                    gestionar reconsultas de pacientes sin demoras en la respuesta del servidor.
-                                </div>
+                        <div class="p-3" id="weeklyAppointmentsContainer">
+                            <div class="text-center py-3" id="weeklyAppointmentsLoader">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <span class="ms-2 text-muted">Cargando citas...</span>
+                            </div>
+                            <div id="weeklyAppointmentsList" style="display:none;"></div>
+                            <div id="weeklyAppointmentsEmpty" class="text-center py-2" style="display:none;">
+                                <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mt-2 mb-0">No hay citas programadas esta semana</p>
                             </div>
                         </div>
                         <div class="text-center mt-1 p-2">
@@ -2075,7 +2158,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Modal para nuevo cobro (Billing) -->
     <div class="modal fade" id="newBillingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
@@ -2089,17 +2172,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <form id="newBillingForm">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente</label>
-                            <input type="text" name="paciente_nombre" class="form-control" list="billingDatalistOptions"
-                                id="billing_paciente_input"
-                                placeholder="Nombre del paciente (o seleccione de la lista)..." required
-                                autocomplete="off">
-                            <datalist id="billingDatalistOptions">
-                                <?php foreach ($pacientes as $paciente): ?>
-                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                    <?php endforeach; ?>
-                            </datalist>
+                            <div class="position-relative">
+                                <input type="text" name="paciente_nombre" class="form-control"
+                                    id="billing_paciente_input"
+                                    placeholder="Escriba para buscar paciente..." required autocomplete="off">
+                                <div id="billingPatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none" style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                            </div>
                             <input type="hidden" id="billing_paciente" name="paciente">
+                            <small id="billingPatientHint" class="form-text text-muted d-none">Escriba al menos 1 carácter para buscar</small>
                         </div>
 
                         <div class="mb-3">
@@ -2179,7 +2259,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Modal para Nueva Orden de Laboratorio -->
     <div class="modal fade" id="newLabOrderModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-primary text-white py-3">
                     <h5 class="modal-title d-flex align-items-center">
@@ -2195,8 +2275,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0 bg-light bg-opacity-50">
-                    <div class="d-flex h-100 flex-column flex-lg-row" style="min-height: 600px;">
+                <div class="modal-body lab-modal-body">
+                    <div class="d-flex h-100 flex-column flex-lg-row">
                         <!-- Panel Izquierdo: Selección -->
                         <div class="p-4 flex-grow-1 overflow-auto bg-white">
                             <form id="newLabOrderForm">
@@ -2208,16 +2288,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0"><i
                                                     class="bi bi-person text-primary"></i></span>
-                                            <input class="form-control border-start-0 ps-0" list="labDatalistOptions"
-                                                id="lab_paciente_input" placeholder="Buscar por nombre..." required
-                                                autocomplete="off">
+                                            <div class="position-relative flex-grow-1">
+                                                <input class="form-control border-start-0 ps-0"
+                                                    id="lab_paciente_input" placeholder="Buscar por nombre..." required
+                                                    autocomplete="off">
+                                                <div id="labPatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none"
+                                                    style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                                            </div>
                                         </div>
-                                        <datalist id="labDatalistOptions">
-                                            <?php foreach ($pacientes as $paciente): ?>
-                                                    <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                                        value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                                <?php endforeach; ?>
-                                        </datalist>
                                         <input type="hidden" id="lab_id_paciente" name="id_paciente">
                                     </div>
                                     <div class="col-md-6">
@@ -2312,8 +2390,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         </div>
 
                         <!-- Panel Derecho: Resumen -->
-                        <div class="bg-light border-start p-4 d-flex flex-column lab-summary-panel"
-                            style="min-width: 350px;">
+                        <div class="bg-light border-start p-4 d-flex flex-column lab-summary-panel">
                             <div class="flex-grow-1">
                                 <h6 class="fw-bold d-flex justify-content-between align-items-center mb-3">
                                     <span>Resumen de Selección</span>
@@ -2609,6 +2686,100 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             // ==========================================================================
             // COMPONENTES DINÁMICOS
             // ==========================================================================
+            // ===== PATIENT SEARCH ENGINE (reusable for all modals) =====
+            window.setupPatientSearch = function(inputId, dropdownId, hiddenId) {
+                const input = document.getElementById(inputId);
+                const dropdown = document.getElementById(dropdownId);
+                const hidden = document.getElementById(hiddenId);
+                if (!input || !dropdown || !hidden) return;
+
+                let searchTimeout = null;
+                let highlightedIndex = -1;
+
+                function hideDropdown() {
+                    dropdown.classList.add('d-none');
+                    highlightedIndex = -1;
+                }
+
+                input.addEventListener('input', () => {
+                    clearTimeout(searchTimeout);
+                    const query = input.value.trim();
+
+                    if (query.length < 1) {
+                        hideDropdown();
+                        dropdown.innerHTML = '';
+                        hidden.value = '';
+                        return;
+                    }
+
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                            const response = await fetch(`api/search_patients.php?q=${encodeURIComponent(query)}&limit=10`, {
+                                headers: { 'X-CSRF-TOKEN': csrfToken }
+                            });
+                            const data = await response.json();
+
+                            if (data.status === 'success' && data.patients.length > 0) {
+                                dropdown.innerHTML = data.patients.map((p, idx) => `
+                                    <div class="patient-search-item" data-id="${p.id_paciente}" data-name="${p.nombre_completo}" data-index="${idx}">
+                                        <div class="patient-name">${p.nombre_completo}</div>
+                                        <div class="patient-meta">DPI: ${p.dpi || 'N/A'} &bull; Edad: ${p.edad || '?'}</div>
+                                    </div>
+                                `).join('');
+                                dropdown.classList.remove('d-none');
+                                highlightedIndex = -1;
+                            } else {
+                                dropdown.innerHTML = '<div class="patient-search-item disabled" style="color:#999;cursor:default;">Sin resultados</div>';
+                                dropdown.classList.remove('d-none');
+                            }
+                        } catch (e) {
+                            console.error('Error searching patients:', e);
+                            hideDropdown();
+                        }
+                    }, 200);
+                });
+
+                dropdown.addEventListener('click', (e) => {
+                    const item = e.target.closest('.patient-search-item[data-id]');
+                    if (item) {
+                        input.value = item.dataset.name;
+                        hidden.value = item.dataset.id;
+                        hideDropdown();
+                        dropdown.innerHTML = '';
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    const items = dropdown.querySelectorAll('.patient-search-item[data-id]');
+                    if (!items.length) return;
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+                        items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIndex));
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        highlightedIndex = Math.max(highlightedIndex - 1, 0);
+                        items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIndex));
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const highlighted = dropdown.querySelector('.highlighted');
+                        if (highlighted) {
+                            highlighted.click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        hideDropdown();
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                        hideDropdown();
+                    }
+                });
+            };
+
             class DynamicComponents {
                 constructor() {
                     this.setupGreeting();
@@ -2703,29 +2874,20 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         const day = date.getDay();
                         const hour = date.getHours();
 
-                        switch (doctorId) {
-                            case '9': price = (type === 'Consulta') ? 200 : 150; break;
-                            case '17': price = (type === 'Consulta') ? 200 : 150; break;
-                            case '13': price = (type === 'Consulta') ? 250 : 150; break;
-                            case '18': case '11': price = (type === 'Consulta') ? 200 : 100; break;
-                            case '16':
-                                if (type === 'Reconsulta') price = 150;
-                                else {
-                                    if (day >= 1 && day <= 5) {
-                                        if (hour >= 8 && hour < 16) price = 250;
-                                        else if (hour >= 16 && hour < 22) price = 300;
-                                        else price = 400;
-                                    } else if (day === 6) {
-                                        if (hour < 13) price = 250;
-                                        else if (hour >= 13 && hour < 22) price = 300;
-                                        else price = 400;
-                                    } else {
-                                        if (hour >= 8 && hour < 20) price = 350;
-                                        else price = 400;
-                                    }
-                                }
-                                break;
-                            default: price = (type === 'Consulta') ? 100 : 0; break;
+                        const isHabil = day >= 1 && day <= 6 && !(day === 6 && hour >= 13);
+
+                        if (type === 'Consulta') {
+                            if (tarifas.consulta[doctorId]) {
+                                price = isHabil ? tarifas.consulta[doctorId].normal : tarifas.consulta[doctorId].inutil;
+                            }
+                        } else {
+                            if (tarifas.reconsulta[doctorId]) {
+                                price = isHabil ? tarifas.reconsulta[doctorId].normal : tarifas.reconsulta[doctorId].inutil;
+                            }
+                        }
+
+                        if (price === 0) {
+                            price = 0;
                         }
                         montoInput.value = price;
                     };
@@ -2734,52 +2896,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     tipoRadios.forEach(r => r.addEventListener('change', calculatePrice));
                     calculatePrice();
 
-                    // Listener para historial de paciente
-                    const billingPatientInput = document.getElementById('billing_paciente_input');
-                    const billingDatalist = document.getElementById('billingDatalistOptions');
-
-                    if (billingPatientInput && billingDatalist) {
-                        billingPatientInput.addEventListener('input', () => {
-                            const val = billingPatientInput.value;
-                            let patientId = null;
-                            const options = billingDatalist.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === val) {
-                                    patientId = options[i].getAttribute('data-id');
-                                    break;
-                                }
-                            }
-
-                            if (patientId) {
-                                fetch(`api/check_consultation_history.php?id_paciente=${patientId}`)
-                                    .then(r => r.json())
-                                    .then(data => {
-                                        const badge = document.getElementById('consultationHistoryBadge');
-                                        const btnReconsulta = document.getElementById('btn_reconsulta'); // Si se desea auto-seleccionar
-
-                                        if (badge) {
-                                            if (data.status === 'success' && data.has_prior) {
-                                                badge.textContent = `${data.count} Citas Previas`;
-                                                badge.classList.remove('d-none');
-
-                                                Swal.fire({
-                                                    toast: true,
-                                                    position: 'top-end',
-                                                    icon: 'info',
-                                                    title: 'Paciente Recurrente',
-                                                    text: `Tiene ${data.count} citas previas. Verifique si aplica Re-consulta.`,
-                                                    showConfirmButton: false,
-                                                    timer: 4000
-                                                });
-                                            } else {
-                                                badge.classList.add('d-none');
-                                            }
-                                        }
-                                    })
-                                    .catch(e => console.error("Error checking history", e));
-                            }
-                        });
-                    }
+                    // Real-time patient search for billing modal
+                    setupPatientSearch('billing_paciente_input', 'billingPatientDropdown', 'billing_paciente');
 
                     const saveBtn = document.getElementById('saveBillingBtn');
                     if (saveBtn) {
@@ -2788,25 +2906,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             const form = document.getElementById('newBillingForm');
                             const patientInput = document.getElementById('billing_paciente_input');
                             const patientHidden = document.getElementById('billing_paciente');
-                            const datalist = document.getElementById('billingDatalistOptions');
 
-                            if (!form || !patientInput || !datalist) return;
+                            if (!form || !patientInput) return;
 
-                            let patientId = '';
-                            const val = patientInput.value;
-                            if (!val.trim()) {
-                                Swal.fire('Aviso', 'Nombre de paciente requerido', 'warning');
+                            const val = patientInput.value.trim();
+                            if (!val || !patientHidden.value) {
+                                Swal.fire('Aviso', 'Debe seleccionar un paciente de la lista', 'warning');
                                 return;
                             }
-
-                            const options = datalist.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === val) {
-                                    patientId = options[i].getAttribute('data-id');
-                                    break;
-                                }
-                            }
-                            patientHidden.value = patientId;
 
                             if (!form.checkValidity()) {
                                 form.reportValidity();
@@ -2828,7 +2935,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                         timer: 1500,
                                         showConfirmButton: false
                                     }).then(() => {
-                                        // Abrir recibo
                                         if (result.id_cobro) {
                                             window.open(`../billing/print_billing.php?id=${result.id_cobro}`, '_blank');
                                         }
@@ -2853,28 +2959,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         saveBtn.addEventListener('click', async () => {
                             if (saveBtn.disabled) return;
                             const form = document.getElementById('electroBillingForm');
-                            const patientInput = document.getElementById('electro_paciente_input');
                             const patientHidden = document.getElementById('electro_paciente');
-                            const datalist = document.getElementById('electroDatalistOptions');
 
-                            if (!form || !patientInput || !datalist) return;
+                            if (!form || !patientHidden) return;
 
-                            let patientId = '';
-                            const val = patientInput.value;
-                            if (!val.trim()) {
-                                Swal.fire('Aviso', 'Nombre de paciente requerido', 'warning');
+                            if (!patientHidden.value) {
+                                Swal.fire('Aviso', 'Seleccione un paciente válido', 'warning');
                                 return;
                             }
-
-                            const options = datalist.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === val) {
-                                    patientId = options[i].getAttribute('data-id');
-                                    break;
-                                }
-                            }
-
-                            patientHidden.value = patientId;
 
                             if (!form.checkValidity()) {
                                 form.reportValidity();
@@ -2912,6 +3004,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             }
                         });
                     }
+
+                    setupPatientSearch('electro_paciente_input', 'electroPatientDropdown', 'electro_paciente');
                 }
 
                 setupLabOrderHandlers() {
@@ -3103,22 +3197,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         });
                     }
 
-                    const labPatientInput = document.getElementById('lab_paciente_input');
-                    if (labPatientInput) {
-                        labPatientInput.addEventListener('change', function () {
-                            const datalist = document.getElementById('labDatalistOptions');
-                            const val = this.value;
-                            const hidden = document.getElementById('lab_id_paciente');
-                            hidden.value = '';
-
-                            for (let option of datalist.options) {
-                                if (option.value === val) {
-                                    hidden.value = option.getAttribute('data-id');
-                                    break;
-                                }
-                            }
-                        });
-                    }
+                    setupPatientSearch('lab_paciente_input', 'labPatientDropdown', 'lab_id_paciente');
                 }
 
                 setupUltrasoundHandlers() {
@@ -3128,43 +3207,35 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                     if (!select || !amountInput) return;
 
-                    // Update price on select
-                    // Update price on select or radio change
+// Update price on select or radio change
                     const updatePrice = () => {
-                        const option = select.options[select.selectedIndex];
+                        const selectedType = select.value;
                         const rateType = document.querySelector('input[name="us_rate_type"]:checked').value;
+                        const amountInput = document.getElementById('ultrasound_amount');
 
                         let price = 0;
-                        if (option.value) {
-                            if (option.getAttribute('data-price') === 'Manual' || option.getAttribute('data-p-normal') === 'Manual') {
-                                price = 'Manual';
-                            } else {
-                                switch (rateType) {
-                                    case 'inhabil':
-                                        price = parseFloat(option.getAttribute('data-p-inhabil')) || 0;
-                                        break;
-                                    case 'radio':
-                                        price = parseFloat(option.getAttribute('data-p-radio')) || 0;
-                                        break;
-                                    case 'iradio':
-                                        price = parseFloat(option.getAttribute('data-p-iradio')) || 0;
-                                        break;
-                                    default: // normal
-                                        price = parseFloat(option.getAttribute('data-p-normal')) || 0;
-                                }
-                            }
-                        }
 
-                        if (price === 'Manual') {
-                            amountInput.value = '';
+                        if (selectedType && tarifas.ultrasonido[selectedType]) {
+                            const tipo = tarifas.ultrasonido[selectedType];
+                            switch (rateType) {
+                                case 'inhabil':
+                                    price = tipo.inhabil || 0;
+                                    break;
+                                case 'radio':
+                                    price = tipo.radio || 0;
+                                    break;
+                                case 'iradio':
+                                    price = tipo.iradio || 0;
+                                    break;
+                                default:
+                                    price = tipo.normal || 0;
+                            }
+                            amountInput.value = price > 0 ? price.toFixed(2) : '';
+                            amountInput.readOnly = true;
+                            amountInput.placeholder = '';
+                        } else {
                             amountInput.readOnly = false;
                             amountInput.placeholder = 'Ingrese monto...';
-                        } else if (price > 0) {
-                            amountInput.value = price.toFixed(2);
-                            amountInput.readOnly = true;
-                        } else {
-                            amountInput.value = '';
-                            amountInput.readOnly = true;
                         }
                     };
 
@@ -3178,21 +3249,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             if (saveBtn.disabled) return;
 
                             const form = document.getElementById('ultrasoundBillingForm');
-                            const patientInput = document.getElementById('ultrasound_patient_input');
                             const patientHidden = document.getElementById('ultrasound_patient_id');
-                            const datalist = document.getElementById('ultrasoundPatientDatalist');
 
-                            if (!form || !patientInput || !datalist) return;
-
-                            patientHidden.value = '';
-                            const val = patientInput.value;
-                            const options = datalist.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === val) {
-                                    patientHidden.value = options[i].getAttribute('data-id');
-                                    break;
-                                }
-                            }
+                            if (!form || !patientHidden) return;
 
                             if (!patientHidden.value) {
                                 Swal.fire('Aviso', 'Seleccione un paciente válido', 'warning');
@@ -3239,6 +3298,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             }
                         });
                     }
+
+                    setupPatientSearch('ultrasound_patient_input', 'ultrasoundPatientDropdown', 'ultrasound_patient_id');
                 }
 
                 setupXrayHandlers() {
@@ -3248,21 +3309,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             if (saveBtn.disabled) return;
 
                             const form = document.getElementById('xrayBillingForm');
-                            const patientInput = document.getElementById('xray_patient_input');
                             const patientHidden = document.getElementById('xray_patient_id');
-                            const datalist = document.getElementById('xrayPatientDatalist');
 
-                            if (!form || !patientInput || !datalist) return;
-
-                            patientHidden.value = '';
-                            const val = patientInput.value;
-                            const options = datalist.options;
-                            for (let i = 0; i < options.length; i++) {
-                                if (options[i].value === val) {
-                                    patientHidden.value = options[i].getAttribute('data-id');
-                                    break;
-                                }
-                            }
+                            if (!form || !patientHidden) return;
 
                             if (!patientHidden.value) {
                                 Swal.fire('Aviso', 'Seleccione un paciente válido', 'warning');
@@ -3307,6 +3356,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             }
                         });
                     }
+
+                    setupPatientSearch('xray_patient_input', 'xrayPatientDropdown', 'xray_patient_id');
                 }
 
                 setupAnimations() {
@@ -3472,7 +3523,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     </script>
     <!-- Modal Cobro Procedimientos -->
     <div class="modal fade" id="procedureBillingModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-bandaid me-2"></i>Cobro de Procedimiento</h5>
@@ -3482,14 +3533,12 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <form id="procedureBillingForm">
                         <div class="mb-3">
                             <label class="form-label">Paciente</label>
-                            <input class="form-control" list="procedurePatientDatalist" id="procedure_patient_input"
-                                placeholder="Buscar paciente..." required autocomplete="off">
-                            <datalist id="procedurePatientDatalist">
-                                <?php foreach ($pacientes as $paciente): ?>
-                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                    <?php endforeach; ?>
-                            </datalist>
+                            <div class="position-relative">
+                                <input class="form-control" id="procedure_patient_input"
+                                    placeholder="Buscar paciente..." required autocomplete="off">
+                                <div id="procedurePatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none"
+                                    style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                            </div>
                             <input type="hidden" id="procedure_patient_id" name="patient_id">
                         </div>
                         <div class="mb-3">
@@ -3565,7 +3614,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Modal para Ultrasonido -->
     <div class="modal fade" id="ultrasoundBillingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-activity me-2"></i>Cobro de Ultrasonido</h5>
@@ -3575,103 +3624,58 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <form id="ultrasoundBillingForm">
                         <div class="mb-3">
                             <label class="form-label">Paciente</label>
-                            <input class="form-control" list="ultrasoundPatientDatalist" id="ultrasound_patient_input"
-                                placeholder="Buscar paciente..." required autocomplete="off">
-                            <datalist id="ultrasoundPatientDatalist">
-                                <?php foreach ($pacientes as $paciente): ?>
-                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                    <?php endforeach; ?>
-                            </datalist>
+                            <div class="position-relative">
+                                <input class="form-control" id="ultrasound_patient_input"
+                                    placeholder="Buscar paciente..." required autocomplete="off">
+                                <div id="ultrasoundPatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none"
+                                    style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                            </div>
                             <input type="hidden" id="ultrasound_patient_id" name="patient_id">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tipo de Ultrasonido</label>
                             <select class="form-select" id="ultrasoundSelect" name="ultrasound_type" required>
                                 <option value="">Seleccione...</option>
-                                <option value="ABDOMINAL SUPERIOR" data-p-normal="300" data-p-inhabil="350"
-                                    data-p-radio="150" data-p-iradio="200">ABDOMINAL SUPERIOR</option>
-                                <option value="CADERA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="450">CADERA</option>
-                                <option value="CUELLO O TIROIDEO" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="250" data-p-iradio="450">CUELLO O TIROIDEO</option>
-                                <option value="HOMBRO" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="450">HOMBRO</option>
-                                <option value="MUÑECA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="450">MUÑECA</option>
-                                <option value="INGUINAL" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="400">INGUINAL</option>
-                                <option value="OBSTETRICO" data-p-normal="300" data-p-inhabil="350" data-p-radio="150"
-                                    data-p-iradio="200">OBSTETRICO</option>
-                                <option value="ABDOMINAL INFERIOR (PELVICO)" data-p-normal="300" data-p-inhabil="350"
-                                    data-p-radio="150" data-p-iradio="200">ABDOMINAL INFERIOR (PELVICO)</option>
-                                <option value="ABDOMEN INFERIOR + FID" data-p-normal="300" data-p-inhabil="400"
-                                    data-p-radio="150" data-p-iradio="250">ABDOMEN INFERIOR + FID</option>
-                                <option value="ABDOMINAL COMPLETO" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="250" data-p-iradio="400">ABDOMINAL COMPLETO</option>
-                                <option value="ABDOMINAL PEDIATRICO MENORES A 2 AÑOS" data-p-normal="600"
-                                    data-p-inhabil="750" data-p-radio="400" data-p-iradio="500">ABDOMINAL PEDIATRICO
-                                    MENORES A 2 AÑOS</option>
-                                <option value="ABDOMINAL PEDIATRICO" data-p-normal="450" data-p-inhabil="700"
-                                    data-p-radio="300" data-p-iradio="500">ABDOMINAL PEDIATRICO</option>
-                                <option value="ABDOMINAL SUPERIOR + FID" data-p-normal="350" data-p-inhabil="450"
-                                    data-p-radio="150" data-p-iradio="250">ABDOMINAL SUPERIOR + FID</option>
-                                <option value="AMBAS RODILLAS" data-p-normal="1000" data-p-inhabil="1400"
-                                    data-p-radio="400" data-p-iradio="600">AMBAS RODILLAS</option>
-                                <option value="RODILLA" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="450">RODILLA</option>
-                                <option value="DOPLER ARTERIAL UNA EXTREMIDAD" data-p-normal="700" data-p-inhabil="900"
-                                    data-p-radio="600" data-p-iradio="1000">DOPLER ARTERIAL UNA EXTREMIDAD</option>
-                                <option value="DOPPLER CAROTIDEO" data-p-normal="700" data-p-inhabil="900"
-                                    data-p-radio="500" data-p-iradio="900">DOPPLER CAROTIDEO</option>
-                                <option value="DOPPLER VENOSO UNA EXTREMIDAD" data-p-normal="700" data-p-inhabil="900"
-                                    data-p-radio="600" data-p-iradio="1000">DOPPLER VENOSO UNA EXTREMIDAD</option>
-                                <option value="ENDOVAGINAL" data-p-normal="350" data-p-inhabil="450" data-p-radio="150"
-                                    data-p-iradio="250">ENDOVAGINAL</option>
-                                <option value="GUIA ECOGAFRICA PARA BIOPSIA" data-p-normal="550" data-p-inhabil="700"
-                                    data-p-radio="350" data-p-iradio="450">GUIA ECOGAFRICA PARA BIOPSIA</option>
-                                <option value="GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO" data-p-normal="500"
-                                    data-p-inhabil="700" data-p-radio="300" data-p-iradio="400">GUIA ECOGRAFICA PARA
-                                    DRENAJE DE ABSCESO</option>
-                                <option value="GUIA PARA PARACENTESIS" data-p-normal="400" data-p-inhabil="550"
-                                    data-p-radio="250" data-p-iradio="350">GUIA PARA PARACENTESIS</option>
-                                <option value="HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS" data-p-normal="380"
-                                    data-p-inhabil="580" data-p-radio="200" data-p-iradio="400">HEPATICO Y VIAS BILIARES
-                                    PEDIATRICO MENORES A 2 AÑOS</option>
-                                <option value="HEPATICO Y VIAS BILIARES" data-p-normal="350" data-p-inhabil="500"
-                                    data-p-radio="150" data-p-iradio="250">HEPATICO Y VIAS BILIARES</option>
-                                <option value="INGUINO- ESCROTAL" data-p-normal="350" data-p-inhabil="550"
-                                    data-p-radio="200" data-p-iradio="400">INGUINO- ESCROTAL</option>
-                                <option value="MAMARIO" data-p-normal="500" data-p-inhabil="700" data-p-radio="250"
-                                    data-p-iradio="450">MAMARIO</option>
-                                <option value="MUSCULAR PARTES BLANDAS" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="250" data-p-iradio="450">MUSCULAR PARTES BLANDAS</option>
-                                <option value="OBSTETRICO GEMELAR" data-p-normal="400" data-p-inhabil="450"
-                                    data-p-radio="200" data-p-iradio="250">OBSTETRICO GEMELAR</option>
-                                <option value="PARED ABDMINAL E INGUINAL" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="200" data-p-iradio="400">PARED ABDMINAL E INGUINAL</option>
-                                <option value="PILORO" data-p-normal="250" data-p-inhabil="350" data-p-radio="250"
-                                    data-p-iradio="450">PILORO</option>
-                                <option value="PROSTATICO" data-p-normal="250" data-p-inhabil="350" data-p-radio="150"
-                                    data-p-iradio="250">PROSTATICO</option>
-                                <option value="PROSTATICO ENDORECTAL" data-p-normal="350" data-p-inhabil="600"
-                                    data-p-radio="200" data-p-iradio="400">PROSTATICO ENDORECTAL</option>
-                                <option value="RENAL PEDIATRICO MENOR A 2 AÑOS" data-p-normal="300" data-p-inhabil="600"
-                                    data-p-radio="250" data-p-iradio="400">RENAL PEDIATRICO MENOR A 2 AÑOS</option>
-                                <option value="RENAL" data-p-normal="250" data-p-inhabil="350" data-p-radio="150"
-                                    data-p-iradio="200">RENAL</option>
-                                <option value="renal y vias urinarias" data-p-normal="450" data-p-inhabil="350"
-                                    data-p-radio="150" data-p-iradio="200">renal y vias urinarias</option>
-                                <option value="TEJIDOS BLANDOS - MUSCULAR" data-p-normal="350" data-p-inhabil="600"
-                                    data-p-radio="250" data-p-iradio="450">TEJIDOS BLANDOS - MUSCULAR</option>
-                                <option value="TENDON DE AQUILES" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="200" data-p-iradio="400">TENDON DE AQUILES</option>
-                                <option value="TESTICULAR O ESCROTAL" data-p-normal="500" data-p-inhabil="700"
-                                    data-p-radio="200" data-p-iradio="400">TESTICULAR O ESCROTAL</option>
-                                <option value="4D" data-p-normal="500" data-p-inhabil="650" data-p-radio="500"
-                                    data-p-iradio="650">4D</option>
-                                <option value="5D" data-p-normal="600" data-p-inhabil="700" data-p-radio="600"
-                                    data-p-iradio="700">5D</option>
+                                <option value="ABDOMINAL SUPERIOR">ABDOMINAL SUPERIOR</option>
+                                <option value="CADERA">CADERA</option>
+                                <option value="CUELLO O TIROIDEO">CUELLO O TIROIDEO</option>
+                                <option value="HOMBRO">HOMBRO</option>
+                                <option value="MUÑECA">MUÑECA</option>
+                                <option value="INGUINAL">INGUINAL</option>
+                                <option value="OBSTETRICO">OBSTETRICO</option>
+                                <option value="ABDOMINAL INFERIOR (PELVICO)">ABDOMINAL INFERIOR (PELVICO)</option>
+                                <option value="ABDOMEN INFERIOR + FID">ABDOMEN INFERIOR + FID</option>
+                                <option value="ABDOMINAL COMPLETO">ABDOMINAL COMPLETO</option>
+                                <option value="ABDOMINAL PEDIATRICO MENORES A 2 AÑOS">ABDOMINAL PEDIATRICO MENORES A 2 AÑOS</option>
+                                <option value="ABDOMINAL PEDIATRICO">ABDOMINAL PEDIATRICO</option>
+                                <option value="ABDOMINAL SUPERIOR + FID">ABDOMINAL SUPERIOR + FID</option>
+                                <option value="AMBAS RODILLAS">AMBAS RODILLAS</option>
+                                <option value="RODILLA">RODILLA</option>
+                                <option value="DOPLER ARTERIAL UNA EXTREMIDAD">DOPLER ARTERIAL UNA EXTREMIDAD</option>
+                                <option value="DOPPLER CAROTIDEO">DOPPLER CAROTIDEO</option>
+                                <option value="DOPPLER VENOSO UNA EXTREMIDAD">DOPPLER VENOSO UNA EXTREMIDAD</option>
+                                <option value="ENDOVAGINAL">ENDOVAGINAL</option>
+                                <option value="GUIA ECOGAFRICA PARA BIOPSIA">GUIA ECOGAFRICA PARA BIOPSIA</option>
+                                <option value="GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO">GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO</option>
+                                <option value="GUIA PARA PARACENTESIS">GUIA PARA PARACENTESIS</option>
+                                <option value="HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS">HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS</option>
+                                <option value="HEPATICO Y VIAS BILIARES">HEPATICO Y VIAS BILIARES</option>
+                                <option value="INGUINO- ESCROTAL">INGUINO- ESCROTAL</option>
+                                <option value="MAMARIO">MAMARIO</option>
+                                <option value="MUSCULAR PARTES BLANDAS">MUSCULAR PARTES BLANDAS</option>
+                                <option value="OBSTETRICO GEMELAR">OBSTETRICO GEMELAR</option>
+                                <option value="PARED ABDMINAL E INGUINAL">PARED ABDMINAL E INGUINAL</option>
+                                <option value="PILORO">PILORO</option>
+                                <option value="PROSTATICO">PROSTATICO</option>
+                                <option value="PROSTATICO ENDORECTAL">PROSTATICO ENDORECTAL</option>
+                                <option value="RENAL PEDIATRICO MENOR A 2 AÑOS">RENAL PEDIATRICO MENOR A 2 AÑOS</option>
+                                <option value="RENAL">RENAL</option>
+                                <option value="renal y vias urinarias">renal y vias urinarias</option>
+                                <option value="TEJIDOS BLANDOS - MUSCULAR">TEJIDOS BLANDOS - MUSCULAR</option>
+                                <option value="TENDON DE AQUILES">TENDON DE AQUILES</option>
+                                <option value="TESTICULAR O ESCROTAL">TESTICULAR O ESCROTAL</option>
+                                <option value="4D">4D</option>
+                                <option value="5D">5D</option>
                             </select>
                         </div>
 
@@ -3734,7 +3738,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Modal para Electrocardiograma -->
     <div class="modal fade" id="electroBillingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-heart-pulse me-2"></i>Cobro de Electrocardiograma</h5>
@@ -3744,14 +3748,12 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <form id="electroBillingForm">
                         <div class="mb-3">
                             <label class="form-label">Paciente</label>
-                            <input class="form-control" list="electroDatalistOptions" id="electro_paciente_input"
-                                placeholder="Buscar paciente..." required autocomplete="off">
-                            <datalist id="electroDatalistOptions">
-                                <?php foreach ($pacientes as $paciente): ?>
-                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                    <?php endforeach; ?>
-                            </datalist>
+                            <div class="position-relative">
+                                <input class="form-control" id="electro_paciente_input"
+                                    placeholder="Buscar paciente..." required autocomplete="off">
+                                <div id="electroPatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none"
+                                    style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                            </div>
                             <input type="hidden" id="electro_paciente" name="id_paciente">
                         </div>
                         <div class="mb-3">
@@ -3770,17 +3772,17 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <div class="btn-group w-100" role="group">
                                 <input type="radio" class="btn-check" name="electro_horario" id="electro_habil"
                                     value="habil" onchange="updateElectroPrice()" checked autocomplete="off">
-                                <label class="btn btn-outline-danger" for="electro_habil">Normal (Q300)</label>
+                                <label class="btn btn-outline-danger" for="electro_habil">Normal</label>
 
                                 <input type="radio" class="btn-check" name="electro_horario" id="electro_inhabil"
                                     value="inhabil" onchange="updateElectroPrice()" autocomplete="off">
-                                <label class="btn btn-outline-danger" for="electro_inhabil">Inhábil/Finde (Q400)</label>
+                                <label class="btn btn-outline-danger" for="electro_inhabil">Inhábil/Finde</label>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Monto (Q)</label>
-                            <input type="number" class="form-control" id="electro_precio" name="precio" value="300"
-                                required step="0.01">
+                            <input type="number" class="form-control" id="electro_precio" name="precio" value=""
+                                required step="0.01" placeholder="0.00">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tipo de Pago</label>
@@ -3802,7 +3804,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Modal para Rayos X -->
     <div class="modal fade" id="xrayBillingModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-file-medical me-2"></i>Cobro de Rayos X</h5>
@@ -3812,15 +3814,21 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <form id="xrayBillingForm">
                         <div class="mb-3">
                             <label class="form-label">Paciente</label>
-                            <input class="form-control" list="xrayPatientDatalist" id="xray_patient_input"
-                                placeholder="Buscar paciente..." required autocomplete="off">
-                            <datalist id="xrayPatientDatalist">
-                                <?php foreach ($pacientes as $paciente): ?>
-                                        <option data-id="<?php echo $paciente['id_paciente']; ?>"
-                                            value="<?php echo htmlspecialchars($paciente['nombre_completo']); ?>">
-                                    <?php endforeach; ?>
-                            </datalist>
+                            <div class="position-relative">
+                                <input class="form-control" id="xray_patient_input"
+                                    placeholder="Buscar paciente..." required autocomplete="off">
+                                <div id="xrayPatientDropdown" class="patient-search-dropdown position-absolute w-100 mt-1 d-none"
+                                    style="z-index: 1060; max-height: 250px; overflow-y: auto;"></div>
+                            </div>
                             <input type="hidden" id="xray_patient_id" name="patient_id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Número de Regiones</label>
+                            <select class="form-select" id="xray_regions" onchange="updateXrayPrice()">
+                                <option value="1">1 Región</option>
+                                <option value="2">2 Regiones</option>
+                                <option value="3">3 Regiones</option>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tipo de Estudio (Rayos X)</label>
@@ -3857,7 +3865,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <div class="modal-footer">
                     <div class="me-auto small text-muted">
                         <i class="bi bi-info-circle me-1"></i>
-                        Precios: Q200 (1 reg), Q300 (2 reg), Q400 (3 reg)
+                        <span id="xrayPriceHint">Seleccione región para ver precio</span>
                     </div>
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-secondary" id="saveXrayBtn">Guardar Cobro</button>
@@ -3867,28 +3875,93 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     </div>
 
     <script>
-        const procedurePrices = {
-            'Inyeccion': { habil: 5, inhabil: 10 },
-            'Toma de Presion': { habil: 5, inhabil: 10 },
-            'Glucometria': { habil: 25, inhabil: 30 },
-            'Unicotomia': { habil: 125, inhabil: 150 },
-            'Lavado de Oido': { habil: 100, inhabil: 150 },
-            'Colacacion de Sonda Foley': { habil: 200, inhabil: 250 },
-            'Canalizacion con Solucion': { habil: 175, inhabil: 250 },
-            'Canalizacion con Stopper': { habil: 75, inhabil: 125 },
-            'Sutura 1-5 pts': { habil: 300, inhabil: 400 },
-            'Sutura 6-10 pts': { habil: 500, inhabil: 650 },
-            'Sutura 11-15 pts': { habil: 750, inhabil: 900 },
-            'Nebulizacion': { habil: 40, inhabil: 65 },
-            'Curacion de herida': { habil: 100, inhabil: 150 },
-            'Retiro de Puntos': { habil: 50, inhabil: 100 },
-            'Suero Vitaminado': { habil: 800, inhabil: 1100 }
+        let tarifas = {
+            consulta: {},
+            reconsulta: {},
+            electrocardiograma: {},
+            procedimiento: {},
+            rayos_x: {},
+            ultrasonido: {}
         };
+
+        async function loadTarifas() {
+            try {
+                const response = await fetch('../settings/api/get_tarifas.php');
+                if (!response.ok) {
+                    console.warn('Could not load tarifas, using defaults');
+                    return;
+                }
+                const res = await response.json();
+                if (res.success && res.tarifas) {
+                    const t = res.tarifas;
+
+                    if (Array.isArray(t.consulta) && t.consulta.length > 0) {
+                        const consultaObj = {};
+                        t.consulta.forEach(item => {
+                            if (item.id_medico) consultaObj[item.id_medico] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                        });
+                        tarifas.consulta = consultaObj;
+                    }
+                    if (Array.isArray(t.reconsulta) && t.reconsulta.length > 0) {
+                        const reconsObj = {};
+                        t.reconsulta.forEach(item => {
+                            if (item.id_medico) reconsObj[item.id_medico] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                        });
+                        tarifas.reconsulta = reconsObj;
+                    }
+                    if (t.electrocardiograma && t.electrocardiograma.precio_normal) {
+                        tarifas.electrocardiograma = { normal: t.electrocardiograma.precio_normal, inutil: t.electrocardiograma.precio_inhabil };
+                    }
+                    if (Array.isArray(t.procedimiento) && t.procedimiento.length > 0) {
+                        const procObj = {};
+                        t.procedimiento.forEach(item => {
+                            if (item.nombre_servicio) procObj[item.nombre_servicio] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                        });
+                        tarifas.procedimiento = procObj;
+                    }
+                    if (Array.isArray(t.rayos_x) && t.rayos_x.length > 0) {
+                        const rxObj = {};
+                        t.rayos_x.forEach(item => {
+                            if (item.region_count) rxObj[item.region_count] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                        });
+                        tarifas.rayos_x = rxObj;
+                    }
+                    if (Array.isArray(t.ultrasonido) && t.ultrasonido.length > 0) {
+                        const usObj = {};
+                        t.ultrasonido.forEach(item => {
+                            if (item.nombre_servicio) usObj[item.nombre_servicio] = { normal: item.precio_normal, inutil: item.precio_inhabil, radio: item.precio_radio || 0, iradio: item.precio_inhabil };
+                        });
+                        tarifas.ultrasonido = usObj;
+                    }
+                }
+            } catch (error) {
+                console.warn('Using default tarifas');
+            }
+        }
+
+document.addEventListener('DOMContentLoaded', loadTarifas);
+
+        document.getElementById('xrayBillingModal')?.addEventListener('shown.bs.modal', updateXrayPrice);
+        document.getElementById('electroBillingModal')?.addEventListener('shown.bs.modal', updateElectroPrice);
+        document.getElementById('procedureBillingModal')?.addEventListener('shown.bs.modal', updateProcedurePrice);
+        document.getElementById('ultrasoundBillingModal')?.addEventListener('shown.bs.modal', function() {
+            const select = document.getElementById('ultrasoundSelect');
+            if (select) select.dispatchEvent(new Event('change'));
+        });
+
+        // Initialize patient search for procedure billing modal
+        if (document.getElementById('procedure_patient_input')) {
+            setupPatientSearch('procedure_patient_input', 'procedurePatientDropdown', 'procedure_patient_id');
+        }
 
         function updateElectroPrice() {
             const isHabil = document.getElementById('electro_habil').checked;
             const priceField = document.getElementById('electro_precio');
-            priceField.value = isHabil ? "300.00" : "400.00";
+            if (tarifas.electrocardiograma && tarifas.electrocardiograma.normal) {
+                priceField.value = isHabil ? tarifas.electrocardiograma.normal.toFixed(2) : tarifas.electrocardiograma.inutil.toFixed(2);
+            } else {
+                priceField.value = '';
+            }
         }
 
         function updateProcedurePrice() {
@@ -3896,8 +3969,24 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             const isHabil = document.getElementById('scheduleHabil').checked;
             const priceField = document.getElementById('procedurePrice');
 
-            if (procedure && procedurePrices[procedure]) {
-                const price = isHabil ? procedurePrices[procedure].habil : procedurePrices[procedure].inhabil;
+            if (procedure && tarifas.procedimiento[procedure]) {
+                const price = isHabil ? tarifas.procedimiento[procedure].normal : tarifas.procedimiento[procedure].inutil;
+                priceField.value = price.toFixed(2);
+            } else {
+                priceField.value = '';
+            }
+        }
+
+        function updateXrayPrice() {
+            const regions = parseInt(document.getElementById('xray_regions').value) || 1;
+            const priceField = document.getElementById('xray_amount');
+            const date = new Date();
+            const day = date.getDay();
+            const hour = date.getHours();
+            const isHabil = day >= 1 && day <= 6 && !(day === 6 && hour >= 13);
+
+            if (tarifas.rayos_x && tarifas.rayos_x[regions]) {
+                const price = isHabil ? tarifas.rayos_x[regions].normal : tarifas.rayos_x[regions].inutil;
                 priceField.value = price.toFixed(2);
             } else {
                 priceField.value = '';
@@ -3906,21 +3995,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
         function submitProcedureBilling() {
             const form = document.getElementById('procedureBillingForm');
-            const patientInput = document.getElementById('procedure_patient_input');
             const patientHidden = document.getElementById('procedure_patient_id');
-            const datalist = document.getElementById('procedurePatientDatalist');
             const procedure = document.getElementById('procedureSelect').value;
-
-            // Validar paciente seleccionado del datalist
-            patientHidden.value = '';
-            const val = patientInput.value;
-            const options = datalist.options;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].value === val) {
-                    patientHidden.value = options[i].getAttribute('data-id');
-                    break;
-                }
-            }
 
             if (!patientHidden.value) {
                 Swal.fire('Aviso', 'Por favor seleccione un paciente válido de la lista', 'warning');
@@ -4170,7 +4246,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     const originalText = btn.innerHTML;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
 
-                    // Fallback para restaurar el botón si la página no recarga
                     setTimeout(() => {
                         if (btn) {
                             btn.disabled = false;
@@ -4179,6 +4254,70 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     }, 10000);
                 }
             }
+        });
+
+        async function refreshWeeklyAppointments() {
+            const loader = document.getElementById('weeklyAppointmentsLoader');
+            const list = document.getElementById('weeklyAppointmentsList');
+            const empty = document.getElementById('weeklyAppointmentsEmpty');
+            if (!loader || !list || !empty) return;
+
+            loader.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const response = await fetch('api/get_weekly_appointments.php', {
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                });
+
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    // If not JSON, check response status and show appropriate error
+                    if (response.status === 401 || response.status === 403) {
+                        console.warn('Weekly appointments: Unauthorized');
+                    } else {
+                        console.warn('Weekly appointments: Non-JSON response', response.status);
+                    }
+                    loader.style.display = 'none';
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                const data = await response.json();
+
+                loader.style.display = 'none';
+
+                if (data.status === 'success' && data.appointments && data.appointments.length > 0) {
+                    const weekLabel = `${data.week_start} al ${data.week_end}`;
+                    let html = `<div class="mb-2 text-muted small">Semana: ${weekLabel}</div>`;
+                    html += '<div class="table-responsive"><table class="table table-sm table-hover small mb-0">';
+                    html += '<thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th></tr></thead><tbody>';
+                    data.appointments.forEach(apt => {
+                        const fecha = apt.fecha_cita ? apt.fecha_cita.split(' ')[0].split('-').reverse().join('/') : 'N/A';
+                        const hora = apt.hora_cita ? apt.hora_cita.substring(0, 5) : 'N/A';
+                        const paciente = apt.paciente_nombre ? `${apt.paciente_nombre} ${apt.paciente_apellido || ''}` : 'N/A';
+                        const doctor = apt.doctor_nombre ? `Dr(a). ${apt.doctor_nombre} ${apt.doctor_apellido || ''}` : 'N/A';
+                        const estadoClass = apt.estado === 'Completada' ? 'bg-success text-white' : apt.estado === 'Cancelada' ? 'bg-danger text-white' : 'bg-warning text-dark';
+                        html += `<tr><td>${fecha}</td><td>${hora}</td><td>${paciente}</td><td>${doctor}</td><td><span class="badge ${estadoClass}">${apt.estado || 'Pendiente'}</span></td></tr>`;
+                    });
+                    html += '</tbody></table></div>';
+                    list.innerHTML = html;
+                    list.style.display = 'block';
+                } else {
+                    empty.style.display = 'block';
+                }
+            } catch (e) {
+                console.error('Error loading weekly appointments:', e);
+                loader.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshWeeklyAppointments();
         });
     </script>
 </body>

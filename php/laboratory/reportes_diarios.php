@@ -25,11 +25,11 @@ try {
             COUNT(DISTINCT CASE WHEN o.estado = 'En_Proceso' THEN o.id_orden END) as en_proceso,
             COUNT(DISTINCT CASE WHEN o.estado = 'Completada' THEN o.id_orden END) as completadas,
             COUNT(DISTINCT CASE WHEN o.estado = 'Validada' THEN o.id_orden END) as validadas,
-            COUNT(od.id_detalle) as total_pruebas,
-            SUM(cp.price) as ingresos_estimados
+            COUNT(op.id_prueba) as total_pruebas,
+            SUM(cp.precio) as ingresos_estimados
         FROM ordenes_laboratorio o
-        LEFT JOIN orden_detalles od ON o.id_orden = od.id_orden
-        LEFT JOIN catalogo_pruebas cp ON od.id_prueba = cp.id_prueba
+        LEFT JOIN orden_pruebas op ON o.id_orden = op.id_orden
+        LEFT JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
         WHERE DATE(o.fecha_orden) = ? AND o.id_hospital = ?
     ");
     $stmt->execute([$fecha, $id_hospital]);
@@ -38,10 +38,10 @@ try {
     // Get orders for the day
     $stmt = $conn->prepare("
         SELECT o.*, p.nombre, p.apellido,
-               COUNT(od.id_detalle) as num_pruebas
+               COUNT(op.id_prueba) as num_pruebas
         FROM ordenes_laboratorio o
         JOIN pacientes p ON o.id_paciente = p.id_paciente
-        LEFT JOIN orden_detalles od ON o.id_orden = od.id_orden
+        LEFT JOIN orden_pruebas op ON o.id_orden = op.id_orden
         WHERE DATE(o.fecha_orden) = ? AND o.id_hospital = ?
         GROUP BY o.id_orden
         ORDER BY o.fecha_orden DESC

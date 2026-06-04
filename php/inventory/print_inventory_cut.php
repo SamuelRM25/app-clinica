@@ -106,6 +106,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title>Corte de Inventario Físico - <?php echo date('d/m/Y'); ?></title>
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -278,49 +279,112 @@ try {
         }
 
         @media print {
-            .no-print { display: none !important; }
-            body, html {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+            body {
                 background: white !important;
                 color: black !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                font-family: 'Courier New', Courier, monospace !important;
+                font-size: 10px !important;
+            }
+            .marble-effect, .no-print, .dashboard-header, .stats-bar, .filter-bar, .bulk-actions, .calendar-section, .floating-actions, .action-btn, .theme-toggle {
+                display: none !important;
             }
             .dashboard-container {
                 margin: 0 !important;
                 padding: 0 !important;
                 background: transparent !important;
                 box-shadow: none !important;
+                max-width: 100% !important;
             }
-            .main-content { padding: 0 !important; margin: 0 !important; }
-            * {
-                background: transparent !important;
-                color: black !important;
+            .main-content {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .card {
+                border: none !important;
                 box-shadow: none !important;
-                text-shadow: none !important;
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .header h4 {
+                font-size: 14px;
+                margin: 0;
+            }
+            .header h5 {
+                font-size: 12px;
+                margin: 2px 0;
             }
             .data-table {
-                border: 1px solid #ddd !important;
-                border-spacing: 0 !important;
+                border: 1px solid #000 !important;
+                border-collapse: collapse !important;
                 width: 100% !important;
+                font-size: 9px !important;
+            }
+            .data-table * {
+                color: black !important;
+                background: transparent !important;
+            }
+            .data-table thead tr {
+                background: #ccc !important;
             }
             .data-table th {
-                border-bottom: 2px solid #000 !important;
-                color: #000 !important;
-                background: #f5f5f5 !important;
-                padding: 0.5rem !important;
+                border: 1px solid #000 !important;
+                padding: 4px !important;
+                font-weight: bold !important;
+                text-align: center !important;
             }
             .data-table td {
-                border-bottom: 1px solid #ddd !important;
-                padding: 0.5rem !important;
+                border: 1px solid #000 !important;
+                padding: 3px !important;
             }
             .count-input {
-                border: 1px solid #ccc !important;
-                background: transparent !important;
-                box-shadow: none !important;
+                border: 1px solid #000 !important;
+                background: white !important;
+                width: 60px !important;
+                font-size: 9px !important;
+                padding: 2px !important;
             }
+            .diff-badge {
+                font-size: 9px !important;
+                padding: 1px 3px !important;
+            }
+            .diff-badge.zero { background: transparent !important; color: black !important; }
+            .diff-badge.negative { background: transparent !important; color: black !important; }
+            .diff-badge.positive { background: transparent !important; color: black !important; }
+            .status-badge {
+                font-size: 8px !important;
+                padding: 1px 3px !important;
+            }
+            .status-badge.pendiente { background: transparent !important; color: black !important; }
+            .status-badge.listo { background: transparent !important; color: black !important; }
+            .status-badge.equilibrado { background: transparent !important; color: black !important; }
             .row-balanced, .row-has-count { background: transparent !important; }
+            .signature-section {
+                margin-top: 30px !important;
+                page-break-inside: avoid !important;
+            }
+            .signature-line {
+                border-top: 1px solid #000 !important;
+                width: 200px !important;
+                margin: 20px auto 0 !important;
+            }
+            .footer {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                text-align: center !important;
+                font-size: 8px !important;
+            }
         }
     </style>
 </head>
@@ -734,7 +798,7 @@ try {
                     fetch('api/balance_inventory.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `id_inventario=${id}&nueva_cantidad=${phyQty}`
+                        body: `id_inventario=${id}&nueva_cantidad=${phyQty}&csrf_token=${encodeURIComponent(document.querySelector('meta[name="csrf-token"]')?.content || '')}`
                     })
                     .then(r => r.json())
                     .then(data => {
@@ -833,7 +897,7 @@ try {
                         fetch('api/balance_inventory.php', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: `id_inventario=${item.id}&nueva_cantidad=${item.phy}`
+                            body: `id_inventario=${item.id}&nueva_cantidad=${item.phy}&csrf_token=${encodeURIComponent(document.querySelector('meta[name="csrf-token"]')?.content || '')}`
                         })
                         .then(r => r.json())
                         .then(data => {

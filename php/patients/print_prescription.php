@@ -72,6 +72,7 @@ try {
     <!-- Google Fonts -->
 <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css" media="print">
 
     <style>
         /* Reset & Base fonts */

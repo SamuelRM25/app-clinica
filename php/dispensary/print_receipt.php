@@ -106,172 +106,7 @@ $hora_formateada = $fecha->format('H:i');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
-
-    <style>
-        /* ===== SCREEN PREVIEW ===== */
-        body {
-            background: #f0f4f8;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 2rem 1rem;
-            min-height: 100vh;
-        }
-
-        .receipt-container {
-            background: white;
-            width: 80mm;
-            max-width: 320px;
-            padding: 1.5rem 1.25rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            color: #111;
-        }
-
-        .clinic-header h2 {
-            font-size: 16px;
-            margin: 0 0 0.25rem;
-        }
-
-        .clinic-info p {
-            margin: 0;
-            font-size: 11px;
-            color: #555;
-        }
-
-        .divider {
-            border: none;
-            border-top: 1px dashed #bbb;
-            margin: 0.75rem 0;
-        }
-
-        .receipt-details {
-            line-height: 1.8;
-            font-size: 11px;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .items-table th {
-            border-bottom: 1px solid #ccc;
-            padding: 4px 2px;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .items-table td {
-            padding: 4px 2px;
-            font-size: 11px;
-            vertical-align: top;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .total-section {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 0.5rem 0;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 0.75rem;
-            font-size: 11px;
-            color: #444;
-        }
-
-        /* Print controls bar */
-        .print-actions {
-            width: 80mm;
-            max-width: 320px;
-            display: flex;
-            gap: 0.5rem;
-            margin: 1rem auto 0;
-        }
-
-        .print-actions button {
-            flex: 1;
-            padding: 0.6rem;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .btn-print {
-            background: #0d6efd;
-            color: white;
-        }
-
-        .btn-close-win {
-            background: #f0f4f8;
-            color: #444;
-            border: 1px solid #ccc;
-        }
-
-        /* ===== PRINT MEDIA — ONE PAGE ONLY ===== */
-        @media print {
-
-            /* Reset everything from global CSS */
-            * {
-                margin: 0 !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-            }
-
-            html,
-            body {
-                width: 80mm;
-                height: auto;
-                background: white !important;
-                display: block !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-
-            /* Hide everything not the receipt */
-            body>*:not(.receipt-container) {
-                display: none !important;
-            }
-
-            .print-actions {
-                display: none !important;
-            }
-
-            .receipt-container {
-                width: 80mm;
-                max-width: 100%;
-                box-shadow: none;
-                border-radius: 0;
-                padding: 4mm 4mm;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                color: black;
-            }
-
-            /* Force everything onto 1 page */
-            @page {
-                size: 80mm auto;
-                margin: 2mm;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
 
 <body>
@@ -294,6 +129,9 @@ $hora_formateada = $fecha->format('H:i');
             <div>Recibo #: <?php echo str_pad($id_venta, 5, '0', STR_PAD_LEFT); ?></div>
             <div>Cliente: <?php echo htmlspecialchars($venta['nombre_cliente']); ?></div>
             <div>NIT: <?php echo htmlspecialchars($nit_cliente); ?></div>
+            <?php if (!empty($venta['document_identifier'])): ?>
+                <div>Doc: <?php echo htmlspecialchars($venta['document_identifier']); ?></div>
+            <?php endif; ?>
         </div>
 
         <div class="divider"></div>
@@ -323,7 +161,7 @@ $hora_formateada = $fecha->format('H:i');
         <div class="divider"></div>
 
         <div class="total-section">
-            <span>TOTAL</span>
+            <span>TOTAL (<?php echo htmlspecialchars($venta['tipo_pago']); ?>)</span>
             <span>Q<?php echo number_format($venta['total'], 2); ?></span>
         </div>
 
