@@ -17,6 +17,7 @@ $user_id = $_SESSION['user_id'];
 try {
     $database = new Database();
     $conn = $database->getConnection();
+    $conn->exec("SET time_zone = '-06:00'");
 
     // Create conteo_fisico table if not exists
     $conn->exec("CREATE TABLE IF NOT EXISTS conteo_fisico (
@@ -111,6 +112,8 @@ try {
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="../../assets/css/style.css">

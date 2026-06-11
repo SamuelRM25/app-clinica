@@ -28,6 +28,7 @@ if ($shift === 'morning') {
 try {
     $database = new Database();
     $conn = $database->getConnection();
+    $conn->exec("SET time_zone = '-06:00'");
 
     // Fetch Insumos data
     $sql = "SELECT i.fecha, CONCAT(inv.nom_medicamento, ' (', inv.presentacion_med, ')') as nombre, i.cantidad, i.precio_venta, (i.cantidad * i.precio_venta) as subtotal, 
@@ -62,8 +63,11 @@ try {
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <?php include '../../includes/theme_head.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         .signature-section {

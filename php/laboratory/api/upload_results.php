@@ -4,6 +4,7 @@ session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
+require_once '../../../includes/module_guard.php';
 
 verify_session();
 
@@ -22,13 +23,14 @@ $notas = $_POST['notas'] ?? '';
         exit;
     }
 
-try {
-    // CSRF validation
-    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
-    if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
-        throw new Exception('Token CSRF inválido');
-    }
+// CSRF validation (outside try, so it returns the real error instead of a generic one)
+$csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
 
+try {
     $database = new Database();
     $conn = $database->getConnection();
 

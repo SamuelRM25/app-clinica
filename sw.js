@@ -3,12 +3,13 @@
  * ClinicApp - PWA
  *
  * Estrategia de cache:
- *  - Stale-while-revalidate para estáticos (CSS, JS, imágenes, HTML)
+ *  - Network-first para HTML/navegación (siempre fresco, fallback a cache offline)
+ *  - Stale-while-revalidate para estáticos (CSS, JS, imágenes, fuentes)
  *  - Network-first con fallback a cache para APIs (no guardar respuestas)
  *  - Auto-actualización silenciosa: skipWaiting() + clients.claim() + postMessage
  */
 
-const CACHE_NAME = 'clinicapp-v1.0.0';
+const CACHE_NAME = 'clinicapp-v1.0.1';
 
 const STATIC_ASSETS = [
     '/',
@@ -87,6 +88,24 @@ self.addEventListener('fetch', (event) => {
     // Ignorar chrome-extension y otros protocolos no-http(s)
     if (!url.protocol.startsWith('http')) return;
 
+    // Network-first para HTML/navegación (siempre fresco del servidor, fallback a cache offline)
+    const accept = request.headers.get('accept') || '';
+    const isHtmlNavigation = request.mode === 'navigate' || accept.includes('text/html');
+    if (isHtmlNavigation) {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    if (response && response.status === 200 && response.type === 'basic') {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(request))
+        );
+        return;
+    }
+
     // Network-first para endpoints dinámicos (no cachear)
     if (
         url.pathname.includes('/api/') ||
@@ -118,22 +137,29 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Stale-while-revalidate para el resto (HTML, CSS, JS, imágenes)
-    event.respondWith(
-        caches.match(request).then((cached) => {
-            const networkFetch = fetch(request)
-                .then((response) => {
-                    // Solo cachear respuestas válidas
-                    if (response && response.status === 200 && response.type === 'basic') {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-                    }
-                    return response;
-                })
-                .catch(() => cached);  // Si no hay red, devolver el cache
+    // Stale-while-revalidate solo para estáticos (CSS, JS, imágenes, fuentes)
+    if (/\.(css|js|png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|eot)$/.test(url.pathname)) {
+        event.respondWith(
+            caches.match(request).then((cached) => {
+                const networkFetch = fetch(request)
+                    .then((response) => {
+                        if (response && response.status === 200 && response.type === 'basic') {
+                            const clone = response.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                        }
+                        return response;
+                    })
+                    .catch(() => cached);
 
-            return cached || networkFetch;
-        })
+                return cached || networkFetch;
+            })
+        );
+        return;
+    }
+
+    // Default: intentar red, fallback a cache
+    event.respondWith(
+        fetch(request).catch(() => caches.match(request))
     );
 });
 

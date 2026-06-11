@@ -13,6 +13,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 require_once '../../includes/breadcrumbs.php';
+require_once '../../includes/module_guard.php';
 
 $id_hospital = hospital_id();
 
@@ -104,6 +105,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Procesar Orden de Laboratorio - Centro Médico Herrera Saenz">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -446,7 +448,6 @@ try {
                         </div>
                         <div class="modal-body">
                             <form id="resultsUploadForm" enctype="multipart/form-data">
-                                <input type="hidden" name="id_orden" id="resultUploadOrderId">
                                 <div class="mb-3">
                                     <label for="archivo_resultado" class="form-label">Archivo(s) de Resultados (PDF,
                                         JPG,
@@ -640,7 +641,7 @@ try {
         }
 
         function openResultsUploadModal(id_orden) {
-            document.getElementById('resultUploadOrderId').value = id_orden;
+            window.currentOrderId = id_orden;
             const modal = new bootstrap.Modal(document.getElementById('resultsUploadModal'));
             modal.show();
         }
@@ -658,7 +659,7 @@ try {
                 color: document.documentElement.getAttribute('data-theme') === 'dark' ? '#e2e8f0' : '#1a1a1a'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = `api/validate_order.php?id=<?php echo $id_orden; ?>&csrf_token=${window.CSRF_TOKEN}`;
+                            window.location.href = `api/validate_order.php?id=<?php echo $id_orden; ?>&csrf_token=${document.querySelector('meta[name="csrf-token"]')?.content || ''}`;
                 }
             });
         }
@@ -669,6 +670,7 @@ try {
 
             const formData = new FormData(this);
             formData.append('id_orden', window.currentOrderId);
+            formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
             // formData.append('id_orden_prueba', window.currentTestId); // Removed as we are uploading for order
 
             // Show loading state
@@ -725,6 +727,8 @@ try {
             submitBtn.disabled = true;
 
             const formData = new FormData(this);
+            formData.append('id_orden', window.currentOrderId);
+            formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
 
             fetch('api/upload_results.php', {
                 method: 'POST',
@@ -884,6 +888,7 @@ try {
     </script>
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php output_keep_alive_script(); ?>
 </body>
 
 </html>

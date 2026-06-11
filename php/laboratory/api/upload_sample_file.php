@@ -4,6 +4,7 @@ session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
+require_once '../../../includes/module_guard.php';
 
 verify_session();
 
@@ -129,6 +130,11 @@ try {
 } catch (Exception $e) {
     if (isset($conn)) $conn->rollBack();
     error_log('Error en laboratory/api/upload_sample_file.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error: ' . 'Error del servidor.']);
+    $msg = $e->getMessage();
+    if (strlen($msg) < 200 && !str_contains($msg, 'SQLSTATE')) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $msg]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error del servidor al procesar el archivo']);
+    }
 }
 ?>

@@ -52,6 +52,7 @@ $page_title = "Gestión de Insumos - logo";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 </head>
 
 <body>
@@ -190,8 +191,10 @@ $page_title = "Gestión de Insumos - logo";
                 if (result.isConfirmed) {
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...';
+                    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
                     fetch('save_insumos.php', {
                         method: 'POST',
+                        headers: { 'Accept': 'application/json' },
                         body: formData
                     })
                         .then(response => response.json())

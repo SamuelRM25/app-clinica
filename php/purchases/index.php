@@ -133,7 +133,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
-    <!-- <script src="../../assets/js/security.js"></script> -->
+    <script src="../../assets/js/security.js"></script>
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
