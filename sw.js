@@ -9,7 +9,7 @@
  *  - Auto-actualización silenciosa: skipWaiting() + clients.claim() + postMessage
  */
 
-const CACHE_NAME = 'clinicapp-v1.0.1';
+const CACHE_NAME = 'clinicapp-v1.0.2';
 
 const STATIC_ASSETS = [
     '/',
@@ -56,12 +56,22 @@ self.addEventListener('activate', (event) => {
                         })
                 );
             })
-            .then(() => self.clients.claim())
-            .then(() => {
+            .then(async () => {
+                await self.clients.claim();
+                // Purgar cualquier entrada de auth que pueda haber quedado en el cache actual
+                const cache = await caches.open(CACHE_NAME);
+                const keys = await cache.keys();
+                await Promise.all(
+                    keys.filter((req) => {
+                        const u = new URL(req.url);
+                        return u.pathname.includes('/auth/') || u.pathname.endsWith('login.php');
+                    }).map((req) => {
+                        console.log('[SW] Purgando entrada de auth:', req.url);
+                        return cache.delete(req);
+                    })
+                );
                 // Notificar a todas las pestañas abiertas que el SW se actualizó
-                return self.clients.matchAll({ type: 'window' });
-            })
-            .then((clients) => {
+                const clients = await self.clients.matchAll({ type: 'window' });
                 clients.forEach((client) => {
                     client.postMessage({
                         type: 'SW_UPDATED',
@@ -87,6 +97,11 @@ self.addEventListener('fetch', (event) => {
 
     // Ignorar chrome-extension y otros protocolos no-http(s)
     if (!url.protocol.startsWith('http')) return;
+
+    // NUNCA cachear endpoints de autenticación: deben ser siempre frescos del servidor
+    if (url.pathname.includes('/auth/') || url.pathname.includes('logout')) {
+        return; // deja que el browser haga la request directa
+    }
 
     // Network-first para HTML/navegación (siempre fresco del servidor, fallback a cache offline)
     const accept = request.headers.get('accept') || '';

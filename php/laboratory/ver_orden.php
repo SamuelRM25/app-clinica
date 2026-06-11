@@ -68,10 +68,10 @@ try {
 
     // Get uploaded result files from archivos_resultados_laboratorio
     $stmt_files = $conn->prepare("
-        SELECT id_archivo, nombre_archivo, tipo_archivo, categoria, fecha_subida
+        SELECT id_archivo, nombre_archivo, tipo_contenido, categoria, fecha_carga
         FROM archivos_resultados_laboratorio
         WHERE id_orden = ? AND id_hospital = ?
-        ORDER BY fecha_subida DESC
+        ORDER BY fecha_carga DESC
     ");
     $stmt_files->execute([$id_orden, $id_hospital]);
     $archivos_resultados = $stmt_files->fetchAll(PDO::FETCH_ASSOC);
@@ -265,7 +265,7 @@ try {
                             </div>
                             <div class="flex-grow-1">
                                 <div class="fw-bold text-dark"><?php echo htmlspecialchars($archivo['nombre_archivo']); ?></div>
-                                <div class="text-muted small"><?php echo htmlspecialchars($archivo['categoria'] ?? ''); ?> - <?php echo date('d/m/Y H:i', strtotime($archivo['fecha_subida'])); ?></div>
+                                <div class="text-muted small"><?php echo htmlspecialchars($archivo['categoria'] ?? ''); ?> - <?php echo date('d/m/Y H:i', strtotime($archivo['fecha_carga'])); ?></div>
                             </div>
                             <div>
                                 <a href="api/get_result_file.php?id=<?php echo $archivo['id_archivo']; ?>" target="_blank" class="action-btn">

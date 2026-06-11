@@ -16,6 +16,12 @@ require_once '../../includes/multitenant.php';
 require_once '../../config/hospital.php'; // Identidad de la carpeta
 
 
+// Si alguien llega por GET, redirigir al formulario de login real
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: ../../index.php");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
 
