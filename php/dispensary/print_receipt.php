@@ -51,7 +51,8 @@ try {
         SELECT dv.*, i.nom_medicamento, i.mol_medicamento, i.presentacion_med
         FROM detalle_ventas dv
         JOIN inventario i ON dv.id_inventario = i.id_inventario
-        WHERE dv.id_venta = ? AND dv.id_hospital = ?
+        JOIN ventas v ON dv.id_venta = v.id_venta
+        WHERE dv.id_venta = ? AND v.id_hospital = ?
     ");
     $stmt->execute([$id_venta, $id_hospital]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);

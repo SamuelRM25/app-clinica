@@ -19,6 +19,12 @@ require_once '../../includes/multitenant.php';
 
 $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
+// Calcular base path del proyecto para PWA Service Worker
+// Ej: /GitHub/app-clinica/php/dashboard/index.php → /GitHub/app-clinica/
+$script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+$pos = strpos($script_dir, '/php/');
+$pwa_base_path = ($pos !== false ? substr($script_dir, 0, $pos) : '') . '/';
+
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -306,6 +312,16 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <!-- logo -->
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
 
+    <!-- PWA -->
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="pwa-base" content="<?php echo htmlspecialchars($pwa_base_path); ?>">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CMHS">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="../../assets/img/icon-192.png">
+
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print"
         onload="this.media='all'">
@@ -327,6 +343,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=20250602">
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../../assets/css/pwa-install.css?v=1">
     <!-- Responsive fixes for mobile -->
     <style>
         *, *::before, *::after {
@@ -938,6 +955,15 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- Controles -->
                 <div class="header-controls">
+                    <!-- Botón PWA: Instalar App -->
+                    <button id="installAppBtn" class="install-app-btn" type="button" style="display: none;"
+                        aria-label="Instalar aplicación en este dispositivo"
+                        title="Instalar app en pantalla de inicio">
+                        <i class="bi bi-download"></i>
+                        <span class="install-label-full">Instalar App</span>
+                        <span class="install-label-short">Instalar</span>
+                    </button>
+
                     <!-- Control de tema -->
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn" aria-label="Cambiar tema claro/oscuro">
@@ -3162,10 +3188,13 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                         timer: 1500
                                     }).then(() => {
                                         if (result.id_pago) {
-                                            window.location.href = `../laboratory/print_lab_receipt.php?id=${result.id_pago}`;
-                                        } else {
-                                            location.reload();
+                                            const printUrl = `../laboratory/print_lab_receipt.php?id=${result.id_pago}`;
+                                            window.open(printUrl, '_blank');
+                                        } else if (result.id_orden) {
+                                            const printUrl = `../laboratory/print_lab_order.php?id=${result.id_orden}`;
+                                            window.open(printUrl, '_blank');
                                         }
+                                        location.reload();
                                     });
                                 } else {
                                     throw new Error(result.message);
@@ -3513,14 +3542,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>
-    <!-- Auto-refresh dashboard cada 60s -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(function () {
-                location.reload();
-            }, 60000);
-        });
-    </script>
     <!-- Modal Cobro Procedimientos -->
     <div class="modal fade" id="procedureBillingModal" tabindex="-1">
         <div class="modal-dialog modal-premium modal-dialog-centered">
@@ -3546,21 +3567,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <select class="form-select" id="procedureSelect" name="procedure" required
                                 onchange="updateProcedurePrice()">
                                 <option value="">Seleccione...</option>
-                                <option value="Inyeccion">Inyección</option>
-                                <option value="Toma de Presion">Toma de Presión</option>
-                                <option value="Glucometria">Glucometría</option>
-                                <option value="Unicotomia">Unicotomía</option>
-                                <option value="Lavado de Oido">Lavado de Oído</option>
-                                <option value="Colacacion de Sonda Foley">Colocación de Sonda Foley</option>
-                                <option value="Canalizacion con Solucion">Canalización con Solución</option>
-                                <option value="Canalizacion con Stopper">Canalización con Stopper</option>
-                                <option value="Sutura 1-5 pts">Sutura 1-5 pts</option>
-                                <option value="Sutura 6-10 pts">Sutura 6-10 pts</option>
-                                <option value="Sutura 11-15 pts">Sutura 11-15 pts</option>
-                                <option value="Nebulizacion">Nebulización</option>
-                                <option value="Curacion de herida">Curación de Herida</option>
-                                <option value="Retiro de Puntos">Retiro de Puntos</option>
-                                <option value="Suero Vitaminado">Suero Vitaminado</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -3636,46 +3642,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <label class="form-label">Tipo de Ultrasonido</label>
                             <select class="form-select" id="ultrasoundSelect" name="ultrasound_type" required>
                                 <option value="">Seleccione...</option>
-                                <option value="ABDOMINAL SUPERIOR">ABDOMINAL SUPERIOR</option>
-                                <option value="CADERA">CADERA</option>
-                                <option value="CUELLO O TIROIDEO">CUELLO O TIROIDEO</option>
-                                <option value="HOMBRO">HOMBRO</option>
-                                <option value="MUÑECA">MUÑECA</option>
-                                <option value="INGUINAL">INGUINAL</option>
-                                <option value="OBSTETRICO">OBSTETRICO</option>
-                                <option value="ABDOMINAL INFERIOR (PELVICO)">ABDOMINAL INFERIOR (PELVICO)</option>
-                                <option value="ABDOMEN INFERIOR + FID">ABDOMEN INFERIOR + FID</option>
-                                <option value="ABDOMINAL COMPLETO">ABDOMINAL COMPLETO</option>
-                                <option value="ABDOMINAL PEDIATRICO MENORES A 2 AÑOS">ABDOMINAL PEDIATRICO MENORES A 2 AÑOS</option>
-                                <option value="ABDOMINAL PEDIATRICO">ABDOMINAL PEDIATRICO</option>
-                                <option value="ABDOMINAL SUPERIOR + FID">ABDOMINAL SUPERIOR + FID</option>
-                                <option value="AMBAS RODILLAS">AMBAS RODILLAS</option>
-                                <option value="RODILLA">RODILLA</option>
-                                <option value="DOPLER ARTERIAL UNA EXTREMIDAD">DOPLER ARTERIAL UNA EXTREMIDAD</option>
-                                <option value="DOPPLER CAROTIDEO">DOPPLER CAROTIDEO</option>
-                                <option value="DOPPLER VENOSO UNA EXTREMIDAD">DOPPLER VENOSO UNA EXTREMIDAD</option>
-                                <option value="ENDOVAGINAL">ENDOVAGINAL</option>
-                                <option value="GUIA ECOGAFRICA PARA BIOPSIA">GUIA ECOGAFRICA PARA BIOPSIA</option>
-                                <option value="GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO">GUIA ECOGRAFICA PARA DRENAJE DE ABSCESO</option>
-                                <option value="GUIA PARA PARACENTESIS">GUIA PARA PARACENTESIS</option>
-                                <option value="HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS">HEPATICO Y VIAS BILIARES PEDIATRICO MENORES A 2 AÑOS</option>
-                                <option value="HEPATICO Y VIAS BILIARES">HEPATICO Y VIAS BILIARES</option>
-                                <option value="INGUINO- ESCROTAL">INGUINO- ESCROTAL</option>
-                                <option value="MAMARIO">MAMARIO</option>
-                                <option value="MUSCULAR PARTES BLANDAS">MUSCULAR PARTES BLANDAS</option>
-                                <option value="OBSTETRICO GEMELAR">OBSTETRICO GEMELAR</option>
-                                <option value="PARED ABDMINAL E INGUINAL">PARED ABDMINAL E INGUINAL</option>
-                                <option value="PILORO">PILORO</option>
-                                <option value="PROSTATICO">PROSTATICO</option>
-                                <option value="PROSTATICO ENDORECTAL">PROSTATICO ENDORECTAL</option>
-                                <option value="RENAL PEDIATRICO MENOR A 2 AÑOS">RENAL PEDIATRICO MENOR A 2 AÑOS</option>
-                                <option value="RENAL">RENAL</option>
-                                <option value="renal y vias urinarias">renal y vias urinarias</option>
-                                <option value="TEJIDOS BLANDOS - MUSCULAR">TEJIDOS BLANDOS - MUSCULAR</option>
-                                <option value="TENDON DE AQUILES">TENDON DE AQUILES</option>
-                                <option value="TESTICULAR O ESCROTAL">TESTICULAR O ESCROTAL</option>
-                                <option value="4D">4D</option>
-                                <option value="5D">5D</option>
                             </select>
                         </div>
 
@@ -3933,10 +3899,29 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         });
                         tarifas.ultrasonido = usObj;
                     }
+
+                    populateDropdownFromTarifas('procedureSelect', 'procedimiento');
+                    populateDropdownFromTarifas('ultrasoundSelect', 'ultrasonido');
                 }
             } catch (error) {
                 console.warn('Using default tarifas');
             }
+        }
+
+        function populateDropdownFromTarifas(selectId, tarifaCategory, sort = true) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const names = Object.keys(tarifas[tarifaCategory] || {});
+            if (names.length === 0) return;
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Seleccione...</option>';
+            (sort ? names.sort() : names).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
         }
 
 document.addEventListener('DOMContentLoaded', loadTarifas);
@@ -4320,6 +4305,9 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
             refreshWeeklyAppointments();
         });
     </script>
+
+    <!-- PWA Install Prompt + Service Worker -->
+    <script src="../../assets/js/install-prompt.js?v=1"></script>
 </body>
 
 </html>

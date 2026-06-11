@@ -4,7 +4,7 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
+    header("Location: ../../index.php");
     exit;
 }
 
@@ -18,6 +18,8 @@ check_module_access('pharmacy');
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
+
+output_keep_alive_script();
 
 try {
     // Conectar a la base de datos
@@ -40,7 +42,7 @@ try {
 
     // Obtener items de inventario para venta, filtrando por hospital
     $stmt = $conn->prepare("
-        SELECT i.id_inventario, i.codigo_barras, i.nom_medicamento, i.mol_medicamento, 
+        SELECT i.id_inventario, i.codigo_barras, i.nom_medicamento, i.mol_medicamento,
                i.presentacion_med, i.casa_farmaceutica, i.cantidad_med, i.stock_hospital,
                i.precio_venta, i.precio_hospital, i.precio_medico, i.precio_compra, i.fecha_vencimiento,
                (i.cantidad_med - COALESCE((SELECT SUM(cantidad) FROM reservas_inventario WHERE id_inventario = i.id_inventario), 0)) as disponible,
@@ -48,7 +50,9 @@ try {
         FROM inventario i
         LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
         LEFT JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
-        WHERE i.cantidad_med > 0 AND i.estado != 'Pendiente' AND i.id_hospital = ?
+        WHERE (i.cantidad_med > 0 OR i.stock_hospital > 0)
+          AND (i.estado IS NULL OR i.estado != 'Pendiente')
+          AND i.id_hospital = ?
         ORDER BY i.nom_medicamento
     ");
     $stmt->execute([hospital_id()]);
@@ -120,7 +124,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
-    <script src="../../assets/js/security.js"></script>
+    <!-- <script src="../../assets/js/security.js"></script> -->
 
     <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -238,6 +242,11 @@ try {
         .total-amount {
             font-size: 1.75rem;
             font-weight: 700;
+            color: #ffffff;
+        }
+
+        .total-label {
+            color: #ffffff;
         }
 
         /* Product Detail Card */
@@ -537,6 +546,11 @@ try {
             box-shadow: 0 6px 20px rgba(var(--color-success-rgb), 0.4);
             filter: brightness(1.05);
         }
+
+        /* Override global_dashboard.css .tab-content display:none for history modal */
+        #historyTabContent { display: block !important; }
+        #historyTabContent > .tab-pane { display: none; }
+        #historyTabContent > .tab-pane.show.active { display: block !important; }
     </style>
 </head>
 
@@ -757,7 +771,7 @@ try {
                         </div>
                     </div>
 
-                    <div class="selection-details shadow-sm border-0" id="selectionDetails">
+                    <div class="selection-details shadow-sm border-0" id="selectionDetails" style="display: none;">
                         <div class="selected-product mb-4">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
@@ -934,8 +948,29 @@ try {
                             </button>
                         </li>
                     </ul>
-                    <div class="tab-content" id="historyTabContent">
+                    <div class="tab-content show active" id="historyTabContent">
                         <div class="tab-pane fade show active" id="list-pane" role="tabpanel">
+                            <div class="px-4 py-3 border-bottom bg-white">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-auto">
+                                        <label class="form-label mb-0 small fw-bold">Período:</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <select class="form-select form-select-sm" id="historyModeSelect" style="width: 200px;">
+                                            <option value="shift" selected>Turno Actual (Matutina/Nocturna)</option>
+                                            <option value="day">Día Calendario</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-auto" id="historyDateContainer" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="historyDateSelect" value="<?php echo date('Y-m-d'); ?>">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-sm btn-info" id="historyApplyBtn">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>Aplicar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="bg-light">
@@ -951,7 +986,7 @@ try {
                                     </tbody>
                                 </table>
                             </div>
-                            <div id="historyLoading" class="text-center py-5">
+                            <div id="historyLoading" class="text-center py-5" style="display: none;">
                                 <div class="spinner-border text-info" role="status"></div>
                                 <p class="mt-2 text-muted">Cargando historial...</p>
                             </div>
@@ -1098,6 +1133,42 @@ try {
             let currentInventory = <?php echo json_encode($inventario); ?>;
             let selectedItem = null;
             let currentMode = 'public'; // public, hospital, medical
+
+            // Estado del historial de ventas
+            let currentHistoryMode = 'shift'; // 'shift' (turno) o 'day' (día calendario)
+            let currentHistoryDate = '<?php echo date('Y-m-d'); ?>';
+            let currentHistoryType = ''; // tipo de cobro (efectivo, tarjeta, etc.)
+
+            // Inicializar selector de modo/fecha del historial
+            document.addEventListener('DOMContentLoaded', function() {
+                const modeSelect = document.getElementById('historyModeSelect');
+                const dateContainer = document.getElementById('historyDateContainer');
+                const dateSelect = document.getElementById('historyDateSelect');
+                const applyBtn = document.getElementById('historyApplyBtn');
+
+                if (modeSelect) {
+                    modeSelect.addEventListener('change', function() {
+                        currentHistoryMode = this.value;
+                        if (currentHistoryMode === 'day') {
+                            dateContainer.style.display = 'block';
+                        } else {
+                            dateContainer.style.display = 'none';
+                        }
+                    });
+                }
+                if (dateSelect) {
+                    dateSelect.addEventListener('change', function() {
+                        currentHistoryDate = this.value;
+                    });
+                }
+                if (applyBtn) {
+                    applyBtn.addEventListener('click', function() {
+                        if (typeof window.dashboard.pos.openHistory === 'function') {
+                            window.dashboard.pos.openHistory(currentHistoryType);
+                        }
+                    });
+                }
+            });
 
             // ==========================================================================
             // MANEJO DE TEMA (DÍA/NOCHE)
@@ -1315,10 +1386,10 @@ try {
 
                     const term = searchTerm.toLowerCase();
                     const results = currentInventory.filter(item =>
-                        item.nom_medicamento.toLowerCase().includes(term) ||
-                        item.mol_medicamento.toLowerCase().includes(term) ||
-                        (item.codigo_barras && item.codigo_barras.toLowerCase().includes(term))
-                    ).slice(0, 10);
+                        (item.nom_medicamento || '').toLowerCase().includes(term) ||
+                        (item.mol_medicamento || '').toLowerCase().includes(term) ||
+                        (item.codigo_barras || '').toLowerCase().includes(term)
+                    );
 
                     // Check for exact barcode match
                     const exactBarcodeMatch = currentInventory.find(item =>
@@ -1692,6 +1763,7 @@ try {
                         nombre_cliente: DOM.clientName.value.trim(),
                         nit_cliente: document.getElementById('clientNIT').value.trim() || 'C/F',
                         tipo_pago: currentMode === 'transfer' ? 'Traslado' : DOM.paymentMethod.value,
+                        tipo_almacen: currentMode,
                         document_type: DOM.documentType ? DOM.documentType.value : '',
                         document_number: '',
                         total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
@@ -1739,18 +1811,21 @@ try {
                                     if (result.isConfirmed) {
                                         window.open(`print_baucher.php?id=${data.id_venta}`, '_blank');
                                     }
-                                    setTimeout(() => location.reload(), 1000);
+                                    setTimeout(() => location.reload(), 3000);
                                 });
                             } else {
                                 Swal.fire({
                                     icon: 'success',
                                     title: '¡Venta completada!',
-                                    text: 'Redirigiendo al comprobante...',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                }).then(() => {
-                                    window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
-                                    setTimeout(() => location.reload(), 1000);
+                                    text: 'Haga clic para imprimir el comprobante',
+                                    showConfirmButton: true,
+                                    confirmButtonText: '<i class="bi bi-printer me-1"></i>Imprimir Recibo',
+                                    confirmButtonColor: '#0d6efd'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
+                                    }
+                                    setTimeout(() => location.reload(), 3000);
                                 });
                             }
                         } else {
@@ -1794,6 +1869,7 @@ try {
                     DOM.unitPrice.value = '';
                     DOM.quantity.value = 1;
                     DOM.availableStock.textContent = '0';
+                    DOM.searchMedication.focus();
                 }
 
                 showAlert(message, type = 'info') {
@@ -1866,11 +1942,17 @@ try {
                 }
 
                 async openHistory(type = '') {
+                    console.log('[openHistory] called with type:', type, 'mode:', currentHistoryMode, 'date:', currentHistoryDate);
                     const modalEl = document.getElementById('historyModal');
                     const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                     const tbody = document.getElementById('historyTableBody');
                     const loading = document.getElementById('historyLoading');
                     const title = document.querySelector('#historyModal .modal-title');
+
+                    if (!tbody) {
+                        console.error('[openHistory] tbody#historyTableBody not found in DOM');
+                        return;
+                    }
 
                     // Reset to list tab
                     const listTab = document.getElementById('list-tab');
@@ -1891,20 +1973,30 @@ try {
                     loading.style.display = 'block';
 
                     if (title) {
+                        const periodLabel = currentHistoryMode === 'day' ? 'Día Calendario' : 'Turno Actual';
                         title.innerHTML = type === 'Traslado'
-                            ? '<i class="bi bi-arrow-left-right me-2"></i>Historial de Traslados (Turno Actual)'
-                            : '<i class="bi bi-clock-history me-2"></i>Historial de Ventas (Turno Actual)';
+                            ? `<i class="bi bi-arrow-left-right me-2"></i>Historial de Traslados (${periodLabel})`
+                            : `<i class="bi bi-clock-history me-2"></i>Historial de Ventas (${periodLabel})`;
                     }
 
                     modal.show();
 
                     try {
-                        const response = await fetch(`get_recent_sales.php${type ? '?type=' + type : ''}`);
+                        const params = new URLSearchParams();
+                        if (type) params.append('type', type);
+                        params.append('mode', currentHistoryMode);
+                        if (currentHistoryMode === 'day' && currentHistoryDate) {
+                            params.append('date', currentHistoryDate);
+                        }
+                        const url = `get_recent_sales.php?${params.toString()}`;
+                        console.log('[openHistory] fetching:', url);
+                        const response = await fetch(url);
                         const data = await response.json();
+                        console.log('[openHistory] response:', data);
 
                         loading.style.display = 'none';
 
-                        if (data.status === 'success' && data.sales.length > 0) {
+                        if (data.status === 'success' && data.sales && data.sales.length > 0) {
                             let totalJornada = 0;
                             data.sales.forEach(sale => {
                                 const total = parseFloat(sale.total) || 0;
@@ -1930,14 +2022,21 @@ try {
                             });
                             const totalEl = document.getElementById('historyTotalSum');
                             if (totalEl) totalEl.textContent = `Q${totalJornada.toFixed(2)}`;
-                        } else {
-                            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en este turno.</td></tr>';
+                            console.log('[openHistory] rendered', data.sales.length, 'rows, total:', totalJornada);
+                        } else if (data.status === 'error') {
+                            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Error del servidor: ${data.message || 'Desconocido'}</td></tr>`;
                             const totalEl = document.getElementById('historyTotalSum');
                             if (totalEl) totalEl.textContent = 'Q0.00';
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en el período seleccionado.</td></tr>';
+                            const totalEl = document.getElementById('historyTotalSum');
+                            if (totalEl) totalEl.textContent = 'Q0.00';
+                            console.log('[openHistory] no sales found for period');
                         }
                     } catch (error) {
-                        console.error('Error loading history:', error);
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error al cargar el historial.</td></tr>';
+                        console.error('[openHistory] Error loading history:', error);
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Error al cargar: ${error.message}</td></tr>`;
+                        loading.style.display = 'none';
                     }
                 }
 

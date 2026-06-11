@@ -73,12 +73,17 @@ try {
 
     $id_venta = $conn->lastInsertId();
 
+    // Determinar qué columna de stock usar según el modo de venta
+    // tipo_almacen: 'hospital' usa stock_hospital, otros usan cantidad_med
+    $tipo_almacen = $data['tipo_almacen'] ?? '';
+    $stock_column = ($tipo_almacen === 'hospital') ? 'stock_hospital' : 'cantidad_med';
+
     // Insert sale details and update inventory
-    $stmt = $conn->prepare("INSERT INTO detalle_ventas (id_venta, id_inventario, cantidad_vendida, precio_unitario) VALUES (?, ?, ?, ?)");
-    $stmt_inv = $conn->prepare("UPDATE inventario SET cantidad_med = cantidad_med - ? WHERE id_inventario = ?");
+    $stmt = $conn->prepare("INSERT INTO detalle_ventas (id_venta, id_inventario, cantidad_vendida, precio_unitario, id_hospital) VALUES (?, ?, ?, ?, ?)");
+    $stmt_inv = $conn->prepare("UPDATE inventario SET {$stock_column} = {$stock_column} - ? WHERE id_inventario = ? AND id_hospital = ?");
 
     // Prepare stock check statement
-    $stmt_check = $conn->prepare("SELECT cantidad_med FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+    $stmt_check = $conn->prepare("SELECT {$stock_column} FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
 
     foreach ($data['items'] as $item) {
         // Validate item data
@@ -100,11 +105,15 @@ try {
             $id_venta,
             $item['id_inventario'],
             $item['cantidad'],
-            $item['precio_unitario']
+            $item['precio_unitario'],
+            $id_hospital
         ]);
 
-        // Update inventory (reduce quantity)
-        $stmt_inv->execute([$item['cantidad'], $item['id_inventario']]);
+        // Update inventory (reduce quantity) - includes id_hospital filter and rowCount check
+        $stmt_inv->execute([$item['cantidad'], $item['id_inventario'], $id_hospital]);
+        if ($stmt_inv->rowCount() !== 1) {
+            throw new Exception('No se pudo actualizar el stock del producto ID: ' . $item['id_inventario']);
+        }
     }
 
     // Clear reservations for this session (since cart is now processed)
@@ -140,5 +149,5 @@ try {
 
     // Return error response
     error_log('Error en dispensary/save_venta.php: ' . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

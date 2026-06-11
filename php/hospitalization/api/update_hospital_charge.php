@@ -14,7 +14,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Check permissions
-if (!isset($_SESSION['usuario']) || !in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])) {
+if (!in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])) {
     echo json_encode(['status' => 'error', 'message' => 'No tiene permisos para realizar esta acción']);
     exit;
 }

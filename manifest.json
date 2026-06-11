@@ -1,0 +1,96 @@
+{
+  "name": "ClinicApp",
+  "short_name": "ClinicApp",
+  "description": "Sistema de Gestión Médica - ClinicApp",
+  "start_url": "/php/dashboard/index.php",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d6efd",
+  "theme_color": "#0d6efd",
+  "lang": "es-GT",
+  "dir": "ltr",
+  "categories": ["medical", "productivity", "business"],
+  "icons": [
+    {
+      "src": "/assets/img/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/img/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Orden Lab",
+      "short_name": "Lab",
+      "description": "Crear nueva orden de laboratorio",
+      "url": "/php/laboratory/crear_orden.php",
+      "icons": [
+        { "src": "/assets/img/icon-192.png", "sizes": "192x192" }
+      ]
+    },
+    {
+      "name": "Cobros",
+      "short_name": "Cobros",
+      "description": "Registrar nuevo cobro",
+      "url": "/php/billing/index.php",
+      "icons": [
+        { "src": "/assets/img/icon-192.png", "sizes": "192x192" }
+      ]
+    }
+  ]
+}

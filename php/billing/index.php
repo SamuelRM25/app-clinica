@@ -165,6 +165,12 @@ try {
 
     $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) as total FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND id_hospital = ?");
     $stmt->execute([hospital_id()]);
+    $mes_cobros_consulta = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+    // Total del mes sumando todas las fuentes (7-way UNION)
+    $mes_total_sql = "SELECT COALESCE(SUM(monto), 0) as total FROM ($union_sql) AS registro WHERE MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())";
+    $stmt = $conn->prepare($mes_total_sql);
+    $stmt->execute($hospital_params);
     $mes_total = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 } catch (Exception $e) {
@@ -530,8 +536,17 @@ try {
                                                     </div>
                                                 </td>
                                             </tr>
-                                    <?php endforeach; ?>
+                                    <?php endforeach;
+                                    $cobros_page_total = array_sum(array_column($cobros, 'monto'));
+                                    ?>
                                 </tbody>
+                                <tfoot>
+                                    <tr class="table-light">
+                                        <td colspan="4" class="text-end fw-bold ps-4">Total de esta página:</td>
+                                        <td class="text-end fw-bold text-success fs-5">Q<?php echo number_format((float)$cobros_page_total, 2); ?></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                             </div>
                         </div>

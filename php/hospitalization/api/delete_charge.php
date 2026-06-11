@@ -11,6 +11,12 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Check permissions
+if (!in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])) {
+    echo json_encode(['status' => 'error', 'message' => 'No tiene permisos para realizar esta acción']);
+    exit;
+}
+
 $id_cargo = isset($_POST['id_cargo']) ? intval($_POST['id_cargo']) : 0;
 $id_encamamiento = isset($_POST['id_encamamiento']) ? intval($_POST['id_encamamiento']) : 0;
 

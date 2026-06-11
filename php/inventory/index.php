@@ -285,6 +285,24 @@ output_keep_alive_script();
 </head>
 
 <body>
+<?php
+$inv_status = $_SESSION['inventory_status'] ?? null;
+$inv_message = $_SESSION['inventory_message'] ?? null;
+if ($inv_status) {
+    unset($_SESSION['inventory_status'], $_SESSION['inventory_message']);
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        icon: '<?= $inv_status === 'success' ? 'success' : 'error' ?>',
+        title: '<?= $inv_status === 'success' ? 'Operación exitosa' : 'Error' ?>',
+        text: <?= json_encode($inv_message ?? ($inv_status === 'success' ? 'Cambios guardados correctamente' : 'Ocurrió un error al procesar la solicitud')) ?>,
+        timer: 4000,
+        showConfirmButton: true
+    });
+});
+</script>
+<?php } ?>
     <!-- Efecto de mármol animado -->
     <div class="marble-effect"></div>
 

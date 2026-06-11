@@ -4,6 +4,10 @@ session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
+require_once '../../includes/module_guard.php';
+require_once '../../includes/breadcrumbs.php';
+
+check_module_access('hospitalization');
 
 $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
@@ -220,6 +224,8 @@ try {
     error_log('Error en hospitalization/detalle_encamamiento.php: ' . $e->getMessage());
     die("Error: " . htmlspecialchars($e->getMessage()));
 }
+
+output_keep_alive_script();
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -478,141 +484,17 @@ try {
     </style>
 
     <style media="print">
-        @page {
-            size: portrait;
-            margin: 10mm;
-        }
-
-        /* Reset for print */
-        html,
-        body {
-            background: white !important;
-            color: black !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-        }
-
-        body * {
-            display: none !important;
-        }
-
-        #receipt-print-container,
-        #receipt-print-container * {
-            display: block !important;
-            visibility: visible !important;
-        }
-
-        #receipt-print-container {
-            display: block !important;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 0;
-        }
-
-        /* Compact Receipt Styles */
-        .receipt-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-        }
-
-        .receipt-logo {
-            max-height: 60px;
-            margin-bottom: 5px;
-        }
-
-        .receipt-title {
-            font-size: 18pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 5px 0;
-        }
-
-        .receipt-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-            font-size: 10pt;
-        }
-
-        .receipt-section-title {
-            background: #f0f0f0;
-            font-weight: bold;
-            padding: 5px;
-            margin-top: 15px;
-            border: 1px solid #ccc;
-            font-size: 11pt;
-        }
-
-        .receipt-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 15px;
-        }
-
-        .receipt-table th,
-        .receipt-table td {
-            border: 1px solid #ccc;
-            padding: 4px 8px;
-            text-align: left;
-        }
-
-        .receipt-table th {
-            background: #f9f9f9;
-        }
-
-        .receipt-total-box {
-            margin-top: 20px;
-            border-top: 2px solid #000;
-            padding-top: 10px;
-            text-align: right;
-        }
-
-        .receipt-total-row {
-            display: flex;
-            justify-content: flex-end;
-            font-size: 12pt;
-            font-weight: bold;
-        }
-
-        .receipt-footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 8pt;
-            color: #666;
-        }
-
-        /* Ensure table content doesn't break poorly */
-        tr {
-            page-break-inside: avoid;
-        }
-
-        .receipt-table td,
-        .receipt-table th {
-            display: table-cell !important;
-        }
-
-        .receipt-table {
-            display: table !important;
-        }
-
-        .receipt-table thead {
-            display: table-header-group !important;
-        }
-
-        .receipt-table tbody {
-            display: table-row-group !important;
-        }
-
-        .receipt-table tr {
-            display: table-row !important;
-        }
+        .no-print { display: none !important; }
+        .tab-pane { display: block !important; opacity: 1 !important; }
+        .tab-content { display: block !important; }
+        .tab-pane { page-break-inside: avoid; }
+        .data-table { page-break-inside: avoid; }
+    </style>
+    <style>
+        /* Override global: forzar visibilidad del contenedor de tabs Bootstrap */
+        .tab-content { display: block !important; }
+        .tab-pane { display: none; }
+        .tab-pane.show.active { display: block; }
     </style>
 </head>
 
@@ -894,6 +776,7 @@ try {
                         </button>
                     </div>
 
+                    <?php echo '<!-- DEBUG: $cuenta=' . ($cuenta ? 'TRUTHY total='.$cuenta['total_general'] : 'FALSY') . ' id_hospital='.$id_hospital.' -->'; ?>
                     <?php if ($cuenta): ?>
                             <!-- Account Summary Grid -->
                             <div class="row g-3 mb-4">
@@ -1024,7 +907,7 @@ try {
                                                                 <th>Cantidad</th>
                                                                 <th>Precio Unit.</th>
                                                                 <th>Subtotal</th>
-                                                                <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
+                                                                <?php if (in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])): ?>
                                                                         <th>Acciones</th>
                                                                 <?php endif; ?>
                                                             </tr>
@@ -1037,7 +920,7 @@ try {
                                                                         <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
                                                                         <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
                                                                         <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
-                                                                        <?php if (isset($_SESSION['usuario']) && in_array($_SESSION['usuario'], ['admin', 'epineda', 'ysantos'])): ?>
+                                                                        <?php if (in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])): ?>
                                                                                 <td>
                                                                                     <button class="btn btn-sm btn-outline-primary" title="Editar Cargo"
                                                                                         onclick='editCargo(<?php echo json_encode($cargo); ?>)'>
@@ -1223,6 +1106,7 @@ try {
                     const form = document.getElementById('signosForm');
                     const formData = new FormData(form);
                     formData.append('id_encamamiento', id_encamamiento);
+                    formData.append('csrf_token', window.CSRF_TOKEN || '');
 
                     return fetch('api/save_signos.php', {
                         method: 'POST',
@@ -1236,7 +1120,7 @@ try {
                             return data;
                         })
                         .catch(error => {
-                            Swal.showValidationMessage(`Error: ${error}`);
+                            Swal.showValidationMessage(error.message || 'Error del servidor');
                         });
                 }
             }).then((result) => {
@@ -1284,6 +1168,7 @@ try {
                     const form = document.getElementById('evolucionForm');
                     const formData = new FormData(form);
                     formData.append('id_encamamiento', id_encamamiento);
+                    formData.append('csrf_token', window.CSRF_TOKEN || '');
 
                     return fetch('api/save_evolucion.php', {
                         method: 'POST',
@@ -1297,7 +1182,7 @@ try {
                             return data;
                         })
                         .catch(error => {
-                            Swal.showValidationMessage(`Error: ${error}`);
+                            Swal.showValidationMessage(error.message || 'Error del servidor');
                         });
                 }
             }).then((result) => {

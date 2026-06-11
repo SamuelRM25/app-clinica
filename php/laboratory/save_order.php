@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
-$id_hospital = hospital_id();
+$id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 // Set timezone
 date_default_timezone_set('America/Guatemala');
@@ -46,38 +46,58 @@ try {
     $conn = $database->getConnection();
     $conn->beginTransaction();
 
-    // 1. Generate unique order number
+    // 1. Generate unique order number (race-condition safe: retry on duplicate key)
     $today = date('Ymd');
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND id_hospital = ?");
-    $stmt->execute([$id_hospital]);
-    $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] + 1;
-    $numero_orden = "LAB-" . $today . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+    $maxAttempts = 10;
+    $id_orden = null;
+    $numero_orden = null;
+    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        $stmt = $conn->prepare("SELECT COUNT(*) as total FROM ordenes_laboratorio WHERE DATE(fecha_orden) = CURDATE() AND id_hospital = ?");
+        $stmt->execute([$id_hospital]);
+        $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'] + 1;
+        $numero_orden = "LAB-" . $today . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
 
-    // 2. Check if patient is hospitalized
-    $stmt_hosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ? LIMIT 1");
-    $stmt_hosp->execute([$data['id_paciente'], $id_hospital]);
-    $hosp = $stmt_hosp->fetch(PDO::FETCH_ASSOC);
-    $id_encamamiento = $hosp ? $hosp['id_encamamiento'] : null;
+        // 2. Check if patient is hospitalized
+        $stmt_hosp = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ? LIMIT 1");
+        $stmt_hosp->execute([$data['id_paciente'], $id_hospital]);
+        $hosp = $stmt_hosp->fetch(PDO::FETCH_ASSOC);
+        $id_encamamiento = $hosp ? $hosp['id_encamamiento'] : null;
 
-    // 3. Create Order
-    $stmt = $conn->prepare("
-        INSERT INTO ordenes_laboratorio (
-            numero_orden, id_paciente, id_doctor, id_encamamiento, 
-            prioridad, observaciones, 
-            estado, fecha_orden, id_hospital
-        ) VALUES (?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW(), ?)
-    ");
+        // 3. Attempt insert; if duplicate key on numero_orden, retry with next number
+        $stmt = $conn->prepare("
+            INSERT INTO ordenes_laboratorio (
+                numero_orden, id_paciente, id_doctor, id_encamamiento,
+                prioridad, observaciones,
+                estado, fecha_orden, id_hospital
+            ) VALUES (?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW(), ?)
+        ");
 
-    $stmt->execute([
-        $numero_orden,
-        $data['id_paciente'],
-        $data['id_doctor'],
-        $id_encamamiento,
-        $data['observaciones'] ?? '',
-        $id_hospital
-    ]);
+        try {
+            $stmt->execute([
+                $numero_orden,
+                $data['id_paciente'],
+                $data['id_doctor'],
+                $id_encamamiento,
+                $data['observaciones'] ?? '',
+                $id_hospital
+            ]);
+            $id_orden = $conn->lastInsertId();
+            break; // success
+        } catch (PDOException $e) {
+            // 23000 = integrity constraint violation (duplicate key)
+            if ($e->getCode() === '23000' && $attempt < $maxAttempts) {
+                // Re-roll the transaction fragment and retry
+                $conn->rollBack();
+                $conn->beginTransaction();
+                continue;
+            }
+            throw $e;
+        }
+    }
 
-    $id_orden = $conn->lastInsertId();
+    if ($id_orden === null) {
+        throw new Exception('No se pudo generar un número de orden único después de ' . $maxAttempts . ' intentos');
+    }
 
     // 4. Insert Order Details (Pruebas)
     $stmtDetail = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
@@ -127,6 +147,34 @@ try {
                 $id_hospital
             ]);
         }
+
+        // Also insert a record in examenes_realizados so the receipt can be printed
+        $total_hosp = 0;
+        $pruebas_nombres_hosp = [];
+        foreach ($items_for_billing as $item) {
+            $total_hosp += $item['precio'];
+            $pruebas_nombres_hosp[] = $item['nombre'];
+        }
+
+        $stmt_p_hosp = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+        $stmt_p_hosp->execute([$data['id_paciente'], $id_hospital]);
+        $paciente_data_hosp = $stmt_p_hosp->fetch(PDO::FETCH_ASSOC);
+        $nombre_paciente_hosp = $paciente_data_hosp['nombre'] ?? 'Paciente Desconocido';
+
+        $descripcion_hosp = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres_hosp);
+        $stmt_bill_hosp = $conn->prepare("
+            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
+            VALUES (?, ?, ?, ?, ?, 'Hospitalización', NOW(), ?)
+        ");
+        $stmt_bill_hosp->execute([
+            $data['id_paciente'],
+            $id_orden,
+            $nombre_paciente_hosp,
+            $descripcion_hosp,
+            $total_hosp,
+            $id_hospital
+        ]);
+        $id_pago = $conn->lastInsertId();
     }
 
     // 6. Integration with Payments (if NOT hospitalized)
@@ -176,5 +224,17 @@ try {
     if (isset($conn))
         $conn->rollBack();
     error_log('Error en laboratory/save_order.php: ' . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
+
+    // Return specific messages for common errors, generic for unknown
+    $message = $e->getMessage();
+    if (strpos($message, 'Duplicate entry') !== false && strpos($message, 'numero_orden') !== false) {
+        $response = ['status' => 'error', 'message' => 'Conflicto de número de orden. Reintente.'];
+    } elseif (strlen($message) < 200 && !str_contains($message, 'SQLSTATE')) {
+        // Short, safe-to-display messages (e.g., our own thrown exceptions)
+        $response = ['status' => 'error', 'message' => $message];
+    } else {
+        // Raw DB errors: don't leak schema details
+        $response = ['status' => 'error', 'message' => 'Error del servidor. Por favor reintente.'];
+    }
+    echo json_encode($response);
 }

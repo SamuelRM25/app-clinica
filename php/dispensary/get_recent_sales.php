@@ -22,32 +22,45 @@ try {
     $current_hour = (int) $now->format('H');
     $current_date = $now->format('Y-m-d');
 
-    // Lógica de Jornada
-    // Matutina: 08:00 AM - 05:00 PM (17:00)
-    // Nocturna: 05:00 PM - 08:00 AM del día siguiente
+    $type = $_GET['type'] ?? '';
+    $mode = $_GET['mode'] ?? 'shift'; // 'shift' o 'day'
+    $date_param = $_GET['date'] ?? $current_date; // YYYY-MM-DD
 
-    if ($current_hour >= 8 && $current_hour < 17) {
-        // Jornada Matutina
-        $start_datetime = $current_date . ' 08:00:00';
-        $end_datetime = $current_date . ' 17:00:00';
+    // Validar fecha (debe ser YYYY-MM-DD)
+    $validated_date = DateTime::createFromFormat('Y-m-d', $date_param);
+    if (!$validated_date) {
+        $date_param = $current_date;
+    }
+
+    if ($mode === 'day') {
+        // Día calendario completo: 00:00:00 a 23:59:59
+        $start_datetime = $date_param . ' 00:00:00';
+        $end_datetime = $date_param . ' 23:59:59';
     } else {
-        // Jornada Nocturna
-        if ($current_hour >= 17) {
-            $start_datetime = $current_date . ' 17:00:00';
-            $end_datetime = (new DateTime($current_date))->modify('+1 day')->format('Y-m-d') . ' 07:59:59';
+        // Lógica de Jornada (turno)
+        // Matutina: 08:00 AM - 05:00 PM (17:00)
+        // Nocturna: 05:00 PM - 08:00 AM del día siguiente
+        if ($current_hour >= 8 && $current_hour < 17) {
+            // Jornada Matutina
+            $start_datetime = $current_date . ' 08:00:00';
+            $end_datetime = $current_date . ' 17:00:00';
         } else {
-            // Es entre las 00:00 y las 07:59 del día actual (pertenece a la nocturna del día anterior)
-            $start_datetime = (new DateTime($current_date))->modify('-1 day')->format('Y-m-d') . ' 17:00:00';
-            $end_datetime = $current_date . ' 07:59:59';
+            // Jornada Nocturna
+            if ($current_hour >= 17) {
+                $start_datetime = $current_date . ' 17:00:00';
+                $end_datetime = (new DateTime($current_date))->modify('+1 day')->format('Y-m-d') . ' 07:59:59';
+            } else {
+                // Es entre las 00:00 y las 07:59 del día actual (pertenece a la nocturna del día anterior)
+                $start_datetime = (new DateTime($current_date))->modify('-1 day')->format('Y-m-d') . ' 17:00:00';
+                $end_datetime = $current_date . ' 07:59:59';
+            }
         }
     }
 
-    $type = $_GET['type'] ?? '';
-
     $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
-    $sql = "SELECT id_venta, nombre_cliente, total, DATE_FORMAT(fecha_venta, '%H:%i') as hora, tipo_pago 
-            FROM ventas 
+    $sql = "SELECT id_venta, nombre_cliente, total, DATE_FORMAT(fecha_venta, '%H:%i') as hora, DATE_FORMAT(fecha_venta, '%d/%m/%Y') as fecha, tipo_pago
+            FROM ventas
             WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?";
 
     $params = [$start_datetime, $end_datetime, $id_hospital];
@@ -68,11 +81,12 @@ try {
         'sales' => $sales,
         'period' => [
             'start' => $start_datetime,
-            'end' => $end_datetime
+            'end' => $end_datetime,
+            'mode' => $mode
         ]
     ]);
 
 } catch (Exception $e) {
     error_log('Error en dispensary/get_recent_sales.php: ' . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
