@@ -70,15 +70,43 @@ try {
     $stmt->execute([$id_hospital]);
     $top_providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 5. Últimas compras
+    // 5. Últimas compras (paginadas, 100 por página, con búsqueda opcional)
+    $search_query = trim($_GET['q'] ?? '');
+    $per_page = 100;
+    $where_extra = '';
+    $params_count = [$id_hospital];
+    $params_list  = [$id_hospital];
+
+    if ($search_query !== '') {
+        $where_extra = ' AND (ph.provider_name LIKE ? OR ph.document_number LIKE ? OR ph.document_type LIKE ?)';
+        $like = '%' . $search_query . '%';
+        $params_count[] = $like;
+        $params_count[] = $like;
+        $params_count[] = $like;
+        $params_list[]  = $like;
+        $params_list[]  = $like;
+        $params_list[]  = $like;
+    }
+
+    // Total para paginación
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM purchase_headers ph WHERE ph.id_hospital = ?" . $where_extra);
+    $stmt->execute($params_count);
+    $total_records = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+    $total_pages = max(1, (int) ceil($total_records / $per_page));
+
+    $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+    if ($page < 1) $page = 1;
+    if ($page > $total_pages) $page = $total_pages;
+    $offset = ($page - 1) * $per_page;
+
     $stmt = $conn->prepare("SELECT ph.*, 
                            (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance,
                            (SELECT COUNT(*) FROM purchase_items WHERE purchase_header_id = ph.id) as items_count
                            FROM purchase_headers ph 
-                           WHERE ph.id_hospital = ?
+                           WHERE ph.id_hospital = ?" . $where_extra . "
                            ORDER BY ph.purchase_date DESC, ph.created_at DESC 
-                           LIMIT 10");
-    $stmt->execute([$id_hospital]);
+                           LIMIT " . (int)$per_page . " OFFSET " . (int)$offset);
+    $stmt->execute($params_list);
     $recent_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 6. Compras por confirmar (en inventario como pendientes)
@@ -297,9 +325,6 @@ try {
                 <button class="tab-btn" data-tab="pending-payments">
                     <i class="bi bi-clock-history me-2"></i>Pagos Pendientes
                 </button>
-                <button class="tab-btn" data-tab="old-purchases">
-                    <i class="bi bi-archive me-2"></i>Compras Antiguas
-                </button>
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
                 </button>
@@ -314,10 +339,18 @@ try {
                             Compras Recientes
                         </h3>
                         <div class="d-flex gap-2">
-                            <div class="search-box">
-                                <i class="bi bi-search search-icon"></i>
-                                <input type="text" id="searchRecent" placeholder="Buscar compra...">
-                            </div>
+                            <form method="GET" action="index.php" class="d-flex gap-2" id="searchFormRecent">
+                                <div class="search-box">
+                                    <i class="bi bi-search search-icon"></i>
+                                    <input type="text" name="q" id="searchRecent" placeholder="Buscar compra..."
+                                        value="<?php echo htmlspecialchars($search_query); ?>">
+                                </div>
+                                <?php if ($search_query !== ''): ?>
+                                    <a href="index.php" class="action-btn" style="background: var(--color-text-muted);" title="Limpiar búsqueda">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </form>
                             <a href="export_purchases.php" class="action-btn" style="background: var(--color-success);">
                                 <i class="bi bi-file-earmark-spreadsheet"></i>
                                 Excel
@@ -411,13 +444,92 @@ try {
                                     </tbody>
                                 </table>
                             </div>
+                            <?php if ($total_pages > 1): ?>
+                                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                    <small class="text-muted">
+                                        <?php if ($search_query !== ''): ?>
+                                            Mostrando <?php echo count($recent_purchases); ?> de <?php echo $total_records; ?> resultados
+                                            para "<strong><?php echo htmlspecialchars($search_query); ?></strong>"
+                                            (página <?php echo $page; ?> de <?php echo $total_pages; ?>)
+                                        <?php else: ?>
+                                            Mostrando <?php echo count($recent_purchases); ?> de <?php echo $total_records; ?> compras
+                                            (página <?php echo $page; ?> de <?php echo $total_pages; ?>)
+                                        <?php endif; ?>
+                                    </small>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <?php
+                                            $base_url = '?page=%d';
+                                            if ($search_query !== '') {
+                                                $base_url = '?q=' . urlencode($search_query) . '&page=%d';
+                                            }
+                                            ?>
+                                            <?php if ($page > 1): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="<?php echo sprintf($base_url, $page - 1); ?>" aria-label="Anterior">
+                                                        <i class="bi bi-chevron-left"></i>
+                                                    </a>
+                                                </li>
+                                            <?php else: ?>
+                                                <li class="page-item disabled">
+                                                    <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                                                </li>
+                                            <?php endif; ?>
+
+                                            <?php
+                                            $start = max(1, $page - 2);
+                                            $end   = min($total_pages, $page + 2);
+                                            if ($start > 1) {
+                                                echo '<li class="page-item"><a class="page-link" href="' . sprintf($base_url, 1) . '">1</a></li>';
+                                                if ($start > 2) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+                                            }
+                                            for ($i = $start; $i <= $end; $i++): ?>
+                                                <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                                    <?php if ($i == $page): ?>
+                                                        <span class="page-link"><?php echo $i; ?></span>
+                                                    <?php else: ?>
+                                                        <a class="page-link" href="<?php echo sprintf($base_url, $i); ?>"><?php echo $i; ?></a>
+                                                    <?php endif; ?>
+                                                </li>
+                                            <?php endfor;
+                                            if ($end < $total_pages) {
+                                                if ($end < $total_pages - 1) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+                                                echo '<li class="page-item"><a class="page-link" href="' . sprintf($base_url, $total_pages) . '">' . $total_pages . '</a></li>';
+                                            }
+                                            ?>
+
+                                            <?php if ($page < $total_pages): ?>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="<?php echo sprintf($base_url, $page + 1); ?>" aria-label="Siguiente">
+                                                        <i class="bi bi-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                            <?php else: ?>
+                                                <li class="page-item disabled">
+                                                    <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                                                </li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            <?php elseif ($search_query !== ''): ?>
+                                <div class="text-muted small mt-3">
+                                    <?php echo $total_records; ?> resultado(s) para "<strong><?php echo htmlspecialchars($search_query); ?></strong>".
+                                    <a href="index.php" class="ms-2">Limpiar búsqueda</a>
+                                </div>
+                            <?php endif; ?>
                     <?php else: ?>
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <i class="bi bi-cart-x"></i>
                                 </div>
-                                <h4 class="text-muted mb-2">No hay compras registradas</h4>
-                                <p class="text-muted mb-3">Comienza registrando tu primera compra</p>
+                                <?php if ($search_query !== ''): ?>
+                                    <h4 class="text-muted mb-2">No se encontraron compras que coincidan con "<strong><?php echo htmlspecialchars($search_query); ?></strong>"</h4>
+                                    <a href="index.php" class="action-btn primary">Limpiar búsqueda</a>
+                                <?php else: ?>
+                                    <h4 class="text-muted mb-2">No hay compras registradas</h4>
+                                    <p class="text-muted mb-3">Comienza registrando tu primera compra</p>
+                                <?php endif; ?>
                                 <button class="action-btn" onclick="showNewPurchaseModal()">
                                     <i class="bi bi-plus-lg"></i>
                                     Nueva Compra
@@ -526,92 +638,6 @@ try {
                                 </div>
                                 <h4 class="text-muted mb-2">¡Excelente gestión!</h4>
                                 <p class="text-muted mb-3">Todas las compras están completamente pagadas</p>
-                            </div>
-                    <?php endif; ?>
-                </section>
-            </div>
-
-            <!-- Pestaña: Compras Antiguas -->
-            <div class="tab-content" id="old-purchases-tab">
-                <section class="appointments-section animate-in delay-3">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-archive section-title-icon"></i>
-                            Historial de Compras Antiguas
-                        </h3>
-                        <div class="search-box">
-                            <i class="bi bi-search search-icon"></i>
-                            <input type="text" id="searchOld" placeholder="Buscar por producto...">
-                        </div>
-                    </div>
-
-                    <?php
-                    try {
-                        $stmt_old = $conn->prepare("SELECT * FROM compras WHERE id_hospital = ? ORDER BY fecha_compra DESC LIMIT 50");
-                        $stmt_old->execute([$id_hospital]);
-                        $old_purchases_list = $stmt_old->fetchAll(PDO::FETCH_ASSOC);
-                    } catch (Exception $e) {
-                        $old_purchases_list = [];
-                    }
-                    ?>
-
-                    <?php if (count($old_purchases_list) > 0): ?>
-                            <div class="table-responsive">
-                                <table class="appointments-table" id="tableOld">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Producto</th>
-                                            <th>Presentación</th>
-                                            <th>Casa Farm.</th>
-                                            <th>Cant.</th>
-                                            <th>Precio U.</th>
-                                            <th>Total</th>
-                                            <th>Estado</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($old_purchases_list as $row): ?>
-                                                <?php
-                                                $statusClass = 'secondary';
-                                                if ($row['estado_compra'] == 'Completo')
-                                                    $statusClass = 'success';
-                                                if ($row['estado_compra'] == 'Pendiente')
-                                                    $statusClass = 'warning';
-                                                if ($row['estado_compra'] == 'Abonado')
-                                                    $statusClass = 'info';
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo date('d/m/Y', strtotime($row['fecha_compra'])); ?></td>
-                                                    <td class="fw-bold"><?php echo htmlspecialchars($row['nombre_compra']); ?></td>
-                                                    <td><?php echo htmlspecialchars($row['presentacion_compra']); ?></td>
-                                                    <td><?php echo htmlspecialchars($row['casa_compra']); ?></td>
-                                                    <td class="text-center"><?php echo $row['cantidad_compra']; ?></td>
-                                                    <td>Q<?php echo number_format($row['precio_unidad'], 2); ?></td>
-                                                    <td class="fw-bold text-primary">
-                                                        Q<?php echo number_format($row['total_compra'], 2); ?></td>
-                                                    <td><span
-                                                            class="badge badge-<?php echo $statusClass; ?>"><?php echo $row['estado_compra']; ?></span>
-                                                    </td>
-                                                    <td>
-                                                        <button type="button" class="btn-icon delete" title="Eliminar compra"
-                                                            onclick="deleteOldPurchase(<?php echo (int)$row['id_compras']; ?>)">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                    <?php else: ?>
-                            <div class="empty-state">
-                                <div class="empty-icon">
-                                    <i class="bi bi-archive"></i>
-                                </div>
-                                <h4 class="text-muted mb-2">No hay registros antiguos</h4>
-                                <p class="text-muted mb-3">Todos los registros están en el sistema actual</p>
                             </div>
                     <?php endif; ?>
                 </section>
@@ -1150,19 +1176,6 @@ try {
                         });
                     }
 
-                    // Búsqueda en tabla de antiguas
-                    const searchOld = document.getElementById('searchOld');
-                    if (searchOld) {
-                        searchOld.addEventListener('input', function () {
-                            const searchTerm = this.value.toLowerCase();
-                            const rows = document.querySelectorAll('#tableOld tbody tr');
-
-                            rows.forEach(row => {
-                                const text = row.textContent.toLowerCase();
-                                row.style.display = text.includes(searchTerm) ? '' : 'none';
-                            });
-                        });
-                    }
                 }
 
                 setupAnimations() {
@@ -1599,24 +1612,6 @@ try {
                 } catch (e) {
                     Swal.fire({ title: 'Error', text: 'Error de conexión con el servidor', icon: 'error' });
                 }
-            };
-
-            // Eliminar compra (sistema antiguo)
-            window.deleteOldPurchase = function (id) {
-                Swal.fire({
-                    title: '¿Está seguro?',
-                    text: 'Esta acción eliminará la compra y todos los registros relacionados.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#dc3545'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        window.location.href = 'delete_purchase.php?id=' + id + '&csrf_token=' + encodeURIComponent(csrfToken);
-                    }
-                });
             };
 
             // Abrir modal de pagos

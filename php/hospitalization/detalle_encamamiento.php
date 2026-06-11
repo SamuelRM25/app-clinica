@@ -233,6 +233,7 @@ output_keep_alive_script();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
     <title>Paciente:
         <?php echo htmlspecialchars($encamamiento['nombre_paciente'] . ' ' . $encamamiento['apellido_paciente']); ?>
     </title>
@@ -1031,6 +1032,9 @@ output_keep_alive_script();
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+        // Expose CSRF token globally for fetch requests
+        window.CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
         // Theme
         const savedTheme = localStorage.getItem('dashboard-theme');
         if (savedTheme) {
@@ -1305,7 +1309,7 @@ output_keep_alive_script();
                             return data;
                         })
                         .catch(error => {
-                            Swal.showValidationMessage(`Error: ${error}`);
+                            Swal.showValidationMessage(error.message || 'Error del servidor');
                         });
                 }
             }).then((result) => {
@@ -1512,6 +1516,7 @@ output_keep_alive_script();
                     const form = document.getElementById('altaForm');
                     const formData = new FormData(form);
                     formData.append('id_encamamiento', id_encamamiento);
+                    formData.append('csrf_token', window.CSRF_TOKEN);
 
                     return fetch('api/procesar_alta.php', {
                         method: 'POST',
@@ -1525,7 +1530,7 @@ output_keep_alive_script();
                             return data;
                         })
                         .catch(error => {
-                            Swal.showValidationMessage(`Error: ${error}`);
+                            Swal.showValidationMessage(error.message || 'Error del servidor');
                         });
                 }
             }).then((result) => {
@@ -1660,7 +1665,7 @@ output_keep_alive_script();
                             return data;
                         })
                         .catch(error => {
-                            Swal.showValidationMessage(`Error: ${error}`);
+                            Swal.showValidationMessage(error.message || 'Error del servidor');
                         });
                 }
             }).then((result) => {
