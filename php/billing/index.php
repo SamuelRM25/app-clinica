@@ -193,6 +193,9 @@ try {
     <meta name="description" content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+    <?php if (($user_type ?? '') === 'admin'): ?>
+        <meta name="auth-code" content="<?php echo htmlspecialchars(getenv('AUTH_CODE') ?: ''); ?>">
+    <?php endif; ?>
 
     <!-- logo -->
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -533,6 +536,15 @@ try {
                                                             title="Eliminar">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
+                                                        <?php if (($user_type ?? '') === 'admin'): ?>
+                                                            <button type="button" class="btn-icon edit-time"
+                                                                data-id="<?php echo (int) $cobro['id_registro']; ?>"
+                                                                data-fuente="<?php echo htmlspecialchars($cobro['fuente']); ?>"
+                                                                data-fecha="<?php echo date('Y-m-d\TH:i', $fecha_row); ?>"
+                                                                title="Editar hora (solo admin)">
+                                                                <i class="bi bi-clock-history"></i>
+                                                            </button>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -816,6 +828,7 @@ try {
                     this.setupAnimations();
                     this.setupModalDetails();
                     this.setupDeleteHandlers();
+                    this.setupEditTimeHandlers();
                 }
 
                 setupGreeting() {
@@ -1085,6 +1098,105 @@ try {
                                     Swal.fire({
                                         title: 'Eliminado',
                                         text: 'Registro eliminado correctamente',
+                                        icon: 'success',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire({ title: 'Error', text: data.message, icon: 'error' });
+                                }
+                            } catch (e) {
+                                Swal.fire({ title: 'Error', text: 'Error de conexión con el servidor', icon: 'error' });
+                            }
+                        });
+                    });
+                }
+
+                setupEditTimeHandlers() {
+                    // Solo admins tienen los botones renderizados en PHP, pero verificamos de nuevo en JS
+                    const userType = '<?php echo $user_type ?? ''; ?>';
+                    if (userType !== 'admin') return;
+
+                    const AUTH_CODE_FROM_META = document.querySelector('meta[name="auth-code"]')?.content || '';
+                    const SESSION_KEY = 'billing_edit_time_unlocked';
+                    let isUnlocked = sessionStorage.getItem(SESSION_KEY) === '1';
+
+                    document.querySelectorAll('.btn-icon.edit-time').forEach(btn => {
+                        btn.addEventListener('click', async function () {
+                            const id = this.getAttribute('data-id');
+                            const fuente = this.getAttribute('data-fuente');
+                            const fechaActual = this.getAttribute('data-fecha');
+
+                            // Gate de autorización: si no está desbloqueado en esta sesión, pedir código
+                            if (!isUnlocked) {
+                                const codeResult = await Swal.fire({
+                                    title: 'Autorización requerida',
+                                    html: 'Para editar la hora de un cobro se requiere el código de autorización del sistema.<br><br><small class="text-muted">Se solicitará una sola vez por sesión.</small>',
+                                    input: 'password',
+                                    inputPlaceholder: 'Código de autorización',
+                                    inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+                                    icon: 'lock',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Validar',
+                                    cancelButtonText: 'Cancelar',
+                                    confirmButtonColor: '#0d6efd'
+                                });
+                                if (!codeResult.isConfirmed) return;
+                                if (codeResult.value !== AUTH_CODE_FROM_META) {
+                                    Swal.fire({ title: 'Código incorrecto', text: 'El código ingresado no es válido.', icon: 'error' });
+                                    return;
+                                }
+                                isUnlocked = true;
+                                sessionStorage.setItem(SESSION_KEY, '1');
+                            }
+
+                            // Modal de edición con datetime-local prellenado
+                            const editResult = await Swal.fire({
+                                title: 'Editar hora del cobro',
+                                html: `<div class="text-start">
+                                    <label class="form-label fw-semibold">Fecha y hora actuales:</label>
+                                    <div class="alert alert-info py-2 mb-3">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span id="current-time-display">${fechaActual}</span>
+                                    </div>
+                                    <label class="form-label fw-semibold">Nueva fecha y hora:</label>
+                                    <input type="datetime-local" id="new-datetime" class="form-control" value="${fechaActual}" step="60">
+                                </div>`,
+                                showCancelButton: true,
+                                confirmButtonText: 'Guardar cambio',
+                                cancelButtonText: 'Cancelar',
+                                confirmButtonColor: '#198754',
+                                preConfirm: () => {
+                                    const v = document.getElementById('new-datetime')?.value;
+                                    if (!v) {
+                                        Swal.showValidationMessage('Selecciona fecha y hora');
+                                        return false;
+                                    }
+                                    return v;
+                                }
+                            });
+
+                            if (!editResult.isConfirmed) return;
+                            const newDateTime = editResult.value; // formato YYYY-MM-DDTHH:MM
+
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                            try {
+                                const response = await fetch('edit_cobro_time.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        id: id,
+                                        fuente: fuente,
+                                        fecha_consulta: newDateTime,
+                                        csrf_token: csrfToken
+                                    })
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    Swal.fire({
+                                        title: 'Hora actualizada',
+                                        text: 'La fecha y hora del cobro se actualizaron correctamente.',
                                         icon: 'success',
                                         timer: 1500,
                                         showConfirmButton: false
