@@ -99,12 +99,16 @@ try {
     if ($page > $total_pages) $page = $total_pages;
     $offset = ($page - 1) * $per_page;
 
-    $stmt = $conn->prepare("SELECT ph.*, 
+    $stmt = $conn->prepare("SELECT ph.*,
                            (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance,
-                           (SELECT COUNT(*) FROM purchase_items WHERE purchase_header_id = ph.id) as items_count
-                           FROM purchase_headers ph 
+                           COUNT(pi.id) AS items_count,
+                           SUM(CASE WHEN pi.status = 'Recibido' THEN 1 ELSE 0 END) AS received_count,
+                           SUM(CASE WHEN pi.status = 'Pendiente' THEN 1 ELSE 0 END) AS pending_count
+                           FROM purchase_headers ph
+                           LEFT JOIN purchase_items pi ON pi.purchase_header_id = ph.id AND pi.id_hospital = ph.id_hospital
                            WHERE ph.id_hospital = ?" . $where_extra . "
-                           ORDER BY ph.purchase_date DESC, ph.created_at DESC 
+                           GROUP BY ph.id
+                           ORDER BY ph.purchase_date DESC, ph.created_at DESC
                            LIMIT " . (int)$per_page . " OFFSET " . (int)$offset);
     $stmt->execute($params_list);
     $recent_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -315,6 +319,23 @@ try {
                         <span>Total: Q<?php echo number_format($old_total, 2); ?></span>
                     </div>
                 </div>
+
+                <!-- Pendientes de recepción (items en inventario aún no recibidos) -->
+                <div class="stat-card animate-in delay-5">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Pendientes de Recepción</div>
+                            <div class="stat-value"><?php echo (int) $pending_inventory; ?></div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                    </div>
+                    <div class="stat-change">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Items en inventario esperando recepción</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Navegación por pestañas -->
@@ -378,6 +399,7 @@ try {
                                             <th>Total</th>
                                             <th>Pagado</th>
                                             <th>Saldo</th>
+                                            <th>Recepción</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -419,6 +441,27 @@ try {
                                                                     class="badge badge-danger">Q<?php echo number_format($balance, 2); ?></span>
                                                         <?php else: ?>
                                                                 <span class="badge badge-success">Pagado</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        $items_total = (int) ($purchase['items_count'] ?? 0);
+                                                        $received    = (int) ($purchase['received_count'] ?? 0);
+                                                        $pending_ct  = (int) ($purchase['pending_count'] ?? 0);
+                                                        if ($items_total === 0): ?>
+                                                            <span class="badge badge-info">Sin items</span>
+                                                        <?php elseif ($pending_ct === 0): ?>
+                                                            <span class="badge badge-success" title="Todos los items recibidos">
+                                                                <i class="bi bi-check-circle me-1"></i>Recibido
+                                                            </span>
+                                                        <?php elseif ($received === 0): ?>
+                                                            <span class="badge badge-warning" title="<?php echo $items_total; ?> item(s) pendiente(s)">
+                                                                <i class="bi bi-clock-history me-1"></i>Pendiente
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-warning" title="<?php echo $received; ?> de <?php echo $items_total; ?> recibidos">
+                                                                <i class="bi bi-clock-history me-1"></i><?php echo $received; ?>/<?php echo $items_total; ?> recibidos
+                                                            </span>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
@@ -1529,12 +1572,17 @@ try {
                                         <th>Costo U.</th>
                                         <th>Precio Venta</th>
                                         <th>Subtotal</th>
+                                        <th>Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                     `;
 
                             data.items.forEach(item => {
+                                const itemStatus = (item.status || 'Pendiente');
+                                const badge = itemStatus === 'Recibido'
+                                    ? '<span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Recibido</span>'
+                                    : '<span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>Pendiente</span>';
                                 html += `
                             <tr>
                                 <td>${item.product_name}</td>
@@ -1544,6 +1592,7 @@ try {
                                 <td class="text-end">Q${parseFloat(item.unit_cost).toFixed(2)}</td>
                                 <td class="text-end">Q${parseFloat(item.sale_price || 0).toFixed(2)}</td>
                                 <td class="text-end">Q${parseFloat(item.subtotal).toFixed(2)}</td>
+                                <td class="text-center">${badge}</td>
                             </tr>
                         `;
                             });
