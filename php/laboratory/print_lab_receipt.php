@@ -23,10 +23,13 @@ try {
 
     $stmt = $conn->prepare("
         SELECT e.id_examen_realizado, e.cobro, e.tipo_pago, e.tipo_examen,
-               e.nombre_paciente, e.fecha_examen, e.id_paciente,
-               CONCAT(u.nombre, ' ', u.apellido) AS doctor_nombre
+               e.nombre_paciente, e.fecha_examen, e.id_paciente, e.usuario,
+               COALESCE(NULLIF(CONCAT(u.nombre, ' ', u.apellido), ''), e.usuario) AS doctor_nombre
         FROM examenes_realizados e
-        LEFT JOIN usuarios u ON e.id_doctor = u.idUsuario
+        LEFT JOIN usuarios u ON (
+            LOWER(CONCAT(u.nombre, ' ', u.apellido)) = LOWER(e.usuario)
+            OR LOWER(u.nombre) = LOWER(SUBSTRING_INDEX(e.usuario, ' ', 1))
+        )
         WHERE e.id_examen_realizado = ? AND e.id_hospital = ?
     ");
     $stmt->execute([$id, $id_hospital]);
