@@ -9,7 +9,7 @@
  *  - Auto-actualización silenciosa: skipWaiting() + clients.claim() + postMessage
  */
 
-const CACHE_NAME = 'clinicapp-v1.0.2';
+const CACHE_NAME = 'clinicapp-v1.0.3';
 
 const STATIC_ASSETS = [
     '/',

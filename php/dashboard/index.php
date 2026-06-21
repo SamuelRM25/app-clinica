@@ -996,9 +996,15 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </button>
                 </div>
             </div>
-            <!-- Botón Corte de Turno -->
+            <!-- Botón Corte de Turno + Historial -->
             <?php if ($user_type === 'admin'): ?>
-                    <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem;">
+                    <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
+                        <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
+                            style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #0d6efd); color: #fff;"
+                            onclick="openHistoryModal()">
+                            <i class="bi bi-clock-history me-2"></i>
+                            Historial
+                        </button>
                         <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
                             style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
                             onclick="verifyShiftCode()">
@@ -1011,7 +1017,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
         <!-- Modal Corte de Turno -->
         <div class="modal fade" id="shiftCutModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-premium">
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header bg-warning text-white border-0">
                         <h5 class="modal-title fw-bold">
@@ -1022,17 +1028,22 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </div>
                     <div class="modal-body p-4">
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="shiftDate" class="form-label fw-semibold">Fecha del Turno</label>
                                 <input type="date" class="form-control" id="shiftDate"
                                     value="<?php echo date('Y-m-d'); ?>" onchange="loadShiftData()">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="shiftType" class="form-label fw-semibold">Jornada</label>
                                 <select class="form-select" id="shiftType" onchange="loadShiftData()">
                                     <option value="morning">Mañana (08:00 AM - 05:00 PM)</option>
                                     <option value="night">Tarde/Noche (05:00 PM - 08:00 AM)</option>
                                 </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="w-100 text-end">
+                                    <span class="badge bg-warning text-dark fs-6 p-2" id="shiftPeriodLabel">--</span>
+                                </div>
                             </div>
                         </div>
 
@@ -1061,7 +1072,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                     <tfoot>
                                         <tr class="table-dark">
                                             <th class="fw-bold">TOTAL GENERAL</th>
-                                            <td colspan="3"></td>
+                                            <td class="text-center"><span id="cut-total-cash">0.00</span></td>
+                                            <td class="text-center"><span id="cut-total-card">0.00</span></td>
+                                            <td class="text-center"><span id="cut-total-transfer">0.00</span></td>
                                             <td class="text-end fw-bold fs-5">Q<span id="cut-grand-total">0.00</span>
                                             </td>
                                         </tr>
@@ -1074,11 +1087,29 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 </h6>
                                 <div id="doctorsList"></div>
                             </div>
+
+                            <!-- Nueva sección: Detalle completo de cobros -->
+                            <div class="mt-4">
+                                <button class="btn btn-outline-warning w-100 fw-bold" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#shiftDetailCollapse"
+                                    aria-expanded="false" aria-controls="shiftDetailCollapse"
+                                    onclick="loadShiftDetail(this)">
+                                    <i class="bi bi-list-ul me-2"></i>
+                                    <span id="shiftDetailBtnLabel">Ver detalle de cobros</span>
+                                </button>
+                                <div class="collapse mt-3" id="shiftDetailCollapse">
+                                    <div id="shiftDetailContent" class="border rounded p-3 bg-light">
+                                        <div class="text-center text-muted py-3">
+                                            <i class="bi bi-hourglass-split"></i> Cargando...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0">
                         <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cerrar</button>
-                        <button type="button" class="btn btn-warning px-4 text-white" onclick="window.print()">
+                        <button type="button" class="btn btn-warning px-4 text-white" onclick="printShiftCutReport()">
                             <i class="bi bi-printer me-2"></i>Imprimir Reporte
                         </button>
                     </div>
@@ -1086,9 +1117,74 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             </div>
         </div>
 
+        <!-- Modal Historial del Turno -->
+        <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-premium">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-info text-white border-0">
+                        <h5 class="modal-title fw-bold">
+                            <i class="bi bi-clock-history me-2"></i>Historial del Turno Actual
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="historyDate" class="form-label fw-semibold">Fecha</label>
+                                <input type="date" class="form-control" id="historyDate"
+                                    value="<?php echo date('Y-m-d'); ?>" onchange="loadHistoryData()">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="historyShift" class="form-label fw-semibold">Jornada</label>
+                                <select class="form-select" id="historyShift" onchange="loadHistoryData()">
+                                    <option value="morning">Mañana (08:00 AM - 05:00 PM)</option>
+                                    <option value="night">Tarde/Noche (05:00 PM - 08:00 AM)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="w-100 text-end">
+                                    <span class="badge bg-info fs-6 p-2" id="historyPeriodLabel">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="historyLoading" class="text-center py-5">
+                            <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Cargando cobros del turno...</p>
+                        </div>
+
+                        <div id="historyContent" style="display: none;">
+                            <div class="alert alert-info border-0 mb-3" role="alert">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong id="historySummary">0 cobros</strong> en este turno
+                                        — <strong>Total: Q<span id="historyGrandTotal">0.00</span></strong>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="reprintAllHistory()">
+                                        <i class="bi bi-printer me-1"></i>Reimprimir Todos
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="accordion" id="historyAccordion">
+                                <!-- Sections injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal Detalle Farmacia -->
         <div class="modal fade" id="pharmacyDetailsModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-dialog modal-premium modal-dialog-scrollable">
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title fw-bold">
@@ -1180,6 +1276,266 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 const modal = new bootstrap.Modal(document.getElementById('pharmacyDetailsModal'));
                 modal.show();
+            }
+
+            // =================================================================
+            // Historial del Turno (Acordeón por categoría con reimprimir)
+            // =================================================================
+            function openHistoryModal() {
+                const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+                modal.show();
+                loadHistoryData();
+            }
+
+            async function loadHistoryData() {
+                const date = document.getElementById('historyDate').value;
+                const shift = document.getElementById('historyShift').value;
+                document.getElementById('historyLoading').style.display = 'block';
+                document.getElementById('historyContent').style.display = 'none';
+
+                try {
+                    const response = await fetch(`get_history_data.php?date=${date}&shift=${shift}`, {
+                        headers: { 'X-Requested-With': 'fetch' }
+                    });
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.error || 'Error al cargar el historial');
+                    }
+                    renderHistoryData(result.data);
+                } catch (e) {
+                    Swal.fire('Error', e.message || 'No se pudo cargar el historial', 'error');
+                } finally {
+                    document.getElementById('historyLoading').style.display = 'none';
+                    document.getElementById('historyContent').style.display = 'block';
+                }
+            }
+
+            function renderHistoryData(data) {
+                const periodLabel = `${data.period.shift === 'morning' ? 'Mañana' : 'Noche'}: ${data.period.start} → ${data.period.end}`;
+                document.getElementById('historyPeriodLabel').textContent = periodLabel;
+                document.getElementById('historySummary').textContent = `${data.count} cobros`;
+                document.getElementById('historyGrandTotal').textContent = data.grand_total.toFixed(2);
+
+                const categories = [
+                    { key: 'consultations', label: 'Consultas',     icon: 'bi-clipboard2-pulse', color: 'success' },
+                    { key: 'pharmacy',      label: 'Farmacia',      icon: 'bi-capsule',          color: 'primary' },
+                    { key: 'laboratory',    label: 'Laboratorio',   icon: 'bi-virus',            color: 'info' },
+                    { key: 'ultrasound',    label: 'Ultrasonidos',  icon: 'bi-soundwave',        color: 'warning' },
+                    { key: 'xray',          label: 'Rayos X',       icon: 'bi-broadcast',        color: 'secondary' },
+                    { key: 'electro',       label: 'Electrocardiogramas', icon: 'bi-heart-pulse', color: 'danger' },
+                    { key: 'procedures',    label: 'Procedimientos Menores', icon: 'bi-bandaid',   color: 'dark' }
+                ];
+
+                const accordion = document.getElementById('historyAccordion');
+                accordion.innerHTML = '';
+
+                let index = 0;
+                categories.forEach(cat => {
+                    const rows = data[cat.key] || [];
+                    const total = data.totals[cat.key] || 0;
+                    if (rows.length === 0 && total === 0) {
+                        return; // skip empty categories
+                    }
+                    const collapseId = `history-collapse-${cat.key}`;
+                    const headerId  = `history-header-${cat.key}`;
+                    const isFirst   = (index === 0);
+                    const rowsHtml  = rows.length === 0
+                        ? '<div class="text-muted text-center py-3"><i class="bi bi-info-circle"></i> Sin cobros en esta categoría</div>'
+                        : renderHistoryRows(rows);
+
+                    const html = `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="${headerId}">
+                            <button class="accordion-button ${isFirst ? '' : 'collapsed'}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#${collapseId}"
+                                aria-expanded="${isFirst}" aria-controls="${collapseId}">
+                                <i class="${cat.icon} me-2"></i>
+                                <strong class="me-2">${cat.label}</strong>
+                                <span class="badge bg-${cat.color} me-2">${rows.length} cobros</span>
+                                <span class="text-muted ms-auto">Q${total.toFixed(2)}</span>
+                            </button>
+                        </h2>
+                        <div id="${collapseId}" class="accordion-collapse collapse ${isFirst ? 'show' : ''}"
+                            aria-labelledby="${headerId}" data-bs-parent="#historyAccordion">
+                            <div class="accordion-body p-0">
+                                ${rowsHtml}
+                            </div>
+                        </div>
+                    </div>`;
+                    accordion.insertAdjacentHTML('beforeend', html);
+                    index++;
+                });
+
+                if (index === 0) {
+                    accordion.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i> No hay cobros en este turno.</div>';
+                }
+            }
+
+            function renderHistoryRows(rows) {
+                let html = `<div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">Hora</th>
+                            <th>Paciente</th>
+                            <th>Doctor</th>
+                            <th>Detalle</th>
+                            <th style="width: 110px;">Pago</th>
+                            <th class="text-end" style="width: 100px;">Monto</th>
+                            <th class="text-center" style="width: 90px;">Acción</th>
+                        </tr>
+                    </thead><tbody>`;
+                rows.forEach(r => {
+                    const pago = (r.tipo_pago || 'Efectivo');
+                    const pagoBadge = pago === 'Efectivo' ? 'success' : (pago === 'Tarjeta' ? 'primary' : 'info');
+                    const paciente = r.paciente || '<em class="text-muted">N/A</em>';
+                    const doctor    = r.doctor    || '<em class="text-muted">N/A</em>';
+                    const detalle   = r.detalle   || '<em class="text-muted">N/A</em>';
+                    const printUrl  = r.print_url || '#';
+                    const printBtn  = (printUrl && printUrl !== '#')
+                        ? `<button type="button" class="btn btn-sm btn-outline-info" onclick="window.open('${printUrl}', '_blank')" title="Reimprimir comprobante">
+                                <i class="bi bi-printer"></i>
+                            </button>`
+                        : '<span class="text-muted small">N/D</span>';
+                    html += `<tr>
+                        <td><code>${r.hora || ''}</code></td>
+                        <td>${paciente}</td>
+                        <td>${doctor}</td>
+                        <td><small>${detalle}</small></td>
+                        <td><span class="badge bg-${pagoBadge}">${pago}</span></td>
+                        <td class="text-end fw-bold">Q${(parseFloat(r.monto) || 0).toFixed(2)}</td>
+                        <td class="text-center">${printBtn}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                return html;
+            }
+
+            function reprintAllHistory() {
+                const printBtns = document.querySelectorAll('#historyContent .btn-outline-info[title="Reimprimir comprobante"]');
+                if (printBtns.length === 0) {
+                    Swal.fire('Sin comprobantes', 'No hay comprobantes para reimprimir en este turno.', 'info');
+                    return;
+                }
+                Swal.fire({
+                    title: '¿Reimprimir todos?',
+                    text: `Se abrirán ${printBtns.length} ventanas con los comprobantes.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, reimprimir',
+                    cancelButtonText: 'Cancelar'
+                }).then((r) => {
+                    if (!r.isConfirmed) return;
+                    printBtns.forEach((btn, i) => {
+                        setTimeout(() => btn.click(), i * 500);
+                    });
+                });
+            }
+
+            async function loadShiftDetail(btn) {
+                const collapse = document.getElementById('shiftDetailCollapse');
+                const isExpanded = collapse.classList.contains('show');
+                const label = document.getElementById('shiftDetailBtnLabel');
+                const content = document.getElementById('shiftDetailContent');
+
+                if (!isExpanded) {
+                    label.textContent = 'Ocultar detalle de cobros';
+                    if (content.dataset.loaded === '1') return; // already loaded
+                    content.innerHTML = '<div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm"></div> Cargando detalle...</div>';
+                    const date = document.getElementById('shiftDate').value;
+                    const shift = document.getElementById('shiftType').value;
+                    try {
+                        const response = await fetch(`get_history_data.php?date=${date}&shift=${shift}`, {
+                            headers: { 'X-Requested-With': 'fetch' }
+                        });
+                        const result = await response.json();
+                        if (!result.success) throw new Error(result.error || 'Error');
+                        content.innerHTML = renderShiftDetailContent(result.data);
+                        content.dataset.loaded = '1';
+                    } catch (e) {
+                        content.innerHTML = '<div class="text-danger text-center py-3">' + (e.message || 'Error') + '</div>';
+                    }
+                } else {
+                    label.textContent = 'Ver detalle de cobros';
+                }
+            }
+
+            function renderShiftDetailContent(data) {
+                const allRows = [
+                    ...data.consultations.map(r => ({...r, _cat: 'Consultas'})),
+                    ...data.pharmacy.map(r => ({...r, _cat: 'Farmacia'})),
+                    ...data.laboratory.map(r => ({...r, _cat: 'Laboratorio'})),
+                    ...data.ultrasound.map(r => ({...r, _cat: 'Ultrasonidos'})),
+                    ...data.xray.map(r => ({...r, _cat: 'Rayos X'})),
+                    ...data.electro.map(r => ({...r, _cat: 'Electrocardiogramas'})),
+                    ...data.procedures.map(r => ({...r, _cat: 'Procedimientos'}))
+                ];
+                allRows.sort((a, b) => (a.fecha_full || '').localeCompare(b.fecha_full || ''));
+
+                if (allRows.length === 0) {
+                    return '<div class="text-center text-muted py-3"><i class="bi bi-inbox"></i> No hay cobros en este turno.</div>';
+                }
+
+                let html = `<div class="table-responsive"><table class="table table-sm table-striped mb-0 align-middle">
+                    <thead class="table-warning">
+                        <tr>
+                            <th style="width: 90px;">Hora</th>
+                            <th style="width: 110px;">Categoría</th>
+                            <th>Paciente</th>
+                            <th>Doctor</th>
+                            <th>Detalle / Tipo</th>
+                            <th style="width: 90px;">Pago</th>
+                            <th class="text-end" style="width: 100px;">Monto</th>
+                            <th class="text-center" style="width: 80px;">Reimp.</th>
+                        </tr>
+                    </thead><tbody>`;
+                allRows.forEach(r => {
+                    const pagoBadge = (r.tipo_pago === 'Efectivo') ? 'success' : ((r.tipo_pago === 'Tarjeta') ? 'primary' : 'info');
+                    const printBtn = (r.print_url && r.print_url !== '#')
+                        ? `<button type="button" class="btn btn-sm btn-outline-warning" onclick="window.open('${r.print_url}', '_blank')" title="Reimprimir"><i class="bi bi-printer"></i></button>`
+                        : '';
+                    html += `<tr>
+                        <td><code>${r.hora || ''}</code></td>
+                        <td><small class="text-muted">${r._cat}</small></td>
+                        <td>${r.paciente || '<em class="text-muted">N/A</em>'}</td>
+                        <td>${r.doctor || '<em class="text-muted">N/A</em>'}</td>
+                        <td><small>${r.detalle || 'N/A'}</small></td>
+                        <td><span class="badge bg-${pagoBadge}">${r.tipo_pago || 'Efectivo'}</span></td>
+                        <td class="text-end fw-bold">Q${(parseFloat(r.monto) || 0).toFixed(2)}</td>
+                        <td class="text-center">${printBtn}</td>
+                    </tr>`;
+                });
+                html += `</tbody><tfoot>
+                    <tr class="table-dark">
+                        <th colspan="6" class="text-end">TOTAL DETALLE (${allRows.length} cobros):</th>
+                        <th class="text-end fs-6">Q${data.grand_total.toFixed(2)}</th>
+                        <th></th>
+                    </tr>
+                </tfoot></table></div>`;
+                return html;
+            }
+
+            function printShiftCutReport() {
+                const modal = document.getElementById('shiftCutModal');
+                const content = document.getElementById('shiftContent');
+                if (!content || content.style.display === 'none') {
+                    Swal.fire('Sin datos', 'No hay datos de corte para imprimir.', 'info');
+                    return;
+                }
+                const printContents = modal.querySelector('.modal-content').innerHTML;
+                const win = window.open('', '_blank', 'width=1200,height=900');
+                win.document.write(`
+                    <!DOCTYPE html><html><head>
+                    <title>Corte de Turno</title>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+                    <style>
+                        body { padding: 20px; font-family: -apple-system, sans-serif; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>${printContents}</body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 400);
             }
 
             async function verifyShiftCode() {
@@ -1354,8 +1710,16 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             safeSetText('totalCard', `Q${totalCard.toFixed(2)}`);
                             safeSetText('totalTransfer', `Q${totalTransfer.toFixed(2)}`);
                             safeSetText('totalGlobal', `Q${grandTotal.toFixed(2)}`);
-                            // Also update specific ID if exists (from previous code)
+                            // Also update specific IDs from the new modal-premium layout
                             safeSetText('cut-grand-total', grandTotal.toFixed(2));
+                            safeSetText('cut-total-cash', totalCash.toFixed(2));
+                            safeSetText('cut-total-card', totalCard.toFixed(2));
+                            safeSetText('cut-total-transfer', totalTransfer.toFixed(2));
+                            // Period label badge
+                            if (d.period) {
+                                const periodLabel = `${d.period.shift === 'morning' ? 'Mañana' : 'Noche'}: ${d.period.start} → ${d.period.end}`;
+                                safeSetText('shiftPeriodLabel', periodLabel);
+                            }
 
                             // Doctors Breakdown
                             const breakdownContainer = document.getElementById('consultationBreakdown');

@@ -1,4 +1,7 @@
 <?php
+// laboratory/print_lab_receipt.php
+// Receipt for a single lab exam cobro (row from examenes_realizados).
+// Used by the dashboard Historial and Corte de Turno "Reimprimir" actions.
 session_start();
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
@@ -7,106 +10,142 @@ if (!isset($_SESSION['user_id'])) {
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
-require_once '../../includes/module_guard.php';
-
-$id_hospital = hospital_id();
-verify_session();
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("ID inválido");
 }
-$id_examen = $_GET['id'];
+$id = (int) $_GET['id'];
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
     $stmt = $conn->prepare("
-        SELECT *
-        FROM examenes_realizados
-        WHERE id_examen_realizado = ? AND id_hospital = ?
+        SELECT e.id_examen_realizado, e.cobro, e.tipo_pago, e.tipo_examen,
+               e.nombre_paciente, e.fecha_examen, e.id_paciente,
+               CONCAT(u.nombre, ' ', u.apellido) AS doctor_nombre
+        FROM examenes_realizados e
+        LEFT JOIN usuarios u ON e.id_doctor = u.idUsuario
+        WHERE e.id_examen_realizado = ? AND e.id_hospital = ?
     ");
-    $stmt->execute([$id_examen, $id_hospital]);
-    $orden = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute([$id, $id_hospital]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$orden)
-        die("Orden no encontrada (ID: " . htmlspecialchars($id_examen) . ")");
+    if (!$row) {
+        die("Registro no encontrado");
+    }
 
-    $fecha = new DateTime($orden['fecha_examen']);
+    // Try to get the patient's real name from pacientes if we have an id_paciente
+    $paciente_nombre = $row['nombre_paciente'];
+    if (!empty($row['id_paciente'])) {
+        $stmtP = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) AS nombre FROM pacientes WHERE id_paciente = ?");
+        $stmtP->execute([$row['id_paciente']]);
+        $p = $stmtP->fetch(PDO::FETCH_ASSOC);
+        if ($p && !empty($p['nombre'])) {
+            $paciente_nombre = $p['nombre'];
+        }
+    }
+
+    $fecha_full = $row['fecha_examen'];
+    $fecha = new DateTime($fecha_full);
     $fecha_formateada = $fecha->format('d/m/Y');
     $hora_formateada = $fecha->format('H:i');
-    $paciente = $orden['nombre_paciente'];
-    $user_name = $_SESSION['nombre'];
+    $monto = (float) $row['cobro'];
+    $tipo_pago = $row['tipo_pago'] ?: 'Efectivo';
+    $tipo_examen = $row['tipo_examen'] ?: 'Examen de Laboratorio';
+    $doctor = $row['doctor_nombre'] ? 'Dr(a). ' . $row['doctor_nombre'] : 'N/A';
+    $user_name = $_SESSION['nombre'] ?? 'Sistema';
 
 } catch (Exception $e) {
-    error_log("Error en print_lab_receipt: " . $e->getMessage());
-    die("Error al generar el recibo.");
+    error_log('Error en print_lab_receipt.php: ' . $e->getMessage());
+    die('Error al generar el comprobante');
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibo Laboratorio #<?php echo htmlspecialchars($id_examen); ?></title>
+    <title>Comprobante de Laboratorio #<?php echo $id; ?></title>
+    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link rel="stylesheet" href="../../assets/css/print_thermal.css">
+    <style>
+        @page { size: 80mm auto; margin: 0; }
+        body { font-family: 'Courier New', monospace; max-width: 80mm; margin: 0 auto; padding: 8px; }
+        .receipt-container { padding: 4px; }
+        .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 8px; }
+        .receipt-header h2 { font-size: 14px; margin: 0; }
+        .receipt-header .subtitle { font-size: 11px; color: #555; }
+        .receipt-section { margin: 6px 0; font-size: 12px; }
+        .receipt-section .row { display: flex; justify-content: space-between; }
+        .receipt-section .label { color: #555; }
+        .receipt-section .value { font-weight: 700; text-align: right; }
+        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+        .total-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; padding: 4px 0; }
+        .payment-badge { display: inline-block; padding: 2px 6px; border: 1px solid #000; border-radius: 3px; font-size: 11px; }
+        .footer-note { text-align: center; font-size: 10px; color: #666; margin-top: 8px; }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
 </head>
 <body>
     <div class="receipt-container">
-        <div class="clinic-header text-center">
-            <h2 class="fw-bold">CENTRO MEDICO HERRERA SAENZ</h2>
-            <p>7a Av 7-25 Zona 1 HH</p>
-            <p>Tel: (+502) 5214-8836</p>
+        <div class="receipt-header">
+            <h2>Centro Médico Herrera Saenz</h2>
+            <div class="subtitle">Comprobante de Laboratorio</div>
         </div>
-        <hr class="divider">
-        <div class="receipt-details">
-            <div class="row">
-                <span>Fecha: <?php echo $fecha_formateada; ?></span>
-                <span><?php echo $hora_formateada; ?></span>
-            </div>
-            <div class="row">
-                <span>Recibo #: <?php echo str_pad($id_examen, 5, '0', STR_PAD_LEFT); ?></span>
-            </div>
-            <div class="row">
-                <span>Paciente:</span>
-            </div>
-            <div class="row">
-                <span class="fw-bold"><?php echo htmlspecialchars($paciente); ?></span>
-            </div>
+
+        <div class="receipt-section">
+            <div class="row"><span class="label">Recibo #:</span><span class="value"><?php echo str_pad($id, 6, '0', STR_PAD_LEFT); ?></span></div>
+            <div class="row"><span class="label">Fecha:</span><span class="value"><?php echo $fecha_formateada; ?></span></div>
+            <div class="row"><span class="label">Hora:</span><span class="value"><?php echo $hora_formateada; ?></span></div>
         </div>
-        <hr class="divider">
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Descripcion</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><?php echo htmlspecialchars($orden['tipo_examen']); ?></td>
-                    <td>Q<?php echo number_format($orden['cobro'], 2); ?></td>
-                </tr>
-            </tbody>
-        </table>
-        <hr class="divider">
-        <div class="total-section">
-            <span>TOTAL</span>
-            <span>Q<?php echo number_format($orden['cobro'], 2); ?></span>
+
+        <div class="divider"></div>
+
+        <div class="receipt-section">
+            <div class="row"><span class="label">Paciente:</span></div>
+            <div style="font-size: 13px; font-weight: 700; margin-top: 2px;"><?php echo htmlspecialchars($paciente_nombre); ?></div>
         </div>
-        <div class="footer">
-            <p>Pago: <?php echo htmlspecialchars($orden['tipo_pago']); ?></p>
-            <p>Gracias por su visita!</p>
-            <p>Atendio: <?php echo htmlspecialchars($user_name); ?></p>
+
+        <div class="receipt-section">
+            <div class="row"><span class="label">Médico:</span><span class="value"><?php echo htmlspecialchars($doctor); ?></span></div>
+            <div class="row"><span class="label">Examen:</span><span class="value"><?php echo htmlspecialchars($tipo_examen); ?></span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="receipt-section">
+            <div class="row"><span class="label">Método de pago:</span><span class="value"><span class="payment-badge"><?php echo htmlspecialchars($tipo_pago); ?></span></span></div>
+        </div>
+
+        <div class="total-row">
+            <span>TOTAL:</span>
+            <span>Q<?php echo number_format($monto, 2); ?></span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="footer-note">
+            Comprobante generado el <?php echo date('d/m/Y H:i'); ?><br>
+            Atendido por: <?php echo htmlspecialchars($user_name); ?>
+        </div>
+
+        <div class="no-print" style="text-align: center; margin-top: 12px;">
+            <button onclick="window.print()" style="padding: 8px 16px; background: #0d6efd; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Imprimir</button>
+            <button onclick="window.close()" style="padding: 8px 16px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;">Cerrar</button>
         </div>
     </div>
+
     <script>
-        window.onload = function () {
-            window.print();
+        // Auto-trigger print on load (gives the user a chance to cancel if needed)
+        window.addEventListener('load', function() {
             setTimeout(function() {
-                window.close();
-            }, 1000);
-        };
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+            }, 300);
+        });
     </script>
 </body>
 </html>

@@ -57,6 +57,9 @@ class Database {
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                     )
                 );
+                // Pin MySQL session timezone to Guatemala (UTC-6) so any TIMESTAMP
+                // columns are interpreted correctly regardless of the host OS TZ.
+                $this->conn->exec("SET time_zone = '-06:00'");
             }
             return $this->conn;
         } catch(PDOException $e) {
