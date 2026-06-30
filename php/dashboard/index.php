@@ -717,7 +717,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
 
                 <!-- Punto de Venta (Dispensario) -->
-                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('pharmacy', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user'): ?> 
+                <?php if (!$is_restricted || in_array('pharmacy', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('pharmacy')): ?>
                             <a href="../dispensary/index.php" class="nav-link">
@@ -733,8 +734,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('appointments', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
+                <?php if (!$is_restricted || in_array('appointments', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../appointments/index.php" class="nav-link">
                         <i class="bi bi-calendar-check nav-icon"></i>
@@ -743,8 +746,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </a>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('patients', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
+                <?php if (!$is_restricted || in_array('patients', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../patients/index.php" class="nav-link">
                         <i class="bi bi-people nav-icon"></i>
@@ -752,8 +757,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </a>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
                 <!-- Hospitalización -->
+                <?php if ($user_type === 'admin'): ?>
                 <?php if ($user_type === 'admin' || !$is_restricted || in_array('hospitalization', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('hospitalization')): ?>
@@ -770,9 +777,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
                 <!-- Laboratorio -->
-                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('laboratory', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
+                <?php if (!$is_restricted || in_array('laboratory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('laboratory')): ?>
                             <a href="../laboratory/index.php" class="nav-link">
@@ -787,9 +796,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
                 <!-- Inventario -->
-                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('inventory', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
+                <?php if (!$is_restricted || in_array('inventory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('inventory')): ?>
                             <a href="../inventory/index.php" class="nav-link">
@@ -807,9 +818,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
                 <!-- Otros Módulos -->
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('imaging', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../minor_procedures/index.php" class="nav-link">
@@ -826,7 +838,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('imaging', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../examinations/index.php" class="nav-link">
@@ -843,7 +855,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('purchases', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
+                <?php if (!$is_restricted || in_array('purchases', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('purchases')): ?>
                             <a href="../purchases/index.php" class="nav-link">
@@ -858,8 +871,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('sales', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
+                <?php if (!$is_restricted || in_array('sales', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('sales')): ?>
                             <a href="../sales/index.php" class="nav-link">
@@ -874,8 +889,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('finances', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
+                <?php if (!$is_restricted || in_array('finances', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('finances')): ?>
                             <a href="../billing/index.php" class="nav-link">
@@ -890,8 +907,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+                <?php endif; ?>
 
-                <?php if ($user_type === 'admin' || !$is_restricted || in_array('reports', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin'): ?>
+                <?php if (!$is_restricted || in_array('reports', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('reports')): ?>
                             <a href="../reports/index.php" class="nav-link">
@@ -906,6 +925,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </a>
                     <?php endif; ?>
                 </li>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if ($user_type === 'admin'): ?>
