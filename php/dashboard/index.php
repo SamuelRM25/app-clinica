@@ -717,7 +717,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
 
                 <!-- Punto de Venta (Dispensario) -->
-                <?php if (!$is_restricted || in_array('pharmacy', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('pharmacy', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('pharmacy')): ?>
                             <a href="../dispensary/index.php" class="nav-link">
@@ -734,7 +734,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('appointments', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('appointments', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../appointments/index.php" class="nav-link">
                         <i class="bi bi-calendar-check nav-icon"></i>
@@ -744,7 +744,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('patients', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('patients', $allowed_modules)): ?>
                 <li class="nav-item">
                     <a href="../patients/index.php" class="nav-link">
                         <i class="bi bi-people nav-icon"></i>
@@ -754,7 +754,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <?php endif; ?>
 
                 <!-- Hospitalización -->
-                <?php if (!$is_restricted || in_array('hospitalization', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('hospitalization', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('hospitalization')): ?>
                             <a href="../hospitalization/index.php" class="nav-link">
@@ -772,7 +772,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <?php endif; ?>
 
                 <!-- Laboratorio -->
-                <?php if (!$is_restricted || in_array('laboratory', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('laboratory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('laboratory')): ?>
                             <a href="../laboratory/index.php" class="nav-link">
@@ -789,7 +789,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <?php endif; ?>
 
                 <!-- Inventario -->
-                <?php if (!$is_restricted || in_array('inventory', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || $user_type === 'user' || !$is_restricted || in_array('inventory', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('inventory')): ?>
                             <a href="../inventory/index.php" class="nav-link">
@@ -809,7 +809,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <?php endif; ?>
 
                 <!-- Otros Módulos -->
-                <?php if (!$is_restricted || in_array('imaging', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('imaging', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../minor_procedures/index.php" class="nav-link">
@@ -826,7 +826,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('imaging', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('imaging', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('imaging')): ?>
                             <a href="../examinations/index.php" class="nav-link">
@@ -843,7 +843,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('purchases', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('purchases', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('purchases')): ?>
                             <a href="../purchases/index.php" class="nav-link">
@@ -859,7 +859,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('sales', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('sales', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('sales')): ?>
                             <a href="../sales/index.php" class="nav-link">
@@ -875,7 +875,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('finances', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('finances', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('finances')): ?>
                             <a href="../billing/index.php" class="nav-link">
@@ -891,7 +891,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
-                <?php if (!$is_restricted || in_array('reports', $allowed_modules)): ?>
+                <?php if ($user_type === 'admin' || !$is_restricted || in_array('reports', $allowed_modules)): ?>
                 <li class="nav-item">
                     <?php if (is_module_active('reports')): ?>
                             <a href="../reports/index.php" class="nav-link">
@@ -908,6 +908,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </li>
                 <?php endif; ?>
 
+                <?php if ($user_type === 'admin'): ?>
                 <li class="nav-item">
                     <a href="../settings/subscription.php" class="nav-link">
                         <i class="bi bi-credit-card nav-icon"></i>
@@ -926,9 +927,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         <span class="nav-text">Widgets</span>
                     </a>
                 </li>
+                <?php endif; ?>
             </ul>
         </nav>
-    </aside>
+    </aside>    
 
     <!-- Contenedor Principal -->
     <div class="dashboard-container">
