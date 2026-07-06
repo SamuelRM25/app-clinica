@@ -42,7 +42,7 @@ try {
         }
 
         // Fetch old data for audit
-        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, costo_normal, costo_inhabil FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
         $fetchStmt->execute([$id_tarifa, $id_hospital]);
         $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -68,16 +68,24 @@ try {
         $inhabil = (float)($data['precio_inhabil'] ?? 0);
         $radio = isset($data['precio_radio']) ? (float)$data['precio_radio'] : null;
         $region = isset($data['region_count']) && $data['region_count'] > 0 ? (int)$data['region_count'] : null;
+        // Cost fields — optional (NULL if not provided)
+        $costo_normal  = isset($data['costo_normal'])  && $data['costo_normal']  !== '' && $data['costo_normal']  !== null ? (float)$data['costo_normal']  : null;
+        $costo_inhabil = isset($data['costo_inhabil']) && $data['costo_inhabil'] !== '' && $data['costo_inhabil'] !== null ? (float)$data['costo_inhabil'] : null;
+        $costo_radio   = isset($data['costo_radio'])   && $data['costo_radio']   !== '' && $data['costo_radio']   !== null ? (float)$data['costo_radio']   : null;
 
         $stmt = $conn->prepare("
-            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, region_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
+                precio_normal, precio_inhabil, precio_radio, region_count,
+                costo_normal, costo_inhabil, costo_radio)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre, $normal, $inhabil, $radio, $region]);
+        $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre,
+            $normal, $inhabil, $radio, $region,
+            $costo_normal, $costo_inhabil, $costo_radio]);
         $newId = $conn->lastInsertId();
         $conn->commit();
 
-        audit_log('create', 'tarifas', "Nueva tarifa creada: tipo=$tipo, precio=$normal", [
+        audit_log('create', 'tarifas', "Nueva tarifa creada: tipo=$tipo, precio=$normal, costo=$costo_normal", [
             'table_name' => 'tarifas_servicios',
             'record_id' => (int)$newId,
             'new_data' => [
@@ -87,7 +95,10 @@ try {
                 'precio_normal' => $normal,
                 'precio_inhabil' => $inhabil,
                 'precio_radio' => $radio,
-                'region_count' => $region
+                'region_count' => $region,
+                'costo_normal' => $costo_normal,
+                'costo_inhabil' => $costo_inhabil,
+                'costo_radio' => $costo_radio
             ]
         ]);
 
@@ -100,18 +111,25 @@ try {
         $normal = (float)($data['precio_normal'] ?? 0);
         $inhabil = (float)($data['precio_inhabil'] ?? 0);
         $radio = isset($data['precio_radio']) ? (float)$data['precio_radio'] : null;
+        // Cost fields — optional
+        $costo_normal  = isset($data['costo_normal'])  && $data['costo_normal']  !== '' && $data['costo_normal']  !== null ? (float)$data['costo_normal']  : null;
+        $costo_inhabil = isset($data['costo_inhabil']) && $data['costo_inhabil'] !== '' && $data['costo_inhabil'] !== null ? (float)$data['costo_inhabil'] : null;
+        $costo_radio   = isset($data['costo_radio'])   && $data['costo_radio']   !== '' && $data['costo_radio']   !== null ? (float)$data['costo_radio']   : null;
 
         // Fetch old data for audit
-        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, costo_normal, costo_inhabil, costo_radio FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
         $fetchStmt->execute([$id_tarifa, $id_hospital]);
         $oldData = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
         $stmt = $conn->prepare("
             UPDATE tarifas_servicios
-            SET precio_normal = ?, precio_inhabil = ?, precio_radio = ?
+            SET precio_normal = ?, precio_inhabil = ?, precio_radio = ?,
+                costo_normal = ?, costo_inhabil = ?, costo_radio = ?
             WHERE id_tarifa = ? AND id_hospital = ?
         ");
-        $stmt->execute([$normal, $inhabil, $radio, $id_tarifa, $id_hospital]);
+        $stmt->execute([$normal, $inhabil, $radio,
+            $costo_normal, $costo_inhabil, $costo_radio,
+            $id_tarifa, $id_hospital]);
         $conn->commit();
 
         audit_log('update', 'tarifas', "Tarifa actualizada: ID=$id_tarifa", [
@@ -121,7 +139,10 @@ try {
             'new_data' => [
                 'precio_normal' => $normal,
                 'precio_inhabil' => $inhabil,
-                'precio_radio' => $radio
+                'precio_radio' => $radio,
+                'costo_normal' => $costo_normal,
+                'costo_inhabil' => $costo_inhabil,
+                'costo_radio' => $costo_radio
             ]
         ]);
 
@@ -132,12 +153,17 @@ try {
     if ($action === 'batch_save') {
         $items = $data['tarifas'] ?? [];
         $stmt = $conn->prepare("
-            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, region_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
+                precio_normal, precio_inhabil, precio_radio, region_count,
+                costo_normal, costo_inhabil, costo_radio)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                precio_normal = VALUES(precio_normal),
+                precio_normal  = VALUES(precio_normal),
                 precio_inhabil = VALUES(precio_inhabil),
-                precio_radio = VALUES(precio_radio)
+                precio_radio   = VALUES(precio_radio),
+                costo_normal   = VALUES(costo_normal),
+                costo_inhabil  = VALUES(costo_inhabil),
+                costo_radio    = VALUES(costo_radio)
         ");
 
         foreach ($items as $item) {
@@ -148,8 +174,13 @@ try {
             $inhabil = (float)($item['precio_inhabil'] ?? 0);
             $radio = isset($item['precio_radio']) ? (float)$item['precio_radio'] : null;
             $region = isset($item['region_count']) && $item['region_count'] > 0 ? (int)$item['region_count'] : null;
+            $costo_normal  = isset($item['costo_normal'])  && $item['costo_normal']  !== '' && $item['costo_normal']  !== null ? (float)$item['costo_normal']  : null;
+            $costo_inhabil = isset($item['costo_inhabil']) && $item['costo_inhabil'] !== '' && $item['costo_inhabil'] !== null ? (float)$item['costo_inhabil'] : null;
+            $costo_radio   = isset($item['costo_radio'])   && $item['costo_radio']   !== '' && $item['costo_radio']   !== null ? (float)$item['costo_radio']   : null;
 
-            $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre, $normal, $inhabil, $radio, $region]);
+            $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre,
+                $normal, $inhabil, $radio, $region,
+                $costo_normal, $costo_inhabil, $costo_radio]);
         }
 
         $conn->commit();

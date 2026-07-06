@@ -349,6 +349,9 @@ try {
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
                 </button>
+                <button class="tab-btn" data-tab="gastos">
+                    <i class="bi bi-wallet2 me-2"></i>Gastos
+                </button>
             </div>
 
             <!-- Pestaña: Compras Recientes -->
@@ -770,7 +773,112 @@ try {
                     </div>
                 </div>
             </div>
+
+            <!-- Pestaña: Gastos -->
+            <div class="tab-content" id="gastos-tab">
+                <section class="appointments-section animate-in">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-wallet2 section-title-icon" style="color:var(--color-danger);"></i>
+                            Gastos Generales del Hospital
+                        </h3>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <div class="search-box">
+                                <i class="bi bi-calendar-range search-icon"></i>
+                                <input type="month" id="gastosMonth" class="form-control form-control-sm"
+                                    value="<?php echo date('Y-m'); ?>"
+                                    onchange="loadGastos()"
+                                    style="padding-left:2.25rem;max-width:200px;">
+                            </div>
+                            <button class="action-btn" onclick="showNewGastoModal()">
+                                <i class="bi bi-plus-lg me-2"></i>Nuevo Gasto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="appointments-table" id="gastosTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Cant.</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Registrado por</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="gastosLoadingRow">
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando gastos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Total Gastos:</td>
+                                    <td class="fw-bold text-danger" id="gastosTotalFooter">Q0.00</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </section>
+            </div>
         </main>
+    </div>
+
+    <!-- Modal para nuevo gasto -->
+    <div class="custom-modal-overlay" id="newGastoModal">
+        <div class="custom-modal" style="max-width:600px;">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-wallet2 text-danger me-2"></i>
+                    Registrar Nuevo Gasto
+                </h5>
+                <button type="button" class="custom-modal-close"
+                    onclick="document.getElementById('newGastoModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <form id="gastoForm">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="gasto_descripcion" rows="2"
+                                placeholder="Ej. Insumos para baños, materiales de limpieza, etc." required></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="gasto_fecha"
+                                value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="gasto_cantidad" min="1" value="1"
+                                onchange="calcularGastoTotal()" onkeyup="calcularGastoTotal()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Subtotal (Q)</label>
+                            <input type="number" class="form-control" id="gasto_subtotal" min="0" step="0.01"
+                                onchange="calcularGastoTotal()" onkeyup="calcularGastoTotal()">
+                        </div>
+                        <div class="col-md-4 offset-md-8">
+                            <label class="form-label fw-bold">Total (Q)</label>
+                            <input type="number" class="form-control" id="gasto_total" min="0" step="0.01" readonly
+                                style="font-weight:700;background:var(--color-surface);">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('newGastoModal').classList.remove('active')">Cancelar</button>
+                <button type="button" class="action-btn primary" id="saveGastoBtn" onclick="saveGasto()">
+                    <i class="bi bi-check-lg me-2"></i>Guardar Gasto
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal para nueva compra -->
@@ -792,7 +900,7 @@ try {
                             <label class="form-label">Fecha de Compra</label>
                             <input type="date" class="form-control" name="purchase_date" id="purchase_date" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Tipo de Documento</label>
                             <select class="form-select" name="document_type" id="document_type" required>
                                 <option value="Factura">Factura</option>
@@ -800,7 +908,15 @@ try {
                                 <option value="Consumidor Final">Consumidor Final</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo de Pago</label>
+                            <select class="form-select" name="tipo_pago" id="purchase_tipo_pago" required>
+                                <option value="Contado">Al Contado</option>
+                                <option value="Credito 30" selected>Crédito 30</option>
+                                <option value="Credito 60">Crédito 60</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label">No. Documento</label>
                             <input type="text" class="form-control" name="document_number" id="document_number"
                                 placeholder="Ej. A-12345">
@@ -1447,6 +1563,7 @@ try {
                 const header = {
                     purchase_date: document.getElementById('purchase_date').value,
                     document_type: document.getElementById('document_type').value,
+                    tipo_pago: document.getElementById('purchase_tipo_pago').value,
                     document_number: document.getElementById('document_number').value,
                     provider_name: providerName,
                     total_amount: parseFloat(document.getElementById('totalAmount').textContent)
@@ -1553,6 +1670,7 @@ try {
                             <div class="col-md-6">
                                 <p class="mb-2"><strong>Proveedor:</strong> ${h.provider_name}</p>
                                 <p class="mb-2"><strong>Documento:</strong> ${h.document_type} ${h.document_number || 'N/A'}</p>
+                                <p class="mb-2"><strong>Tipo de Pago:</strong> ${h.tipo_pago || 'Credito 30'}</p>
                                 <p class="mb-0"><strong>Fecha:</strong> ${h.purchase_date}</p>
                             </div>
                             <div class="col-md-6 text-end">
@@ -1975,6 +2093,175 @@ try {
                     toast.show();
                 }
             }
+
+            // ==========================================================================
+            // FUNCIONES DE GASTOS
+            // ==========================================================================
+
+            window.loadGastos = function () {
+                const monthEl = document.getElementById('gastosMonth');
+                const month = monthEl ? monthEl.value : '<?php echo date('Y-m'); ?>';
+                const start = month + '-01';
+                const parts = month.split('-');
+                const lastDay = new Date(parseInt(parts[0]), parseInt(parts[1]), 0).getDate();
+                const end = month + '-' + String(lastDay).padStart(2, '0');
+
+                const tbody = document.querySelector('#gastosTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando gastos...</td></tr>';
+
+                fetch('get_gastos.php?fecha_inicio=' + encodeURIComponent(start) + '&fecha_fin=' + encodeURIComponent(end))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success) {
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
+                            return;
+                        }
+                        renderGastosTable(data.rows || []);
+                    })
+                    .catch(function(err) {
+                        console.error('Error loading gastos:', err);
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error de conexión</td></tr>';
+                    });
+            };
+
+            function renderGastosTable(rows) {
+                const tbody = document.querySelector('#gastosTable tbody');
+                const footer = document.getElementById('gastosTotalFooter');
+                if (!tbody) return;
+
+                if (rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay gastos registrados en este mes</td></tr>';
+                    if (footer) footer.textContent = 'Q0.00';
+                    return;
+                }
+
+                let html = '';
+                let totalGeneral = 0;
+                rows.forEach(function(g) {
+                    totalGeneral += g.total;
+                    html += '<tr>' +
+                        '<td>' + g.fecha + '</td>' +
+                        '<td>' + escapeHtml(g.descripcion) + '</td>' +
+                        '<td class="text-center">' + g.cantidad + '</td>' +
+                        '<td class="text-end">Q' + Number(g.subtotal).toFixed(2) + '</td>' +
+                        '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
+                        '<td>' + escapeHtml(g.registrado_por || '—') + '</td>' +
+                        '<td class="text-center">' +
+                        '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="deleteGasto(' + g.id + ')" title="Eliminar gasto">' +
+                        '<i class="bi bi-trash"></i></button></td>' +
+                        '</tr>';
+                });
+                tbody.innerHTML = html;
+                if (footer) footer.textContent = 'Q' + totalGeneral.toFixed(2);
+            }
+
+            window.showNewGastoModal = function () {
+                document.getElementById('gasto_descripcion').value = '';
+                document.getElementById('gasto_fecha').value = '<?php echo date('Y-m-d'); ?>';
+                document.getElementById('gasto_cantidad').value = '1';
+                document.getElementById('gasto_subtotal').value = '';
+                document.getElementById('gasto_total').value = '0.00';
+                document.getElementById('newGastoModal').classList.add('active');
+                document.getElementById('gasto_descripcion').focus();
+            };
+
+            window.calcularGastoTotal = function () {
+                const cant = parseFloat(document.getElementById('gasto_cantidad').value) || 0;
+                const sub = parseFloat(document.getElementById('gasto_subtotal').value) || 0;
+                document.getElementById('gasto_total').value = (cant * sub).toFixed(2);
+            };
+
+            window.saveGasto = function () {
+                const descripcion = document.getElementById('gasto_descripcion').value.trim();
+                const fecha = document.getElementById('gasto_fecha').value;
+                const cantidad = parseInt(document.getElementById('gasto_cantidad').value) || 1;
+                const subtotal = parseFloat(document.getElementById('gasto_subtotal').value) || 0;
+                const total = parseFloat(document.getElementById('gasto_total').value) || (cantidad * subtotal);
+
+                if (!descripcion) {
+                    Swal.fire({ title: 'Descripción requerida', text: 'Por favor ingrese una descripción del gasto', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return;
+                }
+                if (subtotal <= 0) {
+                    Swal.fire({ title: 'Subtotal inválido', text: 'El subtotal debe ser mayor a 0', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return;
+                }
+
+                const btn = document.getElementById('saveGastoBtn');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Guardando...'; }
+
+                const payload = { descripcion: descripcion, cantidad: cantidad, subtotal: subtotal, total: total, fecha: fecha };
+
+                fetch('save_gasto.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        document.getElementById('newGastoModal').classList.remove('active');
+                        Swal.fire({ title: 'Gasto Registrado', text: 'El gasto se ha registrado correctamente', icon: 'success', timer: 1500, showConfirmButton: false });
+                        loadGastos();
+                    } else {
+                        Swal.fire({ title: 'Error', text: data.message || 'Error al guardar el gasto', icon: 'error', confirmButtonText: 'Entendido' });
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Error:', err);
+                    Swal.fire({ title: 'Error de conexión', text: 'Ocurrió un error al procesar la solicitud', icon: 'error', confirmButtonText: 'Entendido' });
+                })
+                .finally(function() {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Guardar Gasto'; }
+                });
+            };
+
+            window.deleteGasto = function (id) {
+                Swal.fire({
+                    title: '¿Eliminar gasto?',
+                    text: 'Esta acción no se puede deshacer',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then(function(result) {
+                    if (!result.isConfirmed) return;
+                    fetch('delete_gasto.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: id })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            Swal.fire({ title: 'Eliminado', text: 'El gasto ha sido eliminado', icon: 'success', timer: 1200, showConfirmButton: false });
+                            loadGastos();
+                        } else {
+                            Swal.fire({ title: 'Error', text: data.message || 'Error al eliminar', icon: 'error', confirmButtonText: 'Entendido' });
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Error:', err);
+                        Swal.fire({ title: 'Error de conexión', icon: 'error', confirmButtonText: 'Entendido' });
+                    });
+                });
+            };
+
+            // Auto-load gastos when tab is activated
+            document.addEventListener('DOMContentLoaded', function() {
+                // Intercept tab clicks to load gastos when that tab is shown
+                document.querySelectorAll('.tab-btn[data-tab="gastos"]').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        setTimeout(loadGastos, 100);
+                    });
+                });
+                // Also check if gastos tab is active on page load
+                if (document.querySelector('.tab-btn[data-tab="gastos"].active')) {
+                    loadGastos();
+                }
+            });
 
             // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN

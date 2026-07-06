@@ -36,20 +36,38 @@ try {
     $items = $data['items'];
     $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
+    $tipo_pago = $header['tipo_pago'] ?? 'Credito 30';
+    $is_contado = ($tipo_pago === 'Contado');
+
     $conn->beginTransaction();
 
     // 1. Insert Header
-    $stmt = $conn->prepare("INSERT INTO purchase_headers (document_type, document_number, provider_name, purchase_date, total_amount, status, created_by, id_hospital) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO purchase_headers (document_type, document_number, tipo_pago, provider_name, purchase_date, total_amount, status, paid_amount, payment_status, created_by, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $header['document_type'],
         $header['document_number'],
+        $tipo_pago,
         $header['provider_name'],
         $header['purchase_date'],
         $header['total_amount'],
+        $is_contado ? 'Completado' : 'Pendiente',
+        $is_contado ? $header['total_amount'] : 0,
+        $is_contado ? 'Pagado' : 'Pendiente',
         $_SESSION['user_id'],
         $id_hospital
     ]);
     $headerId = $conn->lastInsertId();
+
+    // 1b. If Contado, auto-create payment record
+    if ($is_contado) {
+        $stmtPay = $conn->prepare("INSERT INTO purchase_payments (purchase_header_id, amount, payment_date, payment_method, notes, id_hospital) VALUES (?, ?, CURDATE(), 'Contado', ?, ?)");
+        $stmtPay->execute([
+            $headerId,
+            $header['total_amount'],
+            'Pago automático - Al Contado',
+            $id_hospital
+        ]);
+    }
 
     // 2. Insert Items and Inventory
     $stmtItem = $conn->prepare("INSERT INTO purchase_items (purchase_header_id, product_name, presentation, molecule, pharmaceutical_house, quantity, unit_cost, sale_price, subtotal, status, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente', ?)");

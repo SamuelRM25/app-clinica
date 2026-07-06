@@ -1086,6 +1086,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                             <th class="text-center">Tarjeta</th>
                                             <th class="text-center">Transf.</th>
                                             <th class="text-end">Total</th>
+                                            <th class="text-end">Costo</th>
+                                            <th class="text-end">Ganancia</th>
                                         </tr>
                                     </thead>
                                     <tbody id="shiftTableBody">
@@ -1097,8 +1099,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                             <td class="text-center"><span id="cut-total-cash">0.00</span></td>
                                             <td class="text-center"><span id="cut-total-card">0.00</span></td>
                                             <td class="text-center"><span id="cut-total-transfer">0.00</span></td>
-                                            <td class="text-end fw-bold fs-5">Q<span id="cut-grand-total">0.00</span>
-                                            </td>
+                                            <td class="text-end fw-bold fs-5">Q<span id="cut-grand-total">0.00</span></td>
+                                            <td class="text-end fw-bold fs-5">Q<span id="cut-grand-cost">0.00</span></td>
+                                            <td class="text-end fw-bold fs-5">Q<span id="cut-grand-profit">0.00</span></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -1271,26 +1274,42 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                     <tr>
                                         <th>Hora</th>
                                         <th>Cliente</th>
-                                        <th>Detalle Medicamentos</th>
+                                        <th>Medicamento</th>
+                                        <th class="text-center">Cant.</th>
+                                        <th class="text-end">P. Unit.</th>
                                         <th>Pago</th>
-                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>`;
 
                     pharmacyData.details.forEach(item => {
+                        const cant = parseFloat(item.cantidad) || 0;
+                        const pu = parseFloat(item.precio_unitario) || 0;
                         html += `
                             <tr>
-                                <td>${escHtml(item.hora)}</td>
+                                <td><code>${escHtml(item.hora)}</code></td>
                                 <td class="fw-medium">${escHtml(item.cliente || 'Consumidor Final')}</td>
-                                <td><small class="text-muted">${escHtml(item.detalle || 'Varios')}</small></td>
+                                <td>
+                                    <div class="fw-medium">${escHtml(item.nom_medicamento || '—')}</div>
+                                    <small class="text-muted">${escHtml(item.presentacion_med || item.mol_medicamento || '')}</small>
+                                </td>
+                                <td class="text-center">${cant}</td>
+                                <td class="text-end">Q${pu.toFixed(2)}</td>
                                 <td><span class="badge bg-light text-dark border">${escHtml(item.tipo_pago)}</span></td>
                                 <td class="text-end fw-bold">Q${parseFloat(item.monto).toFixed(2)}</td>
                             </tr>
                         `;
                     });
 
-                    html += `</tbody></table></div>`;
+                    // Footer con totales
+                    const total = parseFloat(pharmacyData.total) || 0;
+                    html += `</tbody><tfoot>
+                        <tr class="table-dark">
+                            <th colspan="6" class="text-end">TOTAL FARMACIA (${pharmacyData.details.length} items):</th>
+                            <th class="text-end">Q${total.toFixed(2)}</th>
+                        </tr>
+                    </tfoot></table></div>`;
                     modalBody.innerHTML = html;
                 } else {
                     modalBody.innerHTML = '<div class="alert alert-info">No hay ventas de farmacia registradas en este turno.</div>';
@@ -1691,6 +1710,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 }
 
                                 const row = document.createElement('tr');
+                                const catCost = parseFloat(cat.data.cost || 0);
+                                const catProfit = total - catCost;
                                 row.innerHTML = `
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -1708,6 +1729,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                         <td class="text-end">Q${(cat.data.breakdown?.Tarjeta || 0).toFixed(2)}</td>
                                         <td class="text-end">Q${(cat.data.breakdown?.Transferencia || 0).toFixed(2)}</td>
                                         <td class="text-end fw-bold bg-light">Q${total.toFixed(2)}</td>
+                                        <td class="text-end bg-light">${catCost > 0 ? 'Q' + catCost.toFixed(2) : '<span class="text-muted small">N/D</span>'}</td>
+                                        <td class="text-end fw-bold bg-light">${catCost > 0 ? 'Q' + catProfit.toFixed(2) : '<span class="text-muted small">N/D</span>'}</td>
                                     `;
                                 tableBody.appendChild(row);
                             });
@@ -1737,6 +1760,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             safeSetText('cut-total-cash', totalCash.toFixed(2));
                             safeSetText('cut-total-card', totalCard.toFixed(2));
                             safeSetText('cut-total-transfer', totalTransfer.toFixed(2));
+                            // Cost / profit (from tarifas_servicios JOIN, served by get_shift_cut_data.php)
+                            const grandCost = parseFloat(d.grand_cost) || 0;
+                            const grandProfit = parseFloat(d.grand_profit) || (grandTotal - grandCost);
+                            safeSetText('cut-grand-cost', grandCost.toFixed(2));
+                            safeSetText('cut-grand-profit', grandProfit.toFixed(2));
                             // Period label badge
                             if (d.period) {
                                 const periodLabel = `${d.period.shift === 'morning' ? 'Mañana' : 'Noche'}: ${d.period.start} → ${d.period.end}`;

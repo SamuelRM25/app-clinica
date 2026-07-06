@@ -850,13 +850,17 @@ $page_title = "Configuración del Sistema";
                                                     <th>Especialidad</th>
                                                     <th>Consulta Normal (Q)</th>
                                                     <th>Consulta Inhábil (Q)</th>
+                                                    <th>Costo Consulta Normal (Q)</th>
+                                                    <th>Costo Consulta Inhábil (Q)</th>
                                                     <th>Reconsulta Normal (Q)</th>
                                                     <th>Reconsulta Inhábil (Q)</th>
+                                                    <th>Costo Reconsulta Normal (Q)</th>
+                                                    <th>Costo Reconsulta Inhábil (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-consulta-body">
-                                                <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="11" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -877,11 +881,13 @@ $page_title = "Configuración del Sistema";
                                                 <tr>
                                                     <th>Precio Normal (Q)</th>
                                                     <th>Precio Inhábil (Q)</th>
+                                                    <th>Costo Normal (Q)</th>
+                                                    <th>Costo Inhábil (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-electro-body">
-                                                <tr><td colspan="3" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -906,11 +912,13 @@ $page_title = "Configuración del Sistema";
                                                     <th>Procedimiento</th>
                                                     <th>Precio Normal (Q)</th>
                                                     <th>Precio Inhábil (Q)</th>
+                                                    <th>Costo Normal (Q)</th>
+                                                    <th>Costo Inhábil (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-procedimiento-body">
-                                                <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -935,11 +943,13 @@ $page_title = "Configuración del Sistema";
                                                     <th>Región</th>
                                                     <th>Precio Normal (Q)</th>
                                                     <th>Precio Inhábil (Q)</th>
+                                                    <th>Costo Normal (Q)</th>
+                                                    <th>Costo Inhábil (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-rayos_x-body">
-                                                <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -965,12 +975,14 @@ $page_title = "Configuración del Sistema";
                                                     <th>Normal (Q)</th>
                                                     <th>Inhábil (Q)</th>
                                                     <th>Radio Normal (Q)</th>
-                                                    <th>Radio Inhábil (Q)</th>
+                                                    <th>Costo Normal (Q)</th>
+                                                    <th>Costo Inhábil (Q)</th>
+                                                    <th>Costo Radio (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-ultrasonido-body">
-                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="8" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1181,9 +1193,25 @@ $page_title = "Configuración del Sistema";
                                 <label class="form-label small fw-bold">Precio Inhábil (Q)</label>
                                 <input type="number" step="0.01" name="precio_inhabil" id="tarifaInhabil" class="form-control" required placeholder="0.00">
                             </div>
+                        </div>
+                        <hr class="my-3">
+                        <p class="text-muted small mb-2"><i class="bi bi-info-circle"></i> Costos (opcional, para reportes de ganancia)</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Costo Normal (Q)</label>
+                                <input type="number" step="0.01" name="costo_normal" id="tarifaCostoNormal" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Costo Inhábil (Q)</label>
+                                <input type="number" step="0.01" name="costo_inhabil" id="tarifaCostoInhabil" class="form-control" placeholder="0.00">
+                            </div>
                             <div class="col-12" id="tarifa-radio-field" class="d-none">
                                 <label class="form-label small fw-bold">Precio Radio Normal (Q)</label>
                                 <input type="number" step="0.01" name="precio_radio" id="tarifaRadio" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="col-12" id="tarifa-costo-radio-field" class="d-none">
+                                <label class="form-label small fw-bold">Costo Radio Normal (Q)</label>
+                                <input type="number" step="0.01" name="costo_radio" id="tarifaCostoRadio" class="form-control" placeholder="0.00">
                             </div>
                         </div>
                     </form>
@@ -1453,7 +1481,7 @@ $page_title = "Configuración del Sistema";
         function renderConsultaReconsulta(consultas, reconsultas) {
             const body = document.getElementById('tarifa-consulta-body');
             if (consultas.length === 0 && reconsultas.length === 0) {
-                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><em>No hay tarifas de consulta configuradas. Haga clic en "Agregar Tarifa" para crear una.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4"><em>No hay tarifas de consulta configuradas. Haga clic en "Agregar Tarifa" para crear una.</em></td></tr>';
                 return;
             }
             const map = {};
@@ -1466,8 +1494,12 @@ $page_title = "Configuración del Sistema";
                 const r = map[medId].reconsulta;
                 const consultaNormal = c ? c.precio_normal : '';
                 const consultaInhabil = c ? c.precio_inhabil : '';
+                const cCostoNormal = (c && c.costo_normal != null) ? c.costo_normal : '';
+                const cCostoInhabil = (c && c.costo_inhabil != null) ? c.costo_inhabil : '';
                 const reconsNormal = r ? r.precio_normal : '';
                 const reconsInhabil = r ? r.precio_inhabil : '';
+                const rCostoNormal = (r && r.costo_normal != null) ? r.costo_normal : '';
+                const rCostoInhabil = (r && r.costo_inhabil != null) ? r.costo_inhabil : '';
                 const idTarifa = c ? c.id_tarifa : (r ? r.id_tarifa : '');
 
                 html += `<tr>
@@ -1484,6 +1516,16 @@ $page_title = "Configuración del Sistema";
                             placeholder="0.00">
                     </td>
                     <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoNormal}"
+                            data-medico="${medId}" data-tipo="consulta" data-field="costo_normal"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoInhabil}"
+                            data-medico="${medId}" data-tipo="consulta" data-field="costo_inhabil"
+                            placeholder="0.00">
+                    </td>
+                    <td>
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsNormal}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_normal"
                             placeholder="0.00">
@@ -1491,6 +1533,16 @@ $page_title = "Configuración del Sistema";
                     <td>
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsInhabil}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_inhabil"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoNormal}"
+                            data-medico="${medId}" data-tipo="reconsulta" data-field="costo_normal"
+                            placeholder="0.00">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoInhabil}"
+                            data-medico="${medId}" data-tipo="reconsulta" data-field="costo_inhabil"
                             placeholder="0.00">
                     </td>
                     <td class="text-center">
@@ -1505,10 +1557,14 @@ $page_title = "Configuración del Sistema";
 
         function renderElectro(electro) {
             const body = document.getElementById('tarifa-electro-body');
+            const costNormal  = electro && electro.costo_normal  !== null && electro.costo_normal  !== undefined ? electro.costo_normal  : '';
+            const costInhabil = electro && electro.costo_inhabil !== null && electro.costo_inhabil !== undefined ? electro.costo_inhabil : '';
             if (!electro || !electro.id_tarifa) {
                 body.innerHTML = `<tr>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
                     </td>
@@ -1517,6 +1573,8 @@ $page_title = "Configuración del Sistema";
                 body.innerHTML = `<tr>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="${costNormal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="${costInhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${electro.id_tarifa}, 'electrocardiograma')"><i class="bi bi-trash"></i></button>
@@ -1528,17 +1586,23 @@ $page_title = "Configuración del Sistema";
         function renderProcedimientos(procedimientos) {
             const body = document.getElementById('tarifa-procedimiento-body');
             if (procedimientos.length === 0) {
-                body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><em>No hay procedimientos configurados. Haga clic en "Agregar Procedimiento" para crear uno.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay procedimientos configurados. Haga clic en "Agregar Procedimiento" para crear uno.</em></td></tr>';
                 return;
             }
             let html = '';
             procedimientos.forEach(p => {
+                const cN = (p.costo_normal  != null) ? p.costo_normal  : '';
+                const cI = (p.costo_inhabil != null) ? p.costo_inhabil : '';
                 html += `<tr>
                     <td>${p.nombre_servicio || '-'}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_normal}"
                         data-tipo="procedimiento" data-field="precio_normal" data-id="${p.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_inhabil}"
                         data-tipo="procedimiento" data-field="precio_inhabil" data-id="${p.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
+                        data-tipo="procedimiento" data-field="costo_normal" data-id="${p.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
+                        data-tipo="procedimiento" data-field="costo_inhabil" data-id="${p.id_tarifa}" placeholder="0.00"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${p.id_tarifa}, 'procedimiento')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -1550,17 +1614,23 @@ $page_title = "Configuración del Sistema";
         function renderRayosX(rayos_x) {
             const body = document.getElementById('tarifa-rayos_x-body');
             if (rayos_x.length === 0) {
-                body.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
                 return;
             }
             let html = '';
             rayos_x.forEach(r => {
+                const cN = (r.costo_normal  != null) ? r.costo_normal  : '';
+                const cI = (r.costo_inhabil != null) ? r.costo_inhabil : '';
                 html += `<tr>
                     <td>${r.region_count} región${r.region_count > 1 ? 'es' : ''}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
                         data-tipo="rayos_x" data-field="precio_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
                         data-tipo="rayos_x" data-field="precio_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
+                        data-tipo="rayos_x" data-field="costo_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
+                        data-tipo="rayos_x" data-field="costo_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${r.id_tarifa}, 'rayos_x')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -1572,11 +1642,14 @@ $page_title = "Configuración del Sistema";
         function renderUltrasonido(ultrasonidos) {
             const body = document.getElementById('tarifa-ultrasonido-body');
             if (ultrasonidos.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay tipos de ultrasonido configurados. Haga clic en "Agregar Tipo" para crear uno.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><em>No hay tipos de ultrasonido configurados. Haga clic en "Agregar Tipo" para crear uno.</em></td></tr>';
                 return;
             }
             let html = '';
             ultrasonidos.forEach(u => {
+                const cN = (u.costo_normal  != null) ? u.costo_normal  : '';
+                const cI = (u.costo_inhabil != null) ? u.costo_inhabil : '';
+                const cR = (u.costo_radio   != null) ? u.costo_radio   : '';
                 html += `<tr>
                     <td>${u.nombre_servicio || '-'}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_normal}"
@@ -1585,7 +1658,12 @@ $page_title = "Configuración del Sistema";
                         data-tipo="ultrasonido" data-field="precio_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_radio || 0}"
                         data-tipo="ultrasonido" data-field="precio_radio" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td>${u.precio_inhabil || '0.00'}</td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
+                        data-tipo="ultrasonido" data-field="costo_normal" data-id="${u.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
+                        data-tipo="ultrasonido" data-field="costo_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cR}"
+                        data-tipo="ultrasonido" data-field="costo_radio" data-id="${u.id_tarifa}" placeholder="0.00"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${u.id_tarifa}, 'ultrasonido')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -1635,6 +1713,12 @@ $page_title = "Configuración del Sistema";
                 csrf_token: csrfToken
             };
 
+            // Cost fields (optional — only sent if user typed a value)
+            const costoNormal  = parseFloat(document.getElementById('tarifaCostoNormal').value);
+            const costoInhabil = parseFloat(document.getElementById('tarifaCostoInhabil').value);
+            if (!isNaN(costoNormal)  && document.getElementById('tarifaCostoNormal').value  !== '') payload.costo_normal  = costoNormal;
+            if (!isNaN(costoInhabil) && document.getElementById('tarifaCostoInhabil').value !== '') payload.costo_inhabil = costoInhabil;
+
             if (id_tarifa) {
                 payload.id_tarifa = parseInt(id_tarifa);
             }
@@ -1645,6 +1729,8 @@ $page_title = "Configuración del Sistema";
                 payload.nombre_servicio = document.getElementById('tarifaNombre').value;
                 if (tipo === 'ultrasonido') {
                     payload.precio_radio = parseFloat(document.getElementById('tarifaRadio').value) || 0;
+                    const costoRadio = parseFloat(document.getElementById('tarifaCostoRadio').value);
+                    if (!isNaN(costoRadio) && document.getElementById('tarifaCostoRadio').value !== '') payload.costo_radio = costoRadio;
                 }
             } else if (tipo === 'rayos_x') {
                 payload.region_count = parseInt(document.getElementById('tarifaRegion').value) || 1;
@@ -1682,7 +1768,10 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                const value = parseFloat(input.value) || 0;
+                // Cost fields can be empty (NULL); precio_* are required by the form so default 0
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_radio');
+                const rawValue = input.value;
+                const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const medico = parseInt(input.dataset.medico) || null;
                 const id = parseInt(input.dataset.id) || null;
 
@@ -1695,7 +1784,10 @@ $page_title = "Configuración del Sistema";
                         tipo_servicio: tipo,
                         precio_normal: 0,
                         precio_inhabil: 0,
-                        precio_radio: 0
+                        precio_radio: 0,
+                        costo_normal: null,
+                        costo_inhabil: null,
+                        costo_radio: null
                     };
                     if (medico) item.id_medico = medico;
                     items.push(item);
@@ -1706,12 +1798,14 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                const value = parseFloat(input.value) || 0;
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_radio');
+                const rawValue = input.value;
+                const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const id = parseInt(input.dataset.id) || null;
                 if (!tipo || !field || !id) return;
                 let item = items.find(i => i.id_tarifa === id);
                 if (!item) {
-                    item = { id_tarifa: id, tipo_servicio: tipo, precio_normal: 0, precio_inhabil: 0, precio_radio: 0 };
+                    item = { id_tarifa: id, tipo_servicio: tipo, precio_normal: 0, precio_inhabil: 0, precio_radio: 0, costo_normal: null, costo_inhabil: null, costo_radio: null };
                     items.push(item);
                 }
                 item[field] = value;
@@ -1781,17 +1875,25 @@ $page_title = "Configuración del Sistema";
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const existingId = document.querySelector('#tarifa-electro-body tr')?.querySelector('.btn-outline-danger')?.onclick?.toString()?.match(/\d+/)?.[0];
 
+            // Cost fields (optional)
+            const cN_raw = document.getElementById('electro-costo-normal').value;
+            const cI_raw = document.getElementById('electro-costo-inhabil').value;
+            const payload = {
+                action: existingId ? 'update' : 'create',
+                tipo_servicio: 'electrocardiograma',
+                precio_normal: normal,
+                precio_inhabil: inutil,
+                csrf_token: csrfToken
+            };
+            if (existingId) payload.id_tarifa = parseInt(existingId);
+            if (cN_raw !== '') payload.costo_normal = parseFloat(cN_raw);
+            if (cI_raw !== '') payload.costo_inhabil = parseFloat(cI_raw);
+
             try {
                 const response = await fetch('api/save_tarifas.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({
-                        action: 'create',
-                        tipo_servicio: 'electrocardiograma',
-                        precio_normal: normal,
-                        precio_inhabil: inutil,
-                        csrf_token: csrfToken
-                    })
+                    body: JSON.stringify(payload)
                 });
                 const res = await response.json();
                 if (res.success) {

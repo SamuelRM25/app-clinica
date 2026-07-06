@@ -34,13 +34,20 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
     $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
-    // Obtener fechas para filtros (predeterminado: mes actual)
-    // Obtener fecha para filtro (predeterminado: hoy) - Filtro por Día (Turno)
-    $fecha_filtro = $_GET['fecha_filtro'] ?? date('Y-m-d');
+    // Tipo de filtro: 'jornada' (por día, 24h) o 'mes' (mes completo)
+    $filtro_tipo = $_GET['filtro_tipo'] ?? 'jornada';
+    $mes_filtro = $_GET['mes_filtro'] ?? date('Y-m');
 
-    // Ajustar para rangos de jornada (08:00 AM del día seleccionado a 08:00 AM del día siguiente)
-    $start_datetime = $fecha_filtro . ' 08:00:00';
-    $end_datetime = date('Y-m-d', strtotime($fecha_filtro . ' +1 day')) . ' 07:59:59';
+    if ($filtro_tipo === 'mes') {
+        $start_datetime = $mes_filtro . '-01 00:00:00';
+        $end_datetime   = date('Y-m-t 23:59:59', strtotime($mes_filtro . '-01'));
+        $fecha_filtro   = $mes_filtro . '-01';
+    } else {
+        $fecha_filtro = $_GET['fecha_filtro'] ?? date('Y-m-d');
+        // Ajustar para rangos de jornada (08:00 AM del día seleccionado a 07:59 AM del día siguiente)
+        $start_datetime = $fecha_filtro . ' 08:00:00';
+        $end_datetime   = date('Y-m-d', strtotime($fecha_filtro . ' +1 day')) . ' 07:59:59';
+    }
 
     // Variables para compatibilidad con lógica existente que use fecha_inicio/fin
     $fecha_inicio = $start_datetime;
@@ -86,9 +93,14 @@ try {
     $stmt_purchases->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_purchases_meds = $stmt_purchases->fetch(PDO::FETCH_ASSOC)['total_purchases'] ?? 0;
 
-    // 3. Cálculo de Ganancia Real
+    // 2b. Gastos generales del hospital
+    $stmt_gastos = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total_gastos FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_gastos->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_gastos = (float)($stmt_gastos->fetch(PDO::FETCH_ASSOC)['total_gastos'] ?? 0);
+
+    // 3. Cálculo de Ganancia Real — farmacia (detalle_ventas → inventario → purchase_items)
     $stmt_actual_profit = $conn->prepare("
-        SELECT 
+        SELECT
             SUM(dv.cantidad_vendida * dv.precio_unitario) as revenue,
             SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)) as cost
         FROM detalle_ventas dv
@@ -105,6 +117,133 @@ try {
     $sales_revenue = $profit_data['revenue'] ?? 0;
     $sales_cost = $profit_data['cost'] ?? 0;
     $actual_sales_margin = $sales_revenue - $sales_cost;
+
+    // 3b. Cálculo de Ganancia por categoría tarifada (cobros, ultrasonidos, rayos_x, electrocardiogramas, procedimientos)
+    // usando LEFT JOIN a tarifas_servicios con NULL-safe equality y regla hábil/inhábil.
+    $category_profit = [];
+
+    // Helper: build the same JOIN expression used for all 5 categories
+    $tarifa_join_template = function ($alias, $date_col, $region_join = null) {
+        $region_sql = $region_join ? "AND t.region_count = {$alias}.{$region_join}" : '';
+        return "LEFT JOIN tarifas_servicios t
+                  ON t.id_hospital = {$alias}.id_hospital
+                 AND t.tipo_servicio = %s
+                 {$region_sql}
+                 AND t.id_medico <=> {$alias}.id_doctor";
+    };
+
+    $profit_queries = [
+        // 1. cobros (consultas/reconsultas) — tipo_servicio from c.tipo_consulta
+        'consultations' => [
+            'sql' => "SELECT
+                        SUM(c.cantidad_consulta) AS revenue,
+                        SUM(COALESCE(
+                            CASE WHEN WEEKDAY(c.fecha_consulta) >= 5 OR TIME(c.fecha_consulta) >= '18:00:00'
+                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                            0
+                        )) AS cost
+                       FROM cobros c
+                       LEFT JOIN tarifas_servicios t
+                         ON t.id_hospital = c.id_hospital
+                        AND t.tipo_servicio = LOWER(c.tipo_consulta)
+                        AND t.id_medico <=> c.id_doctor
+                       WHERE c.fecha_consulta BETWEEN ? AND ?
+                         AND c.id_hospital = ?",
+            'params' => [$start_datetime, $end_datetime, $id_hospital],
+        ],
+        // 2. ultrasonidos — by tipo_ultrasonido (NULL-safe)
+        'ultrasonidos' => [
+            'sql' => "SELECT
+                        SUM(us.cobro) AS revenue,
+                        SUM(COALESCE(
+                            CASE WHEN WEEKDAY(us.fecha_ultrasonido) >= 5 OR TIME(us.fecha_ultrasonido) >= '18:00:00'
+                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                            0
+                        )) AS cost
+                       FROM ultrasonidos us
+                       LEFT JOIN tarifas_servicios t
+                         ON t.id_hospital = us.id_hospital
+                        AND t.tipo_servicio = 'ultrasonido'
+                        AND t.nombre_servicio <=> us.tipo_ultrasonido
+                       WHERE us.fecha_ultrasonido BETWEEN ? AND ?
+                         AND us.id_hospital = ?",
+            'params' => [$start_datetime, $end_datetime, $id_hospital],
+        ],
+        // 3. rayos_x — by tipo_estudio (NULL-safe, no region_count column in rayos_x)
+        'rayos_x' => [
+            'sql' => "SELECT
+                        SUM(rx.cobro) AS revenue,
+                        SUM(COALESCE(
+                            CASE WHEN WEEKDAY(rx.fecha_estudio) >= 5 OR TIME(rx.fecha_estudio) >= '18:00:00'
+                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                            0
+                        )) AS cost
+                       FROM rayos_x rx
+                       LEFT JOIN tarifas_servicios t
+                         ON t.id_hospital = rx.id_hospital
+                        AND t.tipo_servicio = 'rayos_x'
+                        AND t.nombre_servicio <=> rx.tipo_estudio
+                       WHERE rx.fecha_estudio BETWEEN ? AND ?
+                         AND rx.id_hospital = ?",
+            'params' => [$start_datetime, $end_datetime, $id_hospital],
+        ],
+        // 4. electrocardiogramas
+        'electrocardiogramas' => [
+            'sql' => "SELECT
+                        SUM(ec.precio) AS revenue,
+                        SUM(COALESCE(
+                            CASE WHEN WEEKDAY(ec.fecha_realizado) >= 5 OR TIME(ec.fecha_realizado) >= '18:00:00'
+                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                            0
+                        )) AS cost
+                       FROM electrocardiogramas ec
+                       LEFT JOIN tarifas_servicios t
+                         ON t.id_hospital = ec.id_hospital
+                        AND t.tipo_servicio = 'electrocardiograma'
+                       WHERE ec.fecha_realizado BETWEEN ? AND ?
+                         AND ec.id_hospital = ?",
+            'params' => [$start_datetime, $end_datetime, $id_hospital],
+        ],
+        // 5. procedimientos_menores — by nombre_servicio
+        'procedimientos' => [
+            'sql' => "SELECT
+                        SUM(pm.cobro) AS revenue,
+                        SUM(COALESCE(
+                            CASE WHEN WEEKDAY(pm.fecha_procedimiento) >= 5 OR TIME(pm.fecha_procedimiento) >= '18:00:00'
+                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                            0
+                        )) AS cost
+                       FROM procedimientos_menores pm
+                       LEFT JOIN tarifas_servicios t
+                         ON t.id_hospital = pm.id_hospital
+                        AND t.tipo_servicio = 'procedimiento'
+                        AND t.nombre_servicio = pm.procedimiento
+                       WHERE pm.fecha_procedimiento BETWEEN ? AND ?
+                         AND pm.id_hospital = ?",
+            'params' => [$start_datetime, $end_datetime, $id_hospital],
+        ],
+    ];
+
+    foreach ($profit_queries as $key => $q) {
+        $stmt = $conn->prepare($q['sql']);
+        $stmt->execute($q['params']);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $category_profit[$key] = [
+            'revenue' => (float)($row['revenue'] ?? 0),
+            'cost'    => (float)($row['cost'] ?? 0),
+            'profit'  => (float)($row['revenue'] ?? 0) - (float)($row['cost'] ?? 0),
+        ];
+    }
+
+    // Grand totals (farmacia + 5 categorías tarifadas)
+    $tarifas_revenue = array_sum(array_column($category_profit, 'revenue'));
+    $tarifas_cost    = array_sum(array_column($category_profit, 'cost'));
+    $tarifas_profit  = array_sum(array_column($category_profit, 'profit'));
+
+    $grand_revenue = $sales_revenue + $tarifas_revenue;
+    $grand_cost    = $sales_cost + $tarifas_cost;
+    $grand_profit  = $grand_revenue - $grand_cost;
+    $grand_margin_pct = $grand_revenue > 0 ? ($grand_profit / $grand_revenue) * 100 : 0;
 
     // 4. Procedimientos menores
     $stmt_proc = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE fecha_procedimiento BETWEEN ? AND ? AND id_hospital = ?");
@@ -171,25 +310,32 @@ try {
         + $total_xray + $total_electro + $total_billings + $total_hospitalization;
 
     $ingresos_categorias = [
-        ['label' => 'Ventas Farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $total_sales_meds],
-        ['label' => 'Consultas Médicas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings],
-        ['label' => 'Laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory],
-        ['label' => 'Ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound],
-        ['label' => 'Rayos X', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray],
-        ['label' => 'Electrocardiograma', 'icon' => 'bi-heart-pulse', 'badge' => 'charge-electro', 'monto' => $total_electro],
-        ['label' => 'Procedimientos', 'icon' => 'bi-bandaid', 'badge' => 'charge-procedimiento', 'monto' => (float) $total_procedures],
-        ['label' => 'Hospitalización', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization],
+        ['label' => 'Ventas Farmacia', 'categoria' => 'farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $total_sales_meds],
+        ['label' => 'Consultas Médicas', 'categoria' => 'consultas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings],
+        ['label' => 'Laboratorio', 'categoria' => 'laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory],
+        ['label' => 'Ultrasonido', 'categoria' => 'ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound],
+        ['label' => 'Rayos X', 'categoria' => 'rayos_x', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray],
+        ['label' => 'Electrocardiograma', 'categoria' => 'electro', 'icon' => 'bi-heart-pulse', 'badge' => 'charge-electro', 'monto' => $total_electro],
+        ['label' => 'Procedimientos', 'categoria' => 'procedimientos', 'icon' => 'bi-bandaid', 'badge' => 'charge-procedimiento', 'monto' => (float) $total_procedures],
+        ['label' => 'Hospitalización', 'categoria' => 'hospitalizacion', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization],
     ];
+
+    $total_egresos = (float)$total_purchases_meds + $total_gastos;
 
     $egresos_categorias = [
-        ['label' => 'Adquisición Inventario', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
+        ['label' => 'Compras (Medicamentos)', 'categoria' => 'compras', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
+        ['label' => 'Gastos Generales', 'categoria' => 'gastos_varios', 'icon' => 'bi-wallet2', 'monto' => $total_gastos],
     ];
 
-    // 8. Utilidad Bruta
-    $total_gross_profit = $total_gross_revenue - $sales_cost;
+    // 8. Utilidad Bruta — incluye TODAS las fuentes de profit (farmacia + 5 categorías tarifadas)
+    // The original $total_gross_revenue variable only tracks `ventas.total`, so we recompute
+    // the true total revenue across all 6 sources (farmacia + 5 tarifadas) and subtract costs.
+    $all_sources_revenue = $sales_revenue + $tarifas_revenue;
+    $all_sources_cost    = $sales_cost    + $tarifas_cost;
+    $total_gross_profit  = $all_sources_revenue - $all_sources_cost;
 
     // 9. Desempeño neto
-    $net_cash_flow = $total_gross_revenue - $total_purchases_meds;
+    $net_cash_flow = $total_gross_revenue - $total_egresos;
 
     // ============ MÉTRICAS 'BIG DATA' PARA GRÁFICOS ============
 
@@ -1142,6 +1288,7 @@ try {
             padding: 0.85rem 1.25rem;
             border-bottom: 1px solid var(--color-border);
             transition: background 0.15s ease;
+            cursor: pointer;
         }
 
         .accounting-ledger__row:last-child {
@@ -1310,6 +1457,168 @@ try {
         }
 
         /* Hide tabs in print mode */
+        /* ===== CUSTOM MODAL ===== */
+        .custom-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .custom-modal-container {
+            background: var(--color-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            width: 90%;
+            max-width: 1100px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.25s ease;
+        }
+
+        .custom-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .custom-modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 0;
+        }
+
+        .custom-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: background 0.15s;
+        }
+
+        .custom-modal-close:hover {
+            background: var(--color-surface);
+        }
+
+        .custom-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .custom-modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .custom-modal-footer .total-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .custom-modal-footer .total-amount {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--color-success);
+        }
+
+        .desglose-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .desglose-table th {
+            padding: 0.75rem 0.875rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border-bottom: 2px solid var(--color-border);
+            text-align: left;
+        }
+
+        .desglose-table th.text-end {
+            text-align: right;
+        }
+
+        .desglose-table td {
+            padding: 0.7rem 0.875rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+            font-size: 0.85rem;
+        }
+
+        .desglose-table td.text-end {
+            text-align: right;
+        }
+
+        .desglose-table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+
+        .desglose-table .row-num {
+            color: var(--color-text-secondary);
+            font-size: 0.78rem;
+            width: 40px;
+        }
+
+        .desglose-empty {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--color-text-secondary);
+        }
+
+        .desglose-empty i {
+            font-size: 2.5rem;
+            opacity: 0.35;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+
+        .desglose-loading {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--color-text-secondary);
+        }
+
+        .desglose-loading i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         @media print {
 
             .reports-tabs-container,
@@ -1421,18 +1730,37 @@ try {
                         <i class="bi bi-calendar3 text-primary"></i>
                         Parámetros del Reporte
                     </h3>
-                    <p class="text-muted small">Seleccione la fecha de la jornada para auditar los movimientos</p>
+                    <p class="text-muted small">Seleccione jornada o mes para auditar los movimientos</p>
                 </div>
-                <form method="GET" class="filter-form d-flex gap-3 align-items-end">
-                    <div class="form-group flex-grow-1">
-                        <label for="fecha_filtro" class="form-label fw-semibold">Fecha de Jornada</label>
-                        <input type="date" class="form-control" id="fecha_filtro" name="fecha_filtro"
-                            value="<?php echo htmlspecialchars($fecha_filtro); ?>" required>
+                <form method="GET" class="filter-form">
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-sm <?php echo $filtro_tipo === 'jornada' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('jornada')">
+                            <i class="bi bi-calendar-day"></i> Por Jornada
+                        </button>
+                        <button type="button" class="btn btn-sm <?php echo $filtro_tipo === 'mes' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('mes')">
+                            <i class="bi bi-calendar-month"></i> Por Mes
+                        </button>
                     </div>
-                    <button type="submit" class="action-btn">
-                        <i class="bi bi-search me-2"></i>
-                        Generar Análisis
-                    </button>
+                    <div class="d-flex gap-3 align-items-end">
+                        <input type="hidden" name="filtro_tipo" id="filtro_tipo" value="<?php echo $filtro_tipo; ?>">
+
+                        <div class="form-group flex-grow-1" id="jornadaInput" style="<?php echo $filtro_tipo === 'mes' ? 'display:none;' : ''; ?>">
+                            <label for="fecha_filtro" class="form-label fw-semibold">Fecha de Jornada</label>
+                            <input type="date" class="form-control" id="fecha_filtro" name="fecha_filtro"
+                                value="<?php echo htmlspecialchars($fecha_filtro); ?>">
+                        </div>
+
+                        <div class="form-group flex-grow-1" id="mesInput" style="<?php echo $filtro_tipo === 'jornada' ? 'display:none;' : ''; ?>">
+                            <label for="mes_filtro" class="form-label fw-semibold">Mes</label>
+                            <input type="month" class="form-control" id="mes_filtro" name="mes_filtro"
+                                value="<?php echo $mes_filtro; ?>">
+                        </div>
+
+                        <button type="submit" class="action-btn">
+                            <i class="bi bi-search me-2"></i>
+                            Generar Análisis
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -1763,7 +2091,7 @@ try {
                         </span>
                     </div>
 
-                    <div class="accounting-body">
+                    <div class="accounting-body" data-period-start="<?php echo $start_datetime; ?>" data-period-end="<?php echo $end_datetime; ?>">
                         <p class="accounting-period-hint">
                             <i class="bi bi-calendar3"></i>
                             Jornada del <?php echo date('d/m/Y', strtotime($fecha_filtro)); ?>
@@ -1786,7 +2114,7 @@ try {
                                     <?php foreach ($ingresos_categorias as $cat):
                                         $pct = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
                                         ?>
-                                            <li class="accounting-ledger__row">
+                                            <li class="accounting-ledger__row" data-categoria="<?php echo $cat['categoria']; ?>" onclick="openCategoriaDesglose(this)">
                                                 <div class="accounting-ledger__label">
                                                     <span class="charge-type-badge <?php echo htmlspecialchars($cat['badge']); ?>">
                                                         <i class="bi <?php echo htmlspecialchars($cat['icon']); ?>"></i>
@@ -1820,14 +2148,14 @@ try {
                                         Egresos e Inversión
                                     </h4>
                                     <span class="accounting-card__total accounting-card__total--expense">
-                                        Q<?php echo number_format($total_purchases_meds, 2); ?>
+                                        Q<?php echo number_format($total_egresos, 2); ?>
                                     </span>
                                 </div>
                                 <ul class="accounting-ledger">
                                     <?php foreach ($egresos_categorias as $cat):
                                         $pct_eg = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
                                         ?>
-                                            <li class="accounting-ledger__row">
+                                            <li class="accounting-ledger__row" data-categoria="<?php echo $cat['categoria']; ?>" onclick="openCategoriaDesglose(this)">
                                                 <div class="accounting-ledger__label">
                                                     <span class="charge-type-badge charge-otro">
                                                         <i class="bi <?php echo htmlspecialchars($cat['icon']); ?>"></i>
@@ -1851,10 +2179,6 @@ try {
                                             </li>
                                     <?php endforeach; ?>
                                 </ul>
-                                <div class="accounting-empty-note">
-                                    <i class="bi bi-info-circle"></i>
-                                    No se registran otros egresos automáticos en este período.
-                                </div>
                             </div>
                         </div>
 
@@ -2335,6 +2659,44 @@ try {
         </main>
     </div>
 
+    <!-- Categoría Desglose Modal -->
+    <div id="categoriaDesgloseModal" class="custom-modal-overlay" style="display:none;">
+        <div class="custom-modal-container">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-list-ul me-2"></i>
+                    Detalle: <span id="desgloseTitulo"></span>
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="closeDesgloseModal()">&times;</button>
+            </div>
+            <div class="custom-modal-body" id="desgloseBody">
+                <div class="desglose-loading">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Cargando detalle...
+                </div>
+            </div>
+            <div class="custom-modal-footer">
+                <div class="d-flex gap-4 align-items-center">
+                    <div>
+                        <div class="total-label">Total Ingresos</div>
+                        <span class="total-amount" id="desgloseTotal">Q0.00</span>
+                    </div>
+                    <div id="desgloseCostoFooter">
+                        <div class="total-label">Total Costo</div>
+                        <span class="total-amount" id="desgloseTotalCosto" style="color:var(--color-danger);">Q0.00</span>
+                    </div>
+                    <div id="desgloseProfitFooter">
+                        <div class="total-label">Ganancia</div>
+                        <span class="total-amount" id="desgloseProfit" style="color:var(--color-success);">Q0.00</span>
+                    </div>
+                </div>
+                <button type="button" class="action-btn secondary" onclick="closeDesgloseModal()">
+                    <i class="bi bi-x-lg"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Optimizado -->
     <script>
         // Módulo de Reportes - Centro Médico Herrera Saenz
@@ -2743,6 +3105,146 @@ try {
                     tabs: tabManager,
                     search: pharmacySearch
                 };
+
+                // ==========================================================================
+                // MODAL DE DESGLOSE POR CATEGORÍA
+                // ==========================================================================
+                window.openCategoriaDesglose = function(el) {
+                    const categoria = el.getAttribute('data-categoria');
+                    const container = document.querySelector('.accounting-body');
+                    const start = container.getAttribute('data-period-start');
+                    const end = container.getAttribute('data-period-end');
+                    const label = el.querySelector('.accounting-ledger__label-text')?.textContent || categoria;
+
+                    document.getElementById('desgloseTitulo').textContent = label;
+                    document.getElementById('desgloseBody').innerHTML =
+                        '<div class="desglose-loading"><i class="bi bi-arrow-clockwise"></i>Cargando detalle...</div>';
+                    document.getElementById('desgloseTotal').textContent = 'Q0.00';
+                    document.getElementById('desgloseTotalCosto').textContent = 'Q0.00';
+                    document.getElementById('desgloseProfit').textContent = 'Q0.00';
+                    document.getElementById('desgloseProfit').style.color = 'var(--color-success)';
+                    document.getElementById('desgloseCostoFooter').style.display = '';
+                    document.getElementById('desgloseProfitFooter').style.display = '';
+                    document.getElementById('categoriaDesgloseModal').style.display = 'flex';
+
+                    const url = 'get_categoria_desglose.php?categoria=' + encodeURIComponent(categoria) +
+                        '&start=' + encodeURIComponent(start) +
+                        '&end=' + encodeURIComponent(end) +
+                        '&id_hospital=<?php echo $id_hospital; ?>';
+
+                    fetch(url)
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data.error) {
+                                document.getElementById('desgloseBody').innerHTML =
+                                    '<div class="desglose-empty"><i class="bi bi-exclamation-triangle"></i><p>' +
+                                    data.error + '</p></div>';
+                                return;
+                            }
+                            renderDesgloseTable(data);
+                        })
+                        .catch(function(err) {
+                            document.getElementById('desgloseBody').innerHTML =
+                                '<div class="desglose-empty"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar datos.</p></div>';
+                            console.error(err);
+                        });
+                };
+
+                window.closeDesgloseModal = function() {
+                    document.getElementById('categoriaDesgloseModal').style.display = 'none';
+                };
+
+                function renderDesgloseTable(data) {
+                    var rows = data.rows || [];
+                    var totalMonto = data.total_monto || 0;
+                    var totalCosto = data.total_costo || 0;
+                    var totalProfit = data.total_profit || 0;
+                    var hasCosto = data.has_costo !== false;
+
+                    if (rows.length === 0) {
+                        document.getElementById('desgloseBody').innerHTML =
+                            '<div class="desglose-empty"><i class="bi bi-inbox"></i><p>No hay registros para este período.</p></div>';
+                        document.getElementById('desgloseTotal').textContent = 'Q0.00';
+                        document.getElementById('desgloseTotalCosto').textContent = 'Q0.00';
+                        document.getElementById('desgloseProfit').textContent = 'Q0.00';
+                        document.getElementById('desgloseCostoFooter').style.display = hasCosto ? '' : 'none';
+                        document.getElementById('desgloseProfitFooter').style.display = hasCosto ? '' : 'none';
+                        return;
+                    }
+
+                    document.getElementById('desgloseCostoFooter').style.display = hasCosto ? '' : 'none';
+                    document.getElementById('desgloseProfitFooter').style.display = hasCosto ? '' : 'none';
+
+                    var html = '<table class="desglose-table"><thead><tr>' +
+                        '<th class="row-num">#</th>' +
+                        '<th>Fecha</th>' +
+                        '<th>Paciente</th>' +
+                        '<th>Descripción</th>' +
+                        '<th class="text-end">Monto</th>' +
+                        (hasCosto ? '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>' : '') +
+                        '</tr></thead><tbody>';
+
+                    for (var i = 0; i < rows.length; i++) {
+                        var r = rows[i];
+                        var profit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
+                        var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                        html += '<tr>' +
+                            '<td class="row-num">' + (i + 1) + '</td>' +
+                            '<td>' + (r.fecha || '') + '</td>' +
+                            '<td>' + escapeHtml(r.paciente || '') + '</td>' +
+                            '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
+                            '<td class="text-end fw-bold text-success">Q' + formatNumber(r.monto) + '</td>';
+                        if (hasCosto) {
+                            html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
+                                '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
+                        }
+                        html += '</tr>';
+                    }
+
+                    html += '</tbody></table>';
+                    document.getElementById('desgloseBody').innerHTML = html;
+                    document.getElementById('desgloseTotal').textContent = 'Q' + formatNumber(totalMonto);
+                    document.getElementById('desgloseTotalCosto').textContent = 'Q' + formatNumber(totalCosto);
+                    document.getElementById('desgloseProfit').textContent = 'Q' + formatNumber(totalProfit);
+                    document.getElementById('desgloseProfit').style.color = totalProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+                }
+
+                function escapeHtml(str) {
+                    var div = document.createElement('div');
+                    div.appendChild(document.createTextNode(str));
+                    return div.innerHTML;
+                }
+
+                function formatNumber(n) {
+                    return Number(n).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+
+                // ==========================================================================
+                // SWITCH FILTRO TIPO (JORNADA / MES)
+                // ==========================================================================
+                window.switchFiltroTipo = function(tipo) {
+                    document.getElementById('filtro_tipo').value = tipo;
+                    document.getElementById('jornadaInput').style.display = tipo === 'mes' ? 'none' : '';
+                    document.getElementById('mesInput').style.display = tipo === 'jornada' ? 'none' : '';
+                };
+
+                // Close modal on overlay click
+                document.addEventListener('click', function(e) {
+                    var modal = document.getElementById('categoriaDesgloseModal');
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+
+                // Close modal on Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        var modal = document.getElementById('categoriaDesgloseModal');
+                        if (modal.style.display === 'flex') {
+                            modal.style.display = 'none';
+                        }
+                    }
+                });
 
                 // Log de inicialización
                 console.log('Módulo de Reportes - CMS v4.0 (Premium Overhauled)');
