@@ -793,6 +793,9 @@ try {
                             <button class="action-btn" onclick="showNewGastoModal()">
                                 <i class="bi bi-plus-lg me-2"></i>Nuevo Gasto
                             </button>
+                            <button class="action-btn action-btn-outline" onclick="showDeletedGastos()">
+                                <i class="bi bi-archive me-2"></i>Ver Eliminados
+                            </button>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -877,6 +880,55 @@ try {
                 <button type="button" class="action-btn primary" id="saveGastoBtn" onclick="saveGasto()">
                     <i class="bi bi-check-lg me-2"></i>Guardar Gasto
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de gastos eliminados -->
+    <div class="custom-modal-overlay" id="deletedGastosModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-archive text-secondary me-2"></i>
+                    Gastos Eliminados
+                </h5>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <p class="text-muted mb-3">Estos gastos se eliminarán definitivamente al final del mes.</p>
+                <div class="table-responsive">
+                    <table class="appointments-table" id="deletedGastosTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha eliminación</th>
+                                <th>Descripción</th>
+                                <th>Cant.</th>
+                                <th class="text-end">Total</th>
+                                <th>Eliminado por</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold">Total Eliminados:</td>
+                                <td class="fw-bold text-danger" id="deletedGastosTotalFooter">Q0.00</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('deletedGastosModal').classList.remove('active')">Cerrar</button>
             </div>
         </div>
     </div>
@@ -2231,24 +2283,35 @@ try {
 
             window.deleteGasto = function (id) {
                 Swal.fire({
-                    title: '¿Eliminar gasto?',
-                    text: 'Esta acción no se puede deshacer',
-                    icon: 'warning',
+                    title: 'Eliminar gasto',
+                    html: '<p class="text-muted mb-3">Esta acción moverá el gasto a la papelera. Los gastos eliminados se borran definitivamente al final de cada mes.</p>',
+                    input: 'textarea',
+                    inputLabel: 'Motivo de eliminación',
+                    inputPlaceholder: 'Describa por qué elimina este gasto...',
+                    inputAttributes: { required: true },
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
+                    confirmButtonText: '<i class="bi bi-trash me-1"></i>Eliminar',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: function(motivo) {
+                        if (!motivo || !motivo.trim()) {
+                            Swal.showValidationMessage('Debe ingresar un motivo');
+                            return false;
+                        }
+                        return motivo.trim();
+                    }
                 }).then(function(result) {
-                    if (!result.isConfirmed) return;
+                    if (!result.isConfirmed || !result.value) return;
+                    const motivo = result.value;
                     fetch('delete_gasto.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: id })
+                        body: JSON.stringify({ id: id, motivo: motivo })
                     })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         if (data.success) {
-                            Swal.fire({ title: 'Eliminado', text: 'El gasto ha sido eliminado', icon: 'success', timer: 1200, showConfirmButton: false });
+                            Swal.fire({ title: 'Eliminado', text: 'El gasto se movió a la papelera', icon: 'success', timer: 1500, showConfirmButton: false });
                             loadGastos();
                         } else {
                             Swal.fire({ title: 'Error', text: data.message || 'Error al eliminar', icon: 'error', confirmButtonText: 'Entendido' });
@@ -2261,7 +2324,66 @@ try {
                 });
             };
 
-            // Auto-load gastos when tab is activated — handled inside TabManager.switchTab
+            // ==========================================================================
+            // FUNCIONES DE GASTOS ELIMINADOS
+            // ==========================================================================
+
+            window.showDeletedGastos = function () {
+                document.getElementById('deletedGastosModal').classList.add('active');
+                loadDeletedGastos();
+            };
+
+            window.loadDeletedGastos = function () {
+                const tbody = document.querySelector('#deletedGastosTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...</td></tr>';
+
+                const now = new Date();
+                const start = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+                const end = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0');
+
+                fetch('get_gastos_eliminados.php?fecha_inicio=' + encodeURIComponent(start) + '&fecha_fin=' + encodeURIComponent(end))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success) {
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
+                            return;
+                        }
+                        renderDeletedGastosTable(data.rows || []);
+                    })
+                    .catch(function(err) {
+                        console.error('Error loading deleted gastos:', err);
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
+                    });
+            };
+
+            function renderDeletedGastosTable(rows) {
+                const tbody = document.querySelector('#deletedGastosTable tbody');
+                const footer = document.getElementById('deletedGastosTotalFooter');
+                if (!tbody) return;
+
+                if (rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-check-circle me-2 text-success"></i>No hay gastos eliminados este mes</td></tr>';
+                    if (footer) footer.textContent = 'Q0.00';
+                    return;
+                }
+
+                let html = '';
+                let totalGeneral = 0;
+                rows.forEach(function(g) {
+                    totalGeneral += g.total;
+                    html += '<tr>' +
+                        '<td>' + g.fecha_eliminacion + '</td>' +
+                        '<td>' + escapeHtml(g.descripcion) + '</td>' +
+                        '<td class="text-center">' + g.cantidad + '</td>' +
+                        '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
+                        '<td>' + escapeHtml(g.eliminado_por_nombre || '—') + '</td>' +
+                        '<td><span class="text-muted fst-italic small">' + escapeHtml(g.motivo_eliminacion) + '</span></td>' +
+                        '</tr>';
+                });
+                tbody.innerHTML = html;
+                if (footer) footer.textContent = 'Q' + totalGeneral.toFixed(2);
+            }
 
             // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
