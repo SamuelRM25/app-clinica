@@ -1113,7 +1113,7 @@ $page_title = "Configuración del Sistema";
 
     <!-- Modal Habitación -->
     <div class="modal fade" id="roomModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl);">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold" id="roomModalTitle">Nueva Habitación</h5>
@@ -1123,7 +1123,10 @@ $page_title = "Configuración del Sistema";
                     <form id="roomForm">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="id_habitacion" id="roomId">
-                        <div class="row g-3">
+                        <input type="hidden" name="camas_json" id="camasJson">
+
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-door-closed me-2"></i>Datos de la Habitación</h6>
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Número de Habitación</label>
                                 <input type="text" name="numero_habitacion" id="roomNumber" class="form-control" required maxlength="10" placeholder="101">
@@ -1151,12 +1154,115 @@ $page_title = "Configuración del Sistema";
                                     <option value="Reservada">Reservada</option>
                                 </select>
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Piso</label>
+                                <input type="text" name="piso" id="roomFloor" class="form-control" maxlength="50" placeholder="Ej: 2do piso">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Capacidad Máxima (personas)</label>
+                                <input type="number" name="capacidad_maxima" id="roomCapacity" class="form-control" min="1" value="1">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Descripción</label>
+                                <textarea name="descripcion" id="roomDescription" class="form-control" rows="2" placeholder="Notas adicionales sobre la habitación..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="tiene_bano" value="0">
+                                            <input class="form-check-input" type="checkbox" id="roomBath" name="tiene_bano" value="1" checked>
+                                            <label class="form-check-label small" for="roomBath">Tiene baño</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="tiene_tv" value="0">
+                                            <input class="form-check-input" type="checkbox" id="roomTV" name="tiene_tv" value="1">
+                                            <label class="form-check-label small" for="roomTV">Tiene TV</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="tiene_aire_acondicionado" value="0">
+                                            <input class="form-check-input" type="checkbox" id="roomAC" name="tiene_aire_acondicionado" value="1">
+                                            <label class="form-check-label small" for="roomAC">Tiene A/C</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted text-uppercase small fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Camas <span class="badge bg-secondary ms-2" id="bedsCountBadge">0</span></h6>
+                            <button type="button" class="action-btn sm primary" onclick="openAddBedForm()">
+                                <i class="bi bi-plus-lg me-1"></i>Agregar Cama
+                            </button>
+                        </div>
+
+                        <div class="table-responsive mb-3" style="max-height: 220px; overflow-y: auto;">
+                            <table class="table table-sm table-bordered align-middle mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 80px;">Cama #</th>
+                                        <th>Descripción</th>
+                                        <th style="width: 130px;">Estado</th>
+                                        <th style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bedsTableBody">
+                                    <tr id="bedsEmptyRow">
+                                        <td colspan="4" class="text-center text-muted py-3">
+                                            <i class="bi bi-inbox me-1"></i>Sin camas registradas
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="action-btn" onclick="saveRoom()">Guardar Habitación</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar cama individual -->
+    <div class="modal fade" id="addBedModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content" style="background: var(--color-card); border-radius: var(--radius-xl);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Agregar Cama</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addBedForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Número de Cama</label>
+                            <input type="text" id="bedNumber" class="form-control" required maxlength="5" placeholder="A, B, 1, 2...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Descripción (opcional)</label>
+                            <input type="text" id="bedDescription" class="form-control" placeholder="Ej. Cama de observación">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Estado</label>
+                            <select id="bedStatus" class="form-select">
+                                <option value="Disponible">Disponible</option>
+                                <option value="Ocupada">Ocupada</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Reservada">Reservada</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="action-btn" onclick="confirmAddBed()">Agregar</button>
                 </div>
             </div>
         </div>
@@ -1367,11 +1473,17 @@ $page_title = "Configuración del Sistema";
 
         // Room Management Functions
         const roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
+        const addBedModal = new bootstrap.Modal(document.getElementById('addBedModal'));
+        let roomBeds = []; // [{id_cama, numero_cama, descripcion, estado}]
 
         function openRoomModal() {
             document.getElementById('roomForm').reset();
             document.getElementById('roomId').value = '';
             document.getElementById('roomModalTitle').innerText = 'Nueva Habitación';
+            document.getElementById('roomBath').checked = true;
+            document.getElementById('roomCapacity').value = 1;
+            roomBeds = [];
+            renderRoomBeds();
             roomModal.show();
         }
 
@@ -1381,8 +1493,96 @@ $page_title = "Configuración del Sistema";
             document.getElementById('roomType').value = room.tipo_habitacion;
             document.getElementById('roomRate').value = room.tarifa_por_noche;
             document.getElementById('roomStatus').value = room.estado;
+            document.getElementById('roomFloor').value = room.piso || '';
+            document.getElementById('roomDescription').value = room.descripcion || '';
+            document.getElementById('roomCapacity').value = room.capacidad_maxima || 1;
+            document.getElementById('roomBath').checked = String(room.tiene_bano) === '1';
+            document.getElementById('roomTV').checked = String(room.tiene_tv) === '1';
+            document.getElementById('roomAC').checked = String(room.tiene_aire_acondicionado) === '1';
             document.getElementById('roomModalTitle').innerText = 'Editar Habitación';
+
+            // Load existing beds via API
+            fetch('api/get_room.php?id=' + room.id_habitacion)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    roomBeds = (data && data.camas) ? data.camas : [];
+                    renderRoomBeds();
+                })
+                .catch(function() {
+                    roomBeds = [];
+                    renderRoomBeds();
+                });
+
             roomModal.show();
+        }
+
+        function openAddBedForm() {
+            document.getElementById('bedNumber').value = '';
+            document.getElementById('bedDescription').value = '';
+            document.getElementById('bedStatus').value = 'Disponible';
+            addBedModal.show();
+        }
+
+        function confirmAddBed() {
+            const numero = document.getElementById('bedNumber').value.trim();
+            const descripcion = document.getElementById('bedDescription').value.trim();
+            const estado = document.getElementById('bedStatus').value;
+            if (!numero) {
+                Swal.fire({ icon: 'warning', title: 'Número requerido', text: 'Por favor ingrese el número de la cama', confirmButtonText: 'Entendido' });
+                return;
+            }
+            // Prevent duplicate bed numbers in same room
+            if (roomBeds.some(function(b) { return b.numero_cama.toLowerCase() === numero.toLowerCase(); })) {
+                Swal.fire({ icon: 'warning', title: 'Cama duplicada', text: 'Ya existe una cama con ese número en esta habitación', confirmButtonText: 'Entendido' });
+                return;
+            }
+            roomBeds.push({
+                id_cama: null,
+                numero_cama: numero,
+                descripcion: descripcion,
+                estado: estado
+            });
+            renderRoomBeds();
+            addBedModal.hide();
+        }
+
+        function removeRoomBed(index) {
+            roomBeds.splice(index, 1);
+            renderRoomBeds();
+        }
+
+        function renderRoomBeds() {
+            const tbody = document.getElementById('bedsTableBody');
+            const badge = document.getElementById('bedsCountBadge');
+            if (badge) badge.textContent = roomBeds.length;
+
+            if (roomBeds.length === 0) {
+                tbody.innerHTML = '<tr id="bedsEmptyRow"><td colspan="4" class="text-center text-muted py-3"><i class="bi bi-inbox me-1"></i>Sin camas registradas</td></tr>';
+                document.getElementById('camasJson').value = '[]';
+                return;
+            }
+
+            let html = '';
+            roomBeds.forEach(function(bed, i) {
+                const estadoBadge = bed.estado === 'Disponible' ? 'bg-success text-white'
+                    : (bed.estado === 'Ocupada' ? 'bg-warning text-dark'
+                    : (bed.estado === 'Mantenimiento' ? 'bg-danger text-white'
+                    : 'bg-secondary text-white'));
+                html += '<tr>' +
+                    '<td><span class="fw-bold">Cama ' + escapeHtmlBed(bed.numero_cama) + '</span></td>' +
+                    '<td><small>' + escapeHtmlBed(bed.descripcion || '—') + '</small></td>' +
+                    '<td><span class="badge ' + estadoBadge + '">' + escapeHtmlBed(bed.estado) + '</span></td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeRoomBed(' + i + ')" title="Quitar"><i class="bi bi-trash"></i></button></td>' +
+                    '</tr>';
+            });
+            tbody.innerHTML = html;
+            document.getElementById('camasJson').value = JSON.stringify(roomBeds);
+        }
+
+        function escapeHtmlBed(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str == null ? '' : String(str)));
+            return div.innerHTML;
         }
 
         async function saveRoom() {
