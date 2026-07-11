@@ -337,26 +337,7 @@ try {
     // 9. Desempeño neto
     $net_cash_flow = $total_gross_revenue - $total_egresos;
 
-// ============ TOP MEDICAMENTOS (se mantiene) ============
-
-    // Top 5 Medicamentos más vendidos
-    $stmt_top_meds = $conn->prepare("
-        SELECT i.nom_medicamento as nombre_med, SUM(dv.cantidad_vendida) as total_vendido
-        FROM detalle_ventas dv
-        JOIN inventario i ON dv.id_inventario = i.id_inventario
-        JOIN ventas v ON dv.id_venta = v.id_venta
-        WHERE v.fecha_venta BETWEEN ? AND ?
-        AND v.tipo_pago != 'Traslado'
-        AND dv.precio_unitario > 0
-        AND v.id_hospital = ?
-        GROUP BY i.id_inventario
-        ORDER BY total_vendido DESC
-        LIMIT 5
-    ");
-    $stmt_top_meds->execute([$start_datetime, $end_datetime, $id_hospital]);
-    $top_meds_data = $stmt_top_meds->fetchAll(PDO::FETCH_ASSOC);
-
-    // ============ MÉTRICAS ADICIONALES ============
+// ============ MÉTRICAS ADICIONALES ============
 
     // Total de pacientes registrados
     $total_pacientes = $conn->prepare("SELECT COUNT(*) FROM pacientes WHERE id_hospital = ?");
@@ -1814,100 +1795,6 @@ try {
                             </div>
                             <div class="stat-icon warning">
                                 <i class="bi bi-capsule"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECCIÓN TOP MEDICAMENTOS + INSIGHTS -->
-                <div class="content-section animate-in mt-4 p-4"
-                    style="background: var(--color-surface); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
-                    <div class="section-header border-0 mb-4">
-                        <h3 class="section-title h4">
-                            <i class="bi bi-stars text-primary me-2"></i>
-                            Top Ventas e Indicadores
-                        </h3>
-                    </div>
-
-                    <div class="row g-4">
-                        <!-- Top Medicamentos -->
-                        <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <div class="card-header bg-transparent border-0 p-3">
-                                    <h5 class="card-title text-muted small text-uppercase fw-bold mb-0">Top Medicamentos
-                                        Vendidos</h5>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle mb-0">
-                                            <thead class="bg-light">
-                                                <tr>
-                                                    <th class="ps-3 py-2 text-muted small">Producto</th>
-                                                    <th class="pe-3 py-2 text-end text-muted small">Unidades</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($top_meds_data as $med): ?>
-                                                        <tr>
-                                                            <td class="ps-3 py-2 fw-medium">
-                                                                <?php echo htmlspecialchars($med['nombre_med']); ?>
-                                                            </td>
-                                                            <td class="pe-3 py-2 text-end fw-bold text-primary">
-                                                                <?php echo $med['total_vendido']; ?>
-                                                            </td>
-                                                        </tr>
-                                                <?php endforeach; ?>
-                                                <?php if (empty($top_meds_data)): ?>
-                                                        <tr>
-                                                            <td colspan="2" class="text-center py-4 text-muted small">Sin datos
-                                                                disponibles</td>
-                                                        </tr>
-                                                <?php endif; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Resumen Quick Insights -->
-                        <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100 p-4"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-4">Insights
-                                    Estratégicos</h5>
-                                <div class="row g-3">
-                                    <div class="col-6">
-                                        <div class="p-3 rounded-3"
-                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
-                                            <small class="text-muted d-block mb-1">Margen Operativo</small>
-                                            <span
-                                                class="h3 fw-bold mb-0 text-success"><?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="p-3 rounded-3"
-                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
-                                            <small class="text-muted d-block mb-1">Costo de Ventas</small>
-                                            <span
-                                                class="h3 fw-bold mb-0 text-danger">Q<?php echo number_format($sales_cost, 2); ?></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="p-3 rounded-3 mt-2"
-                                            style="background: var(--color-surface); border: 1px solid var(--color-border);">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <small class="text-muted fw-bold">Ganancia Farmacia Estimada</small>
-                                                <span class="badge bg-success-subtle text-success">Rentable</span>
-                                            </div>
-                                            <span
-                                                class="h2 fw-bold mb-0 text-primary">Q<?php echo number_format($actual_sales_margin, 2); ?></span>
-                                            <p class="text-muted small mt-2 mb-0">Cálculo basado en FIFO: Precio Venta -
-                                                Costo de Adquisición</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
