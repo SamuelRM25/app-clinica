@@ -58,6 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($user) {
+        // Bloquear login de usuarios desactivados (soft delete)
+        if (isset($user['activo']) && (int)$user['activo'] === 0) {
+            error_log("LOGIN DEBUG: User is inactive: " . $usuario);
+            $_SESSION['login_attempts'][$usuario] = ($_SESSION['login_attempts'][$usuario] ?? 0) + 1;
+            header("Location: login.php?error=usuario_inactivo");
+            exit;
+        }
+
         $passwordValid = false;
 
         // Intentar verificación con password_hash primero

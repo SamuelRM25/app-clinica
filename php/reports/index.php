@@ -35,7 +35,7 @@ try {
     $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     // Tipo de filtro: 'jornada' (por día, 24h) o 'mes' (mes completo)
-    $filtro_tipo = $_GET['filtro_tipo'] ?? 'jornada';
+    $filtro_tipo = $_GET['filtro_tipo'] ?? 'mes';
     $mes_filtro = $_GET['mes_filtro'] ?? date('Y-m');
 
     if ($filtro_tipo === 'mes') {
@@ -337,33 +337,9 @@ try {
     // 9. Desempeño neto
     $net_cash_flow = $total_gross_revenue - $total_egresos;
 
-    // ============ MÉTRICAS 'BIG DATA' PARA GRÁFICOS ============
+// ============ TOP MEDICAMENTOS (se mantiene) ============
 
-    // A. Tendencia de Ventas Diarias (Últimos 30 días)
-    $stmt_trend = $conn->prepare("
-        SELECT DATE(fecha_venta) as fecha, SUM(total) as total 
-        FROM ventas 
-        WHERE fecha_venta >= DATE_SUB(?, INTERVAL 30 DAY)
-        AND id_hospital = ?
-        GROUP BY DATE(fecha_venta)
-        ORDER BY fecha ASC
-    ");
-    $stmt_trend->execute([$end_datetime, $id_hospital]);
-    $sales_trend_data = $stmt_trend->fetchAll(PDO::FETCH_ASSOC);
-
-    // B. Distribución de Ingresos por Categoría
-    $category_data = [
-        'Ventas' => (float) $total_sales_meds,
-        'Consultas' => (float) $total_billings,
-        'Laboratorio' => $total_laboratory,
-        'Ultrasonido' => $total_ultrasound,
-        'Rayos X' => $total_xray,
-        'Electro' => $total_electro,
-        'Procedimientos' => (float) $total_procedures,
-        'Hospitalización' => (float) $total_hospitalization,
-    ];
-
-    // C. Top 5 Medicamentos más vendidos
+    // Top 5 Medicamentos más vendidos
     $stmt_top_meds = $conn->prepare("
         SELECT i.nom_medicamento as nombre_med, SUM(dv.cantidad_vendida) as total_vendido
         FROM detalle_ventas dv
@@ -623,8 +599,7 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js removido -->
 
     <!-- Seguridad y Protección de Código -->
     <script src="../../assets/js/security.js"></script>
@@ -1844,39 +1819,14 @@ try {
                     </div>
                 </div>
 
-                <!-- SECCIÓN BIG DATA - ANALÍTICA VISUAL -->
+                <!-- SECCIÓN TOP MEDICAMENTOS + INSIGHTS -->
                 <div class="content-section animate-in mt-4 p-4"
                     style="background: var(--color-surface); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
                     <div class="section-header border-0 mb-4">
                         <h3 class="section-title h4">
-                            <i class="bi bi-bar-chart-line text-primary me-2"></i>
-                            Business Intelligence Analytics
+                            <i class="bi bi-stars text-primary me-2"></i>
+                            Top Ventas e Indicadores
                         </h3>
-                    </div>
-
-                    <div class="row g-4 mb-5">
-                        <!-- Gráfico de Tendencia -->
-                        <div class="col-lg-8">
-                            <div class="card border-0 shadow-sm p-3 h-100"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-3">Tendencia de Ventas
-                                    (30 días)</h5>
-                                <div style="height: 300px;">
-                                    <canvas id="salesTrendChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico de Distribución -->
-                        <div class="col-lg-4">
-                            <div class="card border-0 shadow-sm p-3 h-100"
-                                style="background: var(--color-card); border-radius: var(--radius-lg);">
-                                <h5 class="card-title text-muted small text-uppercase fw-bold mb-3">Mix de Ingresos</h5>
-                                <div style="height: 300px;">
-                                    <canvas id="revenueDistChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="row g-4">
@@ -2880,14 +2830,11 @@ try {
             }
 
             // ==========================================================================
-            // ANIMACIONES Y GRÁFICOS (CHART.JS DE ALTA FIDELIDAD)
+            // ANIMACIONES (GRÁFICOS CHART.JS ELIMINADOS)
             // ==========================================================================
             class AnimationManager {
                 constructor() {
-                    this.trendChartInstance = null;
-                    this.distChartInstance = null;
                     this.setupAnimations();
-                    this.setupCharts();
                 }
 
                 setupAnimations() {
@@ -2911,147 +2858,8 @@ try {
                     });
                 }
 
-                setupCharts() {
-                    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
-                    const textColor = isDarkMode ? '#94a3b8' : '#64748b';
-                    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.05)';
-
-                    // 1. Gráfico de Tendencia de Ventas (Con Gradiente Lineal dinámico)
-                    const trendCtx = document.getElementById('salesTrendChart');
-                    if (trendCtx) {
-                        const salesTrendData = <?php echo json_encode($sales_trend_data); ?>;
-                        const ctx = trendCtx.getContext('2d');
-
-                        // Crear gradiente vertical premium (de color de marca a transparente)
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-                        gradient.addColorStop(0, 'rgba(124, 144, 219, 0.45)');
-                        gradient.addColorStop(0.5, 'rgba(124, 144, 219, 0.15)');
-                        gradient.addColorStop(1, 'rgba(124, 144, 219, 0.00)');
-
-                        if (this.trendChartInstance) {
-                            this.trendChartInstance.destroy();
-                        }
-
-                        this.trendChartInstance = new Chart(trendCtx, {
-                            type: 'line',
-                            data: {
-                                labels: salesTrendData.map(d => d.fecha),
-                                datasets: [{
-                                    label: 'Ventas Diarias',
-                                    data: salesTrendData.map(d => d.total),
-                                    borderColor: '#7c90db',
-                                    backgroundColor: gradient,
-                                    borderWidth: 3,
-                                    fill: true,
-                                    tension: 0.4,
-                                    pointRadius: 4,
-                                    pointHoverRadius: 7,
-                                    pointBackgroundColor: '#7c90db',
-                                    pointHoverBackgroundColor: '#ffffff',
-                                    pointHoverBorderColor: '#7c90db',
-                                    pointHoverBorderWidth: 3
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: {
-                                        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                                        titleColor: isDarkMode ? '#ffffff' : '#0f172a',
-                                        bodyColor: isDarkMode ? '#e2e8f0' : '#334155',
-                                        borderColor: '#7c90db',
-                                        borderWidth: 1,
-                                        padding: 12,
-                                        cornerRadius: 8,
-                                        displayColors: false,
-                                        titleFont: { family: 'Outfit, sans-serif', weight: 'bold' },
-                                        bodyFont: { family: 'Outfit, sans-serif' },
-                                        callbacks: {
-                                            label: function (context) {
-                                                return 'Total Venta: Q' + context.parsed.y.toLocaleString('es-GT', { minimumFractionDigits: 2 });
-                                            }
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    x: {
-                                        grid: { display: false },
-                                        ticks: { color: textColor, font: { size: 10, family: 'Outfit, sans-serif' } }
-                                    },
-                                    y: {
-                                        grid: { color: gridColor },
-                                        ticks: {
-                                            color: textColor,
-                                            font: { size: 10, family: 'Outfit, sans-serif' },
-                                            callback: v => 'Q' + v
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    // 2. Gráfico de Distribución de Ingresos
-                    const distCtx = document.getElementById('revenueDistChart');
-                    if (distCtx) {
-                        const categoryData = <?php echo json_encode($category_data); ?>;
-
-                        if (this.distChartInstance) {
-                            this.distChartInstance.destroy();
-                        }
-
-                        this.distChartInstance = new Chart(distCtx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: Object.keys(categoryData),
-                                datasets: [{
-                                    data: Object.values(categoryData),
-                                    backgroundColor: ['#7c90db', '#8dd7bf', '#f8b195', '#38bdf8', '#fbbf24'],
-                                    borderWidth: isDarkMode ? 2 : 0,
-                                    borderColor: isDarkMode ? '#1e293b' : '#ffffff',
-                                    hoverOffset: 12
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'bottom',
-                                        labels: {
-                                            color: textColor,
-                                            padding: 15,
-                                            font: { size: 11, family: 'Outfit, sans-serif' }
-                                        }
-                                    },
-                                    tooltip: {
-                                        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                                        titleColor: isDarkMode ? '#ffffff' : '#0f172a',
-                                        bodyColor: isDarkMode ? '#e2e8f0' : '#334155',
-                                        borderColor: '#7c90db',
-                                        borderWidth: 1,
-                                        padding: 12,
-                                        cornerRadius: 8,
-                                        titleFont: { family: 'Outfit, sans-serif', weight: 'bold' },
-                                        bodyFont: { family: 'Outfit, sans-serif' },
-                                        callbacks: {
-                                            label: function (context) {
-                                                const value = context.raw;
-                                                return ` ${context.label}: Q${value.toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
-                                            }
-                                        }
-                                    }
-                                },
-                                cutout: '72%'
-                            }
-                        });
-                    }
-                }
-
                 updateCharts() {
-                    this.setupCharts();
+                    // No-op: charts removed
                 }
             }
 

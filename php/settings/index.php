@@ -36,9 +36,13 @@ try {
     ];
 
     // Obtener lista de usuarios
-    $stmt_users = $conn->prepare("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, telefono, email FROM usuarios WHERE id_hospital = ? ORDER BY nombre");
+    $show_inactive = ($_GET['show_inactive'] ?? '0') === '1';
+    $stmt_users = $conn->prepare("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, telefono, email, activo FROM usuarios WHERE id_hospital = ? ORDER BY activo DESC, nombre");
     $stmt_users->execute([$id_hospital]);
     $users = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
+    if (!$show_inactive) {
+        $users = array_values(array_filter($users, function ($u) { return (int)($u['activo'] ?? 1) === 1; }));
+    }
 
     // Obtener habitaciones con conteo de camas
     $stmt_rooms = $conn->prepare("
@@ -319,11 +323,17 @@ $page_title = "Configuración del Sistema";
                     <!-- Tab: Usuarios -->
                     <div class="tab-pane fade" id="users" role="tabpanel">
                         <div class="settings-content-card">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                                 <h3 class="section-title mb-0">Gestión de Usuarios</h3>
-                                <button class="action-btn primary" onclick="openUserModal()">
-                                    <i class="bi bi-person-plus"></i> Nuevo Usuario
-                                </button>
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" id="showInactiveUsers" <?php echo $show_inactive ? 'checked' : ''; ?> onchange="window.location.href='?show_inactive=' + (this.checked ? '1' : '0');">
+                                        <label class="form-check-label small" for="showInactiveUsers">Mostrar inactivos</label>
+                                    </div>
+                                    <button class="action-btn primary" onclick="openUserModal()">
+                                        <i class="bi bi-person-plus"></i> Nuevo Usuario
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="table-responsive">
@@ -334,12 +344,17 @@ $page_title = "Configuración del Sistema";
                                             <th>Rol</th>
                                             <th>Especialidad</th>
                                             <th>Email</th>
+                                            <th>Estado</th>
                                             <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <?php if (empty($users)): ?>
+                                            <tr><td colspan="6" class="text-center text-muted py-4">No hay usuarios registrados</td></tr>
+                                        <?php endif; ?>
                                         <?php foreach ($users as $u): ?>
-                                                <tr class="user-row">
+                                                <?php $isActive = (int)($u['activo'] ?? 1) === 1; ?>
+                                                <tr class="user-row <?php echo $isActive ? '' : 'opacity-50'; ?>">
                                                     <td>
                                                         <div class="fw-bold">
                                                             <?php echo htmlspecialchars($u['nombre'] . ' ' . $u['apellido']); ?>
@@ -355,16 +370,28 @@ $page_title = "Configuración del Sistema";
                                                     </td>
                                                     <td><?php echo htmlspecialchars($u['especialidad'] ?: 'N/A'); ?></td>
                                                     <td><?php echo htmlspecialchars($u['email'] ?: 'Sin email'); ?></td>
+                                                    <td>
+                                                        <span class="badge <?php echo $isActive ? 'bg-success text-white' : 'bg-secondary text-white'; ?>">
+                                                            <?php echo $isActive ? 'Activo' : 'Inactivo'; ?>
+                                                        </span>
+                                                    </td>
                                                     <td class="text-center">
                                                         <div class="d-flex justify-content-center gap-2">
-                                                            <button class="action-btn sm secondary" title="Editar"
-                                                                onclick='editUser(<?php echo json_encode($u); ?>)'>
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                            <button class="action-btn sm danger" title="Eliminar"
-                                                                onclick="deleteUser(<?php echo $u['idUsuario']; ?>)">
-                                                                <i class="bi bi-trash"></i>
-                                                            </button>
+                                                            <?php if ($isActive): ?>
+                                                                <button class="action-btn sm secondary" title="Editar"
+                                                                    onclick='editUser(<?php echo json_encode($u); ?>)'>
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <button class="action-btn sm danger" title="Desactivar"
+                                                                    onclick="toggleUserActive(<?php echo (int)$u['idUsuario']; ?>, 'deactivate')">
+                                                                    <i class="bi bi-person-dash"></i>
+                                                                </button>
+                                                            <?php else: ?>
+                                                                <button class="action-btn sm primary" title="Reactivar"
+                                                                    onclick="toggleUserActive(<?php echo (int)$u['idUsuario']; ?>, 'reactivate')">
+                                                                    <i class="bi bi-person-check"></i>
+                                                                </button>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1382,14 +1409,17 @@ $page_title = "Configuración del Sistema";
             }
         }
 
-        async function deleteUser(id) {
+        async function toggleUserActive(id, action) {
+            const isDeactivate = action === 'deactivate';
             const result = await Swal.fire({
-                title: '¿Está seguro?',
-                text: "Esta acción no se puede deshacer",
+                title: isDeactivate ? '¿Desactivar usuario?' : '¿Reactivar usuario?',
+                text: isDeactivate
+                    ? 'El usuario no podrá iniciar sesión pero su historial clínico se conserva.'
+                    : 'El usuario podrá volver a iniciar sesión.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: 'var(--color-danger)',
-                confirmButtonText: 'Sí, eliminar',
+                confirmButtonColor: isDeactivate ? 'var(--color-danger)' : 'var(--color-primary)',
+                confirmButtonText: isDeactivate ? 'Sí, desactivar' : 'Sí, reactivar',
                 cancelButtonText: 'Cancelar'
             });
 
@@ -1398,18 +1428,23 @@ $page_title = "Configuración del Sistema";
                     const response = await fetch('api/delete_user.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'id=' + id
+                        body: 'id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action)
                     });
                     const res = await response.json();
                     if (res.success) {
-                        Swal.fire('Eliminado', res.message, 'success').then(() => location.reload());
+                        Swal.fire('Listo', res.message, 'success').then(() => location.reload());
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'No se pudo eliminar el usuario', 'error');
+                    Swal.fire('Error', 'No se pudo cambiar el estado del usuario', 'error');
                 }
             }
+        }
+
+        // Backward compatibility (unused but kept for safety)
+        async function deleteUser(id) {
+            return toggleUserActive(id, 'deactivate');
         }
 
         function updateAppTheme(color) {
