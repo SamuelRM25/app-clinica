@@ -2121,8 +2121,15 @@ try {
                     })
                     .catch(function(err) {
                         console.error('Error loading gastos:', err);
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error de conexión</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
                     });
+            };
+
+            window.escapeHtml = function (text) {
+                if (!text) return '';
+                var div = document.createElement('div');
+                div.appendChild(document.createTextNode(text));
+                return div.innerHTML;
             };
 
             function renderGastosTable(rows) {
