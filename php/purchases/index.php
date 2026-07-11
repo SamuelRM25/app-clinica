@@ -1240,6 +1240,11 @@ try {
 
                     // Guardar pestaña activa
                     localStorage.setItem('purchases-active-tab', tabId);
+
+                    // Auto-cargar gastos cuando se active esa pestaña
+                    if (tabId === 'gastos' && typeof window.loadGastos === 'function') {
+                        setTimeout(window.loadGastos, 100);
+                    }
                 }
 
                 setupEventListeners() {
@@ -2256,19 +2261,7 @@ try {
                 });
             };
 
-            // Auto-load gastos when tab is activated
-            document.addEventListener('DOMContentLoaded', function() {
-                // Intercept tab clicks to load gastos when that tab is shown
-                document.querySelectorAll('.tab-btn[data-tab="gastos"]').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
-                        setTimeout(loadGastos, 100);
-                    });
-                });
-                // Also check if gastos tab is active on page load
-                if (document.querySelector('.tab-btn[data-tab="gastos"].active')) {
-                    loadGastos();
-                }
-            });
+            // Auto-load gastos when tab is activated — handled inside TabManager.switchTab
 
             // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
