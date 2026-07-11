@@ -199,23 +199,24 @@ $queries['gastos_varios'] = [
                 0 AS costo
               FROM gastos g
               LEFT JOIN usuarios u ON g.created_by = u.idUsuario
-              WHERE g.fecha BETWEEN ? AND ?
+              WHERE DATE(g.fecha) BETWEEN DATE(?) AND DATE(?)
                 AND g.id_hospital = ?
               ORDER BY g.fecha DESC",
     'params' => [$start, $end, $id_hospital],
 ];
 
-$queries['compras'] = [
+$queries['pago_proveedores'] = [
     'sql' => "SELECT
-                ph.purchase_date AS fecha,
+                pp.payment_date AS fecha,
                 ph.provider_name AS paciente,
-                CONCAT(ph.document_type, ' ', COALESCE(ph.document_number, '')) AS descripcion,
-                ph.total_amount AS monto,
+                CONCAT(ph.document_type, ' ', COALESCE(ph.document_number, ''), ' (#', ph.id, ') — ', pp.payment_method) AS descripcion,
+                pp.amount AS monto,
                 0 AS costo
-              FROM purchase_headers ph
-              WHERE ph.purchase_date BETWEEN ? AND ?
-                AND ph.id_hospital = ?
-              ORDER BY ph.purchase_date DESC",
+              FROM purchase_payments pp
+              JOIN purchase_headers ph ON pp.purchase_header_id = ph.id
+              WHERE pp.payment_date BETWEEN ? AND ?
+                AND pp.id_hospital = ?
+              ORDER BY pp.payment_date DESC, pp.created_at DESC",
     'params' => [$start, $end, $id_hospital],
 ];
 
@@ -232,7 +233,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['laboratorio', 'hospitalizacion', 'gastos_varios', 'compras']);
+    $has_costo = !in_array($categoria, ['laboratorio', 'hospitalizacion', 'gastos_varios', 'pago_proveedores']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);

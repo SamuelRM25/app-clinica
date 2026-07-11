@@ -28,7 +28,9 @@ try {
     $apellido = $_POST['apellido'] ?? '';
     $tipoUsuario = $_POST['tipoUsuario'] ?? 'user';
     $especialidad = $_POST['especialidad'] ?? '';
-    $email = $_POST['email'] ?? '';
+    $email = trim($_POST['email'] ?? '');
+    if ($email === '') $email = null;
+    $telefono = $_POST['telefono'] ?? '0000';
     $password = $_POST['password'] ?? '';
 
     if (empty($usuario) || empty($nombre) || empty($apellido)) {
@@ -60,8 +62,8 @@ try {
         }
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, email, clinica, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, 'Centro Médico Herrera Saenz', $id_hospital]);
+        $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, clinica, telefono, email, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, 'Centro Médico Herrera Saenz', $telefono, $email, $id_hospital]);
         $newId = $conn->lastInsertId();
 
         audit_log('create', 'users', "Usuario creado: $usuario ($nombre $apellido)", [
@@ -73,6 +75,7 @@ try {
                 'apellido' => $apellido,
                 'tipoUsuario' => $tipoUsuario,
                 'especialidad' => $especialidad,
+                'telefono' => $telefono,
                 'email' => $email
             ]
         ]);
@@ -86,16 +89,16 @@ try {
 
         if (!empty($password)) {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, password = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
-            $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
+            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, password = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, telefono = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
+            $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, $telefono, $email, $idUsuario, $id_hospital]);
         } else {
-            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
-            $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $email, $idUsuario, $id_hospital]);
+            $stmt = $conn->prepare("UPDATE usuarios SET usuario = ?, nombre = ?, apellido = ?, tipoUsuario = ?, especialidad = ?, telefono = ?, email = ? WHERE idUsuario = ? AND id_hospital = ?");
+            $stmt->execute([$usuario, $nombre, $apellido, $tipoUsuario, $especialidad, $telefono, $email, $idUsuario, $id_hospital]);
         }
 
-        audit_log('update', 'users', "Usuario actualizado: $usuario (ID: $idUsuario)", [
+audit_log('update', 'users', "Usuario actualizado: $usuario (ID: $idUsuario)", [
             'table_name' => 'usuarios',
-            'record_id' => (int)$idUsuario,
+            'record_id' => $idUsuario,
             'old_data' => $oldData,
             'new_data' => [
                 'usuario' => $usuario,
@@ -103,6 +106,7 @@ try {
                 'apellido' => $apellido,
                 'tipoUsuario' => $tipoUsuario,
                 'especialidad' => $especialidad,
+                'telefono' => $telefono,
                 'email' => $email
             ]
         ]);
@@ -112,6 +116,10 @@ try {
 
 } catch (Exception $e) {
     error_log("save_user error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error al guardar el usuario.']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error al guardar el usuario.',
+        'debug'   => ($_SESSION['tipoUsuario'] ?? '') === 'admin' ? $e->getMessage() : null,
+    ]);
 }
 ?>

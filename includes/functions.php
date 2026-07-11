@@ -39,7 +39,8 @@ function audit_log($action, $modulo = 'system', $descripcion = '', $data = [], $
 
         // 1. Always log to file (backup/debug)
         $file_line = "[$timestamp] [hospital:$id_hospital] [user:$user_id] [ip:$ip] [$modulo|$action] $descripcion" . PHP_EOL;
-        error_log($file_line, 3, __DIR__ . '/../audit.log');
+        $audit_log_path = sys_get_temp_dir() . '/clinicapp_audit.log';
+        @error_log($file_line, 3, $audit_log_path);
 
         // 2. Log to database (audit_log table)
         $database = new Database();
@@ -220,8 +221,13 @@ function sanitize_input($data)
 
 function verify_session()
 {
+    // Build an absolute URL back to the project root that works regardless of caller's depth
+    $project_root_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+        . '/GitHub/app-clinica/index.php';
+
     if (!isset($_SESSION['user_id'])) {
-        header("Location: ../../index.php");
+        header("Location: " . $project_root_url);
         exit();
     }
 
@@ -229,7 +235,7 @@ function verify_session()
     if (empty($_SESSION['id_hospital'])) {
         session_unset();
         session_destroy();
-        header("Location: ../../index.php?error=session_invalid");
+        header("Location: " . $project_root_url . "?error=session_invalid");
         exit();
     }
 
@@ -238,7 +244,7 @@ function verify_session()
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $idle_timeout)) {
         session_unset();
         session_destroy();
-        header("Location: ../../index.php?error=session_expired");
+        header("Location: " . $project_root_url . "?error=session_expired");
         exit();
     }
     $_SESSION['last_activity'] = time();
@@ -248,7 +254,7 @@ function verify_session()
     if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time'] > $session_lifetime)) {
         session_unset();
         session_destroy();
-        header("Location: ../../index.php?error=session_expired");
+        header("Location: " . $project_root_url . "?error=session_expired");
         exit();
     }
 }

@@ -88,10 +88,10 @@ try {
     $stmt_sales->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_sales_meds = $stmt_sales->fetch(PDO::FETCH_ASSOC)['total_sales'] ?? 0;
 
-    // 2. Compras de medicamentos
-    $stmt_purchases = $conn->prepare("SELECT SUM(total_amount) as total_purchases FROM purchase_headers WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
+    // 2. Compras de medicamentos — basado en PAGOS (cash accounting)
+    $stmt_purchases = $conn->prepare("SELECT COALESCE(SUM(pp.amount), 0) as total_purchases FROM purchase_payments pp WHERE pp.payment_date BETWEEN ? AND ? AND pp.id_hospital = ?");
     $stmt_purchases->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
-    $total_purchases_meds = $stmt_purchases->fetch(PDO::FETCH_ASSOC)['total_purchases'] ?? 0;
+    $total_purchases_meds = (float)($stmt_purchases->fetch(PDO::FETCH_ASSOC)['total_purchases'] ?? 0);
 
     // 2b. Gastos generales del hospital
     $stmt_gastos = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total_gastos FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
@@ -323,7 +323,7 @@ try {
     $total_egresos = (float)$total_purchases_meds + $total_gastos;
 
     $egresos_categorias = [
-        ['label' => 'Compras (Medicamentos)', 'categoria' => 'compras', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
+        ['label' => 'Pago a Proveedores', 'categoria' => 'pago_proveedores', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
         ['label' => 'Gastos Generales', 'categoria' => 'gastos_varios', 'icon' => 'bi-wallet2', 'monto' => $total_gastos],
     ];
 
@@ -2226,7 +2226,7 @@ try {
                                         <div class="accounting-metric__value <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
                                             Q<?php echo number_format($net_cash_flow, 2); ?>
                                         </div>
-                                        <div class="accounting-metric__meta">Ingresos − compras de inventario</div>
+                                        <div class="accounting-metric__meta">Ingresos − pagos a proveedores y gastos</div>
                                     </div>
                                 </div>
                             </div>

@@ -36,7 +36,7 @@ try {
     ];
 
     // Obtener lista de usuarios
-    $stmt_users = $conn->prepare("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, email FROM usuarios WHERE id_hospital = ? ORDER BY nombre");
+    $stmt_users = $conn->prepare("SELECT idUsuario, usuario, nombre, apellido, tipoUsuario, especialidad, telefono, email FROM usuarios WHERE id_hospital = ? ORDER BY nombre");
     $stmt_users->execute([$id_hospital]);
     $users = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1026,7 +1026,7 @@ $page_title = "Configuración del Sistema";
                                                 echo '<td>' . htmlspecialchars($room['tipo_habitacion']) . '</td>';
                                                 echo '<td>Q' . number_format($room['tarifa_por_noche'], 2) . '</td>';
                                                 echo '<td>' . htmlspecialchars($room['cama_count']) . ' cama(s)</td>';
-                                                $statusClass = $room['estado'] === 'Activa' ? 'bg-success text-white' : 'bg-secondary text-white';
+                                                $statusClass = $room['estado'] === 'Disponible' ? 'bg-success text-white' : ($room['estado'] === 'Ocupada' ? 'bg-warning text-dark' : ($room['estado'] === 'Mantenimiento' ? 'bg-danger text-white' : 'bg-secondary text-white'));
                                                 echo '<td><span class="badge ' . $statusClass . '">' . htmlspecialchars($room['estado']) . '</span></td>';
                                                 echo '<td class="text-center">
                                                     <button class="action-btn sm secondary" onclick="editRoom(' . htmlspecialchars(json_encode($room)) . ')"><i class="bi bi-pencil"></i></button>
@@ -1092,6 +1092,11 @@ $page_title = "Configuración del Sistema";
                                     placeholder="Ej: Pediatría">
                             </div>
                             <div class="col-12">
+                                <label class="form-label small fw-bold">Teléfono</label>
+                                <input type="text" name="telefono" id="userPhone" class="form-control"
+                                    placeholder="0000" maxlength="255">
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label small fw-bold">Correo Electrónico</label>
                                 <input type="email" name="email" id="userEmail" class="form-control">
                             </div>
@@ -1121,16 +1126,16 @@ $page_title = "Configuración del Sistema";
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Número de Habitación</label>
-                                <input type="text" name="numero_habitacion" id="roomNumber" class="form-control" required placeholder="101">
+                                <input type="text" name="numero_habitacion" id="roomNumber" class="form-control" required maxlength="10" placeholder="101">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Tipo</label>
                                 <select name="tipo_habitacion" id="roomType" class="form-select" required>
-                                    <option value="Privada">Privada</option>
-                                    <option value="Semi-Privada">Semi-Privada</option>
+                                    <option value="Individual">Individual</option>
                                     <option value="Compartida">Compartida</option>
                                     <option value="UCI">UCI</option>
-                                    <option value="Quirofano">Quirófano</option>
+                                    <option value="Pediatría">Pediatría</option>
+                                    <option value="Observación">Observación</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -1140,8 +1145,10 @@ $page_title = "Configuración del Sistema";
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Estado</label>
                                 <select name="estado" id="roomStatus" class="form-select">
-                                    <option value="Activa">Activa</option>
-                                    <option value="Inactiva">Inactiva</option>
+                                    <option value="Disponible">Disponible</option>
+                                    <option value="Ocupada">Ocupada</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Reservada">Reservada</option>
                                 </select>
                             </div>
                         </div>
@@ -1245,6 +1252,7 @@ $page_title = "Configuración del Sistema";
             document.getElementById('userHandle').value = user.usuario;
             document.getElementById('userRole').value = user.tipoUsuario;
             document.getElementById('userSpecialty').value = user.especialidad || '';
+            document.getElementById('userPhone').value = user.telefono || '';
             document.getElementById('userEmail').value = user.email || '';
             document.getElementById('userModalTitle').innerText = 'Editar Usuario';
             userModal.show();

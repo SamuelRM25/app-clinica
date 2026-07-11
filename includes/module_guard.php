@@ -25,7 +25,10 @@ if (!function_exists('check_module_access')) {
     {
         // 1. Sesión activa
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../index.php');
+            $project_root_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+                . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+                . '/GitHub/app-clinica/index.php';
+            header('Location: ' . $project_root_url);
             exit;
         }
 

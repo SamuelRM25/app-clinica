@@ -22,10 +22,10 @@ try {
     $conn = $database->getConnection();
 
     $id_habitacion = $_POST['id_habitacion'] ?? '';
-    $numero_habitacion = $_POST['numero_habitacion'] ?? '';
-    $tipo_habitacion = $_POST['tipo_habitacion'] ?? 'Privada';
+    $numero_habitacion = substr(trim($_POST['numero_habitacion'] ?? ''), 0, 10);
+    $tipo_habitacion = $_POST['tipo_habitacion'] ?? 'Individual';
     $tarifa_por_noche = (float) ($_POST['tarifa_por_noche'] ?? 0);
-    $estado = $_POST['estado'] ?? 'Activa';
+    $estado = $_POST['estado'] ?? 'Disponible';
 
     if (empty($numero_habitacion)) {
         echo json_encode(['success' => false, 'message' => 'El número de habitación es obligatorio']);
@@ -84,6 +84,10 @@ try {
 
 } catch (Exception $e) {
     error_log("save_room error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error al guardar la habitación.']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error al guardar la habitación.',
+        'debug'   => ($_SESSION['tipoUsuario'] ?? '') === 'admin' ? $e->getMessage() : null,
+    ]);
 }
 ?>

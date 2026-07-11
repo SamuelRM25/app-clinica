@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
@@ -152,20 +153,23 @@ try {
 
     if ($action === 'batch_save') {
         $items = $data['tarifas'] ?? [];
-        $stmt = $conn->prepare("
+
+        $stmtInsert = $conn->prepare("
             INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
                 precio_normal, precio_inhabil, precio_radio, region_count,
                 costo_normal, costo_inhabil, costo_radio)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                precio_normal  = VALUES(precio_normal),
-                precio_inhabil = VALUES(precio_inhabil),
-                precio_radio   = VALUES(precio_radio),
-                costo_normal   = VALUES(costo_normal),
-                costo_inhabil  = VALUES(costo_inhabil),
-                costo_radio    = VALUES(costo_radio)
         ");
 
+        $stmtUpdate = $conn->prepare("
+            UPDATE tarifas_servicios
+            SET precio_normal = ?, precio_inhabil = ?, precio_radio = ?,
+                costo_normal = ?, costo_inhabil = ?, costo_radio = ?
+            WHERE id_tarifa = ? AND id_hospital = ?
+        ");
+
+        $updated = 0;
+        $inserted = 0;
         foreach ($items as $item) {
             $tipo = $item['tipo_servicio'] ?? '';
             $id_medico = isset($item['id_medico']) && $item['id_medico'] > 0 ? (int)$item['id_medico'] : null;
@@ -178,22 +182,47 @@ try {
             $costo_inhabil = isset($item['costo_inhabil']) && $item['costo_inhabil'] !== '' && $item['costo_inhabil'] !== null ? (float)$item['costo_inhabil'] : null;
             $costo_radio   = isset($item['costo_radio'])   && $item['costo_radio']   !== '' && $item['costo_radio']   !== null ? (float)$item['costo_radio']   : null;
 
-            $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre,
-                $normal, $inhabil, $radio, $region,
-                $costo_normal, $costo_inhabil, $costo_radio]);
+            $id_tarifa = isset($item['id_tarifa']) && (int)$item['id_tarifa'] > 0 ? (int)$item['id_tarifa'] : null;
+
+            if ($id_tarifa) {
+                $stmtUpdate->execute([$normal, $inhabil, $radio,
+                    $costo_normal, $costo_inhabil, $costo_radio,
+                    $id_tarifa, $id_hospital]);
+                $updated += $stmtUpdate->rowCount();
+            } else {
+                $stmtInsert->execute([$id_hospital, $tipo, $id_medico, $nombre,
+                    $normal, $inhabil, $radio, $region,
+                    $costo_normal, $costo_inhabil, $costo_radio]);
+                $inserted++;
+            }
         }
 
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Tarifas guardadas']);
+
+        audit_log('create', 'tarifas', "Tarifas batch_save: $updated actualizadas, $inserted nuevas", [
+            'table_name' => 'tarifas_servicios',
+            'new_data' => [
+                'updated' => $updated,
+                'inserted' => $inserted,
+            ]
+        ]);
+
+        ob_clean();
+        echo json_encode(['success' => true, 'message' => 'Tarifas guardadas', 'updated' => $updated, 'inserted' => $inserted]);
         exit;
     }
 
     echo json_encode(['success' => false, 'message' => 'Acción desconocida']);
 
 } catch (Exception $e) {
-    if ($conn->inTransaction()) {
+    if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
     }
     error_log("Error en save_tarifas.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    ob_clean();
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage(),
+        'debug'   => ($_SESSION['tipoUsuario'] ?? '') === 'admin' ? $e->getMessage() : null,
+    ]);
 }
