@@ -407,6 +407,94 @@ try {
     $total_profit_amount = $total_profit_revenue - $total_profit_cost;
     $total_profit_margin = $total_profit_revenue > 0 ? ($total_profit_amount / $total_profit_revenue) * 100 : 0;
 
+    // ============ REPORTE DETALLADO DE MEDICAMENTOS (Farmacia + Hospitalización) ============
+
+    $meds_farm = [];
+    $meds_hosp = [];
+
+    try {
+        // Farmacia — medicamentos vendidos agrupados por fecha
+        $stmt_meds_farm = $conn->prepare("
+            SELECT
+                i.nom_medicamento,
+                DATE(v.fecha_venta) as fecha,
+                'Farmacia' as origen,
+                SUM(dv.cantidad_vendida) as cantidad,
+                SUM(dv.cantidad_vendida * dv.precio_unitario) as total_venta,
+                SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)) as total_costo
+            FROM detalle_ventas dv
+            JOIN ventas v ON dv.id_venta = v.id_venta
+            JOIN inventario i ON dv.id_inventario = i.id_inventario
+            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+            WHERE v.fecha_venta BETWEEN ? AND ?
+            AND v.tipo_pago != 'Traslado'
+            AND dv.precio_unitario > 0
+            AND v.id_hospital = ?
+            GROUP BY i.id_inventario, i.nom_medicamento, DATE(v.fecha_venta)
+        ");
+        $stmt_meds_farm->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
+        $meds_farm = $stmt_meds_farm->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log('Error en reporte medicamentos farmacia: ' . $e->getMessage());
+    }
+
+    try {
+        // Hospitalización — medicamentos administrados agrupados por fecha
+        $stmt_meds_hosp = $conn->prepare("
+            SELECT
+                ch.descripcion as nom_medicamento,
+                DATE(ch.fecha_cargo) as fecha,
+                'Hospitalización' as origen,
+                SUM(ch.cantidad) as cantidad,
+                SUM(ch.subtotal) as total_venta,
+                SUM(ch.cantidad * COALESCE(pi.unit_cost, 0)) as total_costo
+            FROM cargos_hospitalarios ch
+            JOIN cuenta_hospitalaria cu ON ch.id_cuenta = cu.id_cuenta
+            JOIN encamamientos e ON cu.id_encamamiento = e.id_encamamiento
+            LEFT JOIN inventario i ON ch.referencia_id = i.id_inventario AND ch.referencia_tabla = 'inventario'
+            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+            WHERE ch.tipo_cargo = 'Medicamento'
+            AND ch.cancelado = 0
+            AND ch.fecha_cargo BETWEEN ? AND ?
+            AND e.id_hospital = ?
+            GROUP BY ch.descripcion, DATE(ch.fecha_cargo)
+        ");
+        $stmt_meds_hosp->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
+        $meds_hosp = $stmt_meds_hosp->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log('Error en reporte medicamentos hospitalizacion: ' . $e->getMessage());
+    }
+
+    // Combinar y agrupar por mes → día
+    $meds_all = array_merge($meds_farm, $meds_hosp);
+    $grouped_meds = [];
+    $total_meds_venta = 0;
+    $total_meds_costo = 0;
+
+    foreach ($meds_all as $row) {
+        $ts = strtotime($row['fecha']);
+        $mes_key = date('Y-m', $ts);
+        $dia_key = $row['fecha'];
+
+        if (!isset($grouped_meds[$mes_key])) {
+            $meses_arr = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            $grouped_meds[$mes_key] = [
+                'nombre' => $meses_arr[(int)date('n', $ts) - 1] . ' ' . date('Y', $ts),
+                'dias' => []
+            ];
+        }
+        if (!isset($grouped_meds[$mes_key]['dias'][$dia_key])) {
+            $grouped_meds[$mes_key]['dias'][$dia_key] = ['items' => [], 'total_venta' => 0, 'total_costo' => 0];
+        }
+        $grouped_meds[$mes_key]['dias'][$dia_key]['items'][] = $row;
+        $grouped_meds[$mes_key]['dias'][$dia_key]['total_venta'] += $row['total_venta'];
+        $grouped_meds[$mes_key]['dias'][$dia_key]['total_costo'] += $row['total_costo'];
+        $total_meds_venta += $row['total_venta'];
+        $total_meds_costo += $row['total_costo'];
+    }
+    $total_meds_ganancia = $total_meds_venta - $total_meds_costo;
+    $total_meds_margen = $total_meds_venta > 0 ? ($total_meds_ganancia / $total_meds_venta) * 100 : 0;
+
     // ============ REPORTE DETALLADO DE LABORATORIOS ============
 
     $labs_start_month = $_GET['labs_start'] ?? null;
@@ -1272,6 +1360,20 @@ try {
             font-size: 0.7rem;
         }
 
+        .charge-type-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.7rem; border-radius: 50px;
+            font-size: 0.72rem; font-weight: 700;
+        }
+        .charge-farmacia {
+            background: rgba(16, 185, 129, 0.12) !important;
+            color: #059669 !important;
+        }
+        .charge-hospitalizacion {
+            background: rgba(99, 102, 241, 0.12) !important;
+            color: #6366f1 !important;
+        }
+
         .accounting-ledger__label-text {
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1730,7 +1832,7 @@ try {
                         <i class="bi bi-cash-coin"></i> Contabilidad & Ratios
                     </button>
                     <button class="reports-tab-btn" data-tab="pharmacy">
-                        <i class="bi bi-capsule"></i> Ventas y Farmacia
+                        <i class="bi bi-capsule"></i> Auditoría de Medicamento
                     </button>
                     <button class="reports-tab-btn" data-tab="labs">
                         <i class="bi bi-droplet-half"></i> Auditoría de Labs
@@ -2079,9 +2181,9 @@ try {
                         <div>
                             <h3 class="section-title h4 mb-1">
                                 <i class="bi bi-capsule text-success me-2"></i>
-                                Rendimiento de Inventario y Farmacia
+                                Auditoría de Medicamento
                             </h3>
-                            <p class="text-muted small mb-0">Análisis de márgenes y rotación de productos</p>
+                            <p class="text-muted small mb-0">Desglose de medicamentos — Farmacia vs Hospitalización</p>
                         </div>
                         <div class="page-actions">
                             <div class="btn-group shadow-sm">
@@ -2249,6 +2351,133 @@ try {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- ======================================================================== -->
+                    <!-- DESGLOSE POR DÍA — FARMACIA vs HOSPITALIZACIÓN -->
+                    <!-- ======================================================================== -->
+                    <div class="section-header mt-5 mb-4">
+                        <h3 class="section-title h5 mb-1">
+                            <i class="bi bi-calendar-range text-info me-2"></i>
+                            Desglose por Día
+                        </h3>
+                        <p class="text-muted small mb-0">Medicamentos vendidos en Farmacia y administrados en Hospitalización</p>
+                    </div>
+
+                    <div class="custom-accordion-wrapper" id="medsAuditAccordion">
+                        <?php if (empty($grouped_meds)): ?>
+                            <div class="empty-report-hint">
+                                <i class="bi bi-bandaid"></i>
+                                No se encontraron movimientos de medicamentos en este periodo.
+                            </div>
+                        <?php else: ?>
+                            <?php ksort($grouped_meds); $mes_actual_key = date('Y-m'); ?>
+                            <?php foreach ($grouped_meds as $mes_key => $mes_data): ?>
+                                <details class="report-details level-1" name="meds_mes_accordion" <?php echo $mes_key === $mes_actual_key ? 'open' : ''; ?>>
+                                    <summary class="custom-summary">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                            <span><?php echo $mes_data['nombre']; ?></span>
+                                            <span class="badge bg-primary ms-3 rounded-pill"><?php echo count($mes_data['dias']); ?> días</span>
+                                        </div>
+                                        <span class="text-success">Q <?php echo number_format(array_sum(array_column($mes_data['dias'], 'total_venta')), 2); ?></span>
+                                    </summary>
+                                    <div class="report-details-body">
+                                        <?php ksort($mes_data['dias']); foreach ($mes_data['dias'] as $dia_key => $dia_data): ?>
+                                            <details class="report-details level-2" name="meds_dia_accordion">
+                                                <summary class="custom-summary">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-calendar-day me-2 text-info"></i>
+                                                        <span>Día: <?php echo date('d/m/Y', strtotime($dia_key)); ?></span>
+                                                        <span class="badge bg-info text-dark ms-3 rounded-pill"><?php echo count($dia_data['items']); ?> medicamentos</span>
+                                                    </div>
+                                                    <span class="text-success fw-semibold">Q <?php echo number_format($dia_data['total_venta'], 2); ?></span>
+                                                </summary>
+                                                <div class="report-details-body p-0">
+                                                    <div class="table-responsive">
+                                                        <table class="lab-items-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Medicamento</th>
+                                                                    <th>Origen</th>
+                                                                    <th class="text-center">Uds.</th>
+                                                                    <th class="text-end">P. Venta</th>
+                                                                    <th class="text-end">P. Costo</th>
+                                                                    <th class="text-end">Total Venta</th>
+                                                                    <th class="text-end">Total Costo</th>
+                                                                    <th class="text-end">Ganancia</th>
+                                                                    <th class="text-center">Margen</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <?php foreach ($dia_data['items'] as $item):
+                                                                    $p_venta = $item['cantidad'] > 0 ? $item['total_venta'] / $item['cantidad'] : 0;
+                                                                    $p_costo = $item['cantidad'] > 0 ? $item['total_costo'] / $item['cantidad'] : 0;
+                                                                    $ganancia = $item['total_venta'] - $item['total_costo'];
+                                                                    $margen = $item['total_venta'] > 0 ? ($ganancia / $item['total_venta']) * 100 : 0;
+                                                                    $origen_class = $item['origen'] === 'Farmacia' ? 'charge-farmacia' : 'charge-hospitalizacion';
+                                                                ?>
+                                                                    <tr>
+                                                                        <td><?php echo htmlspecialchars($item['nom_medicamento']); ?></td>
+                                                                        <td><span class="charge-type-badge <?php echo $origen_class; ?>"><?php echo $item['origen']; ?></span></td>
+                                                                        <td class="text-center"><?php echo $item['cantidad']; ?></td>
+                                                                        <td class="text-end text-muted">Q<?php echo number_format($p_venta, 2); ?></td>
+                                                                        <td class="text-end text-muted">Q<?php echo number_format($p_costo, 2); ?></td>
+                                                                        <td class="text-end fw-bold">Q<?php echo number_format($item['total_venta'], 2); ?></td>
+                                                                        <td class="text-end">Q<?php echo number_format($item['total_costo'], 2); ?></td>
+                                                                        <td class="text-end fw-bold <?php echo $ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">Q<?php echo number_format($ganancia, 2); ?></td>
+                                                                        <td class="text-center">
+                                                                            <?php
+                                                                            $margen_color = $margen > 30 ? 'bg-success' : ($margen > 15 ? 'bg-warning text-dark' : 'bg-danger');
+                                                                            ?>
+                                                                            <span class="badge <?php echo $margen_color; ?> rounded-pill px-2" style="min-width: 45px;">
+                                                                                <?php echo number_format($margen, 0); ?>%
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr class="table-light fw-bold">
+                                                                    <td colspan="2">Total del día</td>
+                                                                    <td class="text-center">—</td>
+                                                                    <td class="text-end">—</td>
+                                                                    <td class="text-end">—</td>
+                                                                    <td class="text-end text-success">Q<?php echo number_format($dia_data['total_venta'], 2); ?></td>
+                                                                    <td class="text-end">Q<?php echo number_format($dia_data['total_costo'], 2); ?></td>
+                                                                    <td class="text-end <?php echo ($dia_data['total_venta'] - $dia_data['total_costo']) >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                                                        Q<?php echo number_format($dia_data['total_venta'] - $dia_data['total_costo'], 2); ?>
+                                                                    </td>
+                                                                    <td class="text-center">—</td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </details>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                            <?php endforeach; ?>
+
+                            <!-- Totales generales -->
+                            <div class="mt-3 p-3 rounded" style="background: var(--color-surface);">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                    <span class="text-muted">
+                                        <i class="bi bi-box-seam me-1"></i>
+                                        <?php echo count($meds_farm) + count($meds_hosp); ?> registros —
+                                        <span class="badge charge-farmacia ms-1">Farmacia: <?php echo count($meds_farm); ?></span>
+                                        <span class="badge charge-hospitalizacion ms-1">Hospitalización: <?php echo count($meds_hosp); ?></span>
+                                    </span>
+                                    <div class="d-flex gap-4">
+                                        <span>Total Venta: <strong class="text-success">Q<?php echo number_format($total_meds_venta, 2); ?></strong></span>
+                                        <span>Total Costo: <strong class="text-danger">Q<?php echo number_format($total_meds_costo, 2); ?></strong></span>
+                                        <span>Ganancia: <strong class="<?php echo $total_meds_ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">Q<?php echo number_format($total_meds_ganancia, 2); ?></strong></span>
+                                        <span>Margen: <strong><?php echo number_format($total_meds_margen, 1); ?>%</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

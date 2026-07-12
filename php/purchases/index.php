@@ -346,6 +346,9 @@ try {
                 <button class="tab-btn" data-tab="pending-payments">
                     <i class="bi bi-clock-history me-2"></i>Pagos Pendientes
                 </button>
+                <button class="tab-btn" data-tab="paid-payments">
+                    <i class="bi bi-check-circle me-2"></i>Pagos Realizados
+                </button>
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
                 </button>
@@ -685,6 +688,93 @@ try {
                                 <h4 class="text-muted mb-2">¡Excelente gestión!</h4>
                                 <p class="text-muted mb-3">Todas las compras están completamente pagadas</p>
                             </div>
+                    <?php endif; ?>
+                </section>
+            </div>
+
+            <!-- Pestaña: Pagos Realizados -->
+            <div class="tab-content" id="paid-payments-tab">
+                <section class="appointments-section animate-in delay-2">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-check-circle text-success section-title-icon"></i>
+                            Compras Completamente Pagadas
+                        </h3>
+                        <div class="search-box">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text" id="searchPaid" placeholder="Buscar proveedor...">
+                        </div>
+                    </div>
+
+                    <?php
+                    try {
+                        $stmt_paid = $conn->prepare("
+                            SELECT * FROM purchase_headers
+                            WHERE payment_status = 'Pagado'
+                              AND id_hospital = ?
+                            ORDER BY purchase_date DESC, created_at DESC
+                        ");
+                        $stmt_paid->execute([$id_hospital]);
+                        $paid_purchases = $stmt_paid->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {
+                        $paid_purchases = [];
+                    }
+                    ?>
+
+                    <?php if (count($paid_purchases) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="appointments-table" id="tablePaid">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Proveedor</th>
+                                        <th>Documento</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-end">Pagado</th>
+                                        <th>Tipo Pago</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($paid_purchases as $purchase): ?>
+                                        <tr>
+                                            <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
+                                            <td class="fw-bold"><?php echo htmlspecialchars($purchase['provider_name']); ?></td>
+                                            <td>
+                                                <span class="badge badge-secondary">
+                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                    <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
+                                                </span>
+                                            </td>
+                                            <td class="text-end fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
+                                            <td class="text-end text-success">Q<?php echo number_format($purchase['paid_amount'], 2); ?></td>
+                                            <td>
+                                                <span class="badge <?php echo $purchase['tipo_pago'] === 'Contado' ? 'badge-primary' : 'badge-warning'; ?>">
+                                                    <?php echo htmlspecialchars($purchase['tipo_pago']); ?>
+                                                </span>
+                                            </td>
+                                            <td><span class="badge badge-success">Pagado</span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <p class="text-muted mb-2">
+                                Total pagado: <strong class="text-success">Q<?php
+                                    $total_paid = array_sum(array_column($paid_purchases, 'total_amount'));
+                                    echo number_format($total_paid, 2);
+                                ?></strong> en <strong><?php echo count($paid_purchases); ?></strong> compras
+                            </p>
+                        </div>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-inbox text-muted"></i>
+                            </div>
+                            <h4 class="text-muted mb-2">Sin pagos realizados</h4>
+                            <p class="text-muted mb-3">Aún no hay compras marcadas como pagadas</p>
+                        </div>
                     <?php endif; ?>
                 </section>
             </div>
@@ -1384,6 +1474,20 @@ try {
                         searchPending.addEventListener('input', function () {
                             const searchTerm = this.value.toLowerCase();
                             const rows = document.querySelectorAll('#tablePending tbody tr');
+
+                            rows.forEach(row => {
+                                const text = row.textContent.toLowerCase();
+                                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                            });
+                        });
+                    }
+
+                    // Búsqueda en tabla de pagos realizados
+                    const searchPaid = document.getElementById('searchPaid');
+                    if (searchPaid) {
+                        searchPaid.addEventListener('input', function () {
+                            const searchTerm = this.value.toLowerCase();
+                            const rows = document.querySelectorAll('#tablePaid tbody tr');
 
                             rows.forEach(row => {
                                 const text = row.textContent.toLowerCase();
