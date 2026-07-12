@@ -362,52 +362,17 @@ try {
     // Título de la página
     $page_title = "Reportes - Centro Médico Herrera Saenz";
 
-    // ============ REPORTE DE RENTABILIDAD DE FARMACIA ============
-
-    // Obtener fechas para filtro de rentabilidad (predeterminado: mes actual)
-    $profit_start = $_GET['profit_start'] ?? date('Y-m-01');
-    $profit_end = $_GET['profit_end'] ?? date('Y-m-d');
-
-    // Ajustar final del día para la fecha fin
-    $profit_end_datetime = $profit_end . ' 23:59:59';
-    $profit_start_datetime = $profit_start . ' 00:00:00';
-
-    $stmt_profitability = $conn->prepare("
-        SELECT 
-            i.nom_medicamento,
-            i.codigo_barras,
-            SUM(dv.cantidad_vendida) as cantidad_total,
-            SUM(dv.cantidad_vendida * dv.precio_unitario) as total_venta,
-            SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)) as total_costo
-        FROM detalle_ventas dv
-        JOIN ventas v ON dv.id_venta = v.id_venta
-        JOIN inventario i ON dv.id_inventario = i.id_inventario
-        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
-        WHERE v.fecha_venta BETWEEN ? AND ?
-        AND v.tipo_pago != 'Traslado'
-        AND dv.precio_unitario > 0
-        AND COALESCE(pi.unit_cost, 0) > 0
-        AND v.id_hospital = ?
-        GROUP BY i.id_inventario, i.nom_medicamento, i.codigo_barras
-        ORDER BY total_venta DESC
-    ");
-
-    $stmt_profitability->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
-    $profitability_data = $stmt_profitability->fetchAll(PDO::FETCH_ASSOC);
-
-    // Calcular totales generales del reporte
-    $total_profit_revenue = 0;
-    $total_profit_cost = 0;
-
-    foreach ($profitability_data as $row) {
-        $total_profit_revenue += $row['total_venta'];
-        $total_profit_cost += $row['total_costo'];
-    }
-
-    $total_profit_amount = $total_profit_revenue - $total_profit_cost;
-    $total_profit_margin = $total_profit_revenue > 0 ? ($total_profit_amount / $total_profit_revenue) * 100 : 0;
-
     // ============ REPORTE DETALLADO DE MEDICAMENTOS (Farmacia + Hospitalización) ============
+
+    // Año completo
+    $year_start_dt = date('Y-01-01 00:00:00');
+    $year_end_dt = date('Y-12-31 23:59:59');
+
+    // Mantener compatibilidad con export links de otros tabs
+    $profit_start = date('Y-01-01');
+    $profit_end = date('Y-12-31');
+    $profit_start_datetime = $year_start_dt;
+    $profit_end_datetime = $year_end_dt;
 
     $meds_farm = [];
     $meds_hosp = [];
@@ -432,7 +397,7 @@ try {
             AND v.id_hospital = ?
             GROUP BY i.id_inventario, i.nom_medicamento, DATE(v.fecha_venta)
         ");
-        $stmt_meds_farm->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
+        $stmt_meds_farm->execute([$year_start_dt, $year_end_dt, $id_hospital]);
         $meds_farm = $stmt_meds_farm->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         error_log('Error en reporte medicamentos farmacia: ' . $e->getMessage());
@@ -459,7 +424,7 @@ try {
             AND e.id_hospital = ?
             GROUP BY ch.descripcion, DATE(ch.fecha_cargo)
         ");
-        $stmt_meds_hosp->execute([$profit_start_datetime, $profit_end_datetime, $id_hospital]);
+        $stmt_meds_hosp->execute([$year_start_dt, $year_end_dt, $id_hospital]);
         $meds_hosp = $stmt_meds_hosp->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         error_log('Error en reporte medicamentos hospitalizacion: ' . $e->getMessage());
@@ -1667,6 +1632,52 @@ try {
             to { transform: rotate(360deg); }
         }
 
+        .paciente-row {
+            cursor: pointer;
+        }
+        .paciente-row:hover {
+            background: rgba(var(--color-primary-rgb), 0.06) !important;
+        }
+        .paciente-icon {
+            transition: transform 0.2s ease;
+            font-size: 0.85rem;
+        }
+        .detalle-row > td {
+            padding: 0 !important;
+            border-bottom: none !important;
+        }
+        .sub-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+        .sub-table th {
+            padding: 0.6rem 0.875rem;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            background: rgba(var(--color-primary-rgb), 0.05);
+            border-bottom: 1px solid var(--color-border);
+            text-align: left;
+        }
+        .sub-table th.text-end {
+            text-align: right;
+        }
+        .sub-table td {
+            padding: 0.55rem 0.875rem;
+            border-bottom: 1px solid rgba(var(--color-border-rgb), 0.5);
+            color: var(--color-text);
+            font-size: 0.82rem;
+        }
+        .sub-table td.text-end {
+            text-align: right;
+        }
+        .sub-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -2177,192 +2188,22 @@ try {
             <!-- TAB 3: VENTAS Y RENTABILIDAD DE FARMACIA -->
             <div id="tab-pharmacy" class="tab-content">
                 <div class="content-section animate-in">
-                    <div class="section-header align-items-end mb-4">
-                        <div>
-                            <h3 class="section-title h4 mb-1">
-                                <i class="bi bi-capsule text-success me-2"></i>
-                                Auditoría de Medicamento
-                            </h3>
-                            <p class="text-muted small mb-0">Desglose de medicamentos — Farmacia vs Hospitalización</p>
-                        </div>
-                        <div class="page-actions">
-                            <div class="btn-group shadow-sm">
-                                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=csv"
-                                    target="_blank" class="btn btn-outline-secondary btn-sm">
-                                    <i class="bi bi-filetype-csv"></i> CSV
-                                </a>
-                                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=excel"
-                                    target="_blank" class="btn btn-outline-secondary btn-sm">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i> Excel
-                                </a>
-                                <a href="export_sales.php?start=<?php echo $profit_start; ?>&end=<?php echo $profit_end; ?>&format=print"
-                                    target="_blank" class="btn btn-outline-secondary btn-sm">
-                                    <i class="bi bi-printer"></i> PDF
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Filtros de Rentabilidad -->
-                    <div class="card border-0 shadow-sm mb-4"
-                        style="background: var(--color-surface); border-radius: var(--radius-lg);">
-                        <div class="card-body p-3">
-                            <form method="GET" class="row g-3 align-items-end">
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold text-muted">Rango Inicial</label>
-                                    <input type="date" name="profit_start" class="form-control form-control-sm"
-                                        value="<?php echo $profit_start; ?>">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold text-muted">Rango Final</label>
-                                    <input type="date" name="profit_end" class="form-control form-control-sm"
-                                        value="<?php echo $profit_end; ?>">
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="hidden" name="fecha_filtro" value="<?php echo $fecha_filtro ?? ''; ?>">
-                                    <button type="submit" class="btn btn-primary btn-sm w-100 py-2">
-                                        <i class="bi bi-funnel-fill me-2"></i> Aplicar Filtro Temporal
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Resumen de Estadísticas -->
-                    <div class="stats-grid mb-4" style="margin-top: 2rem;">
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title">Ventas Totales</div>
-                                    <div class="stat-value">Q<?php echo number_format($total_profit_revenue, 2); ?>
-                                    </div>
-                                </div>
-                                <div class="stat-icon info">
-                                    <i class="bi bi-currency-dollar"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title">Costos Totales</div>
-                                    <div class="stat-value">Q<?php echo number_format($total_profit_cost, 2); ?></div>
-                                </div>
-                                <div class="stat-icon danger">
-                                    <i class="bi bi-cart-x"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-header">
-                                <div>
-                                    <div class="stat-title">Ganancia Neta</div>
-                                    <div class="stat-value">Q<?php echo number_format($total_profit_amount, 2); ?></div>
-                                    <div class="stat-label mt-1 fw-bold text-success">
-                                        <?php echo number_format($total_profit_margin, 1); ?>% Margen
-                                    </div>
-                                </div>
-                                <div class="stat-icon success">
-                                    <i class="bi bi-graph-up-arrow"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Buscador dinámico en tiempo real para medicamentos -->
-                    <div class="search-wrapper">
-                        <i class="bi bi-search search-icon"></i>
-                        <input type="search" id="pharmacySearch" class="search-input"
-                            placeholder="Buscar por nombre de medicamento o código de barras...">
-                    </div>
-
-                    <!-- Tabla de Detalles de Rentabilidad -->
-                    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--radius-lg);">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 profit-table">
-                                <thead class="bg-light">
-                                    <tr style="border-bottom: 2px solid var(--color-border);">
-                                        <th class="ps-4 py-3 text-muted small text-uppercase">Medicamento / Producto
-                                        </th>
-                                        <th class="text-center py-3 text-muted small text-uppercase">Uds.</th>
-                                        <th class="text-end py-3 text-muted small text-uppercase">P. Venta</th>
-                                        <th class="text-end py-3 text-muted small text-uppercase">P. Costo</th>
-                                        <th class="text-end py-3 text-muted small text-uppercase">Venta Total</th>
-                                        <th class="text-end py-3 text-muted small text-uppercase">Ganancia</th>
-                                        <th class="pe-4 py-3 text-center text-muted small text-uppercase">Margen %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($profitability_data as $row):
-                                        $ganancia = $row['total_venta'] - $row['total_costo'];
-                                        $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
-                                        $p_venta_unit = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
-                                        $p_costo_unit = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
-                                        ?>
-                                            <tr>
-                                                <td class="ps-4 py-3">
-                                                    <div class="fw-bold" style="color: var(--color-text);">
-                                                        <?php echo htmlspecialchars($row['nom_medicamento']); ?>
-                                                    </div>
-                                                    <?php if (!empty($row['codigo_barras'])): ?>
-                                                            <div class="text-muted" style="font-size: 0.7rem;">
-                                                                <i
-                                                                    class="bi bi-upc-scan me-1"></i><?php echo htmlspecialchars($row['codigo_barras']); ?>
-                                                            </div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td class="text-center py-3">
-                                                    <span
-                                                        class="badge bg-light text-dark border"><?php echo $row['cantidad_total']; ?></span>
-                                                </td>
-                                                <td class="text-end py-3 text-muted">
-                                                    Q<?php echo number_format($p_venta_unit, 2); ?></td>
-                                                <td class="text-end py-3 text-muted">
-                                                    Q<?php echo number_format($p_costo_unit, 2); ?></td>
-                                                <td class="text-end py-3 fw-bold">
-                                                    Q<?php echo number_format($row['total_venta'], 2); ?></td>
-                                                <td class="text-end py-3">
-                                                    <span
-                                                        class="fw-bold <?php echo $ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">
-                                                        Q<?php echo number_format($ganancia, 2); ?>
-                                                    </span>
-                                                </td>
-                                                <td class="pe-4 py-3 text-center">
-                                                    <?php
-                                                    $margen_color = $margen > 30 ? 'bg-success' : ($margen > 15 ? 'bg-warning text-dark' : 'bg-danger');
-                                                    ?>
-                                                    <span class="badge <?php echo $margen_color; ?> rounded-pill px-2"
-                                                        style="min-width: 45px;">
-                                                        <?php echo number_format($margen, 0); ?>%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                    <?php endforeach; ?>
-                                    <?php if (empty($profitability_data)): ?>
-                                            <tr>
-                                                <td colspan="7" class="text-center py-5">
-                                                    <div class="text-muted opacity-50 mb-2">
-                                                        <i class="bi bi-folder-x h1"></i>
-                                                    </div>
-                                                    <p class="text-muted">No se registran movimientos en el periodo</p>
-                                                </td>
-                                            </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="section-header">
+                        <h3 class="section-title h4 mb-1">
+                            <i class="bi bi-capsule text-success me-2"></i>
+                            Auditoría de Medicamento
+                        </h3>
+                        <p class="text-muted small mb-0">Desglose de medicamentos — Farmacia vs Hospitalización</p>
                     </div>
 
                     <!-- ======================================================================== -->
                     <!-- DESGLOSE POR DÍA — FARMACIA vs HOSPITALIZACIÓN -->
                     <!-- ======================================================================== -->
-                    <div class="section-header mt-5 mb-4">
-                        <h3 class="section-title h5 mb-1">
-                            <i class="bi bi-calendar-range text-info me-2"></i>
-                            Desglose por Día
-                        </h3>
-                        <p class="text-muted small mb-0">Medicamentos vendidos en Farmacia y administrados en Hospitalización</p>
-                    </div>
+                    <h3 class="section-title h5 mb-1">
+                        <i class="bi bi-calendar-range text-info me-2"></i>
+                        Desglose por Día
+                    </h3>
+                    <p class="text-muted small mb-0">Medicamentos vendidos en Farmacia y administrados en Hospitalización</p>
 
                     <div class="custom-accordion-wrapper" id="medsAuditAccordion">
                         <?php if (empty($grouped_meds)): ?>
@@ -2371,7 +2212,7 @@ try {
                                 No se encontraron movimientos de medicamentos en este periodo.
                             </div>
                         <?php else: ?>
-                            <?php ksort($grouped_meds); $mes_actual_key = date('Y-m'); ?>
+                            <?php krsort($grouped_meds); $mes_actual_key = date('Y-m'); ?>
                             <?php foreach ($grouped_meds as $mes_key => $mes_data): ?>
                                 <details class="report-details level-1" name="meds_mes_accordion" <?php echo $mes_key === $mes_actual_key ? 'open' : ''; ?>>
                                     <summary class="custom-summary">
@@ -2383,7 +2224,7 @@ try {
                                         <span class="text-success">Q <?php echo number_format(array_sum(array_column($mes_data['dias'], 'total_venta')), 2); ?></span>
                                     </summary>
                                     <div class="report-details-body">
-                                        <?php ksort($mes_data['dias']); foreach ($mes_data['dias'] as $dia_key => $dia_data): ?>
+                                        <?php krsort($mes_data['dias']); foreach ($mes_data['dias'] as $dia_key => $dia_data): ?>
                                             <details class="report-details level-2" name="meds_dia_accordion">
                                                 <summary class="custom-summary">
                                                     <div class="d-flex align-items-center">
@@ -2980,39 +2821,6 @@ try {
             }
 
             // ==========================================================================
-            // FILTRO DE BÚSQUEDA EN TIEMPO REAL (FARMACIA)
-            // ==========================================================================
-            class PharmacySearch {
-                constructor() {
-                    this.input = document.getElementById('pharmacySearch');
-                    this.rows = document.querySelectorAll('.profit-table tbody tr');
-                    this.init();
-                }
-
-                init() {
-                    if (!this.input) return;
-
-                    this.input.addEventListener('input', (e) => {
-                        const query = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-                        this.rows.forEach(row => {
-                            const nameEl = row.querySelector('.fw-bold');
-                            const barcodeEl = row.querySelector('.text-muted');
-
-                            const nameText = nameEl ? nameEl.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
-                            const barcodeText = barcodeEl ? barcodeEl.textContent.toLowerCase() : '';
-
-                            if (nameText.includes(query) || barcodeText.includes(query)) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
-                        });
-                    });
-                }
-            }
-
-            // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
             // ==========================================================================
             document.addEventListener('DOMContentLoaded', () => {
@@ -3020,14 +2828,12 @@ try {
                 const themeManager = new ThemeManager();
                 const animationManager = new AnimationManager();
                 const tabManager = new TabManager();
-                const pharmacySearch = new PharmacySearch();
 
                 // Exponer APIs necesarias globalmente
                 window.dashboard = {
                     theme: themeManager,
                     animations: animationManager,
-                    tabs: tabManager,
-                    search: pharmacySearch
+                    tabs: tabManager
                 };
 
                 // ==========================================================================
@@ -3099,6 +2905,15 @@ try {
                     document.getElementById('desgloseCostoFooter').style.display = hasCosto ? '' : 'none';
                     document.getElementById('desgloseProfitFooter').style.display = hasCosto ? '' : 'none';
 
+                    if (data.categoria === 'hospitalizacion') {
+                        renderHospitalizacionAcordeon(rows, hasCosto);
+                        document.getElementById('desgloseTotal').textContent = 'Q' + formatNumber(totalMonto);
+                        document.getElementById('desgloseTotalCosto').textContent = 'Q' + formatNumber(totalCosto);
+                        document.getElementById('desgloseProfit').textContent = 'Q' + formatNumber(totalProfit);
+                        document.getElementById('desgloseProfit').style.color = totalProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+                        return;
+                    }
+
                     var html = '<table class="desglose-table"><thead><tr>' +
                         '<th class="row-num">#</th>' +
                         '<th>Fecha</th>' +
@@ -3142,6 +2957,93 @@ try {
                 function formatNumber(n) {
                     return Number(n).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 }
+
+                function renderHospitalizacionAcordeon(rows, hasCosto) {
+                    var grupos = {};
+                    for (var i = 0; i < rows.length; i++) {
+                        var r = rows[i];
+                        var paciente = r.paciente || '—';
+                        if (!grupos[paciente]) {
+                            grupos[paciente] = { rows: [], totalMonto: 0, totalCosto: 0 };
+                        }
+                        grupos[paciente].rows.push(r);
+                        grupos[paciente].totalMonto += r.monto;
+                        grupos[paciente].totalCosto += (r.costo || 0);
+                    }
+
+                    var pacientes = Object.keys(grupos).sort(function(a, b) {
+                        return grupos[b].totalMonto - grupos[a].totalMonto;
+                    });
+
+                    var html = '<table class="desglose-table"><thead><tr>' +
+                        '<th style="width:32px"></th>' +
+                        '<th>Paciente</th>' +
+                        '<th class="text-end">Total Monto</th>';
+                    if (hasCosto) {
+                        html += '<th class="text-end">Total Costo</th><th class="text-end">Total Ganancia</th>';
+                    }
+                    html += '</tr></thead><tbody>';
+
+                    for (var i = 0; i < pacientes.length; i++) {
+                        var p = pacientes[i];
+                        var g = grupos[p];
+                        var profit = g.totalMonto - g.totalCosto;
+                        var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                        var detailId = 'detalle-paciente-' + i;
+
+                        html += '<tr class="paciente-row" onclick="togglePacienteDetalle(\'' + detailId + '\', this)">' +
+                            '<td class="text-center"><i class="bi bi-chevron-right paciente-icon"></i></td>' +
+                            '<td><strong>' + escapeHtml(p) + '</strong> <span class="text-muted small">(' + g.rows.length + ' cargos)</span></td>' +
+                            '<td class="text-end fw-bold text-success">Q' + formatNumber(g.totalMonto) + '</td>';
+                        if (hasCosto) {
+                            html += '<td class="text-end text-danger">Q' + formatNumber(g.totalCosto) + '</td>' +
+                                '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
+                        }
+                        html += '</tr>';
+                        html += '<tr id="' + detailId + '" class="detalle-row" style="display:none">' +
+                            '<td colspan="' + (hasCosto ? 5 : 3) + '" style="padding:0">' +
+                            '<table class="sub-table"><thead><tr>' +
+                            '<th>Fecha</th><th>Descripción</th>' +
+                            '<th class="text-end">Monto</th>';
+                        if (hasCosto) {
+                            html += '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>';
+                        }
+                        html += '</tr></thead><tbody>';
+
+                        for (var j = 0; j < g.rows.length; j++) {
+                            var r = g.rows[j];
+                            var rProfit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
+                            var rProfitClass = rProfit >= 0 ? 'text-success' : 'text-danger';
+                            html += '<tr>' +
+                                '<td>' + (r.fecha || '') + '</td>' +
+                                '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
+                                '<td class="text-end text-success">Q' + formatNumber(r.monto) + '</td>';
+                            if (hasCosto) {
+                                html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
+                                    '<td class="text-end fw-bold ' + rProfitClass + '">Q' + formatNumber(rProfit) + '</td>';
+                            }
+                            html += '</tr>';
+                        }
+
+                        html += '</tbody></table>' +
+                            '</td></tr>';
+                    }
+
+                    html += '</tbody></table>';
+                    document.getElementById('desgloseBody').innerHTML = html;
+                }
+
+                window.togglePacienteDetalle = function(id, row) {
+                    var detalle = document.getElementById(id);
+                    var icon = row.querySelector('.paciente-icon');
+                    if (detalle.style.display === 'none') {
+                        detalle.style.display = '';
+                        icon.className = 'bi bi-chevron-down paciente-icon';
+                    } else {
+                        detalle.style.display = 'none';
+                        icon.className = 'bi bi-chevron-right paciente-icon';
+                    }
+                };
 
                 // ==========================================================================
                 // SWITCH FILTRO TIPO (JORNADA / MES)

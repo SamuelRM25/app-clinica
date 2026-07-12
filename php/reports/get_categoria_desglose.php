@@ -174,19 +174,26 @@ $queries['procedimientos'] = [
 
 $queries['hospitalizacion'] = [
     'sql' => "SELECT
-                DATE(e.fecha_alta) AS fecha,
+                DATE(ch.fecha_cargo) AS fecha,
                 COALESCE(CONCAT(p.nombre, ' ', p.apellido), '—') AS paciente,
-                CONCAT('Hab. ', h.numero_habitacion, ' / Cama ', c.numero_cama) AS descripcion,
-                ch.total_general AS monto,
-                0 AS costo
-              FROM cuenta_hospitalaria ch
-              JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
-              JOIN camas c ON e.id_cama = c.id_cama
-              JOIN habitaciones h ON c.id_habitacion = h.id_habitacion
+                CONCAT(ch.tipo_cargo, ': ', ch.descripcion) AS descripcion,
+                ch.subtotal AS monto,
+                CASE WHEN ch.tipo_cargo IN ('Medicamento','Insumo')
+                          AND i.id_purchase_item IS NOT NULL
+                     THEN ch.cantidad * COALESCE(pi.unit_cost, 0)
+                     ELSE 0
+                END AS costo
+              FROM cargos_hospitalarios ch
+              JOIN cuenta_hospitalaria cu ON ch.id_cuenta = cu.id_cuenta
+              JOIN encamamientos e ON cu.id_encamamiento = e.id_encamamiento
               LEFT JOIN pacientes p ON e.id_paciente = p.id_paciente
-              WHERE e.fecha_alta BETWEEN ? AND ?
+              LEFT JOIN inventario i ON ch.referencia_id = i.id_inventario
+                                    AND ch.referencia_tabla = 'inventario'
+              LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+              WHERE ch.cancelado = 0
+                AND ch.fecha_cargo BETWEEN ? AND ?
                 AND e.id_hospital = ?
-              ORDER BY e.fecha_alta DESC",
+              ORDER BY e.id_encamamiento DESC, ch.fecha_cargo ASC",
     'params' => [$start, $end, $id_hospital],
 ];
 
@@ -233,7 +240,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['laboratorio', 'hospitalizacion', 'gastos_varios', 'pago_proveedores']);
+    $has_costo = !in_array($categoria, ['laboratorio', 'gastos_varios', 'pago_proveedores']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);
