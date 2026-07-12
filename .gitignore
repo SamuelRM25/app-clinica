@@ -7,3 +7,4 @@ send_contact.php
 .DS_Store
 admin.php
 .DS_Store
+config/hospital.php
