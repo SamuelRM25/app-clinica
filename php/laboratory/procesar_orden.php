@@ -138,7 +138,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40"
                         height="40">
                 </div>
 

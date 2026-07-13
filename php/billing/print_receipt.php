@@ -132,7 +132,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=optional"
         rel="stylesheet">
 
     <!-- Bootstrap Icons -->
