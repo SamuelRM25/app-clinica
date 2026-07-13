@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $database = new Database();
         $conn = $database->getConnection();
 
-        $stmt = $conn->prepare("INSERT INTO inventario (codigo_barras, nom_medicamento, mol_medicamento, presentacion_med, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento, precio_venta, precio_compra, precio_hospital, precio_medico, precio_especial, stock_hospital, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO inventario (codigo_barras, nom_medicamento, mol_medicamento, presentacion_med, casa_farmaceutica, cantidad_med, fecha_adquisicion, fecha_vencimiento, precio_venta, precio_compra, precio_hospital, precio_medico, precio_especial, stock_hospital, stock_quirofano, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $result = $stmt->execute([
             $_POST['codigo_barras'] ?? null,
@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['precio_medico'] ?? 0.00,
             $_POST['precio_especial'] ?? 0.00,
             $_POST['stock_hospital'] ?? 0,
+            $_POST['stock_quirofano'] ?? 0,
             $id_hospital
         ]);
 

@@ -26,6 +26,7 @@ $available_modules = [
     'sales' => ['label' => 'Ventas y Facturación', 'icon' => 'bi-receipt', 'precio_mes' => 149, 'precio_anual' => 1490, 'desc' => 'Registro de ventas con detalle por ítem.'],
     'finances' => ['label' => 'Cuentas Hospitalarias', 'icon' => 'bi-cash-stack', 'precio_mes' => 199, 'precio_anual' => 1990, 'desc' => 'Facturación compleja, abonos y saldos de hospitalización.'],
     'reports' => ['label' => 'Reportes Estadísticos', 'icon' => 'bi-graph-up', 'precio_mes' => 99, 'precio_anual' => 990, 'desc' => 'Reportes financieros, de pacientes y de desempeño.'],
+    'surgery' => ['label' => 'Quirófano', 'icon' => 'bi-bandaid', 'precio_mes' => 399, 'precio_anual' => 3990, 'desc' => 'Gestión de cirugías, procedimientos quirúrgicos y consumo de stock especializado.'],
 ];
 ?>
 <!DOCTYPE html>

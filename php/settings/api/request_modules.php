@@ -39,7 +39,7 @@ try {
         exit;
     }
 
-    $validos = ['core','pharmacy','hospitalization','laboratory','inventory','imaging','purchases','sales','finances','reports'];
+    $validos = ['core','pharmacy','hospitalization','laboratory','inventory','imaging','purchases','sales','finances','reports','surgery'];
     foreach ($modulos as $m) {
         if (!in_array($m, $validos)) {
             echo json_encode(['status' => 'error', 'message' => 'Módulo inválido: ' . $m]);

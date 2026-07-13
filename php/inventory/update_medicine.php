@@ -28,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
                                 precio_hospital = ?,
                                 precio_medico = ?,
                                 precio_especial = ?,
-                                stock_hospital = ?
+                                stock_hospital = ?,
+                                stock_quirofano = ?
                                 WHERE id_inventario = ? AND id_hospital = ?");
 
         $result = $stmt->execute([
@@ -46,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
             $_POST['precio_medico'] ?? 0.00,
             $_POST['precio_especial'] ?? 0.00,
             $_POST['stock_hospital'] ?? 0,
+            $_POST['stock_quirofano'] ?? 0,
             $_POST['id_inventario'],
             $id_hospital
         ]);

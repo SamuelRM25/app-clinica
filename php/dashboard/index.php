@@ -779,6 +779,23 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <?php endif; ?>
                 <?php endif; ?>
 
+                <!-- Quirófano -->
+                <?php if ($user_type === 'admin'): ?>
+                <li class="nav-item">
+                    <?php if (is_module_active('surgery')): ?>
+                            <a href="../surgery/index.php" class="nav-link">
+                                <i class="bi bi-bandaid nav-icon"></i>
+                                <span class="nav-text">Quirófano</span>
+                            </a>
+                    <?php else: ?>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Quirófano')">
+                                <i class="bi bi-bandaid nav-icon"></i>
+                                <span class="nav-text">Quirófano</span>
+                            </a>
+                    <?php endif; ?>
+                </li>
+                <?php endif; ?>
+
                 <!-- Laboratorio -->
                 <?php if ($user_type === 'admin' || $user_type === 'user'): ?>
                 <?php if (!$is_restricted || in_array('laboratory', $allowed_modules)): ?>

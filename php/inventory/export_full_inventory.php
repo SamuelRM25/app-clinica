@@ -30,7 +30,9 @@ fputcsv($output, array(
     'Molecula',
     'Presentacion',
     'Casa Farmaceutica',
-    'Cantidad',
+    'Cantidad (Farmacia)',
+    'Stock Hospitalizacion',
+    'Stock Quirofano',
     'Fecha Adquisicion',
     'Fecha Vencimiento',
     'Estado',
@@ -38,8 +40,7 @@ fputcsv($output, array(
     'Factura Compra',
     'Precio Venta',
     'Precio Hospital',
-    'Precio Medico',
-    'Stock Hospital'
+    'Precio Medico'
 ));
 
 try {
@@ -67,6 +68,8 @@ try {
             $row['presentacion_med'],
             $row['casa_farmaceutica'],
             $row['cantidad_med'],
+            $row['stock_hospital'],
+            $row['stock_quirofano'] ?? 0,
             $row['fecha_adquisicion'],
             $row['fecha_vencimiento'],
             $row['estado'],
@@ -74,8 +77,7 @@ try {
             $row['document_number'] ?? 'N/A',
             $row['precio_venta'],
             $row['precio_hospital'],
-            $row['precio_medico'],
-            $row['stock_hospital']
+            $row['precio_medico']
         ));
     }
 } catch (Exception $e) {

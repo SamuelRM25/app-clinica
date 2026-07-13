@@ -783,6 +783,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                                             <i class="bi bi-hospital me-1"></i>Hosp:
                                                             <?php echo $item['stock_hospital'] ?? 0; ?>
                                                         </span>
+                                                        <span class="status-badge" style="background: rgba(168, 85, 247, 0.15); color: #7c3aed;">
+                                                            <i class="bi bi-bandaid me-1"></i>Qx:
+                                                            <?php echo $item['stock_quirofano'] ?? 0; ?>
+                                                        </span>
                                                     </div>
                                                     <?php if ($estado === 'Pendiente'): ?>
                                                             <div class="mt-1">
@@ -848,6 +852,153 @@ document.addEventListener('DOMContentLoaded', function() {
                             <?php endif; ?>
                         </div>
                 <?php endif; ?>
+            </section>
+
+            <!-- Reporte de Inventario por Servicio (Farmacia / Hospitalización / Quirófano) -->
+            <section class="appointments-section animate-in delay-3" id="reportePorServicio">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="bi bi-diagram-3 section-title-icon"></i>
+                        Reporte de Inventario por Servicio
+                    </h3>
+                    <div class="action-buttons">
+                        <a href="export_inventory_by_service.php?servicio=quirofano" class="action-btn"
+                            style="background: #7c3aed;">
+                            <i class="bi bi-bandaid"></i> Exportar Quirófano
+                        </a>
+                        <a href="export_inventory_by_service.php?servicio=hospital" class="action-btn"
+                            style="background: var(--color-info);">
+                            <i class="bi bi-hospital"></i> Exportar Hospitalización
+                        </a>
+                        <a href="export_inventory_by_service.php?servicio=farmacia" class="action-btn"
+                            style="background: var(--color-success);">
+                            <i class="bi bi-shop"></i> Exportar Farmacia
+                        </a>
+                    </div>
+                </div>
+
+                <?php
+                // Calcular KPIs por servicio
+                $total_farmacia = 0;
+                $total_hospital = 0;
+                $total_quirofano = 0;
+                $items_farmacia = 0;
+                $items_hospital = 0;
+                $items_quirofano = 0;
+                foreach ($inventory_items as $it) {
+                    $total_farmacia += (int)($it['cantidad_med'] ?? 0);
+                    $total_hospital += (int)($it['stock_hospital'] ?? 0);
+                    $total_quirofano += (int)($it['stock_quirofano'] ?? 0);
+                    if ((int)($it['cantidad_med'] ?? 0) > 0) $items_farmacia++;
+                    if ((int)($it['stock_hospital'] ?? 0) > 0) $items_hospital++;
+                    if ((int)($it['stock_quirofano'] ?? 0) > 0) $items_quirofano++;
+                }
+                ?>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--color-success) !important;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="text-muted mb-0 fw-bold"><i class="bi bi-shop me-2"></i>Farmacia</h6>
+                                    <span class="badge bg-success-subtle text-success"><?php echo $items_farmacia; ?> items</span>
+                                </div>
+                                <div class="display-6 fw-bold text-success"><?php echo number_format($total_farmacia); ?></div>
+                                <small class="text-muted">unidades totales</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--color-info) !important;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="text-muted mb-0 fw-bold"><i class="bi bi-hospital me-2"></i>Hospitalización</h6>
+                                    <span class="badge bg-info-subtle text-info"><?php echo $items_hospital; ?> items</span>
+                                </div>
+                                <div class="display-6 fw-bold text-info"><?php echo number_format($total_hospital); ?></div>
+                                <small class="text-muted">unidades totales</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #7c3aed !important;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="text-muted mb-0 fw-bold"><i class="bi bi-bandaid me-2"></i>Quirófano</h6>
+                                    <span class="badge" style="background: rgba(168,85,247,0.15); color: #7c3aed;"><?php echo $items_quirofano; ?> items</span>
+                                </div>
+                                <div class="display-6 fw-bold" style="color: #7c3aed;"><?php echo number_format($total_quirofano); ?></div>
+                                <small class="text-muted">unidades totales</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla comparativa por servicio -->
+                <div class="table-responsive">
+                    <table class="appointments-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Molécula</th>
+                                <th>Presentación</th>
+                                <th class="text-center" style="color: var(--color-success);"><i class="bi bi-shop me-1"></i>Farmacia</th>
+                                <th class="text-center" style="color: var(--color-info);"><i class="bi bi-hospital me-1"></i>Hospitalización</th>
+                                <th class="text-center" style="color: #7c3aed;"><i class="bi bi-bandaid me-1"></i>Quirófano</th>
+                                <th class="text-end">P. Venta</th>
+                                <th>Vencimiento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($inventory_items as $item): ?>
+                                <tr>
+                                    <td>
+                                        <div class="patient-cell">
+                                            <div class="patient-avatar" style="background: var(--color-primary);">
+                                                <i class="bi bi-capsule"></i>
+                                            </div>
+                                            <div class="patient-info">
+                                                <div class="patient-name"><?php echo htmlspecialchars($item['nom_medicamento']); ?></div>
+                                                <div class="patient-contact"><?php echo htmlspecialchars($item['casa_farmaceutica']); ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="text-muted"><?php echo htmlspecialchars($item['mol_medicamento']); ?></span></td>
+                                    <td><?php echo htmlspecialchars($item['presentacion_med']); ?></td>
+                                    <td class="text-center">
+                                        <?php $cf = (int)($item['cantidad_med'] ?? 0); ?>
+                                        <span class="badge <?php echo $cf > 0 ? 'bg-success' : 'bg-light text-muted'; ?>"><?php echo $cf; ?></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php $ch = (int)($item['stock_hospital'] ?? 0); ?>
+                                        <span class="badge <?php echo $ch > 0 ? 'bg-info' : 'bg-light text-muted'; ?>"><?php echo $ch; ?></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php $cq = (int)($item['stock_quirofano'] ?? 0); ?>
+                                        <span class="badge <?php echo $cq > 0 ? '' : 'bg-light text-muted'; ?>" style="<?php echo $cq > 0 ? 'background: #7c3aed; color: white;' : ''; ?>"><?php echo $cq; ?></span>
+                                    </td>
+                                    <td class="text-end fw-semibold">Q<?php echo number_format((float)($item['precio_venta'] ?? 0), 2); ?></td>
+                                    <td>
+                                        <?php if (!empty($item['fecha_vencimiento'])): ?>
+                                            <?php echo date('d/m/Y', strtotime($item['fecha_vencimiento'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <td colspan="3" class="text-end fw-bold">TOTALES:</td>
+                                <td class="text-center fw-bold text-success"><?php echo number_format($total_farmacia); ?></td>
+                                <td class="text-center fw-bold text-info"><?php echo number_format($total_hospital); ?></td>
+                                <td class="text-center fw-bold" style="color: #7c3aed;"><?php echo number_format($total_quirofano); ?></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </section>
 
             <!-- Panel de alertas -->
@@ -999,14 +1150,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="text" class="form-control" id="casa_farmaceutica" name="casa_farmaceutica"
                                 required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="cantidad_med" class="form-label">Stock Farmacia</label>
                             <input type="number" class="form-control" id="cantidad_med" name="cantidad_med" min="0"
                                 required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="stock_hospital" class="form-label">Stock Hospital</label>
                             <input type="number" class="form-control" id="stock_hospital" name="stock_hospital" min="0"
+                                value="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="stock_quirofano" class="form-label">Stock Quirófano</label>
+                            <input type="number" class="form-control" id="stock_quirofano" name="stock_quirofano" min="0"
                                 value="0" required>
                         </div>
                         <div class="col-md-3">
@@ -1021,8 +1177,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <label for="precio_venta" class="form-label">Precio Venta</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
-                                <input type="number" class="form-control" id="precio_venta" name="precio_venta" min="0"
-                                    step="0.01" required>
+                                <input type="number" class="form-control" id="precio_venta" name="precio_venta"
+                                    min="0" step="0.01" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -1116,19 +1272,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="text" class="form-control" id="edit_casa_farmaceutica" name="casa_farmaceutica"
                                 required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold">Stock Total</label>
                             <input type="number" class="form-control bg-light" id="edit_total_stock" readonly>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="edit_cantidad_med" class="form-label">Stock Farmacia</label>
                             <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med" min="0"
-                                required oninput="updateStockDistribution('pharmacy')">
+                                required oninput="updateStockDistribution('edit_cantidad_med')">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
                             <input type="number" class="form-control" id="edit_stock_hospital" name="stock_hospital"
-                                min="0" required oninput="updateStockDistribution('hospital')">
+                                min="0" required oninput="updateStockDistribution('edit_stock_hospital')">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_stock_quirofano" class="form-label">Stock Quirófano</label>
+                            <input type="number" class="form-control" id="edit_stock_quirofano" name="stock_quirofano"
+                                min="0" required oninput="updateStockDistribution('edit_stock_quirofano')">
                         </div>
                         <div class="col-md-3">
                             <label for="edit_precio_compra" class="form-label">Precio Compra</label>
@@ -1194,6 +1355,26 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 
+    <!-- Modal para ajuste de stock (mantener total fijo) -->
+    <div class="custom-modal-overlay" id="stockAdjustmentModal">
+        <div class="custom-modal" style="max-width: 480px;">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-shuffle me-2"></i>
+                    Ajuste de Stock
+                </h5>
+                <button type="button" class="custom-modal-close" onclick="cancelStockAdjustment()">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div id="adjustmentMessage" class="mb-3"></div>
+                <div id="adjustmentOptions" class="d-flex flex-column gap-2"></div>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="action-btn secondary" onclick="cancelStockAdjustment()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para recibir medicamento -->
     <div class="custom-modal-overlay" id="receiveMedicineModal">
         <div class="custom-modal">
@@ -1246,35 +1427,147 @@ document.addEventListener('DOMContentLoaded', function() {
         (function () {
             'use strict';
 
-            // Función Global para distribución de stock
-            window.updateStockDistribution = function (source) {
-                const totalEl = document.getElementById('edit_total_stock');
-                const pharmacyEl = document.getElementById('edit_cantidad_med');
-                const hospitalEl = document.getElementById('edit_stock_hospital');
+            // Estado para ajuste de stock (total físico nunca cambia)
+            let physicalTotal = 0;
+            let lastValidValues = { pharmacy: 0, hospital: 0, quirofano: 0 };
+            let stockAdjustmentState = null;
 
-                if (!totalEl || !pharmacyEl || !hospitalEl) return;
+            // Función Global para distribución de stock (mantiene total fijo con confirmación)
+            window.updateStockDistribution = function (changedFieldId) {
+                if (!document.getElementById('edit_cantidad_med')) return;
 
-                const total = parseInt(totalEl.value) || 0;
-                let pharmacy = parseInt(pharmacyEl.value) || 0;
-                let hospital = parseInt(hospitalEl.value) || 0;
+                const pharmacy = parseInt(document.getElementById('edit_cantidad_med').value) || 0;
+                const hospital = parseInt(document.getElementById('edit_stock_hospital').value) || 0;
+                const quirofano = parseInt(document.getElementById('edit_stock_quirofano').value) || 0;
+                const sum = pharmacy + hospital + quirofano;
 
-                if (source === 'pharmacy') {
-                    // Si cambio farmacia, el resto va a hospital
-                    if (pharmacy > total) {
-                        pharmacy = total;
-                        pharmacyEl.value = total;
-                    }
-                    hospital = total - pharmacy;
-                    hospitalEl.value = hospital;
-                } else if (source === 'hospital') {
-                    // Si cambio hospital, el resto va a farmacia
-                    if (hospital > total) {
-                        hospital = total;
-                        hospitalEl.value = total;
-                    }
-                    pharmacy = total - hospital;
-                    pharmacyEl.value = pharmacy;
+                if (sum === physicalTotal) {
+                    lastValidValues = { pharmacy, hospital, quirofano };
+                    return;
                 }
+
+                const diff = sum - physicalTotal; // positivo = excedente, negativo = déficit
+                const absDiff = Math.abs(diff);
+
+                const fieldLabels = {
+                    'edit_cantidad_med': 'Farmacia',
+                    'edit_stock_hospital': 'Hospital',
+                    'edit_stock_quirofano': 'Quirófano'
+                };
+
+                const elIds = ['edit_cantidad_med', 'edit_stock_hospital', 'edit_stock_quirofano'];
+                const currentValues = {};
+                elIds.forEach(id => { currentValues[id] = parseInt(document.getElementById(id).value) || 0; });
+
+                const otherFields = elIds.filter(id => id !== changedFieldId);
+                let message, options = [];
+
+                if (diff > 0) {
+                    message = 'El Stock Total (' + physicalTotal + ') está excedido en <strong>' + absDiff + '</strong> unidades.<br>Seleccione de dónde descontar:';
+                    options = otherFields
+                        .filter(id => currentValues[id] >= absDiff)
+                        .map(id => ({
+                            fieldId: id,
+                            label: fieldLabels[id],
+                            currentValue: currentValues[id],
+                            newValue: currentValues[id] - absDiff,
+                            action: 'descontar'
+                        }));
+                    if (options.length === 0) {
+                        options = otherFields
+                            .filter(id => currentValues[id] > 0)
+                            .map(id => ({
+                                fieldId: id,
+                                label: fieldLabels[id],
+                                currentValue: currentValues[id],
+                                newValue: 0,
+                                action: 'descontar (máx ' + currentValues[id] + ')'
+                            }));
+                    }
+                } else {
+                    message = 'El Stock Total (' + physicalTotal + ') tiene un déficit de <strong>' + absDiff + '</strong> unidades.<br>Seleccione a dónde transferir:';
+                    options = otherFields.map(id => ({
+                        fieldId: id,
+                        label: fieldLabels[id],
+                        currentValue: currentValues[id],
+                        newValue: currentValues[id] + absDiff,
+                        action: 'transferir'
+                    }));
+                }
+
+                stockAdjustmentState = {
+                    total: physicalTotal,
+                    absDiff,
+                    diffType: diff > 0 ? 'excess' : 'deficit',
+                    changedFieldId,
+                    options,
+                    currentValues,
+                    fieldLabels,
+                    elIds
+                };
+
+                showStockAdjustmentModal(message, options);
+            };
+
+            window.showStockAdjustmentModal = function (message, options) {
+                const msgEl = document.getElementById('adjustmentMessage');
+                const optsEl = document.getElementById('adjustmentOptions');
+                if (!msgEl || !optsEl) return;
+
+                msgEl.innerHTML = message;
+                optsEl.innerHTML = '';
+
+                if (options.length === 0) {
+                    optsEl.innerHTML = '<div class="alert alert-warning mb-0">Ningún apartado tiene suficiente stock para este ajuste. Presione Cancelar para revertir.</div>';
+                    return;
+                }
+
+                const renderOpt = (opt) =>
+                    '<div class="d-flex align-items-center gap-2 p-2 border rounded" style="cursor:pointer" onclick="applyStockAdjustment(\'' + opt.fieldId + '\')">' +
+                        '<i class="bi bi-arrow-right-circle text-primary"></i>' +
+                        '<span><strong>' + opt.label + '</strong> (' + opt.action + ': ' + opt.currentValue + ' → ' + opt.newValue + ')</span>' +
+                    '</div>';
+
+                options.forEach(opt => { optsEl.innerHTML += renderOpt(opt); });
+
+                document.getElementById('stockAdjustmentModal').classList.add('active');
+            };
+
+            window.applyStockAdjustment = function (targetFieldId) {
+                if (!stockAdjustmentState) return;
+
+                const { changedFieldId, elIds } = stockAdjustmentState;
+
+                const selected = stockAdjustmentState.options.find(o => o.fieldId === targetFieldId);
+                if (!selected) return;
+
+                document.getElementById(selected.fieldId).value = selected.newValue;
+                document.getElementById('edit_total_stock').value = physicalTotal;
+
+                // Si aún hay desbalance, re-triggerear el modal
+                const ph = parseInt(document.getElementById('edit_cantidad_med').value) || 0;
+                const ho = parseInt(document.getElementById('edit_stock_hospital').value) || 0;
+                const qu = parseInt(document.getElementById('edit_stock_quirofano').value) || 0;
+                if (ph + ho + qu !== physicalTotal) {
+                    stockAdjustmentState = null;
+                    document.getElementById('stockAdjustmentModal').classList.remove('active');
+                    window.updateStockDistribution(changedFieldId);
+                } else {
+                    lastValidValues = { pharmacy: ph, hospital: ho, quirofano: qu };
+                    stockAdjustmentState = null;
+                    document.getElementById('stockAdjustmentModal').classList.remove('active');
+                }
+            };
+
+            window.cancelStockAdjustment = function () {
+                if (stockAdjustmentState) {
+                    document.getElementById('edit_cantidad_med').value = lastValidValues.pharmacy;
+                    document.getElementById('edit_stock_hospital').value = lastValidValues.hospital;
+                    document.getElementById('edit_stock_quirofano').value = lastValidValues.quirofano;
+                    document.getElementById('edit_total_stock').value = physicalTotal;
+                    stockAdjustmentState = null;
+                }
+                document.getElementById('stockAdjustmentModal').classList.remove('active');
             };
 
             // ==========================================================================
@@ -1478,7 +1771,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             const pharmacyStock = parseInt(data.cantidad_med || 0);
                             const hospitalStock = parseInt(data.stock_hospital || 0);
-                            const total = pharmacyStock + hospitalStock;
+                            const quirofanoStock = parseInt(data.stock_quirofano || 0);
+                            const total = pharmacyStock + hospitalStock + quirofanoStock;
 
                             document.getElementById('edit_id_inventario').value = data.id_inventario;
                             document.getElementById('edit_codigo_barras').value = data.codigo_barras || '';
@@ -1490,6 +1784,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('edit_total_stock').value = total;
                             document.getElementById('edit_cantidad_med').value = pharmacyStock;
                             document.getElementById('edit_stock_hospital').value = hospitalStock;
+                            document.getElementById('edit_stock_quirofano').value = quirofanoStock;
+
+                            // Guardar valores iniciales (inmutables)
+                            physicalTotal = total;
+                            lastValidValues = { pharmacy: pharmacyStock, hospital: hospitalStock, quirofano: quirofanoStock };
 
                             document.getElementById('edit_precio_compra').value = data.precio_compra || 0;
                             document.getElementById('edit_precio_venta').value = data.precio_venta || 0;

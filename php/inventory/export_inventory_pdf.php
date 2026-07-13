@@ -221,7 +221,9 @@ try {
                     <th>Medicamento</th>
                     <th>Molécula</th>
                     <th>Presentación</th>
-                    <th>Stock</th>
+                    <th>Stock Farm</th>
+                    <th>Stock Hosp</th>
+                    <th>Stock Qx</th>
                     <th>Vencimiento</th>
                     <th>Factura</th>
                     <th>P. Compra</th>
@@ -235,7 +237,9 @@ try {
                             <td><strong><?php echo htmlspecialchars($item['nom_medicamento']); ?></strong></td>
                             <td style="color: #64748b;"><?php echo htmlspecialchars($item['mol_medicamento']); ?></td>
                             <td><?php echo htmlspecialchars($item['presentacion_med']); ?></td>
-                            <td class="val-stock"><?php echo $item['cantidad_med']; ?></td>
+                            <td class="val-stock"><?php echo (int)$item['cantidad_med']; ?></td>
+                            <td style="color: var(--color-info); font-weight: 600;"><?php echo (int)$item['stock_hospital']; ?></td>
+                            <td style="color: #7c3aed; font-weight: 600;"><?php echo (int)($item['stock_quirofano'] ?? 0); ?></td>
                             <td>
                                 <?php
                                 $vence = strtotime($item['fecha_vencimiento']);
