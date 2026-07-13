@@ -21,6 +21,8 @@ $nombre = $_POST['nombre'] ?? '';
 $codigo = $_POST['codigo'] ?? '';
 $categoria = $_POST['categoria'] ?? '';
 $precio = (float) ($_POST['precio'] ?? 0);
+$precio_medilab = (float) ($_POST['precio_medilab'] ?? 0);
+$precio_la_esperanza = (float) ($_POST['precio_la_esperanza'] ?? 0);
 $muestra = $_POST['muestra_requerida'] ?? ''; // Fixed mapping
 $tiempo = (int) ($_POST['tiempo_procesamiento_horas'] ?? 0); // Fixed mapping
 $notas = $_POST['descripcion'] ?? ''; // Map description to notas
@@ -43,17 +45,17 @@ try {
 
     if ($id_prueba) {
         // Fetch old data for audit trail
-        $stmt_old = $conn->prepare("SELECT nombre_prueba, codigo_prueba, categoria, precio, muestra_requerida, tiempo_procesamiento_horas, notas FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
+        $stmt_old = $conn->prepare("SELECT nombre_prueba, codigo_prueba, categoria, precio, precio_medilab, precio_la_esperanza, muestra_requerida, tiempo_procesamiento_horas, notas FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
         $stmt_old->execute([$id_prueba, $id_hospital]);
         $oldData = $stmt_old->fetch(PDO::FETCH_ASSOC);
 
         // Update
         $stmt = $conn->prepare("
             UPDATE catalogo_pruebas 
-            SET nombre_prueba = ?, codigo_prueba = ?, categoria = ?, precio = ?, muestra_requerida = ?, tiempo_procesamiento_horas = ?, notas = ?
+            SET nombre_prueba = ?, codigo_prueba = ?, categoria = ?, precio = ?, precio_medilab = ?, precio_la_esperanza = ?, muestra_requerida = ?, tiempo_procesamiento_horas = ?, notas = ?
             WHERE id_prueba = ? AND id_hospital = ?
         ");
-        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas, $id_prueba, $id_hospital]);
+        $stmt->execute([$nombre, $codigo, $categoria, $precio, $precio_medilab, $precio_la_esperanza, $muestra, $tiempo, $notas, $id_prueba, $id_hospital]);
         $message = 'Prueba actualizada correctamente';
 
         audit_log('update', 'laboratory', "Prueba actualizada: $nombre ($codigo)", [
@@ -65,6 +67,8 @@ try {
                 'codigo_prueba' => $codigo,
                 'categoria' => $categoria,
                 'precio' => $precio,
+                'precio_medilab' => $precio_medilab,
+                'precio_la_esperanza' => $precio_la_esperanza,
                 'muestra_requerida' => $muestra,
                 'tiempo_procesamiento_horas' => $tiempo,
                 'notas' => $notas,
@@ -80,10 +84,10 @@ try {
         }
 
         $stmt = $conn->prepare("
-            INSERT INTO catalogo_pruebas (nombre_prueba, codigo_prueba, categoria, precio, muestra_requerida, tiempo_procesamiento_horas, notas, id_hospital)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO catalogo_pruebas (nombre_prueba, codigo_prueba, categoria, precio, precio_medilab, precio_la_esperanza, muestra_requerida, tiempo_procesamiento_horas, notas, id_hospital)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$nombre, $codigo, $categoria, $precio, $muestra, $tiempo, $notas, $id_hospital]);
+        $stmt->execute([$nombre, $codigo, $categoria, $precio, $precio_medilab, $precio_la_esperanza, $muestra, $tiempo, $notas, $id_hospital]);
         $id_prueba = $conn->lastInsertId();
         $message = 'Prueba creada correctamente';
 
@@ -95,6 +99,8 @@ try {
                 'codigo_prueba' => $codigo,
                 'categoria' => $categoria,
                 'precio' => $precio,
+                'precio_medilab' => $precio_medilab,
+                'precio_la_esperanza' => $precio_la_esperanza,
                 'muestra_requerida' => $muestra,
                 'tiempo_procesamiento_horas' => $tiempo,
                 'notas' => $notas,

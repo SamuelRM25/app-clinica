@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // 5. Insert Details and Billing
                 $stmtDetail = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
-                $stmtPrice = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
+                $stmtPrice = $conn->prepare("SELECT id_prueba, nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ? AND id_hospital = ?");
                 $items_billing = [];
 
                 foreach ($examenes_ids as $id_prueba) {
@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmtPrice->execute([$id_prueba, $id_hospital]);
                     $test_inf = $stmtPrice->fetch(PDO::FETCH_ASSOC);
                     if ($test_inf) {
-                        $items_billing[] = ['nombre' => $test_inf['nombre_prueba'], 'precio' => $test_inf['precio']];
+                        $items_billing[] = ['id_prueba' => $test_inf['id_prueba'], 'nombre' => $test_inf['nombre_prueba'], 'precio' => $test_inf['precio']];
                     }
                 }
 
@@ -205,19 +205,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmtCargo->execute([$id_encamamiento, "Laboratorio: " . $item['nombre'] . " (Orden #" . $numero_orden . ")", $item['precio'], $_SESSION['user_id'], $id_hospital]);
                     }
                 } else {
-                    // Regular payment record (using same logic as save_order.php)
-                    $total_bill = array_sum(array_column($items_billing, 'precio'));
-                    $desc_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", array_column($items_billing, 'nombre'));
-
                     $patientDataStmt = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre_full FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
                     $patientDataStmt->execute([$_POST['id_paciente'], $id_hospital]);
                     $pac_full = $patientDataStmt->fetch(PDO::FETCH_ASSOC)['nombre_full'] ?? 'Paciente';
 
                     $stmtBill = $conn->prepare("
-                        INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
-                        VALUES (?, ?, ?, ?, ?, 'Efectivo', NOW(), ?)
+                        INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital, id_prueba)
+                        VALUES (?, ?, ?, ?, ?, 'Efectivo', NOW(), ?, ?)
                     ");
-                    $stmtBill->execute([$_POST['id_paciente'], $id_orden, $pac_full, $desc_bill, $total_bill, $id_hospital]);
+                    foreach ($items_billing as $item) {
+                        $stmtBill->execute([$_POST['id_paciente'], $id_orden, $pac_full, $item['nombre'], $item['precio'], $id_hospital, $item['id_prueba']]);
+                    }
                 }
 
                 $_SESSION['message'] .= " y se ha generado la Orden de Laboratorio #$numero_orden";

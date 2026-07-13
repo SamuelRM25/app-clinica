@@ -948,6 +948,11 @@ $page_title = "Configuración del Sistema";
                                         <i class="bi bi-waveform me-1"></i>Ultrasonido
                                     </button>
                                 </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tarifas-laboratorio-tab" data-bs-toggle="tab" data-bs-target="#tarifas-laboratorio" type="button" role="tab">
+                                        <i class="bi bi-flask me-1"></i>Laboratorios
+                                    </button>
+                                </li>
                             </ul>
 
                             <div class="tab-content" id="tarifasTabContent">
@@ -1122,6 +1127,38 @@ $page_title = "Configuración del Sistema";
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="tarifas-laboratorio" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Costos de Laboratorios Externos</h5>
+                            <button class="action-btn primary btn-sm" onclick="saveLabCosts()">
+                                <i class="bi bi-save me-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            Configure el costo que paga a cada laboratorio externo por prueba.
+                            El precio de venta se edita desde el catálogo de pruebas en Laboratorio.
+                        </p>
+                        <div class="tarifa-table-wrap" data-tarifa-table>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Nombre de la Prueba</th>
+                                        <th>Categoría</th>
+                                        <th>Precio Venta (Q)</th>
+                                        <th>Costo Medialab (Q)</th>
+                                        <th>Costo La Esperanza (Q)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tarifa-laboratorio-body">
+                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                         </div>
                     </div>
 
@@ -2052,6 +2089,93 @@ $page_title = "Configuración del Sistema";
             body.innerHTML = html;
         }
 
+        function loadLabCosts() {
+            const tbody = document.getElementById('tarifa-laboratorio-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
+
+            fetch('api/get_lab_costs.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success || !data.data.length) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay pruebas registradas</td></tr>';
+                        return;
+                    }
+                    let html = '';
+                    data.data.forEach(p => {
+                        html += `<tr data-id="${p.id_prueba}">
+                            <td class="text-muted small">${p.codigo_prueba || ''}</td>
+                            <td class="fw-medium">${escapeHtml(p.nombre_prueba)}</td>
+                            <td><span class="badge bg-secondary">${p.categoria || 'Gral'}</span></td>
+                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                                value="${parseFloat(p.precio || 0).toFixed(2)}" readonly></td>
+                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                                value="${parseFloat(p.precio_medilab || 0).toFixed(2)}"
+                                data-field="precio_medilab" data-id="${p.id_prueba}" placeholder="0.00"></td>
+                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                                value="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}"
+                                data-field="precio_la_esperanza" data-id="${p.id_prueba}" placeholder="0.00"></td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Error: ${err.message}</td></tr>`;
+                });
+        }
+
+        function saveLabCosts() {
+            const container = document.getElementById('tarifa-laboratorio-body');
+            if (!container) return;
+            const inputs = container.querySelectorAll('.tarifa-input[data-field]');
+            if (!inputs.length) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const grouped = {};
+            inputs.forEach(inp => {
+                const id = inp.dataset.id;
+                const field = inp.dataset.field;
+                if (!grouped[id]) grouped[id] = { id_prueba: id, precio_medilab: 0, precio_la_esperanza: 0 };
+                grouped[id][field] = parseFloat(inp.value) || 0;
+            });
+
+            const items = Object.values(grouped);
+            let completed = 0;
+
+            items.forEach(item => {
+                item.csrf_token = csrfToken;
+                fetch('api/save_lab_cost.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify(item)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        completed++;
+                        if (completed === items.length) {
+                            Swal.fire({
+                                icon: res.success ? 'success' : 'error',
+                                title: res.success ? 'Costos guardados' : 'Error',
+                                text: res.success ? `${items.length} prueba(s) actualizada(s)` : res.error
+                            });
+                            if (res.success) loadLabCosts();
+                        }
+                    })
+                    .catch(err => {
+                        completed++;
+                        if (completed === items.length) {
+                            Swal.fire({ icon: 'error', title: 'Error de red', text: err.message });
+                        }
+                    });
+            });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function openTarifaModal(tipo) {
             document.getElementById('tarifaForm').reset();
             document.getElementById('tarifaId').value = '';
@@ -2309,6 +2433,15 @@ $page_title = "Configuración del Sistema";
         }
 
         document.addEventListener('DOMContentLoaded', loadTarifas);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const labTab = document.getElementById('tarifas-laboratorio-tab');
+            if (labTab) {
+                labTab.addEventListener('shown.bs.tab', function () {
+                    loadLabCosts();
+                });
+            }
+        });
     </script>
     <?php output_keep_alive_script(); ?>
 </body>

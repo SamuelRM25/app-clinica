@@ -73,10 +73,17 @@ $queries['laboratorio'] = [
     'sql' => "SELECT
                 DATE(er.fecha_examen) AS fecha,
                 er.nombre_paciente AS paciente,
-                er.tipo_examen AS descripcion,
+                COALESCE(cp.nombre_prueba, er.tipo_examen) AS descripcion,
                 er.cobro AS monto,
-                0 AS costo
+                CASE
+                    WHEN ol.laboratorio_externo = 'Medialab' THEN COALESCE(cp.precio_medilab, 0)
+                    WHEN ol.laboratorio_externo = 'La Esperanza' THEN COALESCE(cp.precio_la_esperanza, 0)
+                    ELSE 0
+                END AS costo,
+                COALESCE(ol.laboratorio_externo, '—') AS laboratorio
               FROM examenes_realizados er
+              LEFT JOIN ordenes_laboratorio ol ON er.id_orden = ol.id_orden
+              LEFT JOIN catalogo_pruebas cp ON er.id_prueba = cp.id_prueba
               WHERE er.fecha_examen BETWEEN ? AND ?
                 AND er.id_hospital = ?
                 AND (er.tipo_examen IS NULL OR (er.tipo_examen NOT LIKE '%ultrasonido%' AND er.tipo_examen NOT LIKE '%rayos x%' AND er.tipo_examen NOT LIKE '%rx%'))
@@ -242,7 +249,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['laboratorio', 'gastos_varios', 'pago_proveedores']);
+    $has_costo = !in_array($categoria, ['gastos_varios', 'pago_proveedores']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);

@@ -2928,31 +2928,36 @@ try {
                         return;
                     }
 
-                    var html = '<table class="desglose-table"><thead><tr>' +
-                        '<th class="row-num">#</th>' +
-                        '<th>Fecha</th>' +
-                        '<th>Paciente</th>' +
-                        '<th>Descripción</th>' +
-                        '<th class="text-end">Monto</th>' +
-                        (hasCosto ? '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>' : '') +
-                        '</tr></thead><tbody>';
+            var isLab = (data.categoria === 'laboratorio');
+            var html = '<table class="desglose-table"><thead><tr>' +
+                '<th class="row-num">#</th>' +
+                '<th>Fecha</th>' +
+                '<th>Paciente</th>' +
+                '<th>Descripción</th>' +
+                (isLab ? '<th>Laboratorio</th>' : '') +
+                '<th class="text-end">Monto</th>' +
+                (hasCosto ? '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>' : '') +
+                '</tr></thead><tbody>';
 
-                    for (var i = 0; i < rows.length; i++) {
-                        var r = rows[i];
-                        var profit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
-                        var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
-                        html += '<tr>' +
-                            '<td class="row-num">' + (i + 1) + '</td>' +
-                            '<td>' + (r.fecha || '') + '</td>' +
-                            '<td>' + escapeHtml(r.paciente || '') + '</td>' +
-                            '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
-                            '<td class="text-end fw-bold text-success">Q' + formatNumber(r.monto) + '</td>';
-                        if (hasCosto) {
-                            html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
-                                '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
-                        }
-                        html += '</tr>';
-                    }
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var profit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
+                var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                html += '<tr>' +
+                    '<td class="row-num">' + (i + 1) + '</td>' +
+                    '<td>' + (r.fecha || '') + '</td>' +
+                    '<td>' + escapeHtml(r.paciente || '') + '</td>' +
+                    '<td>' + escapeHtml(r.descripcion || '') + '</td>';
+                if (isLab) {
+                    html += '<td class="text-muted small">' + escapeHtml(r.laboratorio || '—') + '</td>';
+                }
+                html += '<td class="text-end fw-bold text-success">Q' + formatNumber(r.monto) + '</td>';
+                if (hasCosto) {
+                    html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
+                        '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
+                }
+                html += '</tr>';
+            }
 
                     html += '</tbody></table>';
                     document.getElementById('desgloseBody').innerHTML = html;

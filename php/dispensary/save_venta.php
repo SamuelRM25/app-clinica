@@ -116,6 +116,84 @@ try {
         }
     }
 
+    // ========================================================================
+    // Si es Traslado: ajustar purchase_items y purchase_headers
+    // ========================================================================
+    if ($data['tipo_pago'] === 'Traslado') {
+        $stmt_get_pi = $conn->prepare("
+            SELECT i.id_purchase_item, pi.id AS pi_id, pi.purchase_header_id,
+                   pi.unit_cost, pi.quantity AS pi_quantity,
+                   i.nom_medicamento
+            FROM inventario i
+            JOIN purchase_items pi ON i.id_purchase_item = pi.id
+            WHERE i.id_inventario = ? AND i.id_hospital = ?
+        ");
+        $stmt_upd_pi = $conn->prepare("
+            UPDATE purchase_items
+            SET quantity = quantity - ?,
+                subtotal = subtotal - ROUND(? * unit_cost, 2)
+            WHERE id = ? AND quantity >= ?
+        ");
+        $stmt_upd_ph = $conn->prepare("
+            UPDATE purchase_headers
+            SET total_amount = total_amount - ?
+            WHERE id = ? AND total_amount >= ?
+        ");
+        $stmt_ins_pay = $conn->prepare("
+            INSERT INTO purchase_payments
+                (purchase_header_id, amount, payment_date, payment_method, notes, id_hospital)
+            VALUES (?, ?, NOW(), 'Transferencia', ?, ?)
+        ");
+
+        foreach ($data['items'] as $item) {
+            $stmt_get_pi->execute([$item['id_inventario'], $id_hospital]);
+            $pi_row = $stmt_get_pi->fetch(PDO::FETCH_ASSOC);
+
+            if (!$pi_row) {
+                throw new Exception(
+                    "Error al ajustar compra por traslado: El medicamento '" .
+                    ($item['nombre'] ?? 'desconocido') . "' no tiene una compra asociada. " .
+                    "No se puede realizar el traslado sin un vínculo de compra."
+                );
+            }
+
+            $reduction = round($item['cantidad'] * $pi_row['unit_cost'], 2);
+            $product_name = $pi_row['nom_medicamento'];
+            $destination = $data['nombre_cliente'];
+
+            // Reducir cantidad y subtotal del purchase_item
+            $stmt_upd_pi->execute([
+                $item['cantidad'],
+                $item['cantidad'],
+                $pi_row['pi_id'],
+                $item['cantidad']
+            ]);
+            if ($stmt_upd_pi->rowCount() === 0) {
+                throw new Exception(
+                    "Error al ajustar compra por traslado: Stock insuficiente en el ítem de compra " .
+                    "para '{$product_name}'. Disponible en compra: {$pi_row['pi_quantity']}, " .
+                    "solicitado: {$item['cantidad']}."
+                );
+            }
+
+            // Reducir total de la factura de compra
+            $stmt_upd_ph->execute([
+                $reduction,
+                $pi_row['purchase_header_id'],
+                $reduction
+            ]);
+
+            // Registrar abono documentando el traslado
+            $notes = "Transferencia: {$item['cantidad']} unid de {$product_name} a {$destination}. Valor: Q{$reduction}";
+            $stmt_ins_pay->execute([
+                $pi_row['purchase_header_id'],
+                $reduction,
+                $notes,
+                $id_hospital
+            ]);
+        }
+    }
+
     // Clear reservations for this session (since cart is now processed)
     $stmt_res = $conn->prepare("DELETE FROM reservas_inventario WHERE session_id = ? AND id_hospital = ?");
     $stmt_res->execute([session_id(), $id_hospital]);

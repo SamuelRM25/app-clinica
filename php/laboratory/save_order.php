@@ -110,7 +110,7 @@ try {
 
     // 4. Insert Order Details (Pruebas)
     $stmtDetail = $conn->prepare("INSERT INTO orden_pruebas (id_orden, id_prueba, estado) VALUES (?, ?, 'Pendiente')");
-    $stmt_price = $conn->prepare("SELECT nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ?");
+    $stmt_price = $conn->prepare("SELECT id_prueba, nombre_prueba, precio FROM catalogo_pruebas WHERE id_prueba = ?");
 
     $items_for_billing = [];
 
@@ -129,6 +129,7 @@ try {
             }
 
             $items_for_billing[] = [
+                'id_prueba' => $test_info['id_prueba'],
                 'nombre' => $test_info['nombre_prueba'],
                 'precio' => $final_price
             ];
@@ -157,33 +158,29 @@ try {
             ]);
         }
 
-        // Also insert a record in examenes_realizados so the receipt can be printed
-        $total_hosp = 0;
-        $pruebas_nombres_hosp = [];
-        foreach ($items_for_billing as $item) {
-            $total_hosp += $item['precio'];
-            $pruebas_nombres_hosp[] = $item['nombre'];
-        }
-
+        // Also insert individual rows in examenes_realizados (1 per test) so receipt and contabilidad work
         $stmt_p_hosp = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
         $stmt_p_hosp->execute([$data['id_paciente'], $id_hospital]);
         $paciente_data_hosp = $stmt_p_hosp->fetch(PDO::FETCH_ASSOC);
         $nombre_paciente_hosp = $paciente_data_hosp['nombre'] ?? 'Paciente Desconocido';
 
-        $descripcion_hosp = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres_hosp);
         $stmt_bill_hosp = $conn->prepare("
-            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
-            VALUES (?, ?, ?, ?, ?, 'Hospitalización', NOW(), ?)
+            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital, id_prueba)
+            VALUES (?, ?, ?, ?, ?, 'Hospitalización', NOW(), ?, ?)
         ");
-        $stmt_bill_hosp->execute([
-            $data['id_paciente'],
-            $id_orden,
-            $nombre_paciente_hosp,
-            $descripcion_hosp,
-            $total_hosp,
-            $id_hospital
-        ]);
-        $id_pago = $conn->lastInsertId();
+        $id_pago = null;
+        foreach ($items_for_billing as $item) {
+            $stmt_bill_hosp->execute([
+                $data['id_paciente'],
+                $id_orden,
+                $nombre_paciente_hosp,
+                $item['nombre'],
+                $item['precio'],
+                $id_hospital,
+                $item['id_prueba']
+            ]);
+            if (!$id_pago) $id_pago = $conn->lastInsertId();
+        }
     }
 
     // 6. Integration with Payments (if NOT hospitalized)
@@ -211,22 +208,24 @@ try {
         $nombre_paciente_full = $paciente_data['nombre'] ?? 'Paciente Desconocido';
 
         $stmt_bill = $conn->prepare("
-            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
+            INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital, id_prueba)
+            VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)
         ");
 
-        // Fila 1: cobro de las pruebas
-        $descripcion_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres);
-        $stmt_bill->execute([
-            $data['id_paciente'],
-            $id_orden,
-            $nombre_paciente_full,
-            $descripcion_bill,
-            $total_order,
-            $tipo_pago,
-            $id_hospital
-        ]);
-        $id_pago = $conn->lastInsertId();
+        $id_pago = null;
+        foreach ($items_for_billing as $item) {
+            $stmt_bill->execute([
+                $data['id_paciente'],
+                $id_orden,
+                $nombre_paciente_full,
+                $item['nombre'],
+                $item['precio'],
+                $tipo_pago,
+                $id_hospital,
+                $item['id_prueba']
+            ]);
+            if (!$id_pago) $id_pago = $conn->lastInsertId();
+        }
 
         // Fila 2: cargo Hora Inhábil (si aplica) — como row separado para que aparezca como línea en el ticket
         if ($cargo_inhabil > 0) {

@@ -319,11 +319,27 @@ try {
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label for="precio" class="form-label">
-                                        <i class="bi bi-currency-dollar"></i> Precio (Q)
+                                        <i class="bi bi-currency-dollar"></i> Precio Venta (Q)
                                     </label>
                                     <input type="number" step="0.01" class="form-control" id="precio" name="precio"
                                         placeholder="0.00" value="0">
                                 </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="precio_medilab" class="form-label">
+                                        <i class="bi bi-building"></i> Costo Medialab (Q)
+                                    </label>
+                                    <input type="number" step="0.01" class="form-control" id="precio_medilab" name="precio_medilab"
+                                        placeholder="0.00" value="0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="precio_la_esperanza" class="form-label">
+                                        <i class="bi bi-building"></i> Costo La Esperanza (Q)
+                                    </label>
+                                    <input type="number" step="0.01" class="form-control" id="precio_la_esperanza" name="precio_la_esperanza"
+                                        placeholder="0.00" value="0">
+                                </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label for="muestra_requerida" class="form-label">
                                         <i class="bi bi-droplet"></i> Muestra Requerida
@@ -531,6 +547,8 @@ try {
                 document.getElementById('categoria').value = data.categoria || '';
                 document.getElementById('descripcion').value = data.notas || '';
                 document.getElementById('precio').value = data.precio || '0';
+                document.getElementById('precio_medilab').value = data.precio_medilab || '0';
+                document.getElementById('precio_la_esperanza').value = data.precio_la_esperanza || '0';
                 document.getElementById('muestra_requerida').value = data.muestra_requerida || '';
                 document.getElementById('tiempo_procesamiento_horas').value = data.tiempo_procesamiento_horas || '24';
             } else {
@@ -634,13 +652,172 @@ try {
         }
         
         
-        /* Efectos adicionales para catálogo */
-        .test-card {
-            cursor: pointer;
+        /* ==========================================================================
+           ESTILOS DEL CATÁLOGO DE PRUEBAS
+           ========================================================================== */
+
+        .tests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
         }
-        
+
+        .test-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: all var(--transition-base);
+            cursor: default;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
         .test-card:hover {
             border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+
+        .test-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: var(--space-sm);
+        }
+
+        .test-code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            color: var(--color-primary);
+            background: rgba(var(--color-primary-rgb), 0.1);
+            padding: 2px var(--space-sm);
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .test-name {
+            font-size: var(--font-size-base);
+            font-weight: 700;
+            color: var(--color-text);
+            line-height: 1.3;
+        }
+
+        .test-details {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            flex: 1;
+        }
+
+        .test-detail {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .test-detail i {
+            font-size: var(--font-size-base);
+            color: var(--color-primary);
+            width: 18px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .test-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: var(--space-sm);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .test-price {
+            font-size: var(--font-size-lg);
+            font-weight: 800;
+            color: var(--color-success);
+            letter-spacing: -0.5px;
+        }
+
+        .test-params {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .test-actions {
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        .test-actions .btn-icon {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            transition: all var(--transition-base);
+            text-decoration: none;
+        }
+
+        .test-actions .btn-icon:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            background: rgba(var(--color-primary-rgb), 0.08);
+        }
+
+        .test-actions .btn-icon.manage:hover {
+            border-color: var(--color-info);
+            color: var(--color-info);
+            background: rgba(var(--color-info-rgb), 0.08);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--color-text);
+            padding: var(--space-md) 0 var(--space-sm);
+            margin-top: var(--space-xl);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .category-header:first-of-type {
+            margin-top: 0;
+        }
+
+        .category-header i {
+            font-size: var(--font-size-xl);
+            color: var(--color-warning);
+        }
+
+        .category-header .badge {
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        .catalog-section .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
         }
         
         /* ==========================================================================

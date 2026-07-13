@@ -113,6 +113,18 @@ try {
     $stmt->execute($params_list);
     $recent_purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 5b. Detectar compras con traslados históricos
+    $stmt_trans = $conn->prepare("
+        SELECT DISTINCT pi.purchase_header_id
+        FROM purchase_items pi
+        JOIN inventario i ON i.id_purchase_item = pi.id
+        JOIN detalle_ventas dv ON dv.id_inventario = i.id_inventario
+        JOIN ventas v ON v.id_venta = dv.id_venta AND v.tipo_pago = 'Traslado'
+        WHERE pi.id_hospital = ?
+    ");
+    $stmt_trans->execute([$id_hospital]);
+    $purchase_ids_with_transfers = $stmt_trans->fetchAll(PDO::FETCH_COLUMN);
+
     // 6. Compras por confirmar (en inventario como pendientes)
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
     $stmt->execute([$id_hospital]);
@@ -587,6 +599,7 @@ try {
                                             <th>Pagado</th>
                                             <th>Saldo</th>
                                             <th>Recepción</th>
+                                            <th style="width:40px; text-align:center;" title="Traslados históricos">?</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -649,6 +662,15 @@ try {
                                                             <span class="badge badge-warning" title="<?php echo $received; ?> de <?php echo $items_total; ?> recibidos">
                                                                 <i class="bi bi-clock-history me-1"></i><?php echo $received; ?>/<?php echo $items_total; ?> recibidos
                                                             </span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?php if (in_array($purchase['id'], $purchase_ids_with_transfers)): ?>
+                                                            <i class="bi bi-question-circle text-warning"
+                                                               style="cursor:pointer; font-size:1.2rem;"
+                                                               title="Ver traslados históricos"
+                                                               onclick="showTransferAdjustment(<?php echo $purchase['id']; ?>)">
+                                                            </i>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
@@ -1562,6 +1584,34 @@ try {
         </div>
     </div>
 
+    <!-- Modal para ajuste de traslados históricos -->
+    <div class="custom-modal-overlay" id="transferAdjustmentModal">
+        <div class="custom-modal modal-lg">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="bi bi-arrow-left-right text-warning me-2"></i>
+                    Ajuste de Traslados Históricos
+                </h5>
+                <button type="button" class="custom-modal-close"
+                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body" id="transferAdjustmentBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning"></div>
+                    <p class="mt-2 text-muted">Cargando traslados...</p>
+                </div>
+            </div>
+            <div class="custom-modal-footer" id="transferAdjustmentFooter">
+                <button type="button" class="action-btn secondary"
+                    onclick="document.getElementById('transferAdjustmentModal').classList.remove('active')">Cerrar</button>
+                <button type="button" class="action-btn success" id="btnApplyAdjustment" style="display:none"
+                    onclick="applyTransferAdjustment()">
+                    <i class="bi bi-check-lg me-2"></i>Aplicar Ajuste
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
 
     <!-- jQuery (required for Bootstrap modals) -->
@@ -2213,6 +2263,146 @@ try {
                         Error de conexión al cargar los detalles
                     </div>
                 `;
+                    });
+            };
+
+            // Variables para el ajuste de traslados
+            let currentTransferPurchaseId = null;
+
+            // Mostrar modal de ajuste de traslados históricos
+            window.showTransferAdjustment = function (purchaseId) {
+                currentTransferPurchaseId = purchaseId;
+                const modal = document.getElementById('transferAdjustmentModal');
+                const body = document.getElementById('transferAdjustmentBody');
+                const footer = document.getElementById('transferAdjustmentFooter');
+                const btnApply = document.getElementById('btnApplyAdjustment');
+
+                modal.classList.add('active');
+                btnApply.style.display = 'none';
+                body.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning"></div>
+                        <p class="mt-2 text-muted">Cargando traslados...</p>
+                    </div>
+                `;
+
+                fetch('api/get_transfer_details.php?purchase_header_id=' + purchaseId)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.success) {
+                            body.innerHTML = `<div class="alert alert-danger">${data.error || 'Error al cargar'}</div>`;
+                            return;
+                        }
+
+                        if (!data.transfers || data.transfers.length === 0) {
+                            body.innerHTML = `<div class="alert alert-info">No se encontraron traslados históricos para esta compra.</div>`;
+                            return;
+                        }
+
+                        let html = `
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="badge bg-info">${data.transfers.length} traslado(s)</span>
+                                <span class="badge bg-warning">${data.total_qty} unidades transferidas</span>
+                                <span class="badge bg-danger">Q${data.total_valor.toFixed(2)} valor total</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Medicamento</th>
+                                            <th>Cant.</th>
+                                            <th>Valor</th>
+                                            <th>Destino</th>
+                                            <th>Usuario</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        data.transfers.forEach(t => {
+                            const fecha = t.fecha_venta ? new Date(t.fecha_venta).toLocaleDateString('es-GT') : '-';
+                            const canAdjust = t.can_adjust && !data.already_applied;
+                            const estado = data.already_applied
+                                ? '<span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Ajustado</span>'
+                                : (t.can_adjust
+                                    ? '<span class="badge badge-warning"><i class="bi bi-clock-history me-1"></i>Pendiente</span>'
+                                    : '<span class="badge badge-secondary"><i class="bi bi-x-circle me-1"></i>Sin stock</span>');
+                            html += `
+                                <tr>
+                                    <td>${fecha}</td>
+                                    <td>${t.nom_medicamento}</td>
+                                    <td class="text-center">${t.cantidad_vendida}</td>
+                                    <td class="text-end">Q${parseFloat(t.valor).toFixed(2)}</td>
+                                    <td>${t.destino || '-'}</td>
+                                    <td>${t.usuario || '-'}</td>
+                                    <td class="text-center">${estado}</td>
+                                </tr>
+                            `;
+                        });
+
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+
+                        body.innerHTML = html;
+
+                        if (!data.already_applied) {
+                            btnApply.style.display = 'inline-block';
+                        }
+                    })
+                    .catch(error => {
+                        body.innerHTML = `<div class="alert alert-danger">Error de conexión: ${error.message}</div>`;
+                    });
+            };
+
+            // Aplicar ajuste de traslados históricos
+            window.applyTransferAdjustment = function () {
+                if (!currentTransferPurchaseId) return;
+
+                const btnApply = document.getElementById('btnApplyAdjustment');
+                btnApply.disabled = true;
+                btnApply.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Aplicando...';
+
+                fetch('api/apply_transfer_adjustment.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ purchase_header_id: currentTransferPurchaseId })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Ajuste aplicado',
+                                text: data.message || 'Compra ajustada correctamente',
+                                timer: 2000,
+                                showConfirmButton: true
+                            }).then(() => {
+                                document.getElementById('transferAdjustmentModal').classList.remove('active');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.error || 'Error al aplicar el ajuste'
+                            });
+                            btnApply.disabled = false;
+                            btnApply.innerHTML = '<i class="bi bi-check-lg me-2"></i>Aplicar Ajuste';
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de conexión',
+                            text: error.message
+                        });
+                        btnApply.disabled = false;
+                        btnApply.innerHTML = '<i class="bi bi-check-lg me-2"></i>Aplicar Ajuste';
                     });
             };
 
