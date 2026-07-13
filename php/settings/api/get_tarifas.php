@@ -33,7 +33,9 @@ try {
     $stmt = $conn->prepare("
         SELECT id_tarifa, tipo_servicio, id_medico, nombre_servicio,
                precio_normal, precio_inhabil, precio_radio, region_count,
-               costo_normal, costo_inhabil, costo_radio
+               costo_normal, costo_inhabil,
+               costo_digital_normal, costo_digital_inhabil,
+               costo_impreso_normal, costo_impreso_inhabil
         FROM tarifas_servicios
         WHERE id_hospital = ?
         ORDER BY tipo_servicio, id_medico, region_count, nombre_servicio
@@ -87,11 +89,14 @@ try {
             $result['procedimiento'][] = $item;
         } elseif ($tipo === 'rayos_x') {
             $item['region_count'] = $region;
+            $item['costo_digital_normal']  = $t['costo_digital_normal']  !== null ? (float)$t['costo_digital_normal']  : null;
+            $item['costo_digital_inhabil'] = $t['costo_digital_inhabil'] !== null ? (float)$t['costo_digital_inhabil'] : null;
+            $item['costo_impreso_normal']  = $t['costo_impreso_normal']  !== null ? (float)$t['costo_impreso_normal']  : null;
+            $item['costo_impreso_inhabil'] = $t['costo_impreso_inhabil'] !== null ? (float)$t['costo_impreso_inhabil'] : null;
             $result['rayos_x'][] = $item;
         } elseif ($tipo === 'ultrasonido') {
             $item['nombre_servicio'] = $nombre;
             $item['precio_radio'] = $t['precio_radio'] ? (float)$t['precio_radio'] : 0;
-            $item['costo_radio']  = $t['costo_radio']  !== null ? (float)$t['costo_radio']  : null;
             $result['ultrasonido'][] = $item;
         }
     }

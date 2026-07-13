@@ -114,7 +114,9 @@ $queries['rayos_x'] = [
                 rx.cobro AS monto,
                 COALESCE(
                     CASE WHEN WEEKDAY(rx.fecha_estudio) >= 5 OR TIME(rx.fecha_estudio) >= '18:00:00'
-                         THEN t.costo_inhabil ELSE t.costo_normal END,
+                         THEN (COALESCE(t.costo_digital_inhabil, 0) + COALESCE(t.costo_impreso_inhabil, 0)) / 2
+                         ELSE (COALESCE(t.costo_digital_normal, 0)  + COALESCE(t.costo_impreso_normal, 0))  / 2
+                    END,
                     0
                 ) AS costo
               FROM rayos_x rx

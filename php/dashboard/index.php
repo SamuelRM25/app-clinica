@@ -2883,6 +2883,17 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                     <small class="text-muted d-block mt-2">Sólo aplica si el paciente no está
                                         hospitalizado.</small>
                                 </div>
+
+                                <!-- Laboratorio Externo (obligatorio) -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">Laboratorio <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="lab_laboratorio_externo" name="laboratorio_externo" required>
+                                        <option value="">Seleccione laboratorio...</option>
+                                        <option value="Medialab">Medialab</option>
+                                        <option value="La Esperanza">La Esperanza</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1"><i class="bi bi-info-circle"></i> Indica a qué laboratorio se enviarán las muestras. No se imprime en el ticket.</small>
+                                </div>
                             </div>
                             <button type="button"
                                 class="btn btn-primary w-100 py-3 rounded-3 shadow-sm d-flex justify-content-center align-items-center gap-2"
@@ -3560,6 +3571,12 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 return;
                             }
 
+                            const labExtSel = document.getElementById('lab_laboratorio_externo');
+                            if (!labExtSel || !labExtSel.value) {
+                                Swal.fire('Aviso', 'Seleccione el laboratorio (Medialab o La Esperanza)', 'warning');
+                                return;
+                            }
+
                             const pruebas = [];
                             document.querySelectorAll('.test-checkbox:checked').forEach(cb => pruebas.push(cb.value));
 
@@ -3574,6 +3591,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 observaciones: form.observaciones.value,
                                 pruebas: pruebas,
                                 tipo_pago: document.querySelector('input[name="order_tipo_pago"]:checked')?.value || 'Efectivo',
+                                laboratorio_externo: labExtSel.value,
                                 is_eps: isEPSMode,
                                 custom_prices: {}
                             };

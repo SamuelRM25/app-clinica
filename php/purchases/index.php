@@ -170,6 +170,184 @@ try {
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
+    <!-- Estilos para pestaña Contabilidad -->
+    <style>
+        /* Filtros de período */
+        .accounting-filters .btn-group .btn {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .accounting-filters .btn-group .btn.active {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
+        /* Grid de KPIs */
+        .accounting-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .accounting-kpi {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .accounting-kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .accounting-kpi__icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .accounting-kpi--primary .accounting-kpi__icon {
+            background: rgba(var(--color-primary-rgb), 0.12);
+            color: var(--color-primary);
+        }
+        .accounting-kpi--success .accounting-kpi__icon {
+            background: rgba(34, 197, 94, 0.12);
+            color: #16a34a;
+        }
+        .accounting-kpi--warning .accounting-kpi__icon {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+        }
+        .accounting-kpi--info .accounting-kpi__icon {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+        .accounting-kpi__body { flex: 1; min-width: 0; }
+        .accounting-kpi__label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+        }
+        .accounting-kpi__value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0.25rem 0;
+            color: var(--color-text);
+            line-height: 1.1;
+        }
+        .accounting-kpi__meta {
+            font-size: 0.78rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Sección */
+        .accounting-section {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .accounting-section__title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+
+        /* Tabla */
+        .accounting-table-wrap {
+            overflow: auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+        .accounting-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .accounting-table thead th {
+            background: var(--color-surface);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            border-bottom: 2px solid var(--color-border);
+            white-space: nowrap;
+        }
+        .accounting-table tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+        }
+        .accounting-table tbody tr:last-child td { border-bottom: none; }
+        .accounting-table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+        .accounting-table .text-end { text-align: right; }
+        .accounting-table .text-center { text-align: center; }
+        .accounting-table tfoot td {
+            background: rgba(var(--color-primary-rgb), 0.05);
+            font-weight: 700;
+            padding: 0.85rem 1rem;
+            border-top: 2px solid var(--color-primary);
+        }
+
+        /* Barras de progreso */
+        .acct-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .acct-progress__bar {
+            flex: 1;
+            height: 8px;
+            background: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .acct-progress__fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .acct-progress__fill--high   { background: #16a34a; }
+        .acct-progress__fill--medium { background: #d97706; }
+        .acct-progress__fill--low    { background: #dc2626; }
+        .acct-progress__pct {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* Badge estado */
+        .acct-badge {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .acct-badge--success { background: rgba(34,197,94,0.15); color: #16a34a; }
+        .acct-badge--warning { background: rgba(245,158,11,0.15); color: #d97706; }
+        .acct-badge--danger  { background: rgba(220,38,38,0.15); color: #dc2626; }
+    </style>
+
 </head>
 
 <body>
@@ -348,6 +526,9 @@ try {
                 </button>
                 <button class="tab-btn" data-tab="paid-payments">
                     <i class="bi bi-check-circle me-2"></i>Pagos Realizados
+                </button>
+                <button class="tab-btn" data-tab="accounting">
+                    <i class="bi bi-bar-chart-line me-2"></i>Contabilidad
                 </button>
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
@@ -776,6 +957,133 @@ try {
                             <p class="text-muted mb-3">Aún no hay compras marcadas como pagadas</p>
                         </div>
                     <?php endif; ?>
+                </section>
+            </div>
+
+            <!-- Pestaña: Contabilidad -->
+            <div class="tab-content" id="accounting-tab">
+                <section class="appointments-section animate-in">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-bar-chart-line text-primary section-title-icon"></i>
+                            Contabilidad de Compras
+                        </h3>
+                    </div>
+
+                    <!-- Filtros de período -->
+                    <div class="accounting-filters mb-4">
+                        <div class="btn-group" role="group" aria-label="Filtros de período">
+                            <button type="button" class="btn btn-outline-primary active" data-accounting-period="current_month">
+                                <i class="bi bi-calendar-month me-1"></i> Mes Actual
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" data-accounting-period="previous_month">
+                                <i class="bi bi-calendar-minus me-1"></i> Mes Anterior
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" data-accounting-period="specific_month">
+                                <i class="bi bi-calendar3 me-1"></i> Específico
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" data-accounting-period="all">
+                                <i class="bi bi-infinity me-1"></i> General
+                            </button>
+                        </div>
+                        <div class="mt-2" id="specificMonthContainer" style="display:none;">
+                            <input type="month" id="specificMonthInput" class="form-control form-control-sm" style="max-width: 200px;" value="<?php echo date('Y-m'); ?>">
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="bi bi-info-circle"></i> Período: <strong id="accountingPeriodLabel"><?php echo date('Y-m'); ?></strong>
+                        </small>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="accountingLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="text-muted mt-2">Cargando contabilidad...</p>
+                    </div>
+
+                    <!-- Contenido principal (oculto hasta cargar) -->
+                    <div id="accountingContent" style="display:none;">
+                        <!-- KPIs -->
+                        <div class="accounting-kpi-grid mb-4">
+                            <div class="accounting-kpi accounting-kpi--primary">
+                                <div class="accounting-kpi__icon"><i class="bi bi-cart-plus"></i></div>
+                                <div class="accounting-kpi__body">
+                                    <div class="accounting-kpi__label">Total Comprado</div>
+                                    <div class="accounting-kpi__value" id="kpiCompradoTotal">Q 0.00</div>
+                                    <div class="accounting-kpi__meta"><span id="kpiCompradoNum">0</span> compras</div>
+                                </div>
+                            </div>
+                            <div class="accounting-kpi accounting-kpi--success">
+                                <div class="accounting-kpi__icon"><i class="bi bi-cash-coin"></i></div>
+                                <div class="accounting-kpi__body">
+                                    <div class="accounting-kpi__label">Total Pagado</div>
+                                    <div class="accounting-kpi__value" id="kpiPagadoTotal">Q 0.00</div>
+                                    <div class="accounting-kpi__meta"><span id="kpiPagadoNum">0</span> pagos realizados</div>
+                                </div>
+                            </div>
+                            <div class="accounting-kpi accounting-kpi--warning">
+                                <div class="accounting-kpi__icon"><i class="bi bi-exclamation-circle"></i></div>
+                                <div class="accounting-kpi__body">
+                                    <div class="accounting-kpi__label">Saldo Pendiente</div>
+                                    <div class="accounting-kpi__value" id="kpiPendienteSaldo">Q 0.00</div>
+                                    <div class="accounting-kpi__meta"><span id="kpiPendienteNum">0</span> compras pendientes</div>
+                                </div>
+                            </div>
+                            <div class="accounting-kpi accounting-kpi--info">
+                                <div class="accounting-kpi__icon"><i class="bi bi-building"></i></div>
+                                <div class="accounting-kpi__body">
+                                    <div class="accounting-kpi__label">Proveedores</div>
+                                    <div class="accounting-kpi__value" id="kpiProveedores">0</div>
+                                    <div class="accounting-kpi__meta">proveedores únicos</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalle por proveedor -->
+                        <div class="accounting-section mb-4">
+                            <h4 class="accounting-section__title"><i class="bi bi-building me-2"></i>Detalle por Proveedor</h4>
+                            <div class="accounting-table-wrap" data-tarifa-table>
+                                <table class="accounting-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Proveedor</th>
+                                            <th class="text-center"># Compras</th>
+                                            <th class="text-end">Total Comprado</th>
+                                            <th class="text-end">Total Pagado</th>
+                                            <th class="text-end">Saldo</th>
+                                            <th style="width: 180px;">% Pagado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="accountingProveedorBody">
+                                        <tr><td colspan="6" class="text-center text-muted py-4">Sin datos para el período</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Resumen últimos 12 meses -->
+                        <div class="accounting-section">
+                            <h4 class="accounting-section__title"><i class="bi bi-calendar3 me-2"></i>Resumen Últimos 12 Meses</h4>
+                            <div class="accounting-table-wrap" data-tarifa-table>
+                                <table class="accounting-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mes</th>
+                                            <th class="text-center"># Compras</th>
+                                            <th class="text-end">Total Comprado</th>
+                                            <th class="text-center"># Pagos</th>
+                                            <th class="text-end">Total Pagado</th>
+                                            <th class="text-end">Diferencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="accountingMensualBody">
+                                        <tr><td colspan="6" class="text-center text-muted py-4">Sin datos</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -1386,6 +1694,11 @@ try {
                     // Auto-cargar gastos cuando se active esa pestaña
                     if (tabId === 'gastos' && typeof window.loadGastos === 'function') {
                         setTimeout(window.loadGastos, 100);
+                    }
+
+                    // Auto-cargar contabilidad cuando se active esa pestaña
+                    if (tabId === 'accounting' && typeof window.loadContabilidad === 'function') {
+                        setTimeout(window.loadContabilidad, 100);
                     }
                 }
 
@@ -2543,6 +2856,168 @@ try {
         }
     `;
         document.head.appendChild(style);
+
+        // ==========================================================================
+        // CONTABILIDAD DE COMPRAS
+        // ==========================================================================
+        let contabilidadPeriodo = 'current_month';
+
+        function formatQ(n) {
+            return 'Q ' + Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function escapeHtmlAccounting(s) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(s == null ? '' : s)));
+            return div.innerHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-accounting-period]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-accounting-period]').forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    contabilidadPeriodo = btn.getAttribute('data-accounting-period');
+                    var specificContainer = document.getElementById('specificMonthContainer');
+                    if (specificContainer) {
+                        specificContainer.style.display = (contabilidadPeriodo === 'specific_month') ? '' : 'none';
+                    }
+                    loadContabilidad();
+                });
+            });
+            var monthInput = document.getElementById('specificMonthInput');
+            if (monthInput) {
+                monthInput.addEventListener('change', function() {
+                    if (contabilidadPeriodo === 'specific_month') loadContabilidad();
+                });
+            }
+        });
+
+        window.loadContabilidad = function() {
+            var loading = document.getElementById('accountingLoading');
+            var content = document.getElementById('accountingContent');
+            if (loading) loading.style.display = '';
+            if (content) content.style.display = 'none';
+
+            var params = 'periodo=' + encodeURIComponent(contabilidadPeriodo);
+            if (contabilidadPeriodo === 'specific_month') {
+                var mi = document.getElementById('specificMonthInput');
+                if (mi) params += '&mes=' + encodeURIComponent(mi.value || '');
+            }
+
+            fetch('api/api_get_accounting.php?' + params)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (loading) loading.style.display = 'none';
+                    if (!data || !data.success) {
+                        if (content) {
+                            content.style.display = '';
+                            content.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>' +
+                                (data && data.error ? data.error : 'Error al cargar contabilidad') + '</div>';
+                        }
+                        return;
+                    }
+                    renderContabilidad(data);
+                })
+                .catch(function(err) {
+                    if (loading) loading.style.display = 'none';
+                    if (content) {
+                        content.style.display = '';
+                        content.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error de red: ' + err.message + '</div>';
+                    }
+                });
+        };
+
+        function renderContabilidad(data) {
+            var label = document.getElementById('accountingPeriodLabel');
+            if (label) label.textContent = data.label;
+
+            // KPIs
+            var k = data.kpis;
+            document.getElementById('kpiCompradoTotal').textContent = formatQ(k.comprado.total);
+            document.getElementById('kpiCompradoNum').textContent = k.comprado.num;
+            document.getElementById('kpiPagadoTotal').textContent = formatQ(k.pagado.total);
+            document.getElementById('kpiPagadoNum').textContent = k.pagado.num;
+            document.getElementById('kpiPendienteSaldo').textContent = formatQ(k.pendiente.saldo);
+            document.getElementById('kpiPendienteNum').textContent = k.pendiente.num;
+            document.getElementById('kpiProveedores').textContent = k.proveedores;
+
+            // Por proveedor
+            var provBody = document.getElementById('accountingProveedorBody');
+            if (data.por_proveedor.length === 0) {
+                provBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay compras en este período</em></td></tr>';
+            } else {
+                var html = '';
+                var tCompras = 0, tComprado = 0, tPagado = 0, tSaldo = 0;
+                data.por_proveedor.forEach(function(p) {
+                    var pct = p.pct_pagado;
+                    var cls = pct >= 75 ? 'high' : (pct >= 50 ? 'medium' : 'low');
+                    html += '<tr>' +
+                        '<td><strong>' + escapeHtmlAccounting(p.proveedor) + '</strong></td>' +
+                        '<td class="text-center">' + p.num_compras + '</td>' +
+                        '<td class="text-end">' + formatQ(p.total_comprado) + '</td>' +
+                        '<td class="text-end text-success">' + formatQ(p.total_pagado) + '</td>' +
+                        '<td class="text-end ' + (p.saldo > 0 ? 'text-danger' : 'text-muted') + '">' + formatQ(p.saldo) + '</td>' +
+                        '<td><div class="acct-progress">' +
+                            '<div class="acct-progress__bar"><div class="acct-progress__fill acct-progress__fill--' + cls + '" style="width:' + pct + '%"></div></div>' +
+                            '<div class="acct-progress__pct">' + pct + '%</div>' +
+                        '</div></td>' +
+                    '</tr>';
+                    tCompras += p.num_compras;
+                    tComprado += p.total_comprado;
+                    tPagado += p.total_pagado;
+                    tSaldo += p.saldo;
+                });
+                var tPct = tComprado > 0 ? Math.round((tPagado / tComprado) * 1000) / 10 : 0;
+                var tCls = tPct >= 75 ? 'high' : (tPct >= 50 ? 'medium' : 'low');
+                html += '<tr>' +
+                    '<td><strong>TOTAL</strong></td>' +
+                    '<td class="text-center"><strong>' + tCompras + '</strong></td>' +
+                    '<td class="text-end"><strong>' + formatQ(tComprado) + '</strong></td>' +
+                    '<td class="text-end text-success"><strong>' + formatQ(tPagado) + '</strong></td>' +
+                    '<td class="text-end ' + (tSaldo > 0 ? 'text-danger' : 'text-muted') + '"><strong>' + formatQ(tSaldo) + '</strong></td>' +
+                    '<td><div class="acct-progress">' +
+                        '<div class="acct-progress__bar"><div class="acct-progress__fill acct-progress__fill--' + tCls + '" style="width:' + tPct + '%"></div></div>' +
+                        '<div class="acct-progress__pct"><strong>' + tPct + '%</strong></div>' +
+                    '</div></td>' +
+                '</tr>';
+                provBody.innerHTML = html;
+            }
+
+            // Resumen mensual
+            var menBody = document.getElementById('accountingMensualBody');
+            if (!data.resumen_mensual || data.resumen_mensual.length === 0) {
+                menBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>Sin datos</em></td></tr>';
+            } else {
+                var mhtml = '';
+                data.resumen_mensual.forEach(function(m) {
+                    var diff = m.total_comprado - m.total_pagado;
+                    var mesLabel = m.mes;
+                    var parts = m.mes.split('-');
+                    if (parts.length === 2) {
+                        var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        mesLabel = meses[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+                    }
+                    var badge = diff <= 0
+                        ? '<span class="acct-badge acct-badge--success">Pagado</span>'
+                        : (m.total_pagado === 0
+                            ? '<span class="acct-badge acct-badge--danger">Sin pagos</span>'
+                            : '<span class="acct-badge acct-badge--warning">' + formatQ(diff) + '</span>');
+                    mhtml += '<tr>' +
+                        '<td><strong>' + escapeHtmlAccounting(mesLabel) + '</strong></td>' +
+                        '<td class="text-center">' + m.num_compras + '</td>' +
+                        '<td class="text-end">' + formatQ(m.total_comprado) + '</td>' +
+                        '<td class="text-center">' + m.num_pagos + '</td>' +
+                        '<td class="text-end text-success">' + formatQ(m.total_pagado) + '</td>' +
+                        '<td class="text-end">' + badge + '</td>' +
+                    '</tr>';
+                });
+                menBody.innerHTML = mhtml;
+            }
+
+            var content = document.getElementById('accountingContent');
+            if (content) content.style.display = '';
+        }
 
     </script>
 

@@ -37,7 +37,7 @@ try {
 
     // Fetch tests details
     $stmtD = $conn->prepare("
-        SELECT cp.nombre_prueba, cp.precio
+        SELECT cp.nombre_prueba, cp.precio, 'prueba' AS tipo_linea
         FROM orden_pruebas op
         JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
@@ -45,6 +45,16 @@ try {
     ");
     $stmtD->execute([$id_orden, $id_hospital]);
     $detalles = $stmtD->fetchAll(PDO::FETCH_ASSOC);
+
+    // Agregar líneas de Hora Inhábil (cargo adicional) si existen para esta orden
+    $stmtInh = $conn->prepare("
+        SELECT tipo_examen AS nombre_prueba, cobro AS precio, 'inhabil' AS tipo_linea
+        FROM examenes_realizados
+        WHERE id_orden = ? AND id_hospital = ? AND tipo_examen = 'Horario Inhabil'
+    ");
+    $stmtInh->execute([$id_orden, $id_hospital]);
+    $lineas_inhabil = $stmtInh->fetchAll(PDO::FETCH_ASSOC);
+    $detalles = array_merge($detalles, $lineas_inhabil);
 
     $total = 0;
     foreach ($detalles as $d)

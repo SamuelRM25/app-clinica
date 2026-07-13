@@ -21,8 +21,9 @@ try {
     $database = new Database();
     $conn = $database->getConnection();
 
+    // Buscar el row original (puede ser el de pruebas o el de Hora Inhábil)
     $stmt = $conn->prepare("
-        SELECT e.id_examen_realizado, e.cobro, e.tipo_pago, e.tipo_examen,
+        SELECT e.id_examen_realizado, e.id_orden, e.cobro, e.tipo_pago, e.tipo_examen,
                e.nombre_paciente, e.fecha_examen, e.id_paciente, e.usuario,
                COALESCE(NULLIF(CONCAT(u.nombre, ' ', u.apellido), ''), e.usuario) AS doctor_nombre
         FROM examenes_realizados e
@@ -37,6 +38,30 @@ try {
 
     if (!$row) {
         die("Registro no encontrado");
+    }
+
+    // Si la fila pertenece a una orden, traer TODAS las filas (pruebas + Hora Inhábil) de esa orden
+    $lineas_cobro = [];
+    $id_orden_ctx = !empty($row['id_orden']) ? (int)$row['id_orden'] : null;
+    if ($id_orden_ctx) {
+        $stmtLines = $conn->prepare("
+            SELECT id_examen_realizado, tipo_examen, cobro, fecha_examen, tipo_pago
+            FROM examenes_realizados
+            WHERE id_orden = ? AND id_hospital = ?
+            ORDER BY id_examen_realizado ASC
+        ");
+        $stmtLines->execute([$id_orden_ctx, $id_hospital]);
+        $lineas_cobro = $stmtLines->fetchAll(PDO::FETCH_ASSOC);
+    }
+    if (empty($lineas_cobro)) {
+        // Fallback: una sola línea (modo compatibilidad)
+        $lineas_cobro = [[
+            'id_examen_realizado' => $row['id_examen_realizado'],
+            'tipo_examen' => $row['tipo_examen'],
+            'cobro' => $row['cobro'],
+            'fecha_examen' => $row['fecha_examen'],
+            'tipo_pago' => $row['tipo_pago'],
+        ]];
     }
 
     // Try to get the patient's real name from pacientes if we have an id_paciente
@@ -54,7 +79,8 @@ try {
     $fecha = new DateTime($fecha_full);
     $fecha_formateada = $fecha->format('d/m/Y');
     $hora_formateada = $fecha->format('H:i');
-    $monto = (float) $row['cobro'];
+    $monto = 0.0;
+    foreach ($lineas_cobro as $ln) $monto += (float)$ln['cobro'];
     $tipo_pago = $row['tipo_pago'] ?: 'Efectivo';
     $tipo_examen = $row['tipo_examen'] ?: 'Examen de Laboratorio';
     $doctor = $row['doctor_nombre'] ? 'Dr(a). ' . $row['doctor_nombre'] : 'N/A';
@@ -115,6 +141,17 @@ try {
         <div class="receipt-section">
             <div class="row"><span class="label">Médico:</span><span class="value"><?php echo htmlspecialchars($doctor); ?></span></div>
             <div class="row"><span class="label">Examen:</span><span class="value"><?php echo htmlspecialchars($tipo_examen); ?></span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="receipt-section">
+            <?php foreach ($lineas_cobro as $ln): ?>
+                <div class="row" style="font-size: 12px; margin-bottom: 4px;">
+                    <span class="label"><?php echo htmlspecialchars($ln['tipo_examen']); ?>:</span>
+                    <span class="value">Q<?php echo number_format((float)$ln['cobro'], 2); ?></span>
+                </div>
+            <?php endforeach; ?>
         </div>
 
         <div class="divider"></div>

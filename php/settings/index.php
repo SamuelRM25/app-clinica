@@ -188,6 +188,95 @@ $page_title = "Configuración del Sistema";
         #tarifasTabContent {
             display: block !important;
         }
+
+        /* Tarifa tables — scroll vertical (max-height) + scroll horizontal con indicador */
+        .tarifa-table-wrap {
+            max-height: 65vh;
+            overflow: auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            position: relative;
+        }
+        .tarifa-table-wrap table {
+            margin-bottom: 0;
+            width: max-content;
+            min-width: 100%;
+        }
+        .tarifa-table-wrap thead th {
+            position: sticky;
+            top: 0;
+            background: var(--color-card);
+            z-index: 2;
+            box-shadow: 0 1px 0 var(--color-border);
+        }
+        .tarifa-table-wrap .tarifa-input.form-control {
+            min-width: 70px;
+            max-width: 90px;
+            width: 100%;
+            padding: 0.25rem 0.4rem;
+            font-size: 0.8rem;
+        }
+        .tarifa-table-wrap table th {
+            padding: 0.5rem 0.4rem;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+        .tarifa-table-wrap table td {
+            padding: 0.4rem 0.4rem;
+        }
+        .tarifa-table-wrap .group-header {
+            background: rgba(var(--color-primary-rgb), 0.08);
+            color: var(--color-primary);
+            font-weight: 700;
+            text-align: center;
+            border-left: 1px solid var(--color-border);
+            border-right: 1px solid var(--color-border);
+        }
+        /* Indicador permanente de scroll horizontal (lado derecho) */
+        .tarifa-table-wrap::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 40px;
+            background: linear-gradient(to right, rgba(var(--color-card-rgb, 255,255,255), 0) 0%, var(--color-card) 100%);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.2s ease;
+        }
+        .tarifa-table-wrap.has-overflow-x::after {
+            opacity: 1;
+        }
+        .tarifa-table-wrap:not(.has-overflow-x)::after {
+            opacity: 0;
+        }
+        /* Hint flotante "Deslice para ver más" */
+        .tarifa-scroll-hint {
+            display: none;
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(var(--color-primary-rgb), 0.92);
+            color: #fff;
+            padding: 0.35rem 0.75rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 3;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .tarifa-table-wrap.has-overflow-x .tarifa-scroll-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .tarifa-scroll-hint i {
+            animation: nudgeRight 1.4s ease-in-out infinite;
+        }
+        @keyframes nudgeRight {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(4px); }
+        }
     </style>
 </head>
 
@@ -869,27 +958,35 @@ $page_title = "Configuración del Sistema";
                                             <i class="bi bi-plus-circle"></i> Agregar Tarifa
                                         </button>
                                     </div>
-                                    <div class="table-responsive">
+                                    <div class="text-muted small mb-2">
+                                        <i class="bi bi-info-circle"></i> <strong>N</strong>=Normal · <strong>I</strong>=Inhábil · <strong>CN</strong>=Costo Normal · <strong>CI</strong>=Costo Inhábil
+                                    </div>
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
-                                                    <th>Médico</th>
-                                                    <th>Especialidad</th>
-                                                    <th>Consulta Normal (Q)</th>
-                                                    <th>Consulta Inhábil (Q)</th>
-                                                    <th>Costo Consulta Normal (Q)</th>
-                                                    <th>Costo Consulta Inhábil (Q)</th>
-                                                    <th>Reconsulta Normal (Q)</th>
-                                                    <th>Reconsulta Inhábil (Q)</th>
-                                                    <th>Costo Reconsulta Normal (Q)</th>
-                                                    <th>Costo Reconsulta Inhábil (Q)</th>
-                                                    <th class="text-center">Acciones</th>
+                                                    <th rowspan="2">Médico</th>
+                                                    <th rowspan="2">Especialidad</th>
+                                                    <th colspan="4" class="group-header">Consulta</th>
+                                                    <th colspan="4" class="group-header">Reconsulta</th>
+                                                    <th rowspan="2" class="text-center">Acción</th>
+                                                </tr>
+                                                <tr>
+                                                    <th title="Consulta Normal">N</th>
+                                                    <th title="Consulta Inhábil">I</th>
+                                                    <th title="Costo Consulta Normal">CN</th>
+                                                    <th title="Costo Consulta Inhábil">CI</th>
+                                                    <th title="Reconsulta Normal">N</th>
+                                                    <th title="Reconsulta Inhábil">I</th>
+                                                    <th title="Costo Reconsulta Normal">CN</th>
+                                                    <th title="Costo Reconsulta Inhábil">CI</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-consulta-body">
                                                 <tr><td colspan="11" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
                                         <button class="action-btn primary" onclick="saveTarifaSection('tarifa-consulta-body')">
@@ -902,7 +999,7 @@ $page_title = "Configuración del Sistema";
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <h5 class="mb-0">Electrocardiograma</h5>
                                     </div>
-                                    <div class="table-responsive">
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
@@ -917,6 +1014,7 @@ $page_title = "Configuración del Sistema";
                                                 <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
                                         <button class="action-btn primary" onclick="saveTarifaSection('tarifa-electro-body')">
@@ -932,7 +1030,7 @@ $page_title = "Configuración del Sistema";
                                             <i class="bi bi-plus-circle"></i> Agregar Procedimiento
                                         </button>
                                     </div>
-                                    <div class="table-responsive">
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
@@ -948,6 +1046,7 @@ $page_title = "Configuración del Sistema";
                                                 <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
                                         <button class="action-btn primary" onclick="saveTarifaSection('tarifa-procedimiento-body')">
@@ -963,22 +1062,25 @@ $page_title = "Configuración del Sistema";
                                             <i class="bi bi-plus-circle"></i> Agregar Región
                                         </button>
                                     </div>
-                                    <div class="table-responsive">
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
                                                     <th>Región</th>
                                                     <th>Precio Normal (Q)</th>
                                                     <th>Precio Inhábil (Q)</th>
-                                                    <th>Costo Normal (Q)</th>
-                                                    <th>Costo Inhábil (Q)</th>
+                                                    <th>Costo Digital Normal (Q)</th>
+                                                    <th>Costo Digital Inhábil (Q)</th>
+                                                    <th>Costo Impreso Normal (Q)</th>
+                                                    <th>Costo Impreso Inhábil (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-rayos_x-body">
-                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="8" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
                                         <button class="action-btn primary" onclick="saveTarifaSection('tarifa-rayos_x-body')">
@@ -994,7 +1096,7 @@ $page_title = "Configuración del Sistema";
                                             <i class="bi bi-plus-circle"></i> Agregar Tipo
                                         </button>
                                     </div>
-                                    <div class="table-responsive">
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
                                             <thead>
                                                 <tr>
@@ -1004,14 +1106,14 @@ $page_title = "Configuración del Sistema";
                                                     <th>Radio Normal (Q)</th>
                                                     <th>Costo Normal (Q)</th>
                                                     <th>Costo Inhábil (Q)</th>
-                                                    <th>Costo Radio (Q)</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-ultrasonido-body">
-                                                <tr><td colspan="8" class="text-center text-muted">Cargando...</td></tr>
+                                                <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
                                             </tbody>
                                         </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
                                         <button class="action-btn primary" onclick="saveTarifaSection('tarifa-ultrasonido-body')">
@@ -1349,9 +1451,25 @@ $page_title = "Configuración del Sistema";
                                 <label class="form-label small fw-bold">Precio Radio Normal (Q)</label>
                                 <input type="number" step="0.01" name="precio_radio" id="tarifaRadio" class="form-control" placeholder="0.00">
                             </div>
-                            <div class="col-12" id="tarifa-costo-radio-field" class="d-none">
-                                <label class="form-label small fw-bold">Costo Radio Normal (Q)</label>
-                                <input type="number" step="0.01" name="costo_radio" id="tarifaCostoRadio" class="form-control" placeholder="0.00">
+                            <div class="col-12" id="tarifa-rayosx-costos" class="d-none">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Costo Digital Normal (Q)</label>
+                                        <input type="number" step="0.01" name="costo_digital_normal" id="tarifaCostoDigitalNormal" class="form-control" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Costo Digital Inhábil (Q)</label>
+                                        <input type="number" step="0.01" name="costo_digital_inhabil" id="tarifaCostoDigitalInhabil" class="form-control" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Costo Impreso Normal (Q)</label>
+                                        <input type="number" step="0.01" name="costo_impreso_normal" id="tarifaCostoImpresoNormal" class="form-control" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Costo Impreso Inhábil (Q)</label>
+                                        <input type="number" step="0.01" name="costo_impreso_inhabil" id="tarifaCostoImpresoInhabil" class="form-control" placeholder="0.00">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -1671,6 +1789,21 @@ $page_title = "Configuración del Sistema";
         const tarifaModal = new bootstrap.Modal(document.getElementById('tarifaModal'));
         let currentMedicos = [];
 
+        function checkTarifaOverflow() {
+            document.querySelectorAll('[data-tarifa-table]').forEach(function(el) {
+                function update() {
+                    if (el.scrollWidth > el.clientWidth + 1) {
+                        el.classList.add('has-overflow-x');
+                    } else {
+                        el.classList.remove('has-overflow-x');
+                    }
+                }
+                update();
+                el.addEventListener('scroll', update);
+                window.addEventListener('resize', update);
+            });
+        }
+
         async function loadTarifas() {
             console.log('[ Tarifas] Iniciando carga...');
             try {
@@ -1703,6 +1836,7 @@ $page_title = "Configuración del Sistema";
                 renderProcedimientos(t.procedimiento || []);
                 renderRayosX(t.rayos_x || []);
                 renderUltrasonido(t.ultrasonido || []);
+                checkTarifaOverflow();
                 console.log('[Tarifas] Renderizado completo');
             } catch (error) {
                 console.error('Error loading tarifas:', error);
@@ -1857,23 +1991,29 @@ $page_title = "Configuración del Sistema";
         function renderRayosX(rayos_x) {
             const body = document.getElementById('tarifa-rayos_x-body');
             if (rayos_x.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
                 return;
             }
             let html = '';
             rayos_x.forEach(r => {
-                const cN = (r.costo_normal  != null) ? r.costo_normal  : '';
-                const cI = (r.costo_inhabil != null) ? r.costo_inhabil : '';
+                const cDN = (r.costo_digital_normal  != null) ? r.costo_digital_normal  : '';
+                const cDI = (r.costo_digital_inhabil != null) ? r.costo_digital_inhabil : '';
+                const cIN = (r.costo_impreso_normal  != null) ? r.costo_impreso_normal  : '';
+                const cII = (r.costo_impreso_inhabil != null) ? r.costo_impreso_inhabil : '';
                 html += `<tr>
                     <td>${r.region_count} región${r.region_count > 1 ? 'es' : ''}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
                         data-tipo="rayos_x" data-field="precio_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
                         data-tipo="rayos_x" data-field="precio_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
-                        data-tipo="rayos_x" data-field="costo_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
-                        data-tipo="rayos_x" data-field="costo_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDN}"
+                        data-tipo="rayos_x" data-field="costo_digital_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDI}"
+                        data-tipo="rayos_x" data-field="costo_digital_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cIN}"
+                        data-tipo="rayos_x" data-field="costo_impreso_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cII}"
+                        data-tipo="rayos_x" data-field="costo_impreso_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${r.id_tarifa}, 'rayos_x')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -1885,14 +2025,13 @@ $page_title = "Configuración del Sistema";
         function renderUltrasonido(ultrasonidos) {
             const body = document.getElementById('tarifa-ultrasonido-body');
             if (ultrasonidos.length === 0) {
-                body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><em>No hay tipos de ultrasonido configurados. Haga clic en "Agregar Tipo" para crear uno.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><em>No hay tipos de ultrasonido configurados. Haga clic en "Agregar Tipo" para crear uno.</em></td></tr>';
                 return;
             }
             let html = '';
             ultrasonidos.forEach(u => {
                 const cN = (u.costo_normal  != null) ? u.costo_normal  : '';
                 const cI = (u.costo_inhabil != null) ? u.costo_inhabil : '';
-                const cR = (u.costo_radio   != null) ? u.costo_radio   : '';
                 html += `<tr>
                     <td>${u.nombre_servicio || '-'}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_normal}"
@@ -1905,8 +2044,6 @@ $page_title = "Configuración del Sistema";
                         data-tipo="ultrasonido" data-field="costo_normal" data-id="${u.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
                         data-tipo="ultrasonido" data-field="costo_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cR}"
-                        data-tipo="ultrasonido" data-field="costo_radio" data-id="${u.id_tarifa}" placeholder="0.00"></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${u.id_tarifa}, 'ultrasonido')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -1923,6 +2060,7 @@ $page_title = "Configuración del Sistema";
 
             document.querySelectorAll('.tarifa-fields').forEach(el => el.classList.add('d-none'));
             document.getElementById('tarifa-radio-field').classList.add('d-none');
+            document.getElementById('tarifa-rayosx-costos').classList.add('d-none');
 
             if (tipo === 'consulta' || tipo === 'reconsulta') {
                 document.getElementById('tarifa-fields-consulta').classList.remove('d-none');
@@ -1938,6 +2076,7 @@ $page_title = "Configuración del Sistema";
                 }
             } else if (tipo === 'rayos_x') {
                 document.getElementById('tarifa-fields-region').classList.remove('d-none');
+                document.getElementById('tarifa-rayosx-costos').classList.remove('d-none');
             }
 
             tarifaModal.show();
@@ -1972,11 +2111,17 @@ $page_title = "Configuración del Sistema";
                 payload.nombre_servicio = document.getElementById('tarifaNombre').value;
                 if (tipo === 'ultrasonido') {
                     payload.precio_radio = parseFloat(document.getElementById('tarifaRadio').value) || 0;
-                    const costoRadio = parseFloat(document.getElementById('tarifaCostoRadio').value);
-                    if (!isNaN(costoRadio) && document.getElementById('tarifaCostoRadio').value !== '') payload.costo_radio = costoRadio;
                 }
             } else if (tipo === 'rayos_x') {
                 payload.region_count = parseInt(document.getElementById('tarifaRegion').value) || 1;
+                const cDN = parseFloat(document.getElementById('tarifaCostoDigitalNormal').value);
+                if (!isNaN(cDN) && document.getElementById('tarifaCostoDigitalNormal').value !== '') payload.costo_digital_normal = cDN;
+                const cDI = parseFloat(document.getElementById('tarifaCostoDigitalInhabil').value);
+                if (!isNaN(cDI) && document.getElementById('tarifaCostoDigitalInhabil').value !== '') payload.costo_digital_inhabil = cDI;
+                const cIN = parseFloat(document.getElementById('tarifaCostoImpresoNormal').value);
+                if (!isNaN(cIN) && document.getElementById('tarifaCostoImpresoNormal').value !== '') payload.costo_impreso_normal = cIN;
+                const cII = parseFloat(document.getElementById('tarifaCostoImpresoInhabil').value);
+                if (!isNaN(cII) && document.getElementById('tarifaCostoImpresoInhabil').value !== '') payload.costo_impreso_inhabil = cII;
             }
 
             try {
@@ -2011,8 +2156,7 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                // Cost fields can be empty (NULL); precio_* are required by the form so default 0
-                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_radio');
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil');
                 const rawValue = input.value;
                 const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const medico = parseInt(input.dataset.medico) || null;
@@ -2030,7 +2174,10 @@ $page_title = "Configuración del Sistema";
                         precio_radio: 0,
                         costo_normal: null,
                         costo_inhabil: null,
-                        costo_radio: null
+                        costo_digital_normal: null,
+                        costo_digital_inhabil: null,
+                        costo_impreso_normal: null,
+                        costo_impreso_inhabil: null
                     };
                     if (medico) item.id_medico = medico;
                     items.push(item);
@@ -2041,14 +2188,26 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_radio');
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil');
                 const rawValue = input.value;
                 const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const id = parseInt(input.dataset.id) || null;
                 if (!tipo || !field || !id) return;
                 let item = items.find(i => i.id_tarifa === id);
                 if (!item) {
-                    item = { id_tarifa: id, tipo_servicio: tipo, precio_normal: 0, precio_inhabil: 0, precio_radio: 0, costo_normal: null, costo_inhabil: null, costo_radio: null };
+                    item = {
+                        id_tarifa: id,
+                        tipo_servicio: tipo,
+                        precio_normal: 0,
+                        precio_inhabil: 0,
+                        precio_radio: 0,
+                        costo_normal: null,
+                        costo_inhabil: null,
+                        costo_digital_normal: null,
+                        costo_digital_inhabil: null,
+                        costo_impreso_normal: null,
+                        costo_impreso_inhabil: null
+                    };
                     items.push(item);
                 }
                 item[field] = value;

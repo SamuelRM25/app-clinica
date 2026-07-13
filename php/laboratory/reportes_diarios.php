@@ -319,6 +319,7 @@ try {
                                         <th>Paciente</th>
                                         <th>Hora</th>
                                         <th>Pruebas</th>
+                                        <th>Laboratorio</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
@@ -340,6 +341,16 @@ try {
                                                         class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                                                         <?php echo $orden['num_pruebas']; ?> Pruebas
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($orden['laboratorio_externo'])): ?>
+                                                        <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                            <i class="bi bi-building me-1"></i>
+                                                            <?php echo htmlspecialchars($orden['laboratorio_externo']); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <?php

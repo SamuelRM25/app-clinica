@@ -175,7 +175,9 @@ try {
                         SUM(rx.cobro) AS revenue,
                         SUM(COALESCE(
                             CASE WHEN WEEKDAY(rx.fecha_estudio) >= 5 OR TIME(rx.fecha_estudio) >= '18:00:00'
-                                 THEN t.costo_inhabil ELSE t.costo_normal END,
+                                 THEN (COALESCE(t.costo_digital_inhabil, 0) + COALESCE(t.costo_impreso_inhabil, 0)) / 2
+                                 ELSE (COALESCE(t.costo_digital_normal, 0)  + COALESCE(t.costo_impreso_normal, 0))  / 2
+                            END,
                             0
                         )) AS cost
                        FROM rayos_x rx
@@ -482,13 +484,14 @@ try {
     $labs_params[] = $id_hospital;
 
     $stmt_labs_detail = $conn->prepare("
-        SELECT 
+        SELECT
             p.nombre as paciente_nombre,
             p.apellido as paciente_apellido,
             cp.nombre_prueba,
             DATE(ol.fecha_orden) as fecha,
             TIME(ol.fecha_orden) as hora,
-            cp.precio
+            cp.precio,
+            ol.laboratorio_externo
         FROM ordenes_laboratorio ol
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
@@ -2407,35 +2410,46 @@ try {
                                                                             </summary>
                                                                             <div class="report-details-body p-0">
                                                                                 <div class="table-responsive">
-                                                                                    <table class="lab-items-table">
-                                                                                        <thead>
-                                                                                            <tr>
-                                                                                                <th>Examen (Prueba)</th>
-                                                                                                <th>Hora</th>
-                                                                                                <th class="text-end">Precio</th>
-                                                                                            </tr>
-                                                                                        </thead>
-                                                                                        <tbody>
-                                                                                            <?php foreach ($pac_data['labs'] as $lab): ?>
-                                                                                                    <tr>
-                                                                                                        <td>
-                                                                                                            <span class="charge-type-badge charge-laboratorio">
-                                                                                                                <i class="bi bi-droplet-half"></i>
-                                                                                                                <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
-                                                                                                            </span>
-                                                                                                        </td>
-                                                                                                        <td>
-                                                                                                            <small class="text-muted"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
-                                                                                                        </td>
-                                                                                                        <td class="text-end">
-                                                                                                            <span class="amount-badge income">
-                                                                                                                Q<?php echo number_format($lab['precio'], 2); ?>
-                                                                                                            </span>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                            <?php endforeach; ?>
-                                                                                        </tbody>
-                                                                                    </table>
+<table class="lab-items-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Examen (Prueba)</th>
+                                                    <th>Hora</th>
+                                                    <th>Laboratorio</th>
+                                                    <th class="text-end">Precio</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($pac_data['labs'] as $lab): ?>
+                                                        <tr>
+                                                            <td>
+                                                                <span class="charge-type-badge charge-laboratorio">
+                                                                    <i class="bi bi-droplet-half"></i>
+                                                                    <?php echo htmlspecialchars($lab['nombre_prueba']); ?>
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <small class="text-muted"><?php echo date('h:i A', strtotime($lab['hora'])); ?></small>
+                                                            </td>
+                                                            <td>
+                                                                <?php if (!empty($lab['laboratorio_externo'])): ?>
+                                                                    <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                                        <i class="bi bi-building me-1"></i>
+                                                                        <?php echo htmlspecialchars($lab['laboratorio_externo']); ?>
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted">—</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <span class="amount-badge income">
+                                                                    Q<?php echo number_format($lab['precio'], 2); ?>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
                                                                                 </div>
                                                                             </div>
                                                                         </details>

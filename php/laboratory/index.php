@@ -85,7 +85,7 @@ try {
 
     // 7. Órdenes recientes
     $stmt = $conn->prepare("
-        SELECT ol.*, 
+        SELECT ol.*,
                p.nombre, p.apellido, p.genero, p.fecha_nacimiento,
                u.nombre as doctor_nombre, u.apellido as doctor_apellido,
                COUNT(op.id_orden_prueba) as num_pruebas,
@@ -99,8 +99,8 @@ try {
         WHERE ol.estado IN ('Pendiente', 'Muestra_Recibida', 'En_Proceso', 'Completada', 'Validada')
           AND ol.id_hospital = ?
         GROUP BY ol.id_orden
-        ORDER BY 
-            CASE 
+        ORDER BY
+            CASE
                 WHEN ol.estado = 'Pendiente' THEN 1
                 WHEN ol.estado = 'Muestra_Recibida' THEN 2
                 WHEN ol.estado = 'En_Proceso' THEN 3
@@ -117,13 +117,29 @@ try {
     $two_days_ago = date('Y-m-d', strtotime('-2 days'));
     $stmt = $conn->prepare("
         SELECT COUNT(*) as total
-        FROM ordenes_laboratorio 
-        WHERE estado = 'Pendiente' 
+        FROM ordenes_laboratorio
+        WHERE estado = 'Pendiente'
           AND DATE(fecha_orden) <= ?
           AND id_hospital = ?
     ");
     $stmt->execute([$two_days_ago, hospital_id()]);
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+    // 9. Conteo de órdenes del mes agrupadas por laboratorio externo
+    $stmt = $conn->prepare("
+        SELECT laboratorio_externo, COUNT(*) as total
+        FROM ordenes_laboratorio
+        WHERE fecha_orden BETWEEN ? AND ?
+          AND id_hospital = ?
+          AND laboratorio_externo IS NOT NULL
+        GROUP BY laboratorio_externo
+        ORDER BY laboratorio_externo
+    ");
+    $stmt->execute([$month_start, $month_end, hospital_id()]);
+    $labs_por_mes = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $labs_por_mes[$row['laboratorio_externo']] = (int)$row['total'];
+    }
 
     // Título de la página
     $page_title = "Laboratorio - Centro Médico Herrera Saenz";
@@ -358,6 +374,7 @@ try {
                                                 <th>Doctor</th>
                                                 <th>Fecha</th>
                                                 <th>Pruebas</th>
+                                                <th>Laboratorio</th>
                                                 <th>Estado</th>
                                                 <th>Acciones</th>
                                             </tr>
@@ -407,6 +424,16 @@ try {
                                                         </td>
                                                         <td>
                                                             <span class="badge badge-info"><?php echo $orden['num_pruebas']; ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <?php if (!empty($orden['laboratorio_externo'])): ?>
+                                                                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                                    <i class="bi bi-building me-1"></i>
+                                                                    <?php echo htmlspecialchars($orden['laboratorio_externo']); ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">—</span>
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td>
                                                             <?php
@@ -550,6 +577,21 @@ try {
                         <div class="text-muted">Hoy</div>
                     </div>
                 </div>
+                <?php if (!empty($labs_por_mes)): ?>
+                    <hr class="my-3">
+                    <h6 class="fw-bold text-muted text-uppercase small mb-3">
+                        <i class="bi bi-building me-1"></i> Laboratorios realizados este mes
+                    </h6>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <?php foreach ($labs_por_mes as $lab_nombre => $lab_count): ?>
+                            <div class="d-flex align-items-center gap-2 px-3 py-2 border rounded bg-light">
+                                <i class="bi bi-building text-info"></i>
+                                <span class="fw-semibold"><?php echo htmlspecialchars($lab_nombre); ?></span>
+                                <span class="badge bg-info rounded-pill"><?php echo $lab_count; ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </main>
     </div>

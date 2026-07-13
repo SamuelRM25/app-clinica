@@ -35,6 +35,14 @@ if (empty($data['id_paciente']) || empty($data['id_doctor']) || empty($data['pru
     exit;
 }
 
+// Validate laboratorio_externo (obligatorio)
+$lab_externo = $data['laboratorio_externo'] ?? '';
+$lab_externo = in_array($lab_externo, ['Medialab', 'La Esperanza'], true) ? $lab_externo : null;
+if ($lab_externo === null) {
+    echo json_encode(['status' => 'error', 'message' => 'Debe seleccionar el laboratorio (Medialab o La Esperanza)']);
+    exit;
+}
+
 try {
     // CSRF validation
     $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
@@ -66,10 +74,10 @@ try {
         // 3. Attempt insert; if duplicate key on numero_orden, retry with next number
         $stmt = $conn->prepare("
             INSERT INTO ordenes_laboratorio (
-                numero_orden, id_paciente, id_doctor, id_encamamiento,
+                numero_orden, id_paciente, id_doctor, laboratorio_externo, id_encamamiento,
                 prioridad, observaciones,
                 estado, fecha_orden, id_hospital
-            ) VALUES (?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW(), ?)
+            ) VALUES (?, ?, ?, ?, ?, 'Rutina', ?, 'Pendiente', NOW(), ?)
         ");
 
         try {
@@ -77,6 +85,7 @@ try {
                 $numero_orden,
                 $data['id_paciente'],
                 $data['id_doctor'],
+                $lab_externo,
                 $id_encamamiento,
                 $data['observaciones'] ?? '',
                 $id_hospital
@@ -187,6 +196,14 @@ try {
             $pruebas_nombres[] = $item['nombre'];
         }
 
+        // Cargo por Hora Inhábil (no hospitalizados, después de las 18:00)
+        $cargo_inhabil = 0.0;
+        $es_horario_inhabil = ((int) date('H') >= 18);
+        if ($es_horario_inhabil) {
+            $cargo_inhabil = 35.00; // Q35.00 fijo
+        }
+        $total_con_inhabil = $total_order + $cargo_inhabil;
+
         // Get patient name
         $stmt_p = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
         $stmt_p->execute([$data['id_paciente'], $id_hospital]);
@@ -197,6 +214,8 @@ try {
             INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
             VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
         ");
+
+        // Fila 1: cobro de las pruebas
         $descripcion_bill = "Servicios Laboratorio Order #" . $numero_orden . ": " . implode(", ", $pruebas_nombres);
         $stmt_bill->execute([
             $data['id_paciente'],
@@ -208,6 +227,23 @@ try {
             $id_hospital
         ]);
         $id_pago = $conn->lastInsertId();
+
+        // Fila 2: cargo Hora Inhábil (si aplica) — como row separado para que aparezca como línea en el ticket
+        if ($cargo_inhabil > 0) {
+            $stmt_bill_inh = $conn->prepare("
+                INSERT INTO examenes_realizados (id_paciente, id_orden, nombre_paciente, tipo_examen, cobro, tipo_pago, fecha_examen, id_hospital)
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
+            ");
+            $stmt_bill_inh->execute([
+                $data['id_paciente'],
+                $id_orden,
+                $nombre_paciente_full,
+                'Horario Inhabil',
+                $cargo_inhabil,
+                $tipo_pago,
+                $id_hospital
+            ]);
+        }
     }
 
     $conn->commit();
@@ -217,7 +253,9 @@ try {
         'message' => 'Orden y cobro generados',
         'id_orden' => $id_orden,
         'numero_orden' => $numero_orden,
-        'id_pago' => $id_pago ?? null
+        'id_pago' => $id_pago ?? null,
+        'cargo_inhabil' => $cargo_inhabil ?? 0.0,
+        'horario_inhabil' => $es_horario_inhabil ?? false
     ]);
 
 } catch (Exception $e) {

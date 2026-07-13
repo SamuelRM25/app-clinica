@@ -41,13 +41,14 @@ try {
     $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
     $stmt_labs_detail = $conn->prepare("
-        SELECT 
+        SELECT
             p.nombre as paciente_nombre,
             p.apellido as paciente_apellido,
             cp.nombre_prueba,
             DATE(ol.fecha_orden) as fecha,
             TIME(ol.fecha_orden) as hora,
-            cp.precio
+            cp.precio,
+            ol.laboratorio_externo
         FROM ordenes_laboratorio ol
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
@@ -75,7 +76,7 @@ try {
         fputcsv($output, ['Reporte de Laboratorios Detallado']);
         fputcsv($output, ['Periodo:', $start_date . ' al ' . $end_date]);
         fputcsv($output, []);
-        fputcsv($output, ['Paciente', 'Examen (Prueba)', 'Fecha', 'Hora', 'Precio (Q)']);
+        fputcsv($output, ['Paciente', 'Examen (Prueba)', 'Fecha', 'Hora', 'Laboratorio', 'Precio (Q)']);
 
         foreach ($labs_detail_data as $lab) {
             fputcsv($output, [
@@ -83,12 +84,13 @@ try {
                 $lab['nombre_prueba'],
                 date('d/m/Y', strtotime($lab['fecha'])),
                 date('h:i A', strtotime($lab['hora'])),
+                $lab['laboratorio_externo'] ?? '',
                 number_format($lab['precio'], 2)
             ]);
         }
 
         fputcsv($output, []);
-        fputcsv($output, ['Total General', '', '', '', number_format($total_labs_report, 2)]);
+        fputcsv($output, ['Total General', '', '', '', '', number_format($total_labs_report, 2)]);
 
         fclose($output);
         exit;
@@ -102,8 +104,8 @@ try {
 
         echo "<style>th { background-color: #f2f2f2; text-align: left; } .text-right { text-align: right; }</style>";
         echo "<table border='1' cellpadding='5' cellspacing='0'>";
-        echo "<tr><th colspan='5'><h1 style='margin:0;'>Reporte Detallado de Laboratorios</h1></th></tr>";
-        echo "<tr><td colspan='5'><b>Período:</b> " . date('d/m/Y', strtotime($start_date)) . " al " . date('d/m/Y', strtotime($end_date)) . "</td></tr>";
+        echo "<tr><th colspan='6'><h1 style='margin:0;'>Reporte Detallado de Laboratorios</h1></th></tr>";
+        echo "<tr><td colspan='6'><b>Período:</b> " . date('d/m/Y', strtotime($start_date)) . " al " . date('d/m/Y', strtotime($end_date)) . "</td></tr>";
         echo "<tr></tr>";
 
         echo "<tr>
@@ -111,11 +113,12 @@ try {
                 <th>Examen (Prueba)</th>
                 <th>Fecha</th>
                 <th>Hora</th>
+                <th>Laboratorio</th>
                 <th class='text-right'>Precio (Q)</th>
               </tr>";
 
         if (empty($labs_detail_data)) {
-            echo "<tr><td colspan='5' align='center'>No se encontraron registros en este período.</td></tr>";
+            echo "<tr><td colspan='6' align='center'>No se encontraron registros en este período.</td></tr>";
         } else {
             foreach ($labs_detail_data as $lab) {
                 echo "<tr>";
@@ -123,12 +126,13 @@ try {
                 echo "<td>" . htmlspecialchars($lab['nombre_prueba']) . "</td>";
                 echo "<td>" . date('d/m/Y', strtotime($lab['fecha'])) . "</td>";
                 echo "<td>" . date('h:i A', strtotime($lab['hora'])) . "</td>";
+                echo "<td>" . htmlspecialchars($lab['laboratorio_externo'] ?? '—') . "</td>";
                 echo "<td class='text-right'>Q" . number_format($lab['precio'], 2) . "</td>";
                 echo "</tr>";
             }
         }
 
-        echo "<tr><td colspan='4' align='right'><b>TOTAL GENERADO:</b></td><td class='text-right'><b>Q" . number_format($total_labs_report, 2) . "</b></td></tr>";
+        echo "<tr><td colspan='5' align='right'><b>TOTAL GENERADO:</b></td><td class='text-right'><b>Q" . number_format($total_labs_report, 2) . "</b></td></tr>";
         echo "</table>";
         exit;
     }

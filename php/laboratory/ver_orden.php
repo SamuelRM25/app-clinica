@@ -158,6 +158,19 @@ try {
                                             <?php echo date('d/m/Y H:i', strtotime($orden['fecha_orden'])); ?>
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <td class="text-muted">Laboratorio Externo</td>
+                                        <td class="fw-medium">
+                                            <?php if (!empty($orden['laboratorio_externo'])): ?>
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                                                    <i class="bi bi-building me-1"></i>
+                                                    <?php echo htmlspecialchars($orden['laboratorio_externo']); ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted"><em>No especificado</em></span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
