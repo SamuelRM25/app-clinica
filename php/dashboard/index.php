@@ -172,6 +172,13 @@ try {
 
     // 12. Camas Disponibles
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM camas WHERE id_hospital = ?");
+
+    // ============ QUIRÓFANO ============
+
+    // Cirugías activas (Programada + En_Curso)
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM cirugias WHERE estado IN ('Programada','En_Curso') AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
+    $active_surgeries = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
     $stmt->execute([$id_hospital]);
     $total_beds = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
     $available_beds_count = $total_beds - $active_hospitalizations;
@@ -786,6 +793,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <a href="../surgery/index.php" class="nav-link">
                                 <i class="bi bi-bandaid nav-icon"></i>
                                 <span class="nav-text">Quirófano</span>
+                                <span class="badge bg-info"><?php echo $active_surgeries; ?></span>
                             </a>
                     <?php else: ?>
                             <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Quirófano')">
