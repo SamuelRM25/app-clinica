@@ -1044,21 +1044,21 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </div>
             </div>
             <!-- Botón Corte de Turno + Historial -->
+                <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
+                        style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #0d6efd); color: #fff;"
+                        onclick="openHistoryModal()">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Historial
+                    </button>
             <?php if ($user_type === 'admin'): ?>
-                    <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
-                        <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
-                            style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #0d6efd); color: #fff;"
-                            onclick="openHistoryModal()">
-                            <i class="bi bi-clock-history me-2"></i>
-                            Historial
-                        </button>
-                        <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
-                            style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
-                            onclick="verifyShiftCode()">
-                            <i class="bi bi-receipt-cutoff me-2"></i>
-                            Corte de Turno
-                        </button>
-                    </div>
+                    <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
+                        style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
+                        onclick="verifyShiftCode()">
+                        <i class="bi bi-receipt-cutoff me-2"></i>
+                        Corte de Turno
+                    </button>
+                </div>
             <?php endif; ?>
         </header>
 
