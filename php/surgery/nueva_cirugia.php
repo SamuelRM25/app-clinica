@@ -14,6 +14,7 @@ verify_session();
 date_default_timezone_set('America/Guatemala');
 
 $csrf_token = $_SESSION['csrf_token'] ?? '';
+$error_msg = '';
 
 try {
     $database = new Database();
@@ -26,12 +27,9 @@ try {
     $stmtCombos = $conn->prepare("SELECT id_combo, codigo, nombre, precio_total FROM cirugia_combos WHERE id_hospital = ? AND estado = 'Activo' ORDER BY nombre");
     $stmtCombos->execute([$id_hospital]);
     $combos = $stmtCombos->fetchAll(PDO::FETCH_ASSOC);
-
-    $stmtMed = $conn->prepare("SELECT idUsuario, CONCAT(nombre, ' ', apellido) as nombre_completo, especialidad FROM usuarios WHERE id_hospital = ? AND estado = 'Activo' ORDER BY nombre, apellido");
-    $stmtMed->execute([$id_hospital]);
-    $medicos = $stmtMed->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $salas = $combos = $medicos = [];
+    $salas = $combos = [];
+    $error_msg = 'Error cargando datos: ' . htmlspecialchars($e->getMessage());
     error_log('nueva_cirugia.php: ' . $e->getMessage());
 }
 $page_title = "Nueva Cirugía";
@@ -46,8 +44,8 @@ $page_title = "Nueva Cirugía";
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/style.css?v=4">
+    <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=4">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -64,6 +62,30 @@ $page_title = "Nueva Cirugía";
         </div>
     </header>
     <main class="main-content">
+        <?php if ($error_msg): ?>
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i><?php echo $error_msg; ?>
+                <hr>
+                <small class="text-muted">Si está intentando crear salas o combos, primero hágalo desde Quirófano → Salas / Combos.</small>
+            </div>
+        <?php endif; ?>
+
+        <?php if (empty($salas)): ?>
+            <div class="alert alert-warning">
+                <i class="bi bi-info-circle me-2"></i>
+                No hay salas quirúrgicas registradas en este hospital.
+                <a href="salas.php" class="btn btn-sm btn-warning ms-2"><i class="bi bi-plus"></i> Crear Sala</a>
+            </div>
+        <?php endif; ?>
+
+        <?php if (empty($combos)): ?>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No hay combos registrados. Puede continuar sin combo e ingresar el cargo manualmente.
+                <a href="combos.php" class="btn btn-sm btn-info ms-2"><i class="bi bi-plus"></i> Crear Combo</a>
+            </div>
+        <?php endif; ?>
+
         <form id="cirugiaForm">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 
@@ -81,8 +103,8 @@ $page_title = "Nueva Cirugía";
                             </div>
                         </div>
                         <div class="col-md-12" id="box-interno">
-                            <label class="form-label">Buscar Paciente *</label>
-                            <input type="text" id="search-paciente" class="form-control" placeholder="Escriba nombre, apellido o DPI..." autocomplete="off">
+                            <label class="form-label">Buscar Paciente * <small class="text-muted">(escriba al menos 2 caracteres)</small></label>
+                            <input type="text" id="search-paciente" class="form-control" placeholder="Nombre, apellido o DPI..." autocomplete="off" minlength="2">
                             <input type="hidden" name="id_paciente" id="id_paciente">
                             <div id="paciente-results" class="list-group mt-1" style="max-height: 200px; overflow-y: auto;"></div>
                             <div id="paciente-seleccionado" class="alert alert-success mt-2 d-none"></div>
@@ -110,16 +132,16 @@ $page_title = "Nueva Cirugía";
                         <div class="col-md-6">
                             <label class="form-label">Sala Quirúrgica *</label>
                             <select class="form-select" name="id_sala" required>
-                                <option value="">Seleccione sala...</option>
+                                <option value="">-- Seleccione sala --</option>
                                 <?php foreach ($salas as $s): ?>
-                                    <option value="<?php echo $s['id_sala']; ?>"><?php echo htmlspecialchars($s['codigo'] . ' - ' . $s['nombre']); ?></option>
+                                    <option value="<?php echo $s['id_sala']; ?>"><?php echo htmlspecialchars($s['codigo'] . ' — ' . $s['nombre']); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Combo de Operación</label>
+                            <label class="form-label">Combo de Operación <small class="text-muted">(opcional)</small></label>
                             <select class="form-select" name="id_combo" id="id_combo">
-                                <option value="">Sin combo (manual)</option>
+                                <option value="">— Sin combo (ingresar cargo manual) —</option>
                                 <?php foreach ($combos as $c): ?>
                                     <option value="<?php echo $c['id_combo']; ?>" data-precio="<?php echo $c['precio_total']; ?>">
                                         <?php echo htmlspecialchars($c['nombre']); ?> — Q<?php echo number_format($c['precio_total'], 2); ?>
@@ -128,22 +150,12 @@ $page_title = "Nueva Cirugía";
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Cirujano</label>
-                            <select class="form-select" name="id_cirujano">
-                                <option value="">Seleccione...</option>
-                                <?php foreach ($medicos as $m): ?>
-                                    <option value="<?php echo $m['idUsuario']; ?>"><?php echo htmlspecialchars($m['nombre_completo'] . ($m['especialidad'] ? ' (' . $m['especialidad'] . ')' : '')); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label class="form-label">Cirujano <small class="text-muted">(escribir manualmente)</small></label>
+                            <input type="text" name="cirujano_nombre" id="cirujano_nombre" class="form-control" placeholder="Dr. Juan Pérez" maxlength="150">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Anestesista</label>
-                            <select class="form-select" name="id_anestesista">
-                                <option value="">Seleccione...</option>
-                                <?php foreach ($medicos as $m): ?>
-                                    <option value="<?php echo $m['idUsuario']; ?>"><?php echo htmlspecialchars($m['nombre_completo']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label class="form-label">Anestesista <small class="text-muted">(escribir manualmente)</small></label>
+                            <input type="text" name="anestesista_nombre" id="anestesista_nombre" class="form-control" placeholder="Dr. María López" maxlength="150">
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Procedimiento</label>
@@ -182,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Search paciente
+    // Search paciente — ruta corregida
     const searchInput = document.getElementById('search-paciente');
     const resultsBox = document.getElementById('paciente-results');
     let timer;
@@ -190,14 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(timer);
         timer = setTimeout(async () => {
             const q = searchInput.value.trim();
-            if (q.length < 1) { resultsBox.innerHTML = ''; return; }
+            if (q.length < 2) { resultsBox.innerHTML = ''; return; }
             try {
-                const res = await fetch('../../dashboard/api/search_patients.php?q=' + encodeURIComponent(q));
+                const res = await fetch('../dashboard/api/search_patients.php?q=' + encodeURIComponent(q), {
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
-                if (json.status === 'success' && json.patients.length) {
+                if (json.status === 'success' && json.patients && json.patients.length) {
                     resultsBox.innerHTML = json.patients.map(p =>
-                        `<a href="javascript:void(0)" class="list-group-item list-group-item-action" data-id="${p.id_paciente}" data-name="${p.nombre_completo}">
-                            <strong>${p.nombre_completo}</strong> · DPI: ${p.dpi || '—'} · ${p.edad || '?'} años
+                        `<a href="javascript:void(0)" class="list-group-item list-group-item-action" data-id="${p.id_paciente}" data-name="${escapeHtmlAttr(p.nombre_completo)}">
+                            <strong>${escapeHtml(p.nombre_completo)}</strong> · DPI: ${p.dpi || '—'} · ${p.edad || '?'} años
                         </a>`
                     ).join('');
                     resultsBox.querySelectorAll('a').forEach(a => {
@@ -214,9 +229,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultsBox.innerHTML = '<div class="list-group-item text-muted">Sin resultados</div>';
                 }
             } catch (e) {
-                resultsBox.innerHTML = '<div class="list-group-item text-danger">Error en búsqueda</div>';
+                resultsBox.innerHTML = '<div class="list-group-item text-danger">Error en búsqueda: ' + e.message + '</div>';
+                console.error('Patient search error:', e);
             }
         }, 300);
+    });
+
+    // Auto-ajustar precio total al elegir combo
+    document.getElementById('id_combo').addEventListener('change', e => {
+        // El form no tiene campo "precio_total" aquí (lo crea el backend desde el combo)
+        // No-op por ahora, solo informativo
     });
 
     // Form submit
@@ -224,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const fd = new FormData(e.target);
         try {
-            const res = await fetch('api/create_cirugia.php', { method: 'POST', body: fd });
+            const res = await fetch('api/create_cirugia.php', { method: 'POST', body: fd, credentials: 'same-origin' });
             const json = await res.json();
             if (json.success) {
                 Swal.fire({
@@ -241,6 +263,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+function escapeHtmlAttr(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 </script>
 </body>
 </html>

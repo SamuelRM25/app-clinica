@@ -92,7 +92,7 @@ try {
                 $stmtIngreso->execute([
                     $cirugia['id_paciente'],
                     $cama['id_cama'],
-                    $cirugia['id_cirujano'] ?: $user_id,
+                    $user_id,
                     $fecha_ingreso,
                     $fecha_alta,
                     $motivo_ingreso,
@@ -174,14 +174,15 @@ try {
                     ]);
                 }
 
-                // Sync cuenta hospitalaria subtotales
+                // Sync cuenta hospitalaria subtotales (total_general es GENERATED, no se actualiza manualmente)
                 $stmtSync = $conn->prepare("
                     UPDATE cuenta_hospitalaria ch SET
                         subtotal_habitacion = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Habitación' AND cancelado = 0), 0),
                         subtotal_medicamentos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Medicamento' AND cancelado = 0), 0),
                         subtotal_procedimientos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Cirugía' AND cancelado = 0), 0) + COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = 0), 0),
-                        subtotal_otros = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Cirugía','Laboratorio','Honorario') AND cancelado = 0), 0),
-                        total = subtotal_habitacion + subtotal_medicamentos + subtotal_procedimientos + subtotal_laboratorios + subtotal_honorarios + subtotal_otros
+                        subtotal_laboratorios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Laboratorio' AND cancelado = 0), 0),
+                        subtotal_honorarios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Honorario' AND cancelado = 0), 0),
+                        subtotal_otros = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Cirugía','Laboratorio','Honorario') AND cancelado = 0), 0)
                     WHERE ch.id_cuenta = ?
                 ");
                 $stmtSync->execute([$id_cuenta]);

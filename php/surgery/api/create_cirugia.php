@@ -91,19 +91,23 @@ try {
     if ($sala['estado'] === 'Ocupada') throw new Exception('Sala actualmente ocupada');
 
     // INSERT cirugía
+    $cirujano_nombre = trim($data['cirujano_nombre'] ?? '');
+    $anestesista_nombre = trim($data['anestesista_nombre'] ?? '');
     $stmt = $conn->prepare("
         INSERT INTO cirugias (
-            numero_cirugia, id_paciente, id_sala, id_cirujano, id_anestesista, id_combo,
+            numero_cirugia, id_paciente, id_sala, id_cirujano, cirujano_nombre, id_anestesista, anestesista_nombre, id_combo,
             tipo_paciente, referido_nombre, referido_apellido, procedimiento,
             fecha_programada, cargo_total, estado, created_by, id_hospital
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Programada', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Programada', ?, ?)
     ");
     $stmt->execute([
         $numero_cirugia,
         $id_paciente,
         $id_sala,
-        !empty($data['id_cirujano']) ? (int)$data['id_cirujano'] : null,
-        !empty($data['id_anestesista']) ? (int)$data['id_anestesista'] : null,
+        null, // id_cirujano ya no se usa
+        $cirujano_nombre ?: null,
+        null, // id_anestesista ya no se usa
+        $anestesista_nombre ?: null,
         $id_combo,
         $tipo_paciente,
         $tipo_paciente === 'Referido' ? trim($data['referido_nombre'] ?? '') : null,
@@ -120,14 +124,16 @@ try {
     $stmtUpd = $conn->prepare("UPDATE salas_quirurgicas SET estado = 'Ocupada' WHERE id_sala = ? AND id_hospital = ?");
     $stmtUpd->execute([$id_sala, $id_hospital]);
 
-    // Equipo quirúrgico (cirujano y anestesista)
-    if (!empty($data['id_cirujano'])) {
-        $stmtEq = $conn->prepare("INSERT INTO cirugia_equipo (id_cirugia, id_usuario, rol, id_hospital) VALUES (?, ?, 'Cirujano', ?)");
-        $stmtEq->execute([$id_cirugia, (int)$data['id_cirujano'], $id_hospital]);
+    // Equipo quirúrgico (solo texto libre)
+    if ($cirujano_nombre) {
+        // Para mantener compatibilidad, insertamos 0 en id_usuario si es texto libre
+        // Mejor lo guardamos sólo como texto y registramos un marker
+        $stmtEq = $conn->prepare("INSERT INTO cirugia_equipo (id_cirugia, id_usuario, rol, id_hospital) VALUES (?, 0, 'Cirujano', ?)");
+        // En realidad id_usuario FK en cirugia_equipo puede no permitir 0
+        // Mejor NO insertar si id_usuario=0; sólo guardamos en cirugias.cirujano_nombre
     }
-    if (!empty($data['id_anestesista'])) {
-        $stmtEq = $conn->prepare("INSERT INTO cirugia_equipo (id_cirugia, id_usuario, rol, id_hospital) VALUES (?, ?, 'Anestesista', ?)");
-        $stmtEq->execute([$id_cirugia, (int)$data['id_anestesista'], $id_hospital]);
+    if ($anestesista_nombre) {
+        // Mismo caso
     }
 
     $conn->commit();

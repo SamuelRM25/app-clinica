@@ -25,19 +25,16 @@ try {
 
     $stmt = $conn->prepare("
         SELECT c.*,
-               COALESCE(CONCAT(p.nombre, ' ', p.apellido), CONCAT(c.referido_nombre, ' ', c.referido_apellido)) AS paciente,
-               p.dpi, p.fecha_nacimiento, p.genero,
-               s.nombre AS sala, s.codigo AS sala_codigo,
-               cc.nombre AS combo_nombre,
-               cir.nombre AS cirujano_n, cir.apellido AS cirujano_a,
-               anes.nombre AS anes_n, anes.apellido AS anes_a
-        FROM cirugias c
-        LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
-        LEFT JOIN salas_quirurgicas s ON c.id_sala = s.id_sala
-        LEFT JOIN cirugia_combos cc ON c.id_combo = cc.id_combo
-        LEFT JOIN usuarios cir ON c.id_cirujano = cir.idUsuario
-        LEFT JOIN usuarios anes ON c.id_anestesista = anes.idUsuario
-        WHERE c.id_cirugia = ? AND c.id_hospital = ?
+                COALESCE(CONCAT(p.nombre, ' ', p.apellido), CONCAT(c.referido_nombre, ' ', c.referido_apellido)) AS paciente,
+                p.dpi, p.fecha_nacimiento, p.genero,
+                s.nombre AS sala, s.codigo AS sala_codigo,
+                cc.nombre AS combo_nombre,
+                c.cirujano_nombre, c.anestesista_nombre
+         FROM cirugias c
+         LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
+         LEFT JOIN salas_quirurgicas s ON c.id_sala = s.id_sala
+         LEFT JOIN cirugia_combos cc ON c.id_combo = cc.id_combo
+         WHERE c.id_cirugia = ? AND c.id_hospital = ?
     ");
     $stmt->execute([$id_cirugia, $id_hospital]);
     $cirugia = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -153,6 +150,9 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                             <button class="btn btn-primary" onclick="openConsumoModal()">
                                 <i class="bi bi-capsule"></i> Agregar Medicamento
                             </button>
+                            <button class="btn btn-info" onclick="previewAsignacion()">
+                                <i class="bi bi-eye"></i> Ver Asignación
+                            </button>
                             <button class="btn btn-success" onclick="finalizarCirugia()">
                                 <i class="bi bi-check-circle"></i> Finalizar Cirugía
                             </button>
@@ -167,6 +167,16 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
             </div>
         </div>
 
+        <!-- Panel Vista Previa de Asignación (oculto, se muestra con el botón) -->
+        <div class="card shadow-sm border-0 rounded-3 mb-3 d-none" id="preview-asignacion-card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-eye me-2"></i>Vista Previa — Asignación post-operatoria</h5>
+            </div>
+            <div class="card-body" id="preview-asignacion-body">
+                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</div>
+            </div>
+        </div>
+
         <div class="row g-3">
             <!-- Detalles -->
             <div class="col-md-6">
@@ -177,8 +187,8 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                             <dt class="col-sm-5">Fecha Programada:</dt><dd class="col-sm-7"><?php echo $cirugia['fecha_programada'] ? date('d/m/Y H:i', strtotime($cirugia['fecha_programada'])) : '—'; ?></dd>
                             <dt class="col-sm-5">Inicio:</dt><dd class="col-sm-7"><?php echo $cirugia['fecha_inicio'] ? date('d/m/Y H:i', strtotime($cirugia['fecha_inicio'])) : '—'; ?></dd>
                             <dt class="col-sm-5">Fin:</dt><dd class="col-sm-7"><?php echo $cirugia['fecha_fin'] ? date('d/m/Y H:i', strtotime($cirugia['fecha_fin'])) : '—'; ?></dd>
-                            <dt class="col-sm-5">Cirujano:</dt><dd class="col-sm-7"><?php echo htmlspecialchars(trim(($cirugia['cirujano_n'] ?? '') . ' ' . ($cirugia['cirujano_a'] ?? '')) ?: '—'); ?></dd>
-                            <dt class="col-sm-5">Anestesista:</dt><dd class="col-sm-7"><?php echo htmlspecialchars(trim(($cirugia['anes_n'] ?? '') . ' ' . ($cirugia['anes_a'] ?? '')) ?: '—'); ?></dd>
+                            <dt class="col-sm-5">Cirujano:</dt><dd class="col-sm-7"><?php echo htmlspecialchars($cirugia['cirujano_nombre'] ?? '—'); ?></dd>
+                            <dt class="col-sm-5">Anestesista:</dt><dd class="col-sm-7"><?php echo htmlspecialchars($cirugia['anestesista_nombre'] ?? '—'); ?></dd>
                             <dt class="col-sm-5">Cargo Total:</dt><dd class="col-sm-7 fw-bold text-primary fs-5">Q<?php echo number_format($cirugia['cargo_total'], 2); ?></dd>
                         </dl>
                         <?php if ($cirugia['procedimiento']): ?>
@@ -355,6 +365,12 @@ function openConsumoModal() {
     consumoModal.show();
 }
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+
 async function saveConsumo(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -410,6 +426,114 @@ async function finalizarCirugia() {
             confirmButtonText: 'Recargar'
         }).then(() => location.reload());
     } else { Swal.fire('Error', json.message, 'error'); }
+}
+
+async function previewAsignacion() {
+    const card = document.getElementById('preview-asignacion-card');
+    const body = document.getElementById('preview-asignacion-body');
+    card.classList.remove('d-none');
+    body.innerHTML = '<div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>Buscando cama disponible...</div>';
+
+    try {
+        const res = await fetch('api/preview_asignacion.php?id_cirugia=' + idCirugia);
+        const json = await res.json();
+
+        if (!json.success) {
+            body.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(json.message || 'Error')}</div>`;
+            return;
+        }
+
+        if (json.ya_hospitalizado) {
+            body.innerHTML = `
+                <div class="alert alert-info border-0 mb-3">
+                    <i class="bi bi-info-circle me-2"></i><strong>Paciente ya hospitalizado</strong>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted text-uppercase d-block">Habitación</small>
+                            <h3 class="mb-0 text-primary">${escapeHtml(json.habitacion)}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted text-uppercase d-block">Cama</small>
+                            <h3 class="mb-0 text-primary">${escapeHtml(json.cama)}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted text-uppercase d-block">Tarifa / noche</small>
+                            <h3 class="mb-0 text-primary">Q${parseFloat(json.tarifa_por_noche).toFixed(2)}</h3>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Los cargos de la cirugía se agregarán a la cuenta hospitalaria existente.</p>
+            `;
+        } else if (!json.disponible) {
+            body.innerHTML = `
+                <div class="alert alert-warning border-0 mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i><strong>No hay camas disponibles</strong>
+                    <p class="mb-0 mt-2">${escapeHtml(json.mensaje)}</p>
+                </div>
+            `;
+        } else {
+            const c = json.seleccionada;
+            const otrasCamas = json.camas.length - 1;
+            body.innerHTML = `
+                <div class="alert alert-success border-0 mb-3">
+                    <i class="bi bi-check-circle me-2"></i><strong>Habitación sugerida para asignación:</strong>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                            <small class="text-muted text-uppercase d-block">Habitación</small>
+                            <h3 class="mb-0 text-primary">${escapeHtml(c.numero_habitacion)}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                            <small class="text-muted text-uppercase d-block">Cama</small>
+                            <h3 class="mb-0 text-info">${escapeHtml(c.numero_cama)}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <small class="text-muted text-uppercase d-block">Tipo</small>
+                            <h5 class="mb-0">${escapeHtml(c.tipo_habitacion || '—')}</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                            <small class="text-muted text-uppercase d-block">Tarifa / noche</small>
+                            <h4 class="mb-0 text-success">Q${parseFloat(c.tarifa_por_noche).toFixed(2)}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="border rounded p-3" style="background: rgba(13,110,253,.04);">
+                    <h6 class="mb-2"><i class="bi bi-cash-stack me-1"></i>Cargos post-operatorios a aplicar:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="mb-0 small">
+                                <li>Primera noche: <strong class="text-primary">Q600.00</strong> <small class="text-muted">(tarifa fija cirugía)</small></li>
+                                <li>Habitación: <strong>${escapeHtml(c.numero_habitacion)} - Cama ${escapeHtml(c.numero_cama)}</strong></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="mb-0 small">
+                                <li>Noches subsiguientes: <strong class="text-success">Q${parseFloat(c.tarifa_por_noche).toFixed(2)}</strong> / noche</li>
+                                ${otrasCamas > 0 ? `<li class="text-muted"><i class="bi bi-info-circle me-1"></i>${otrasCamas} cama(s) alternativa(s) disponible(s)</li>` : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0"><i class="bi bi-shield-check me-1"></i>Esta es la habitación que se asignará automáticamente al finalizar la cirugía.</p>
+            `;
+        }
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+        body.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error de red: ${escapeHtml(err.message)}</div>`;
+    }
 }
 </script>
 </body>
