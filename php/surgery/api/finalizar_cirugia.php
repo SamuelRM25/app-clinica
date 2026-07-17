@@ -158,8 +158,8 @@ try {
                 $stmtCargoConsumo = $conn->prepare("
                     INSERT INTO cargos_hospitalarios
                     (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
-                     subtotal, fecha_cargo, registrado_por, referencia_id, referencia_tabla, id_hospital)
-                    VALUES (?, 'Medicamento', ?, ?, ?, ?, NOW(), ?, ?, 'inventario', ?)
+                     fecha_cargo, registrado_por, referencia_id, referencia_tabla, id_hospital)
+                    VALUES (?, 'Medicamento', ?, ?, ?, NOW(), ?, ?, 'inventario', ?)
                 ");
                 foreach ($consumos as $co) {
                     $stmtCargoConsumo->execute([
@@ -167,7 +167,6 @@ try {
                         "{$co['nom_medicamento']} (Cirugía #{$cirugia['numero_cirugia']})",
                         (float)$co['cantidad'],
                         (float)$co['precio_unitario'],
-                        (float)$co['subtotal'],
                         $user_id,
                         (int)$co['id_inventario'],
                         $id_hospital

@@ -33,35 +33,47 @@ try {
     }
 
     $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+    $user_id = (int)$_SESSION['user_id'];
     $db = new Database();
     $conn = $db->getConnection();
 
-    // Iniciar transacción
     $conn->beginTransaction();
 
-    // 1. Obtener la cuenta hospitalaria de este encamamiento
-    $stmt_cuenta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+    // 1. Verificar que el cargo pertenece a la cuenta hospitalaria
+    $stmt_cuenta = $conn->prepare("SELECT ch.id_cuenta FROM cuenta_hospitalaria ch
+                                     JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
+                                     WHERE e.id_encamamiento = ? AND e.id_hospital = ?");
     $stmt_cuenta->execute([$id_encamamiento, $id_hospital]);
     $cuenta = $stmt_cuenta->fetch(PDO::FETCH_ASSOC);
-
     if (!$cuenta) {
         throw new Exception("Cuenta hospitalaria no encontrada.");
     }
-
     $id_cuenta = $cuenta['id_cuenta'];
 
-    // 2. Marcar el cargo como cancelado
-    $stmt_delete = $conn->prepare("UPDATE cargos_hospitalarios SET cancelado = 1 WHERE id_cargo = ? AND id_cuenta = ? AND id_hospital = ?");
-    $stmt_delete->execute([$id_cargo, $id_cuenta, $id_hospital]);
+    // 2. Intentar revertir stock si el cargo es de medicamento/inventario
+    $reversion_info = revertirStockSiProcede($conn, $id_cargo, $id_hospital, $user_id, 'Eliminado manualmente desde hospitalización');
 
-    if ($stmt_delete->rowCount() === 0) {
-        throw new Exception("Cargo no encontrado o ya eliminado.");
+    // 3. Si revertirStockSiProcede devolvió reverted=false porque el cargo ya estaba cancelado,
+    //    fallamos. Si lo canceló correctamente, revertirStockSiProcede ya marcó cancelado=1.
+    if (!$reversion_info['reverted'] && (strpos($reversion_info['error'] ?? '', 'No se pudo') !== false)) {
+        throw new Exception($reversion_info['error']);
     }
 
-    // 3. Recalcular la cuenta hospitalaria para mantener la integridad de los datos (Igual a detalle_encamamiento)
+    if (!$reversion_info['reverted']) {
+        // Cargo sin referencia a inventario: solo marcar cancelado
+        $stmt_cancel = $conn->prepare("UPDATE cargos_hospitalarios SET cancelado = 1,
+                                          motivo_cancelacion = 'Eliminado por el usuario'
+                                       WHERE id_cargo = ? AND id_cuenta = ? AND id_hospital = ? AND cancelado = 0");
+        $stmt_cancel->execute([$id_cargo, $id_cuenta, $id_hospital]);
+        if ($stmt_cancel->rowCount() === 0) {
+            throw new Exception("Cargo no encontrado o ya eliminado.");
+        }
+    }
+
+    // 4. Recalcular la cuenta hospitalaria
     $stmt_sync = $conn->prepare("
         UPDATE cuenta_hospitalaria ch
-        SET 
+        SET
             subtotal_habitacion = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Habitación' AND cancelado = FALSE),
             subtotal_medicamentos = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Medicamento' AND cancelado = FALSE),
             subtotal_procedimientos = (SELECT COALESCE(SUM(subtotal), 0) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = FALSE),
@@ -73,12 +85,31 @@ try {
     $stmt_sync->execute([$id_cuenta]);
 
     $conn->commit();
-    echo json_encode(['status' => 'success', 'message' => 'Cargo eliminado correctamente.']);
+
+    // Respuesta estructurada
+    if ($reversion_info['reverted']) {
+        echo json_encode([
+            'status' => 'success',
+            'message' => "✓ Se retornaron {$reversion_info['cantidad']} unidades de '{$reversion_info['medicamento']}' al inventario de {$reversion_info['origen_label']}. Stock actual: {$reversion_info['stock_nuevo']}",
+            'reverted' => true,
+            'medicamento' => $reversion_info['medicamento'],
+            'cantidad' => $reversion_info['cantidad'],
+            'origen_label' => $reversion_info['origen_label'],
+            'stock_nuevo' => $reversion_info['stock_nuevo']
+        ]);
+    } else {
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Cargo eliminado correctamente.',
+            'reverted' => false
+        ]);
+    }
 
 } catch (Exception $e) {
-    if (isset($conn))
+    if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
-        error_log("hospitalization/api/delete_charge.php error: " . $e->getMessage());
-        echo json_encode(['status' => 'error', 'message' => 'Error del servidor.']);
+    }
+    error_log("hospitalization/api/delete_charge.php error: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

@@ -149,6 +149,9 @@ $page_title = "Nueva Cirugía";
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="col-md-12">
+                            <div id="combo-meds-preview" class="d-none"></div>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label">Cirujano <small class="text-muted">(escribir manualmente)</small></label>
                             <input type="text" name="cirujano_nombre" id="cirujano_nombre" class="form-control" placeholder="Dr. Juan Pérez" maxlength="150">
@@ -235,10 +238,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    // Auto-ajustar precio total al elegir combo
-    document.getElementById('id_combo').addEventListener('change', e => {
-        // El form no tiene campo "precio_total" aquí (lo crea el backend desde el combo)
-        // No-op por ahora, solo informativo
+    // Vista previa del combo: muestra los medicamentos del combo seleccionado
+    const previewDiv = document.getElementById('combo-meds-preview');
+    document.getElementById('id_combo').addEventListener('change', async (e) => {
+        const idCombo = e.target.value;
+        previewDiv.classList.add('d-none');
+        previewDiv.innerHTML = '';
+        if (!idCombo) return;
+        try {
+            const res = await fetch('api/get_combo_meds.php?id_combo=' + idCombo);
+            const json = await res.json();
+            if (!json.success) return;
+            const meds = json.medicamentos || [];
+            if (meds.length === 0) {
+                previewDiv.innerHTML = `<div class="alert alert-info border-0 mb-3"><i class="bi bi-info-circle me-2"></i>Este combo no tiene medicamentos vinculados. Solo incluye cargos fijos.</div>`;
+                previewDiv.classList.remove('d-none');
+                return;
+            }
+            const stockAlerts = meds.filter(m => !m.stock_suficiente);
+            let html = `<div class="alert alert-${stockAlerts.length > 0 ? 'warning' : 'success'} border-0 mb-3">
+                <h6 class="alert-heading"><i class="bi bi-${stockAlerts.length > 0 ? 'exclamation-triangle' : 'check-circle'} me-2"></i>Medicamentos del Combo: ${json.combo.nombre}</h6>
+                <p class="mb-2 small">Al iniciar la cirugía se descontarán automáticamente del stock de Quirófano:</p>
+                <ul class="mb-0 small">`;
+            meds.forEach(m => {
+                const ok = m.stock_suficiente;
+                html += `<li>
+                    <strong>${escapeHtml(m.nom_medicamento)}</strong>
+                    <span class="text-muted">(cantidad: ${parseInt(m.cantidad)})</span>
+                    — Stock en Quirófano: <span class="badge bg-${ok ? 'success' : 'danger'}">${parseInt(m.stock_quirofano || 0)}</span>
+                    ${!ok ? '<span class="text-danger ms-1">(faltan ' + m.stock_faltante + ')</span>' : ''}
+                </li>`;
+            });
+            html += '</ul></div>';
+            previewDiv.innerHTML = html;
+            previewDiv.classList.remove('d-none');
+        } catch (err) {
+            console.error('combo preview error:', err);
+        }
     });
 
     // Form submit

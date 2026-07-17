@@ -306,6 +306,11 @@ $page_title = "Combos de Operación";
                         </div>
                     </div>
 
+                    <div class="alert alert-info border-0 mb-3 small">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Tip:</strong> Para que un item descuente stock al iniciar la cirugía, seleccione un medicamento del inventario en la categoría. Use "Agregar otro cargo" para items personalizados (sin descuento de stock).
+                    </div>
+
                     <div class="totals-panel">
                         <div class="row g-2 align-items-center">
                             <div class="col-md-4">
@@ -328,6 +333,21 @@ $page_title = "Combos de Operación";
                             </div>
                         </div>
                     </div>
+
+                    <datalist id="list-cat-Ganancia">
+                        <option value="Encamamiento">
+                        <option value="Medicamento de sala">
+                        <option value="Uso de sala">
+                        <option value="Medicamentos de habitación">
+                    </datalist>
+                    <datalist id="list-cat-Gasto">
+                        <option value="Costo de medicamento de sala">
+                        <option value="Costo de medicamento de habitación">
+                        <option value="Anestesia">
+                        <option value="Dietas">
+                        <option value="Ingreso">
+                        <option value="Circulación">
+                    </datalist>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -356,27 +376,121 @@ function escapeAttr(s) {
         .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function itemRowHtml(tipo, cat, desc, monto, isExtra = false) {
-    const cats = tipo === 'Ganancia' ? CATS_GANANCIA : CATS_GASTO;
-    const catOptions = cats.map(c =>
-        `<option value="${escapeAttr(c)}" ${c === cat ? 'selected' : ''}>${escapeAttr(c)}</option>`
-    ).join('');
+function itemRowHtml(tipo, cat, desc, monto, isExtra = false, id_inventario = null, cantidad = 1, med_nombre = '') {
+    const listId = 'list-cat-' + tipo;
     return `
-    <div class="item-row ${isExtra ? 'is-extra' : ''}" data-tipo="${tipo}" data-predef="${isExtra ? '0' : '1'}">
-        <select class="form-select item-cat">${catOptions}</select>
-        <input type="text" class="form-control item-desc" placeholder="Detalle (opcional)" value="${escapeAttr(desc)}">
-        <input type="number" step="0.01" min="0" class="form-control item-monto" value="${parseFloat(monto || 0).toFixed(2)}" placeholder="0.00">
+    <div class="item-row ${isExtra ? 'is-extra' : ''} ${id_inventario ? 'has-med' : ''}" data-tipo="${tipo}" data-predef="${isExtra ? '0' : '1'}">
+        <div>
+            <input list="${listId}" type="text" class="form-control form-control-sm item-cat" value="${escapeAttr(cat)}" placeholder="Escribir o seleccionar..." maxlength="50" autocomplete="off">
+        </div>
+        <div class="item-med-search">
+            ${id_inventario
+                ? `<div class="input-group input-group-sm">
+                        <span class="input-group-text bg-success text-white" title="Medicamento vinculado"><i class="bi bi-capsule"></i></span>
+                        <input type="text" class="form-control item-med-input" placeholder="Buscar medicamento..." value="${escapeAttr(med_nombre || desc)}">
+                        <button type="button" class="btn btn-outline-danger" onclick="unlinkMed(this)" title="Quitar medicamento"><i class="bi bi-x"></i></button>
+                    </div>
+                    <input type="hidden" class="item-inv-id" value="${id_inventario}">
+                    <div class="med-results small"></div>`
+                : `<div class="input-group input-group-sm">
+                        <input type="text" class="form-control item-med-input" placeholder="(Opcional) Vincular medicamento del inventario...">
+                        <button type="button" class="btn btn-outline-success" onclick="searchMedInline(this)" title="Buscar"><i class="bi bi-search"></i></button>
+                    </div>
+                    <input type="hidden" class="item-inv-id" value="">
+                    <div class="med-results small"></div>`
+            }
+        </div>
+        <div class="d-flex gap-1 align-items-center">
+            <input type="number" step="0.01" min="0" class="form-control form-control-sm item-monto text-end" value="${parseFloat(monto || 0).toFixed(2)}" placeholder="0.00" title="Precio/Monto">
+            <input type="number" step="1" min="1" class="form-control form-control-sm item-cantidad text-end" value="${parseInt(cantidad || 1)}" placeholder="1" title="Cantidad a descontar" style="width: 60px;">
+        </div>
         <button type="button" class="btn btn-outline-danger btn-remove" onclick="removeItem(this)" title="Eliminar fila">
             <i class="bi bi-trash"></i>
         </button>
     </div>`;
 }
 
+function unlinkMed(btn) {
+    const row = btn.closest('.item-row');
+    row.classList.remove('has-med');
+    row.querySelector('.item-inv-id').value = '';
+    const id_inventario = row.querySelector('.item-inv-id').value;
+    const cat = row.querySelector('.item-cat').value;
+    const desc = row.querySelector('.item-desc')?.value || '';
+    const monto = row.querySelector('.item-monto').value;
+    const cantidad = row.querySelector('.item-cantidad')?.value || 1;
+    const tipo = row.dataset.tipo;
+    const predef = row.dataset.predef === '1' ? 1 : 0;
+    row.outerHTML = itemRowHtml(tipo, cat, desc, monto, predef === 0, null, cantidad, '');
+}
+
+function searchMedInline(btn) {
+    const row = btn.closest('.item-row');
+    const input = row.querySelector('.item-med-input');
+    const resultsDiv = row.querySelector('.med-results');
+    input.focus();
+    // Setup search on input if not done
+    if (!input.dataset.bound) {
+        input.dataset.bound = '1';
+        let timer;
+        input.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => doMedSearch(row, input.value.trim(), resultsDiv), 300);
+        });
+    }
+}
+
+async function doMedSearch(row, q, resultsDiv) {
+    if (q.length < 2) { resultsDiv.innerHTML = ''; return; }
+    try {
+        const res = await fetch('api/search_meds.php?q=' + encodeURIComponent(q));
+        const json = await res.json();
+        if (json.success && json.data.length) {
+            resultsDiv.innerHTML = json.data.map(m =>
+                `<a href="javascript:void(0)" class="list-group-item list-group-item-action py-1 px-2 small" data-id="${m.id_inventario}" data-name="${escapeAttr(m.nom_medicamento + ' (' + (m.presentacion_med || '') + ')')}">
+                    <strong>${escapeHtml(m.nom_medicamento)}</strong>
+                    <small class="text-muted ms-1">${escapeHtml(m.presentacion_med || '')}</small>
+                    <span class="badge bg-info ms-1">${parseFloat(m.stock_quirofano || 0).toFixed(0)} en Quirófano</span>
+                </a>`
+            ).join('');
+            resultsDiv.classList.add('list-group');
+            resultsDiv.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    const idInv = a.dataset.id;
+                    const name = a.dataset.name;
+                    row.querySelector('.item-inv-id').value = idInv;
+                    row.classList.add('has-med');
+                    row.querySelector('.item-med-input').value = name;
+                    // Update the row visually
+                    const tipo = row.dataset.tipo;
+                    const cat = row.querySelector('.item-cat').value;
+                    const desc = name;
+                    const monto = row.querySelector('.item-monto').value;
+                    const cantidad = row.querySelector('.item-cantidad').value;
+                    const predef = row.dataset.predef === '1' ? 1 : 0;
+                    row.outerHTML = itemRowHtml(tipo, cat, desc, monto, predef === 0, idInv, cantidad, name);
+                    resultsDiv.innerHTML = '';
+                });
+            });
+        } else {
+            resultsDiv.innerHTML = '<div class="text-muted small">Sin resultados</div>';
+            resultsDiv.classList.remove('list-group');
+        }
+    } catch (e) {
+        resultsDiv.innerHTML = '<div class="text-danger small">Error en búsqueda</div>';
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+
 function addExtraItem(tipo) {
     const containerId = tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
-    const cats = tipo === 'Ganancia' ? CATS_GANANCIA : CATS_GASTO;
     document.getElementById(containerId).insertAdjacentHTML('beforeend',
-        itemRowHtml(tipo, cats[0], '', 0, true)
+        itemRowHtml(tipo, '', '', 0, true)
     );
     updateTotals();
 }
@@ -385,13 +499,7 @@ function removeItem(btn) {
     const row = btn.closest('.item-row');
     const tipo = row.dataset.tipo;
     row.remove();
-    // Si era fila predefinida, re-añadir otra en su lugar
-    if (row.dataset.predef === '1') {
-        const cats = tipo === 'Ganancia' ? CATS_GANANCIA : CATS_GASTO;
-        // Encontrar la categoría de la fila eliminada desde los data anteriores no es trivial;
-        // Para simplificar, dejamos que la fila eliminada no se vuelva a crear;
-        // el usuario puede usar "+ Agregar otro cargo" si la necesita.
-    }
+    // Si era fila predefinida (original), dejar que el usuario la re-agregue manualmente con "+"
     updateTotals();
 }
 
@@ -405,9 +513,16 @@ function seedItems(tipo) {
     const cats = tipo === 'Ganancia' ? CATS_GANANCIA : CATS_GASTO;
     const containerId = tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
     cats.forEach(c => {
-        document.getElementById(containerId).insertAdjacentHTML('beforeend',
-            itemRowHtml(tipo, c, '', 0, false)
-        );
+        // Solo las categorías de medicamentos se precargan con búsqueda; las demás quedan vacías
+        if (tipo === 'Ganancia' && (c === 'Medicamento de sala' || c === 'Medicamentos de habitación')) {
+            document.getElementById(containerId).insertAdjacentHTML('beforeend',
+                itemRowHtml(tipo, c, '', 0, false, null, 1, '')
+            );
+        } else {
+            document.getElementById(containerId).insertAdjacentHTML('beforeend',
+                itemRowHtml(tipo, c, '', 0, false, null, 1, '')
+            );
+        }
     });
     document.getElementById(containerId).insertAdjacentHTML('beforeend', addMoreButton(tipo));
 }
@@ -455,29 +570,56 @@ async function editCombo(id) {
         const predefinedE = new Set(CATS_GASTO);
 
         const existingByCat = {};
+        const usedItemIds = new Set();
         json.data.items.forEach(it => {
             const k = it.tipo + '|' + it.categoria;
-            existingByCat[k] = it;
+            // Si ya hay uno para esta categoría, acumulamos en lugar de sobreescribir
+            if (!existingByCat[k]) existingByCat[k] = [];
+            existingByCat[k].push(it);
         });
 
         document.querySelectorAll('#items-ganancia .item-row[data-predef="1"], #items-gasto .item-row[data-predef="1"]').forEach(row => {
             const tipo = row.dataset.tipo;
             const cat = row.querySelector('.item-cat').value;
-            const match = existingByCat[tipo + '|' + cat];
-            if (match) {
+            const matches = existingByCat[tipo + '|' + cat];
+            if (matches && matches.length) {
+                // Tomar el primero
+                const match = matches.shift();
+                usedItemIds.add(match.id_item);
                 row.querySelector('.item-monto').value = parseFloat(match.monto || 0).toFixed(2);
-                row.querySelector('.item-desc').value = match.descripcion || '';
+                // Set description in .item-med-input (it's always present in itemRowHtml)
+                const medInput = row.querySelector('.item-med-input');
+                if (medInput) medInput.value = match.descripcion || '';
+                // Set cantidad
+                const cantInput = row.querySelector('.item-cantidad');
+                if (cantInput) cantInput.value = parseFloat(match.cantidad || 1);
+                if (match.id_inventario) {
+                    const invInput = row.querySelector('.item-inv-id');
+                    if (invInput) invInput.value = match.id_inventario;
+                    row.classList.add('has-med');
+                    // Reemplazar la fila con la versión con medicamento (incluye búsqueda X para desvincular)
+                    row.outerHTML = itemRowHtml(
+                        match.tipo, match.categoria, '',
+                        parseFloat(match.monto || 0), false,
+                        match.id_inventario, parseFloat(match.cantidad || 1),
+                        match.descripcion || ''
+                    );
+                }
             }
         });
 
         // Existing items whose category is NOT in predefined list → add as extras
         json.data.items.forEach(it => {
             const isPredef = it.tipo === 'Ganancia' ? predefinedG.has(it.categoria) : predefinedE.has(it.categoria);
-            if (!isPredef) {
-                const containerId = it.tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
-                document.getElementById(containerId).insertAdjacentHTML('beforeend',
-                    itemRowHtml(it.tipo, it.categoria, it.descripcion || '', parseFloat(it.monto || 0), true)
-                );
+            if (!isPredef || usedItemIds.has(it.id_item)) {
+                if (!usedItemIds.has(it.id_item)) {
+                    const containerId = it.tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
+                    document.getElementById(containerId).insertAdjacentHTML('beforeend',
+                        itemRowHtml(it.tipo, it.categoria, it.descripcion || '', parseFloat(it.monto || 0), true,
+                                    it.id_inventario, parseFloat(it.cantidad || 1), it.descripcion || '')
+                    );
+                    usedItemIds.add(it.id_item);
+                }
             }
         });
 
@@ -513,15 +655,24 @@ async function saveCombo(e) {
     document.querySelectorAll('#comboForm .item-row').forEach(row => {
         const tipo = row.dataset.tipo;
         const cat = row.querySelector('.item-cat').value;
-        const desc = row.querySelector('.item-desc').value;
+        const desc = row.querySelector('.item-desc')?.value || '';
+        const medInput = row.querySelector('.item-med-input')?.value || '';
+        const idInv = parseInt(row.querySelector('.item-inv-id')?.value || 0) || null;
         const monto = parseFloat(row.querySelector('.item-monto').value) || 0;
+        const cantidad = parseFloat(row.querySelector('.item-cantidad')?.value || 1) || 1;
         const predef = row.dataset.predef === '1' ? 1 : 0;
-        // Para filas predefinidas con monto=0 y sin descripción → no guardar (ahorra filas)
-        if (predef === 1 && monto === 0 && !desc.trim() && cat) {
-            // No guardar si no tiene monto ni descripción
+        // Para filas predefinidas vacías → no guardar
+        if (predef === 1 && monto === 0 && !desc.trim() && !medInput.trim() && !idInv && cat) {
             return;
         }
-        items.push({ tipo, categoria: cat, descripcion: desc, monto });
+        items.push({
+            tipo,
+            categoria: cat,
+            descripcion: idInv ? medInput : desc,
+            monto,
+            id_inventario: idInv,
+            cantidad
+        });
     });
     const fd = new FormData(e.target);
     fd.set('items_json', JSON.stringify(items));

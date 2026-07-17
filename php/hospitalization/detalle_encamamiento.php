@@ -1219,14 +1219,7 @@ output_keep_alive_script();
                         <tbody id="cargoRows">
                             <tr>
                                 <td>
-                                    <select class="form-select form-select-sm cargo-tipo" name="tipo_cargo[]" required>
-                                        <option value="Medicamento">Medicamento</option>
-                                        <option value="Procedimiento">Procedimiento</option>
-                                        <option value="Laboratorio">Laboratorio</option>
-                                        <option value="Honorario">Honorario</option>
-                                        <option value="Insumo">Insumo</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
+                                    <input list="tipos-cargo-list" type="text" class="form-control form-control-sm cargo-tipo" name="tipo_cargo[]" required maxlength="50" placeholder="Escribir tipo..." autocomplete="off">
                                 </td>
                                 <td>
                                     <div class="desc-container">
@@ -1242,6 +1235,15 @@ output_keep_alive_script();
                         </tbody>
                     </table>
                 </div>
+                <datalist id="tipos-cargo-list">
+                    <option value="Medicamento">
+                    <option value="Procedimiento">
+                    <option value="Laboratorio">
+                    <option value="Honorario">
+                    <option value="Insumo">
+                    <option value="Habitación">
+                    <option value="Otro">
+                </datalist>
                 <div class="text-start">
                     <button type="button" class="btn btn-sm btn-outline-primary" id="addCargoRowBtn">
                         <i class="bi bi-plus-lg"></i> Agregar otra fila
@@ -1435,14 +1437,7 @@ output_keep_alive_script();
             const newRow = document.createElement('tr');
             newRow.innerHTML = `
                 <td>
-                    <select class="form-select form-select-sm cargo-tipo" name="tipo_cargo[]" required>
-                        <option value="Medicamento">Medicamento</option>
-                        <option value="Procedimiento">Procedimiento</option>
-                        <option value="Laboratorio">Laboratorio</option>
-                        <option value="Honorario">Honorario</option>
-                        <option value="Insumo">Insumo</option>
-                        <option value="Otro">Otro</option>
-                    </select>
+                    <input list="tipos-cargo-list" type="text" class="form-control form-control-sm cargo-tipo" name="tipo_cargo[]" required maxlength="50" placeholder="Escribir tipo..." autocomplete="off">
                 </td>
                 <td>
                     <div class="desc-container" style="position:relative;">

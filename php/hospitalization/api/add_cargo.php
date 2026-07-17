@@ -68,8 +68,14 @@ try {
         $id_cuenta = $cuenta['id_cuenta'];
         $id_inventario = isset($cargo_data['id_inventario']) ? intval($cargo_data['id_inventario']) : null;
 
-        // Set referencia if we have inventory id
-        $referencia_id = (($tipo_cargo === 'Medicamento' || $tipo_cargo === 'Insumo') && $id_inventario > 0) ? $id_inventario : null;
+        // Normalizar tipo_cargo: cualquier string es válido (VARCHAR 50)
+        $tipo_cargo = trim($tipo_cargo);
+        if ($tipo_cargo === '' || strlen($tipo_cargo) > 50) {
+            throw new Exception('Tipo de cargo inválido (máx 50 caracteres)');
+        }
+
+        // Si tiene id_inventario, deducir stock; independientemente del "tipo" textual
+        $referencia_id = ($id_inventario > 0) ? $id_inventario : null;
         $referencia_tabla = ($referencia_id !== null) ? 'inventario' : null;
 
         // Insert charge
@@ -92,19 +98,17 @@ try {
             $id_hospital
         ]);
 
-        // Deduct from inventory if it's a medication or supply with linkage
-        if (($tipo_cargo === 'Medicamento' || $tipo_cargo === 'Insumo') && $id_inventario > 0) {
+        // Deduct from inventory if there's a medication/supply linkage (cualquier id_inventario)
+        if ($id_inventario > 0) {
             $stmt_deduct = $conn->prepare("
-                UPDATE inventario 
-                SET stock_hospital = stock_hospital - ? 
+                UPDATE inventario
+                SET stock_hospital = stock_hospital - ?
                 WHERE id_inventario = ? AND stock_hospital >= ? AND id_hospital = ?
             ");
             $stmt_deduct->execute([$cantidad, $id_inventario, $cantidad, $id_hospital]);
 
             if ($stmt_deduct->rowCount() === 0) {
-                // Optional: We could throw an exception if stock is insufficient, 
-                // but usually hospital systems allow "floating" stock if critical.
-                // However, for this requirement, let's assume we want to track it strictly or at least try.
+                // Stock insuficiente; log pero permitir el cargo (floating stock)
             }
         }
     }

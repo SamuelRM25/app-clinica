@@ -29,7 +29,8 @@ try {
         exit;
     }
 
-    $stmtItems = $conn->prepare("SELECT id_item, tipo, categoria, descripcion, monto FROM cirugia_combo_items WHERE id_combo = ? ORDER BY tipo, categoria");
+    $stmtItems = $conn->prepare("SELECT id_item, tipo, categoria, descripcion, monto, id_inventario, cantidad
+                                    FROM cirugia_combo_items WHERE id_combo = ? ORDER BY tipo, categoria");
     $stmtItems->execute([$id_combo]);
     $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 

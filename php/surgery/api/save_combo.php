@@ -55,27 +55,31 @@ try {
         $stmt->execute([$codigo, $nombre, $descripcion ?: null, $precio_total, $estado, $id_hospital]);
         $newId = (int)$conn->lastInsertId();
 
-        $stmtItem = $conn->prepare("INSERT INTO cirugia_combo_items (id_combo, tipo, categoria, descripcion, monto, id_hospital) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmtItem = $conn->prepare("INSERT INTO cirugia_combo_items (id_combo, id_inventario, cantidad, tipo, categoria, descripcion, monto, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $count = 0;
+        $med_count = 0;
         foreach ($items as $it) {
             $tipo = $it['tipo'] ?? '';
             $categoria = substr(trim((string)($it['categoria'] ?? '')), 0, 50);
             $desc = substr(trim((string)($it['descripcion'] ?? '')), 0, 150);
             $monto = (float)($it['monto'] ?? 0);
+            $id_inventario = isset($it['id_inventario']) && $it['id_inventario'] ? (int)$it['id_inventario'] : null;
+            $cantidad = isset($it['cantidad']) && $it['cantidad'] > 0 ? (float)$it['cantidad'] : 1;
             if (!in_array($tipo, ['Ganancia', 'Gasto'], true) || $categoria === '') continue;
-            $stmtItem->execute([$newId, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
+            $stmtItem->execute([$newId, $id_inventario, $cantidad, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
             $count++;
+            if ($id_inventario) $med_count++;
         }
 
         $conn->commit();
 
-        audit_log('create', 'surgery', "Combo creado: $nombre ($codigo) con $count items", [
+        audit_log('create', 'surgery', "Combo creado: $nombre ($codigo) con $count items ($med_count medicamentos)", [
             'table_name' => 'cirugia_combos',
             'record_id' => $newId,
-            'new_data' => ['codigo' => $codigo, 'nombre' => $nombre, 'precio_total' => $precio_total, 'items' => $count],
+            'new_data' => ['codigo' => $codigo, 'nombre' => $nombre, 'precio_total' => $precio_total, 'items' => $count, 'medicamentos' => $med_count],
         ]);
 
-        echo json_encode(['success' => true, 'message' => "Combo creado con $count items", 'id_combo' => $newId]);
+        echo json_encode(['success' => true, 'message' => "Combo creado con $count items" . ($med_count > 0 ? " ($med_count medicamentos)" : ''), 'id_combo' => $newId]);
     } else {
         $id_combo_int = (int)$id_combo;
 
@@ -90,16 +94,20 @@ try {
         $delStmt = $conn->prepare("DELETE FROM cirugia_combo_items WHERE id_combo = ?");
         $delStmt->execute([$id_combo_int]);
 
-        $stmtItem = $conn->prepare("INSERT INTO cirugia_combo_items (id_combo, tipo, categoria, descripcion, monto, id_hospital) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmtItem = $conn->prepare("INSERT INTO cirugia_combo_items (id_combo, id_inventario, cantidad, tipo, categoria, descripcion, monto, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $count = 0;
+        $med_count = 0;
         foreach ($items as $it) {
             $tipo = $it['tipo'] ?? '';
             $categoria = substr(trim((string)($it['categoria'] ?? '')), 0, 50);
             $desc = substr(trim((string)($it['descripcion'] ?? '')), 0, 150);
             $monto = (float)($it['monto'] ?? 0);
+            $id_inventario = isset($it['id_inventario']) && $it['id_inventario'] ? (int)$it['id_inventario'] : null;
+            $cantidad = isset($it['cantidad']) && $it['cantidad'] > 0 ? (float)$it['cantidad'] : 1;
             if (!in_array($tipo, ['Ganancia', 'Gasto'], true) || $categoria === '') continue;
-            $stmtItem->execute([$id_combo_int, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
+            $stmtItem->execute([$id_combo_int, $id_inventario, $cantidad, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
             $count++;
+            if ($id_inventario) $med_count++;
         }
 
         $conn->commit();
@@ -108,10 +116,10 @@ try {
             'table_name' => 'cirugia_combos',
             'record_id' => $id_combo_int,
             'old_data' => $oldData,
-            'new_data' => ['codigo' => $codigo, 'nombre' => $nombre, 'precio_total' => $precio_total, 'items' => $count],
+            'new_data' => ['codigo' => $codigo, 'nombre' => $nombre, 'precio_total' => $precio_total, 'items' => $count, 'medicamentos' => $med_count],
         ]);
 
-        echo json_encode(['success' => true, 'message' => 'Combo actualizado correctamente']);
+        echo json_encode(['success' => true, 'message' => "Combo actualizado: $count items" . ($med_count > 0 ? " ($med_count medicamentos)" : '')]);
     }
 } catch (Exception $e) {
     if (isset($conn) && $conn->inTransaction()) $conn->rollBack();

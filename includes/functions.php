@@ -471,4 +471,192 @@ function validate_password_strength($password)
     return $errors;
 }
 
+/**
+ * Revierte el stock de inventario cuando se elimina/cancela un cargo de hospitalización
+ * o un consumo de cirugía que ya había descontado stock.
+ *
+ * Detecta automáticamente si el cargo viene de una cirugía (stock_quirofano)
+ * o de hospitalización (stock_hospital) y devuelve esa info al cliente.
+ *
+ * @param PDO $conn
+ * @param int $id_cargo ID del cargo en cargos_hospitalarios
+ * @param int $id_hospital
+ * @param int $user_id
+ * @param string $notas_extra Notas adicionales para el log (ej. "Eliminado por error")
+ * @return array Resultado con: reverted(bool), medicamento(string), cantidad(float),
+ *               stock_column(string), stock_nuevo(float), id_inventario(int)
+ */
+function revertirStockSiProcede($conn, $id_cargo, $id_hospital, $user_id, $notas_extra = '') {
+    // 1. Obtener el cargo
+    $stmt = $conn->prepare("SELECT id_cargo, referencia_id, referencia_tabla, cantidad, tipo_cargo, descripcion,
+                                   COALESCE(motivo_cancelacion, '') AS motivo
+                            FROM cargos_hospitalarios
+                            WHERE id_cargo = ? AND id_hospital = ? AND cancelado = 0");
+    $stmt->execute([$id_cargo, $id_hospital]);
+    $cargo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$cargo || !$cargo['referencia_id'] || $cargo['referencia_tabla'] !== 'inventario') {
+        return ['reverted' => false];
+    }
+
+    $id_inventario = (int)$cargo['referencia_id'];
+    $cantidad = (float)$cargo['cantidad'];
+
+    // 2. Determinar de qué columna se descontó originalmente.
+    // Regla:
+    //  - Si la descripción contiene "Cirugía #" → fue descontado de stock_quirofano
+    //  - En otro caso → fue descontado de stock_hospital
+    $stock_column = (stripos($cargo['descripcion'], 'Cirugía #') !== false) ? 'stock_quirofano' : 'stock_hospital';
+
+    // 3. Revertir stock
+    $stmtRevert = $conn->prepare("UPDATE inventario SET {$stock_column} = {$stock_column} + ?
+                                    WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtRevert->execute([$cantidad, $id_inventario, $id_hospital]);
+
+    if ($stmtRevert->rowCount() === 0) {
+        return ['reverted' => false, 'error' => 'No se pudo revertir el stock'];
+    }
+
+    // 4. Obtener nombre del medicamento y stock nuevo
+    $stmtInv = $conn->prepare("SELECT nom_medicamento, {$stock_column} AS stock_actual FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtInv->execute([$id_inventario, $id_hospital]);
+    $inv = $stmtInv->fetch(PDO::FETCH_ASSOC);
+
+    $medicamento = $inv['nom_medicamento'] ?? $cargo['descripcion'];
+    $stock_nuevo = (float)($inv['stock_actual'] ?? 0);
+
+    // 5. Marcar cargo como cancelado (no eliminar para mantener auditoría)
+    $motivo_completo = 'Retorno a inventario de ' . ($stock_column === 'stock_quirofano' ? 'Quirófano' : 'Hospitalización');
+    if ($notas_extra) $motivo_completo .= '. ' . $notas_extra;
+    $motivo_completo .= '. Medicamento: ' . $medicamento . ' (cantidad ' . $cantidad . ')';
+
+    $stmtCancel = $conn->prepare("UPDATE cargos_hospitalarios SET cancelado = 1, motivo_cancelacion = ? WHERE id_cargo = ?");
+    $stmtCancel->execute([$motivo_completo, $id_cargo]);
+
+    // 6. Registrar movimiento en log
+    try {
+        $stmtLog = $conn->prepare("INSERT INTO movimientos_stock_log
+                                    (id_inventario, id_hospital, id_referencia, tabla_origen, tipo_movimiento, stock_column, cantidad, usuario_id, notas)
+                                    VALUES (?, ?, ?, 'cargos_hospitalarios', 'reversion', ?, ?, ?, ?)");
+        $stmtLog->execute([$id_inventario, $id_hospital, $id_cargo, $stock_column, $cantidad, $user_id, $motivo_completo]);
+    } catch (Exception $e) {
+        // No crítico: el log es para auditoría
+        error_log('revertirStockSiProcede: log insert failed: ' . $e->getMessage());
+    }
+
+    // 7. Auditoría
+    if (function_exists('audit_log')) {
+        audit_log('update', 'inventory', "Reversión de stock: {$medicamento} x {$cantidad} a {$stock_column} (cargo #{$id_cargo})", [
+            'id_inventario' => $id_inventario,
+            'id_cargo' => $id_cargo,
+            'stock_column' => $stock_column,
+            'cantidad' => $cantidad,
+            'stock_nuevo' => $stock_nuevo
+        ]);
+    }
+
+    return [
+        'reverted' => true,
+        'id_inventario' => $id_inventario,
+        'medicamento' => $medicamento,
+        'cantidad' => $cantidad,
+        'stock_column' => $stock_column,
+        'stock_nuevo' => $stock_nuevo,
+        'origen_label' => $stock_column === 'stock_quirofano' ? 'Quirófano' : 'Hospitalización'
+    ];
+}
+
+/**
+ * Versión específica para revertir stock de cirugia_consumos (tabla separada
+ * de cargos_hospitalarios). Se usa al eliminar un consumo directo de cirugía.
+ *
+ * @return array Mismo formato que revertirStockSiProcede
+ */
+function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id, $notas_extra = '') {
+    $stmt = $conn->prepare("SELECT cc.*, inv.nom_medicamento
+                            FROM cirugia_consumos cc
+                            JOIN inventario inv ON cc.id_inventario = inv.id_inventario
+                            WHERE cc.id = ? AND cc.id_hospital = ?");
+    $stmt->execute([$id_consumo, $id_hospital]);
+    $consumo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$consumo) {
+        return ['reverted' => false, 'error' => 'Consumo no encontrado'];
+    }
+
+    $id_inventario = (int)$consumo['id_inventario'];
+    $cantidad = (float)$consumo['cantidad'];
+    $stock_column = 'stock_quirofano';
+
+    // 1. Revertir stock
+    $stmtRevert = $conn->prepare("UPDATE inventario SET {$stock_column} = {$stock_column} + ?
+                                    WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtRevert->execute([$cantidad, $id_inventario, $id_hospital]);
+
+    // 2. Obtener stock nuevo
+    $stmtInv = $conn->prepare("SELECT {$stock_column} AS stock_actual FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtInv->execute([$id_inventario, $id_hospital]);
+    $stock_nuevo = (float)($stmtInv->fetch(PDO::FETCH_ASSOC)['stock_actual'] ?? 0);
+
+    $medicamento = $consumo['nom_medicamento'];
+
+    // 3. Eliminar el registro del consumo
+    $stmtDel = $conn->prepare("DELETE FROM cirugia_consumos WHERE id = ?");
+    $stmtDel->execute([$id_consumo]);
+
+    // 4. Si existe cargo en cargos_hospitalarios relacionado, cancelarlo también
+    // (Mejor esfuerzo: buscar por id_cirugia + id_inventario + descripción)
+    try {
+        $cargoDescPattern = "%{$medicamento}%";
+        $stmtCancelCargo = $conn->prepare("UPDATE cargos_hospitalarios
+                                            SET cancelado = 1, motivo_cancelacion = ?
+                                            WHERE referencia_id = ? AND referencia_tabla = 'inventario'
+                                              AND cancelado = 0
+                                              AND descripcion LIKE ?
+                                              AND id_cuenta IN (
+                                                  SELECT ch.id_cuenta FROM cuenta_hospitalaria ch
+                                                  JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
+                                                  JOIN cirugias c ON e.id_paciente = c.id_paciente
+                                                  WHERE c.id_cirugia = ?
+                                              )");
+        $motivo = 'Retorno a Quirófano por eliminación de consumo de cirugía #' . $consumo['id_cirugia'];
+        if ($notas_extra) $motivo .= '. ' . $notas_extra;
+        $stmtCancelCargo->execute([$motivo, $id_inventario, $cargoDescPattern, $consumo['id_cirugia']]);
+    } catch (Exception $e) {
+        error_log('revertirStockConsumoCirugia: cancel cargo failed: ' . $e->getMessage());
+    }
+
+    // 5. Log de movimiento
+    try {
+        $stmtLog = $conn->prepare("INSERT INTO movimientos_stock_log
+                                    (id_inventario, id_hospital, id_referencia, tabla_origen, tipo_movimiento, stock_column, cantidad, usuario_id, notas)
+                                    VALUES (?, ?, ?, 'cirugia_consumos', 'reversion', ?, ?, ?, ?)");
+        $notas_log = 'Reversión por eliminación de consumo de cirugía #' . $consumo['id_cirugia'];
+        if ($notas_extra) $notas_log .= '. ' . $notas_extra;
+        $stmtLog->execute([$id_inventario, $id_hospital, $id_consumo, $stock_column, $cantidad, $user_id, $notas_log]);
+    } catch (Exception $e) {
+        error_log('revertirStockConsumoCirugia: log insert failed: ' . $e->getMessage());
+    }
+
+    if (function_exists('audit_log')) {
+        audit_log('update', 'inventory', "Reversión stock (cirugía): {$medicamento} x {$cantidad}", [
+            'id_inventario' => $id_inventario,
+            'id_consumo' => $id_consumo,
+            'stock_column' => $stock_column,
+            'cantidad' => $cantidad,
+            'stock_nuevo' => $stock_nuevo
+        ]);
+    }
+
+    return [
+        'reverted' => true,
+        'id_inventario' => $id_inventario,
+        'medicamento' => $medicamento,
+        'cantidad' => $cantidad,
+        'stock_column' => $stock_column,
+        'stock_nuevo' => $stock_nuevo,
+        'origen_label' => 'Quirófano'
+    ];
+}
+
 ?>

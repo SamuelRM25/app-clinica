@@ -27,18 +27,42 @@ try {
         exit;
     }
 
-    $check = $conn->prepare("SELECT COUNT(*) FROM cirugias WHERE id_combo = ? AND id_hospital = ?");
-    $check->execute([$id_combo, $id_hospital]);
-    if ($check->fetchColumn() > 0) {
-        echo json_encode(['success' => false, 'message' => 'No se puede eliminar: hay cirugías usando este combo.']);
-        exit;
-    }
+    $conn->beginTransaction();
 
+    // Si hay cirugías usando este combo, desvincular (id_combo → NULL) mediante UPDATE
+    // No hay FK constraint en cirugias.id_combo, así que es seguro desvincular o eliminar directamente
+    $stmt_unlink = $conn->prepare("UPDATE cirugias SET id_combo = NULL WHERE id_combo = ? AND id_hospital = ?");
+    $stmt_unlink->execute([$id_combo, $id_hospital]);
+    $cirugias_desvinculadas = $stmt_unlink->rowCount();
+
+    // Eliminar los items del combo (FK constraint los borra automáticamente por CASCADE, pero explícito es más claro)
+    $stmt_items = $conn->prepare("DELETE FROM cirugia_combo_items WHERE id_combo = ? AND id_hospital = ?");
+    $stmt_items->execute([$id_combo, $id_hospital]);
+
+    // Eliminar el combo
     $stmt = $conn->prepare("DELETE FROM cirugia_combos WHERE id_combo = ? AND id_hospital = ?");
     $stmt->execute([$id_combo, $id_hospital]);
 
-    audit_log('delete', 'surgery', "Combo eliminado ID: $id_combo", ['table_name' => 'cirugia_combos', 'record_id' => $id_combo]);
-    echo json_encode(['success' => true, 'message' => 'Combo eliminado correctamente']);
+    if ($stmt->rowCount() === 0) {
+        $conn->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Combo no encontrado.']);
+        exit;
+    }
+
+    $conn->commit();
+
+    audit_log('delete', 'surgery', "Combo eliminado ID: $id_combo" . ($cirugias_desvinculadas > 0 ? " (desvinculado de $cirugias_desvinculadas cirugías)" : ''), [
+        'table_name' => 'cirugia_combos',
+        'record_id' => $id_combo,
+        'cirugias_desvinculadas' => $cirugias_desvinculadas
+    ]);
+
+    $msg = 'Combo eliminado correctamente.';
+    if ($cirugias_desvinculadas > 0) {
+        $msg .= " Se desvincularon $cirugias_desvinculadas cirugía(s) que usaban este combo.";
+    }
+    echo json_encode(['success' => true, 'message' => $msg, 'cirugias_desvinculadas' => $cirugias_desvinculadas]);
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Error al eliminar', 'debug' => $e->getMessage()]);
+    if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+    echo json_encode(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()]);
 }

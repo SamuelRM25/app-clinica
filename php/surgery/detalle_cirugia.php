@@ -150,6 +150,11 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                             <button class="btn btn-primary" onclick="openConsumoModal()">
                                 <i class="bi bi-capsule"></i> Agregar Medicamento
                             </button>
+                            <?php if (!empty($cirugia['id_combo'])): ?>
+                                <button class="btn btn-warning" onclick="cargarComboCirugia()" id="btnCargarCombo">
+                                    <i class="bi bi-box-seam"></i> Cargar Combo
+                                </button>
+                            <?php endif; ?>
                             <button class="btn btn-info" onclick="previewAsignacion()">
                                 <i class="bi bi-eye"></i> Ver Asignación
                             </button>
@@ -251,6 +256,9 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                             <th class="text-end">Cantidad</th>
                                             <th class="text-end">Precio Unit.</th>
                                             <th class="text-end">Subtotal</th>
+                                            <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                                <th class="text-center">Acción</th>
+                                            <?php endif; ?>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -261,10 +269,19 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                                 <td class="text-end"><?php echo number_format($c['cantidad'], 2); ?></td>
                                                 <td class="text-end">Q<?php echo number_format($c['precio_unitario'], 2); ?></td>
                                                 <td class="text-end fw-bold">Q<?php echo number_format($c['subtotal'], 2); ?></td>
+                                                <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                                    <td class="text-center">
+                                                        <button class="btn btn-sm btn-outline-danger"
+                                                                onclick="eliminarConsumo(<?php echo (int)$c['id']; ?>, '<?php echo htmlspecialchars(addslashes($c['nom_medicamento'])); ?>', <?php echo (float)$c['cantidad']; ?>)"
+                                                                title="Retornar al inventario de Quirófano">
+                                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                                        </button>
+                                                    </td>
+                                                <?php endif; ?>
                                             </tr>
                                         <?php endforeach; ?>
                                         <tr class="table-light">
-                                            <td colspan="4" class="text-end fw-bold">Total Consumos:</td>
+                                            <td colspan="<?php echo in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '5' : '4'; ?>" class="text-end fw-bold">Total Consumos:</td>
                                             <td class="text-end fw-bold text-primary">Q<?php echo number_format(array_sum(array_column($consumos, 'subtotal')), 2); ?></td>
                                         </tr>
                                     </tbody>
@@ -400,8 +417,113 @@ async function cambiarEstado(estado) {
     const res = await fetch('api/cambiar_estado_cirugia.php', { method: 'POST', body: fd });
     const json = await res.json();
     if (json.success) {
-        Swal.fire('OK', json.message, 'success').then(() => location.reload());
+        // Si pasó a En_Curso y hay combo con medicamentos, preguntar si quiere cargar
+        if (estado === 'En_Curso' && document.getElementById('btnCargarCombo')) {
+            Swal.fire({
+                icon: 'question',
+                title: 'Cirugía iniciada',
+                text: '¿Desea cargar los medicamentos del Combo y descontarlos del stock de Quirófano?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cargar combo',
+                cancelButtonText: 'Más tarde'
+            }).then(r => {
+                if (r.isConfirmed) cargarComboCirugia();
+                else location.reload();
+            });
+        } else {
+            Swal.fire('OK', json.message, 'success').then(() => location.reload());
+        }
     } else { Swal.fire('Error', json.message, 'error'); }
+}
+
+async function cargarComboCirugia(forzar = false) {
+    if (!forzar) {
+        const r = await Swal.fire({
+            title: '¿Cargar medicamentos del Combo?',
+            html: 'Se descontará el stock de Quirófano de todos los medicamentos vinculados al combo.',
+            icon: 'question', showCancelButton: true,
+            confirmButtonText: 'Sí, cargar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!r.isConfirmed) return;
+    }
+
+    const fd = new FormData();
+    fd.append('id_cirugia', idCirugia);
+    fd.append('forzar', forzar ? '1' : '0');
+    fd.append('csrf_token', csrf);
+
+    Swal.fire({ title: 'Cargando combo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const res = await fetch('api/cargar_combo_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            Swal.fire({
+                icon: json.descargados > 0 ? 'success' : 'info',
+                title: 'Combo procesado',
+                text: json.message,
+                html: json.descargados > 0
+                    ? `<div class="text-start small mt-2"><strong>${json.descargados}</strong> medicamento(s) descontado(s) de Quirófano.${json.errores_stock && json.errores_stock.length ? '<br><span class="text-warning">Advertencias: ' + json.errores_stock.join('; ') + '</span>' : ''}</div>`
+                    : json.message
+            }).then(() => location.reload());
+        } else if (json.ya_cargado) {
+            const r2 = await Swal.fire({
+                title: 'Ya se cargaron medicamentos',
+                text: json.message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Recargar (duplicar)',
+                cancelButtonText: 'Cancelar'
+            });
+            if (r2.isConfirmed) cargarComboCirugia(true);
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+    }
+}
+
+async function eliminarConsumo(idConsumo, nombreMedicamento, cantidad) {
+    const r = await Swal.fire({
+        title: '¿Retornar al inventario?',
+        html: `<div class="text-start">
+            <p>Se retornarán <strong>${cantidad} unidades</strong> de <strong>"${escapeHtml(nombreMedicamento)}"</strong> al inventario de <strong>Quirófano</strong>.</p>
+            <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, retornar',
+        cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+
+    const fd = new FormData();
+    fd.append('id_consumo', idConsumo);
+    fd.append('csrf_token', csrf);
+
+    Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const res = await fetch('api/delete_consumo_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            Swal.fire({
+                icon: 'success',
+                title: '✓ Stock retornado',
+                text: json.message,
+                html: `<div class="text-start small mt-2">
+                    <strong>${json.cantidad}</strong> unidades de <strong>${escapeHtml(json.medicamento)}</strong> retornadas al inventario de <strong>${json.origen_label}</strong>.
+                    <br>Stock actual: <strong>${json.stock_nuevo}</strong>
+                </div>`
+            }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+    }
 }
 
 async function finalizarCirugia() {
