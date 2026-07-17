@@ -9,6 +9,27 @@ $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 date_default_timezone_set('America/Guatemala');
 verify_session();
 
+// Detectar si es una petición AJAX (vía header X-Requested-With o Accept)
+$is_ajax = (
+    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+    || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+);
+
+if ($is_ajax) {
+    header('Content-Type: application/json; charset=utf-8');
+}
+
+/**
+ * Helper para enviar respuesta JSON en modo AJAX o redirigir en modo form.
+ */
+function respond_ajax($data, $is_ajax) {
+    if ($is_ajax) {
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    // En modo no-AJAX no se usa (porque los flujos exitosos ya hacen redirect)
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
     try {
@@ -39,6 +60,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existingPatient = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingPatient && !isset($_POST['confirm_action'])) {
+                if ($is_ajax) {
+                    $existingStmt = $conn->prepare("SELECT nombre, apellido, fecha_registro, telefono, correo FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
+                    $existingStmt->execute([$existingPatient['id_paciente'], $id_hospital]);
+                    $existingData = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+                    $consultasStmt = $conn->prepare("SELECT COUNT(*) FROM historial_clinico WHERE id_paciente = ? AND id_hospital = ?");
+                    $consultasStmt->execute([$existingPatient['id_paciente'], $id_hospital]);
+                    $consultas = $consultasStmt->fetchColumn() ?: 0;
+
+                    respond_ajax([
+                        'success' => false,
+                        'duplicate' => true,
+                        'existing_id' => (int)$existingPatient['id_paciente'],
+                        'existing' => [
+                            'nombre' => $existingData['nombre'] ?? $nombre,
+                            'apellido' => $existingData['apellido'] ?? $apellido,
+                            'fecha_registro' => $existingData['fecha_registro'] ?? null,
+                            'telefono' => $existingData['telefono'] ?? null,
+                            'correo' => $existingData['correo'] ?? null,
+                            'consultas' => (int)$consultas
+                        ],
+                        'message' => "Ya existe un paciente con el mismo nombre y fecha de nacimiento."
+                    ], true);
+                }
                 $_SESSION['duplicate_patient_data'] = $_POST;
                 $_SESSION['existing_patient_id'] = $existingPatient['id_paciente'];
 
@@ -65,6 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existing_patient_id = $_POST['existing_patient_id'] ?? null;
 
             if ($_POST['confirm_action'] === 'cancel') {
+                if ($is_ajax) {
+                    respond_ajax(['success' => false, 'cancelled' => true, 'message' => 'Operación cancelada'], true);
+                }
                 $_SESSION['message'] = "Operación cancelada.";
                 $_SESSION['message_type'] = "info";
                 header("Location: index.php");
@@ -131,6 +179,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]
             ]);
 
+            if ($is_ajax) {
+                respond_ajax([
+                    'success' => true,
+                    'action' => 'updated',
+                    'id_paciente' => (int)$id_paciente,
+                    'message' => "Paciente actualizado correctamente"
+                ], true);
+            }
+
             $_SESSION['message'] = "Paciente actualizado correctamente";
             $_SESSION['message_type'] = "success";
             header("Location: index.php"); // Return to list after edit
@@ -139,13 +196,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Inserting new patient
             $stmt = $conn->prepare("
                 INSERT INTO pacientes (
-                    nombre, 
-                    apellido, 
-                    fecha_nacimiento, 
-                    genero, 
-                    dpi, 
-                    direccion, 
-                    telefono, 
+                    nombre,
+                    apellido,
+                    fecha_nacimiento,
+                    genero,
+                    dpi,
+                    direccion,
+                    telefono,
                     correo,
                     fecha_registro,
                     id_hospital
@@ -168,6 +225,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]
             ]);
 
+            if ($is_ajax) {
+                respond_ajax([
+                    'success' => true,
+                    'action' => 'created',
+                    'id_paciente' => (int)$id_paciente,
+                    'nombre_completo' => trim($nombre . ' ' . $apellido),
+                    'message' => "Paciente registrado correctamente"
+                ], true);
+            }
+
             $_SESSION['message'] = "Paciente agregado correctamente";
             $_SESSION['message_type'] = "success";
             header("Location: medical_history.php?id=" . $id_paciente);
@@ -177,6 +244,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         error_log('Error en patients/save_patient.php: ' . $e->getMessage());
         $errorMsg = $e->getMessage();
+
+        if ($is_ajax) {
+            respond_ajax([
+                'success' => false,
+                'message' => 'Error al guardar paciente: ' . $errorMsg
+            ], true);
+        }
+
         $_SESSION['message'] = "Error al guardar paciente: $errorMsg";
         $_SESSION['message_type'] = "danger";
         header("Location: index.php");

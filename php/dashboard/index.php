@@ -1978,6 +1978,19 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 </div>
                             </div>
                         </a>
+                        <a href="javascript:void(0)" class="stat-card"
+                            data-bs-toggle="modal" data-bs-target="#newPatientModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-success);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-success fw-bold">Pacientes</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Registrar Nuevo</div>
+                                </div>
+                                <div class="stat-icon success">
+                                    <i class="bi bi-person-plus"></i>
+                                </div>
+                            </div>
+                        </a>
                     </div>
             <?php endif; ?>
 
@@ -4297,6 +4310,80 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
         </div>
     </div>
 
+    <!-- Modal: Registrar Nuevo Paciente (Quick Action) -->
+    <div class="modal fade" id="newPatientModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus me-2"></i>Registrar Nuevo Paciente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="quickNewPatientForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="qn_id_paciente" name="id_paciente" value="">
+                        <div class="alert alert-info border-0 mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Complete los datos básicos. El paciente queda registrado y disponible para usarlo en cualquier módulo.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Nombre *</label>
+                                <input type="text" class="form-control" id="qn_nombre" name="nombre" required maxlength="100"
+                                    placeholder="Ej: Juan">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Apellido *</label>
+                                <input type="text" class="form-control" id="qn_apellido" name="apellido" required maxlength="100"
+                                    placeholder="Ej: Pérez García">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Fecha de Nacimiento *</label>
+                                <input type="date" class="form-control" id="qn_fecha_nacimiento" name="fecha_nacimiento" required
+                                    max="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Género *</label>
+                                <select class="form-select" id="qn_genero" name="genero" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">DPI / Cédula</label>
+                                <input type="text" class="form-control" id="qn_dpi" name="dpi" maxlength="20"
+                                    placeholder="Opcional">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Teléfono</label>
+                                <input type="tel" class="form-control" id="qn_telefono" name="telefono" maxlength="30"
+                                    placeholder="Opcional">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="qn_correo" name="correo" maxlength="100"
+                                    placeholder="Opcional">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Dirección</label>
+                                <input type="text" class="form-control" id="qn_direccion" name="direccion" maxlength="255"
+                                    placeholder="Opcional">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save me-1"></i> Registrar Paciente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         let tarifas = {
             consulta: {},
@@ -4394,6 +4481,84 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
         // Initialize patient search for procedure billing modal
         if (document.getElementById('procedure_patient_input')) {
             setupPatientSearch('procedure_patient_input', 'procedurePatientDropdown', 'procedure_patient_id');
+        }
+
+        // Quick New Patient Modal — abrir limpio + submit AJAX
+        const newPatientModalEl = document.getElementById('newPatientModal');
+        if (newPatientModalEl) {
+            newPatientModalEl.addEventListener('show.bs.modal', function () {
+                document.getElementById('quickNewPatientForm').reset();
+                document.getElementById('qn_id_paciente').value = '';
+            });
+
+            document.getElementById('quickNewPatientForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                fd.set('csrf_token', csrf);
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+                try {
+                    const res = await fetch('../patients/save_patient.php', {
+                        method: 'POST',
+                        body: fd,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const json = await res.json();
+
+                    if (json.success) {
+                        const modal = bootstrap.Modal.getInstance(newPatientModalEl);
+                        modal.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Paciente registrado!',
+                            text: (json.nombre_completo || 'Paciente') + ' (ID #' + json.id_paciente + ')',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ir al paciente',
+                            cancelButtonText: 'Cerrar'
+                        }).then(r => {
+                            if (r.isConfirmed) {
+                                window.location.href = '../patients/medical_history.php?id=' + json.id_paciente;
+                            }
+                        });
+                        if (typeof updatePatientDropdowns === 'function') updatePatientDropdowns();
+                    } else if (json.duplicate) {
+                        const ex = json.existing || {};
+                        const exHtml = `<div class="text-start small">
+                            <p><strong>${ex.nombre} ${ex.apellido}</strong></p>
+                            <p class="mb-1">DPI: ${ex.dpi || '—'}</p>
+                            <p class="mb-1">Tel: ${ex.telefono || '—'}</p>
+                            <p class="mb-1">Consultas previas: <strong>${ex.consultas || 0}</strong></p>
+                        </div>`;
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Paciente ya registrado',
+                            html: 'Ya existe un paciente con ese nombre y fecha de nacimiento:<hr>' + exHtml,
+                            showCancelButton: true,
+                            confirmButtonText: 'Ver paciente existente',
+                            cancelButtonText: 'Cerrar'
+                        }).then(r => {
+                            if (r.isConfirmed) {
+                                window.location.href = '../patients/medical_history.php?id=' + json.existing_id;
+                            }
+                        });
+                    } else {
+                        Swal.fire('Error', json.message || 'No se pudo guardar', 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHtml;
+                }
+            });
         }
 
         function updateElectroPrice() {

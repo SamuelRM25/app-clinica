@@ -851,7 +851,8 @@ try {
                                 <select class="form-input" id="paymentMethod">
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
-                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Transferencia">Transferencia (banco)</option>
+                                    <option value="Traslado">Traslado (movimiento de stock)</option>
                                 </select>
                             </div>
 
