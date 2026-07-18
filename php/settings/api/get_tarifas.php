@@ -32,13 +32,14 @@ try {
     // Get all tarifas
     $stmt = $conn->prepare("
         SELECT id_tarifa, tipo_servicio, id_medico, nombre_servicio,
-               precio_normal, precio_inhabil, precio_radio, region_count,
+               precio_normal, precio_inhabil, precio_radio,
+               region_count, region, proyeccion,
                costo_normal, costo_inhabil,
                costo_digital_normal, costo_digital_inhabil,
                costo_impreso_normal, costo_impreso_inhabil
         FROM tarifas_servicios
         WHERE id_hospital = ?
-        ORDER BY tipo_servicio, id_medico, region_count, nombre_servicio
+        ORDER BY tipo_servicio, id_medico, region, nombre_servicio
     ");
     $stmt->execute([$id_hospital]);
     $tarifas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -69,7 +70,8 @@ try {
         $id_tarifa = (int)$t['id_tarifa'];
         $nombre = $t['nombre_servicio'];
         $medico = $t['id_medico'] ? (int)$t['id_medico'] : null;
-        $region = $t['region_count'] ? (int)$t['region_count'] : null;
+        $region = $t['region'] ?? ($t['region_count'] ? (string)(int)$t['region_count'] : '');
+        $proyeccion = $t['proyeccion'] ?? '';
 
         $item = [
             'id_tarifa' => $id_tarifa,
@@ -88,7 +90,8 @@ try {
             $item['nombre_servicio'] = $nombre;
             $result['procedimiento'][] = $item;
         } elseif ($tipo === 'rayos_x') {
-            $item['region_count'] = $region;
+            $item['region'] = $region;
+            $item['proyeccion'] = $proyeccion;
             $item['costo_digital_normal']  = $t['costo_digital_normal']  !== null ? (float)$t['costo_digital_normal']  : null;
             $item['costo_digital_inhabil'] = $t['costo_digital_inhabil'] !== null ? (float)$t['costo_digital_inhabil'] : null;
             $item['costo_impreso_normal']  = $t['costo_impreso_normal']  !== null ? (float)$t['costo_impreso_normal']  : null;

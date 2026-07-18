@@ -66,7 +66,8 @@ try {
         $normal = (float)($data['precio_normal'] ?? 0);
         $inhabil = (float)($data['precio_inhabil'] ?? 0);
         $radio = isset($data['precio_radio']) ? (float)$data['precio_radio'] : null;
-        $region = isset($data['region_count']) && $data['region_count'] > 0 ? (int)$data['region_count'] : null;
+        $region = $data['region'] ?? '';
+        $proyeccion = $data['proyeccion'] ?? '';
         $costo_normal  = isset($data['costo_normal'])  && $data['costo_normal']  !== '' && $data['costo_normal']  !== null ? (float)$data['costo_normal']  : null;
         $costo_inhabil = isset($data['costo_inhabil']) && $data['costo_inhabil'] !== '' && $data['costo_inhabil'] !== null ? (float)$data['costo_inhabil'] : null;
         $costo_digital_normal  = isset($data['costo_digital_normal'])  && $data['costo_digital_normal']  !== '' && $data['costo_digital_normal']  !== null ? (float)$data['costo_digital_normal']  : null;
@@ -76,14 +77,16 @@ try {
 
         $stmt = $conn->prepare("
             INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
-                precio_normal, precio_inhabil, precio_radio, region_count,
+                precio_normal, precio_inhabil, precio_radio,
+                region, proyeccion,
                 costo_normal, costo_inhabil,
                 costo_digital_normal, costo_digital_inhabil,
                 costo_impreso_normal, costo_impreso_inhabil)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([$id_hospital, $tipo, $id_medico, $nombre,
-            $normal, $inhabil, $radio, $region,
+            $normal, $inhabil, $radio,
+            $region, $proyeccion,
             $costo_normal, $costo_inhabil,
             $costo_digital_normal, $costo_digital_inhabil,
             $costo_impreso_normal, $costo_impreso_inhabil]);
@@ -100,7 +103,8 @@ try {
                 'precio_normal' => $normal,
                 'precio_inhabil' => $inhabil,
                 'precio_radio' => $radio,
-                'region_count' => $region,
+                'region' => $region,
+                'proyeccion' => $proyeccion,
                 'costo_normal' => $costo_normal,
                 'costo_inhabil' => $costo_inhabil,
                 'costo_digital_normal'  => $costo_digital_normal,
@@ -171,11 +175,12 @@ try {
 
         $stmtInsert = $conn->prepare("
             INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
-                precio_normal, precio_inhabil, precio_radio, region_count,
+                precio_normal, precio_inhabil, precio_radio,
+                region, proyeccion,
                 costo_normal, costo_inhabil,
                 costo_digital_normal, costo_digital_inhabil,
                 costo_impreso_normal, costo_impreso_inhabil)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmtUpdate = $conn->prepare("
@@ -196,7 +201,8 @@ try {
             $normal = (float)($item['precio_normal'] ?? 0);
             $inhabil = (float)($item['precio_inhabil'] ?? 0);
             $radio = isset($item['precio_radio']) ? (float)$item['precio_radio'] : null;
-            $region = isset($item['region_count']) && $item['region_count'] > 0 ? (int)$item['region_count'] : null;
+            $region = $item['region'] ?? '';
+            $proyeccion = $item['proyeccion'] ?? '';
             $costo_normal  = isset($item['costo_normal'])  && $item['costo_normal']  !== '' && $item['costo_normal']  !== null ? (float)$item['costo_normal']  : null;
             $costo_inhabil = isset($item['costo_inhabil']) && $item['costo_inhabil'] !== '' && $item['costo_inhabil'] !== null ? (float)$item['costo_inhabil'] : null;
             $costo_digital_normal  = isset($item['costo_digital_normal'])  && $item['costo_digital_normal']  !== '' && $item['costo_digital_normal']  !== null ? (float)$item['costo_digital_normal']  : null;
@@ -215,7 +221,8 @@ try {
                 $updated += $stmtUpdate->rowCount();
             } else {
                 $stmtInsert->execute([$id_hospital, $tipo, $id_medico, $nombre,
-                    $normal, $inhabil, $radio, $region,
+                    $normal, $inhabil, $radio,
+                    $region, $proyeccion,
                     $costo_normal, $costo_inhabil,
                     $costo_digital_normal, $costo_digital_inhabil,
                     $costo_impreso_normal, $costo_impreso_inhabil]);

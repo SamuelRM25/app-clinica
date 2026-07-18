@@ -1068,23 +1068,24 @@ $page_title = "Configuración del Sistema";
                                         </button>
                                     </div>
                                     <div class="tarifa-table-wrap" data-tarifa-table>
-                                        <table class="data-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Región</th>
-                                                    <th>Precio Normal (Q)</th>
-                                                    <th>Precio Inhábil (Q)</th>
-                                                    <th>Costo Digital Normal (Q)</th>
-                                                    <th>Costo Digital Inhábil (Q)</th>
-                                                    <th>Costo Impreso Normal (Q)</th>
-                                                    <th>Costo Impreso Inhábil (Q)</th>
-                                                    <th class="text-center">Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="tarifa-rayos_x-body">
-                                                <tr><td colspan="8" class="text-center text-muted">Cargando...</td></tr>
-                                            </tbody>
-                                        </table>
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Región</th>
+                                                <th>Proyección</th>
+                                                <th>Precio Normal (Q)</th>
+                                                <th>Precio Inhábil (Q)</th>
+                                                <th>Costo Digital Normal (Q)</th>
+                                                <th>Costo Digital Inhábil (Q)</th>
+                                                <th>Costo Impreso Normal (Q)</th>
+                                                <th>Costo Impreso Inhábil (Q)</th>
+                                                <th class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tarifa-rayos_x-body">
+                                            <tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr>
+                                        </tbody>
+                                    </table>
                                         <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
                                     </div>
                                     <div class="text-end mt-3">
@@ -1460,8 +1461,12 @@ $page_title = "Configuración del Sistema";
                             <input type="text" name="nombre_servicio" id="tarifaNombre" class="form-control" placeholder="Ej: Inyeccion, Ultrasonido Abdominal">
                         </div>
                         <div id="tarifa-fields-region" class="tarifa-fields d-none mb-3">
-                            <label class="form-label small fw-bold">Número de Regiones</label>
-                            <input type="number" name="region_count" id="tarifaRegion" class="form-control" min="1" max="10" placeholder="1">
+                            <label class="form-label small fw-bold">Región</label>
+                            <input type="text" name="region" id="tarifaRegion" class="form-control" placeholder="Ej: Cráneo, Tórax, Abdomen">
+                        </div>
+                        <div id="tarifa-fields-proyeccion" class="tarifa-fields d-none mb-3">
+                            <label class="form-label small fw-bold">Proyección</label>
+                            <input type="text" name="proyeccion" id="tarifaProyeccion" class="form-control" placeholder="Ej: AP, Lateral, PA, Oblicua">
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -2028,7 +2033,7 @@ $page_title = "Configuración del Sistema";
         function renderRayosX(rayos_x) {
             const body = document.getElementById('tarifa-rayos_x-body');
             if (rayos_x.length === 0) {
-                body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
                 return;
             }
             let html = '';
@@ -2038,7 +2043,8 @@ $page_title = "Configuración del Sistema";
                 const cIN = (r.costo_impreso_normal  != null) ? r.costo_impreso_normal  : '';
                 const cII = (r.costo_impreso_inhabil != null) ? r.costo_impreso_inhabil : '';
                 html += `<tr>
-                    <td>${r.region_count} región${r.region_count > 1 ? 'es' : ''}</td>
+                    <td>${escapeHtml(r.region || r.region_count || '')}</td>
+                    <td>${escapeHtml(r.proyeccion || '')}</td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
                         data-tipo="rayos_x" data-field="precio_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
@@ -2200,6 +2206,7 @@ $page_title = "Configuración del Sistema";
                 }
             } else if (tipo === 'rayos_x') {
                 document.getElementById('tarifa-fields-region').classList.remove('d-none');
+                document.getElementById('tarifa-fields-proyeccion').classList.remove('d-none');
                 document.getElementById('tarifa-rayosx-costos').classList.remove('d-none');
             }
 
@@ -2237,7 +2244,8 @@ $page_title = "Configuración del Sistema";
                     payload.precio_radio = parseFloat(document.getElementById('tarifaRadio').value) || 0;
                 }
             } else if (tipo === 'rayos_x') {
-                payload.region_count = parseInt(document.getElementById('tarifaRegion').value) || 1;
+                payload.region = document.getElementById('tarifaRegion').value;
+                payload.proyeccion = document.getElementById('tarifaProyeccion').value;
                 const cDN = parseFloat(document.getElementById('tarifaCostoDigitalNormal').value);
                 if (!isNaN(cDN) && document.getElementById('tarifaCostoDigitalNormal').value !== '') payload.costo_digital_normal = cDN;
                 const cDI = parseFloat(document.getElementById('tarifaCostoDigitalInhabil').value);
