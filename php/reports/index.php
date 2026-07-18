@@ -2456,11 +2456,6 @@ try {
                             <i class="bi bi-cash-coin section-title-icon"></i>
                             Contabilidad Detallada
                         </h3>
-                        <span class="amount-badge <?php echo $total_gross_profit >= 0 ? 'income' : 'expense'; ?>">
-                            <i
-                                class="bi <?php echo $total_gross_profit >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'; ?>"></i>
-                            Utilidad: Q<?php echo number_format($total_gross_profit, 2); ?>
-                        </span>
                     </div>
 
                     <div class="accounting-body" data-period-start="<?php echo $start_datetime; ?>" data-period-end="<?php echo $end_datetime; ?>">
@@ -2581,18 +2576,7 @@ try {
                                             del ingreso bruto
                                         </div>
                                     </div>
-                                    <div class="accounting-metric accounting-metric--highlight">
-                                        <div class="accounting-metric__label">Utilidad bruta de operación</div>
-                                        <div class="accounting-metric__value <?php echo $total_gross_profit >= 0 ? 'text-success' : 'text-danger'; ?>">
-                                            Q<?php echo number_format($total_gross_profit, 2); ?>
-                                        </div>
-                                        <div class="accounting-metric__meta">
-                                            Margen:
-                                            <span class="charge-type-badge <?php echo $total_gross_profit >= 0 ? 'charge-consulta' : 'charge-electro'; ?>">
-                                                <?php echo $total_gross_revenue > 0 ? number_format(($total_gross_profit / $total_gross_revenue) * 100, 1) : '0'; ?>%
-                                            </span>
-                                        </div>
-                                    </div>
+
                                     <div class="accounting-metric">
                                         <div class="accounting-metric__label">Flujo de efectivo neto</div>
                                         <div class="accounting-metric__value <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
@@ -2788,7 +2772,7 @@ try {
                                             <div class="ratio-value <?= $margen_bruto_pct >= 30 ? 'text-success' : ($margen_bruto_pct >= 15 ? 'text-warning' : 'text-danger') ?>">
                                                 <?= number_format($margen_bruto_pct, 2) ?>%
                                             </div>
-                                            <small class="ratio-meta">Utilidad / Ingresos</small>
+                                            <small class="ratio-meta">Margen / Ingresos</small>
                                         </div>
                                     </div>
                                     <!-- Margen Operativo -->
@@ -2798,7 +2782,7 @@ try {
                                             <div class="ratio-value <?= $margen_operativo_pct >= 20 ? 'text-success' : ($margen_operativo_pct >= 10 ? 'text-warning' : 'text-danger') ?>">
                                                 <?= number_format($margen_operativo_pct, 2) ?>%
                                             </div>
-                                            <small class="ratio-meta">Util.Op / Ingresos</small>
+                                            <small class="ratio-meta">Marg.Op / Ingresos</small>
                                         </div>
                                     </div>
                                     <!-- Margen Neto -->
@@ -2818,7 +2802,7 @@ try {
                                             <div class="ratio-value <?= $roi_pct >= 15 ? 'text-success' : ($roi_pct >= 5 ? 'text-warning' : 'text-danger') ?>">
                                                 <?= number_format($roi_pct, 2) ?>%
                                             </div>
-                                            <small class="ratio-meta">Utilidad / Activos</small>
+                                            <small class="ratio-meta">Retorno / Activos</small>
                                         </div>
                                     </div>
                                     <!-- Rotación de Inventario -->
@@ -2880,7 +2864,7 @@ try {
                                                     <tr>
                                                         <td><strong>Margen Bruto</strong></td>
                                                         <td class="text-end"><?= number_format($margen_bruto_pct, 2) ?>%</td>
-                                                        <td class="text-end text-muted">Utilidad bruta sobre ingresos</td>
+                                                        <td class="text-end text-muted">Margen bruto sobre ingresos</td>
                                                     </tr>
                                                     <tr>
                                                         <td><strong>Margen Operativo</strong></td>
@@ -2925,7 +2909,7 @@ try {
                                                     <tr>
                                                         <td><strong>EBITDA Estimado</strong></td>
                                                         <td class="text-end">Q<?= number_format($ebitda, 2) ?></td>
-                                                        <td class="text-end text-muted">Utilidad antes de impuestos y depreciación</td>
+                                                        <td class="text-end text-muted">Antes de impuestos y depreciación</td>
                                                     </tr>
                                                     <tr>
                                                         <td><strong>Punto de Equilibrio</strong></td>

@@ -366,7 +366,7 @@ try {
 <table class="kpi">
     <tr><td class="label">Ingresos Brutos Totales</td><td class="value"><?= fmt($total_gross_revenue) ?></td></tr>
     <tr><td class="label">Costos Totales (Operación + Egresos)</td><td class="value neg"><?= fmt($all_sources_cost + $total_egresos) ?></td></tr>
-    <tr><td class="label">Utilidad Bruta de Operación</td><td class="value <?= $total_gross_profit >= 0 ? '' : 'neg' ?>"><?= fmt($total_gross_profit) ?></td></tr>
+
     <tr><td class="label">Margen Bruto</td><td class="value <?= $margen_bruto_pct >= 30 ? '' : 'neg' ?>"><?= fmtPct($margen_bruto_pct) ?></td></tr>
     <tr><td class="label">Flujo de Caja Neto</td><td class="value <?= $net_cash_flow >= 0 ? '' : 'neg' ?>"><?= fmt($net_cash_flow) ?></td></tr>
     <tr><td class="label">EBITDA Estimado</td><td class="value <?= $ebitda >= 0 ? '' : 'neg' ?>"><?= fmt($ebitda) ?></td></tr>
