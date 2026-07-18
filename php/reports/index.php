@@ -880,46 +880,75 @@ try {
     <?php include '../../includes/theme_head.php'; ?>
 
     <style>
+        /* ===== GLOBAL PAGE REFINEMENTS ===== */
+        .reports-page {
+            background-image: radial-gradient(circle at 10% 20%, rgba(var(--color-primary-rgb), 0.03) 0%, transparent 50%);
+        }
+        .reports-page .section-title {
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
         /* ===== FILTER PANEL ===== */
         .filter-panel {
             background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-xl);
-            padding: 1.75rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .filter-header {
-            margin-bottom: 1rem;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.5rem;
         }
 
         .filter-title {
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 700;
-            color: var(--color-text);
-            margin: 0 0 0.25rem;
+            color: var(--color-text-secondary);
+            margin: 0;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            white-space: nowrap;
         }
 
-        .filter-form input[type="date"] {
-            padding: 0.625rem 0.875rem;
+        .filter-title i { font-size: 1rem; }
+
+        .filter-form {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .filter-form .btn-group { flex-wrap: wrap; }
+
+        .filter-form input[type="date"],
+        .filter-form input[type="month"] {
+            padding: 0.5rem 0.75rem;
             border: 1.5px solid var(--color-border);
             border-radius: var(--radius-md);
             background: var(--color-surface);
             color: var(--color-text);
-            font-family: var(--font-family);
-            font-size: 0.875rem;
+            font-family: inherit;
+            font-size: 0.825rem;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
-            min-width: 180px;
+            min-width: 160px;
+        }
+        .filter-form input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
         }
 
-        .filter-form input[type="date"]:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.13);
+        .filter-form .btn {
+            font-size: 0.8rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
         }
 
         /* ===== CONTENT SECTION ===== */
@@ -928,29 +957,31 @@ try {
             border: 1px solid var(--color-border);
             border-radius: var(--radius-xl);
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            margin-bottom: 1.75rem;
+            transition: box-shadow 0.2s;
         }
 
-        /* Override Bootstrap table styles to match our theme */
+        .content-section:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
         .content-section .table {
             --bs-table-bg: var(--color-card);
             color: var(--color-text);
+            margin-bottom: 0;
         }
-
         .content-section .table thead.bg-light {
             background: var(--color-surface) !important;
         }
-
         .content-section .table> :not(caption)>*>* {
             border-color: var(--color-border);
             color: var(--color-text);
         }
-
         .content-section .card {
             background: var(--color-card) !important;
+            border: 1px solid var(--color-border);
         }
-
         .content-section .card-header {
             background: var(--color-surface) !important;
             border-color: var(--color-border) !important;
@@ -960,32 +991,139 @@ try {
         .amount-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 0.875rem;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
             border-radius: 50px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 700;
+            line-height: 1.4;
         }
-
         .amount-badge.income {
-            background: rgba(var(--color-success-rgb), 0.12);
+            background: rgba(var(--color-success-rgb), 0.1);
             color: var(--color-success);
-            border: 1px solid rgba(var(--color-success-rgb), 0.25);
+            border: 1px solid rgba(var(--color-success-rgb), 0.2);
         }
-
         .amount-badge.expense {
-            background: rgba(var(--color-danger-rgb), 0.12);
+            background: rgba(var(--color-danger-rgb), 0.1);
             color: var(--color-danger);
-            border: 1px solid rgba(var(--color-danger-rgb), 0.25);
+            border: 1px solid rgba(var(--color-danger-rgb), 0.2);
         }
 
-        /* ===== LABS ACCORDION ===== */
+        /* ===== SEARCH WRAPPER ===== */
+        .search-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 1rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.55rem 1rem 0.55rem 2.4rem;
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
+            background: var(--color-card);
+        }
+        .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ===== TABS ===== */
+        .reports-tabs-container { margin-bottom: 1.75rem; }
+        .reports-tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            padding: 0.3rem;
+            border-radius: var(--radius-xl);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .reports-tabs::-webkit-scrollbar { display: none; }
+        .reports-tab-btn {
+            flex: 1;
+            min-width: 130px;
+            padding: 0.65rem 1rem;
+            border-radius: var(--radius-lg);
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+        }
+        .reports-tab-btn:hover {
+            color: var(--color-primary);
+            background: rgba(var(--color-primary-rgb), 0.06);
+        }
+        .reports-tab-btn.active {
+            color: #fff;
+            background: var(--color-primary);
+            box-shadow: 0 3px 10px rgba(var(--color-primary-rgb), 0.25);
+        }
+
+        /* ===== TAB CONTENT ===== */
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .animate-in {
+            animation: fadeUp 0.35s ease forwards;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== STAT CARDS ===== */
+        .stat-card {
+            position: relative;
+            border: 1px solid var(--color-border) !important;
+            background: var(--color-card) !important;
+            transition: all 0.25s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-color: rgba(var(--color-primary-rgb), 0.2) !important;
+        }
+
+        /* ===== ACCORDION ===== */
         .custom-accordion-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.6rem;
         }
-
         .report-details {
             background: var(--color-card);
             border: 1px solid var(--color-border);
@@ -993,91 +1131,121 @@ try {
             overflow: hidden;
             transition: box-shadow 0.2s;
         }
+        .report-details[open] { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        .report-details[open] {
-            box-shadow: var(--shadow-sm);
+        .report-details.level-1 {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 0.6rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .report-details.level-1:hover {
+            border-color: rgba(var(--color-primary-rgb), 0.25);
+        }
+        .report-details.level-1[open] {
+            border-color: rgba(var(--color-primary-rgb), 0.35);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .report-details.level-1 > .custom-summary {
+            border-left: 3px solid var(--color-primary);
         }
 
         .report-details.level-2 {
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
             border-radius: var(--radius-md);
             background: var(--color-surface);
+            border-left: 3px solid var(--color-info);
         }
-
         .report-details.level-3 {
-            margin-top: 0.35rem;
+            margin-top: 0.3rem;
             border-radius: var(--radius-sm);
+            border-left: 2px solid var(--color-secondary);
         }
 
         .custom-summary {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.25rem;
+            padding: 0.9rem 2.2rem 0.9rem 1.25rem;
             cursor: pointer;
             user-select: none;
             list-style: none;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--color-text);
             transition: background 0.15s;
             gap: 1rem;
+            flex-wrap: wrap;
+            position: relative;
         }
-
-        .custom-summary::-webkit-details-marker {
-            display: none;
-        }
-
+        .custom-summary::-webkit-details-marker { display: none; }
         .custom-summary:hover {
-            background: rgba(var(--color-primary-rgb), 0.05);
+            background: rgba(var(--color-primary-rgb), 0.04);
         }
-
-        .report-details[open]>.custom-summary {
+        .report-details[open] > .custom-summary {
             border-bottom: 1px solid var(--color-border);
+        }
+        .custom-summary::after {
+            content: '\F282';
+            font-family: 'Bootstrap Icons';
+            position: absolute;
+            right: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.25s ease;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+        .report-details[open] > .custom-summary::after {
+            transform: translateY(-50%) rotate(180deg);
         }
 
         .report-details.level-2 .custom-summary {
-            padding: 0.75rem 1rem;
-            font-size: 0.85rem;
+            padding: 0.6rem 2rem 0.6rem 0.9rem;
+            font-size: 0.82rem;
         }
-
         .report-details.level-3 .custom-summary {
-            padding: 0.6rem 1rem;
-            font-size: 0.8rem;
+            padding: 0.5rem 1.8rem 0.5rem 0.8rem;
+            font-size: 0.78rem;
         }
 
         .report-details-body {
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 0.9rem;
         }
-
         .report-details.level-2 .report-details-body {
-            padding: 0.5rem 0.75rem;
+            padding: 0.4rem 0.6rem;
         }
 
-        /* Lab items table */
+        .custom-summary > span:last-child,
+        .custom-summary .amount-badge {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        /* ===== LAB ITEMS TABLE ===== */
         .lab-items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
         }
-
         .lab-items-table th {
             color: var(--color-text-secondary);
             font-weight: 700;
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             text-transform: uppercase;
-            padding: 0.5rem 0.75rem;
+            letter-spacing: 0.3px;
+            padding: 0.45rem 0.7rem;
             border-bottom: 1px solid var(--color-border);
         }
-
         .lab-items-table td {
-            padding: 0.5rem 0.75rem;
+            padding: 0.45rem 0.7rem;
             border-bottom: 1px solid var(--color-border);
             color: var(--color-text);
         }
-
-        .lab-items-table tr:last-child td {
-            border-bottom: none;
+        .lab-items-table tr:last-child td { border-bottom: none; }
+        .lab-items-table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.025);
         }
 
         /* ===== PROFITABILITY TABLE ===== */
@@ -1085,278 +1253,69 @@ try {
             width: 100%;
             border-collapse: collapse;
         }
-
         .profit-table th {
-            padding: 0.875rem 1.25rem;
-            font-size: 0.72rem;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.66rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             color: var(--color-text-secondary);
             background: var(--color-surface);
             border-bottom: 1px solid var(--color-border);
             text-align: left;
         }
-
         .profit-table td {
-            padding: 0.875rem 1.25rem;
+            padding: 0.65rem 0.9rem;
             border-bottom: 1px solid var(--color-border);
             color: var(--color-text);
-            font-size: 0.875rem;
+            font-size: 0.825rem;
         }
-
         .profit-table tbody tr:hover {
-            background: rgba(var(--color-primary-rgb), 0.03);
+            background: rgba(var(--color-primary-rgb), 0.025);
+        }
+        .profit-table tbody tr:last-child td {
+            border-bottom: none;
         }
 
-        .profit-table .text-success {
-            color: var(--color-success) !important;
-            font-weight: 700;
-        }
+        .profit-positive { color: var(--color-success); font-weight: 700; }
+        .profit-negative { color: var(--color-danger); font-weight: 700; }
 
-        .profit-table .text-danger {
-            color: var(--color-danger) !important;
-        }
-
-        .profit-positive {
-            color: var(--color-success);
-            font-weight: 700;
-        }
-
-        .profit-negative {
-            color: var(--color-danger);
-            font-weight: 700;
-        }
-
-        /* Chart containers */
+        /* ===== CHART ===== */
         .chart-container {
             position: relative;
             background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-xl);
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-
         .chart-title {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 700;
             color: var(--color-text);
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        /* ===== PREMIUM TABS ===== */
-        .reports-tabs-container {
-            margin-bottom: 2rem;
-            position: relative;
-        }
-
-        .reports-tabs {
-            display: flex;
-            gap: 0.35rem;
-            background: rgba(var(--color-card-rgb), 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--color-border);
-            padding: 0.35rem;
-            border-radius: var(--radius-xl);
-            overflow-x: auto;
-            position: relative;
-            scrollbar-width: none;
-        }
-
-        .reports-tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        .reports-tab-btn {
-            flex: 1;
-            min-width: 150px;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-lg);
-            border: none;
-            background: transparent;
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            white-space: nowrap;
-            position: relative;
-            z-index: 2;
-        }
-
-        .reports-tab-btn:hover {
-            color: var(--color-primary);
-            background: rgba(var(--color-primary-rgb), 0.05);
-        }
-
-        .reports-tab-btn.active {
-            color: #ffffff;
-            background: var(--color-primary);
-            box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.25);
-        }
-
-        /* ===== TAB CONTENT ANIMATION ===== */
-        .tab-content {
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ===== SHADOW AND GLOW STAT CARDS ===== */
-        .stat-card {
-            position: relative;
-            border: 1px solid var(--color-border) !important;
-            background: var(--color-card) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: inherit;
-            pointer-events: none;
-            box-shadow: inset 0 0 12px rgba(var(--color-primary-rgb), 0);
-            transition: box-shadow 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg), 0 0 15px rgba(var(--color-primary-rgb), 0.12);
-            border-color: rgba(var(--color-primary-rgb), 0.3) !important;
-        }
-
-        .stat-card:hover::after {
-            box-shadow: inset 0 0 12px rgba(var(--color-primary-rgb), 0.05);
-        }
-
-        /* ===== ACCORDION PREMIUM OVERHAUL ===== */
-        .report-details.level-1 {
-            background: rgba(var(--color-card-rgb), 0.4);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            margin-bottom: 0.75rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .report-details.level-1:hover {
-            border-color: rgba(var(--color-primary-rgb), 0.3);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .report-details.level-1[open] {
-            border-color: rgba(var(--color-primary-rgb), 0.4);
-            box-shadow: var(--shadow-md);
-        }
-
-        .report-details.level-1>.custom-summary {
-            border-left: 4px solid var(--color-primary);
-        }
-
-        .report-details.level-2 {
-            border-left: 3px solid var(--color-info);
-        }
-
-        .report-details.level-3 {
-            border-left: 2px solid var(--color-secondary);
-        }
-
-        .custom-summary {
-            position: relative;
-            padding: 1.1rem 2.5rem 1.1rem 1.5rem !important;
-        }
-
-        .custom-summary::after {
-            content: '\F282';
-            /* bootstrap icon chevron-down */
-            font-family: 'Bootstrap Icons';
-            position: absolute;
-            right: 1.5rem;
-            top: 50%;
-            transform: translateY(-50%) rotate(0deg);
-            transition: transform 0.25s ease;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-
-        .report-details[open]>.custom-summary::after {
-            transform: translateY(-50%) rotate(180deg);
-        }
-
-        /* ===== SEARCH WRAPPER FOR PHARMACY ===== */
-        .search-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 380px;
-            margin-bottom: 1.25rem;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.625rem 1rem 0.625rem 2.5rem;
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-md);
-            background: var(--color-surface);
-            color: var(--color-text);
-            font-size: 0.875rem;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
-            background: var(--color-card);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.875rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* Content sections: tables & headers */
+        /* ===== SECTION HEADER OVERRIDES ===== */
         .content-section .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             flex-wrap: wrap;
-            gap: 0.75rem 1rem;
-            padding: 1.25rem 1.5rem 0;
+            gap: 0.6rem 1rem;
+            padding: 1.1rem 1.35rem 0;
             margin-bottom: 0;
             border-bottom: none;
         }
-
         .content-section > .table-responsive,
         .content-section > .custom-accordion-wrapper {
-            padding: 0 1.25rem 1.25rem;
+            padding: 0 1.15rem 1.15rem;
         }
 
-        .content-section .data-table {
-            margin: 0;
-        }
-
+        .content-section .data-table { margin: 0; }
         .content-section .table thead.bg-light,
         .content-section .table thead.bg-light th {
             background: var(--color-surface) !important;
@@ -1370,26 +1329,11 @@ try {
             border: 1px solid var(--color-border);
         }
 
-        .custom-summary {
-            flex-wrap: wrap;
-            gap: 0.5rem 1rem;
-        }
-
-        .custom-summary > span:last-child,
-        .custom-summary .amount-badge {
-            margin-left: auto;
-            flex-shrink: 0;
-        }
-
         .report-details-body .table {
             --bs-table-bg: transparent;
             color: var(--color-text);
         }
-
-        .report-details-body .table thead {
-            background: var(--color-surface) !important;
-        }
-
+        .report-details-body .table thead { background: var(--color-surface) !important; }
         .report-details-body .table td,
         .report-details-body .table th {
             border-color: var(--color-border) !important;
@@ -1397,47 +1341,70 @@ try {
         }
 
         .empty-report-hint {
-            padding: 2.5rem 1.5rem;
+            padding: 2rem 1.25rem;
             text-align: center;
             color: var(--color-text-secondary);
             background: var(--color-surface);
             border: 1px dashed var(--color-border);
             border-radius: var(--radius-lg);
         }
-
         .empty-report-hint i {
-            font-size: 2rem;
-            opacity: 0.45;
+            font-size: 1.75rem;
+            opacity: 0.4;
             display: block;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.6rem;
+        }
+
+        /* ===== CHARGE TYPE BADGES ===== */
+        .charge-type-badge {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            padding: 0.25rem 0.6rem; border-radius: 50px;
+            font-size: 0.68rem; font-weight: 700;
+        }
+        .charge-farmacia {
+            background: rgba(16, 185, 129, 0.1) !important;
+            color: #059669 !important;
+        }
+        .charge-hospitalizacion {
+            background: rgba(99, 102, 241, 0.1) !important;
+            color: #6366f1 !important;
         }
 
         @media (max-width: 768px) {
             .reports-tab-btn {
-                min-width: 120px;
-                font-size: 0.78rem;
-                padding: 0.6rem 0.75rem;
+                min-width: 100px;
+                font-size: 0.75rem;
+                padding: 0.5rem 0.6rem;
             }
-
-            .custom-summary {
-                padding-right: 2.5rem !important;
-            }
-
+            .custom-summary { padding-right: 2rem !important; }
             .section-header .amount-badge {
                 width: 100%;
                 justify-content: center;
             }
+            .filter-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-form {
+                flex-direction: column;
+            }
+            .filter-form input[type="date"],
+            .filter-form input[type="month"] {
+                min-width: 0;
+                width: 100%;
+            }
         }
 
+        /* ===== CONTABILIDAD DETALLADA ===== */
         /* ===== CONTABILIDAD DETALLADA ===== */
         .accounting-body {
             padding: 0 1.5rem 1.5rem;
         }
 
         .accounting-period-hint {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--color-text-secondary);
-            margin: -0.25rem 0 1.25rem;
+            margin: -0.15rem 0 1.1rem;
             display: flex;
             align-items: center;
             gap: 0.35rem;
@@ -1450,28 +1417,29 @@ try {
         }
 
         @media (max-width: 991px) {
-            .accounting-grid {
-                grid-template-columns: 1fr;
-            }
+            .accounting-grid { grid-template-columns: 1fr; }
         }
 
+        /* ===== ACCOUNTING CARDS ===== */
         .accounting-card {
-            background: var(--color-surface);
+            background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow 0.2s;
         }
-
+        .accounting-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
         .accounting-card--income {
             border-top: 3px solid var(--color-success);
         }
-
         .accounting-card--expense {
             border-top: 3px solid var(--color-danger);
         }
-
         .accounting-card--performance {
             border-top: 3px solid var(--color-primary);
         }
@@ -1481,99 +1449,74 @@ try {
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-            padding: 1.1rem 1.25rem;
+            padding: 1rem 1.25rem;
             border-bottom: 1px solid var(--color-border);
-            background: var(--color-card);
+            background: var(--color-surface);
         }
 
         .accounting-card__title {
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             color: var(--color-text);
             margin: 0;
         }
-
-        .accounting-card__title i {
-            font-size: 1.25rem;
-        }
+        .accounting-card__title i { font-size: 1.15rem; }
 
         .accounting-card__total {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 800;
-            padding: 0.4rem 0.9rem;
+            padding: 0.35rem 0.85rem;
             border-radius: 50px;
             white-space: nowrap;
         }
-
         .accounting-card__total--income {
-            background: rgba(var(--color-success-rgb), 0.12);
+            background: rgba(var(--color-success-rgb), 0.1);
             color: var(--color-success);
-            border: 1px solid rgba(var(--color-success-rgb), 0.3);
+            border: 1px solid rgba(var(--color-success-rgb), 0.25);
         }
-
         .accounting-card__total--expense {
-            background: rgba(var(--color-danger-rgb), 0.12);
+            background: rgba(var(--color-danger-rgb), 0.1);
             color: var(--color-danger);
-            border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+            border: 1px solid rgba(var(--color-danger-rgb), 0.25);
         }
 
+        /* ===== ACCOUNTING LEDGER ===== */
         .accounting-ledger {
             list-style: none;
             margin: 0;
-            padding: 0.5rem 0;
+            padding: 0.35rem 0;
         }
 
         .accounting-ledger__row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
-            gap: 1rem 1.5rem;
+            gap: 0.75rem 1rem;
             align-items: center;
-            padding: 0.85rem 1.25rem;
+            padding: 0.75rem 1.25rem;
             border-bottom: 1px solid var(--color-border);
             transition: background 0.15s ease;
             cursor: pointer;
         }
-
-        .accounting-ledger__row:last-child {
-            border-bottom: none;
-        }
-
+        .accounting-ledger__row:last-child { border-bottom: none; }
         .accounting-ledger__row:hover {
-            background: rgba(var(--color-primary-rgb), 0.04);
+            background: rgba(var(--color-primary-rgb), 0.03);
         }
 
         .accounting-ledger__label {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.55rem;
             min-width: 0;
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--color-text);
         }
-
         .accounting-ledger__label .charge-type-badge {
             flex-shrink: 0;
-            text-transform: none;
-            letter-spacing: 0;
-            font-size: 0.7rem;
-        }
-
-        .charge-type-badge {
-            display: inline-flex; align-items: center; gap: 0.3rem;
-            padding: 0.3rem 0.7rem; border-radius: 50px;
-            font-size: 0.72rem; font-weight: 700;
-        }
-        .charge-farmacia {
-            background: rgba(16, 185, 129, 0.12) !important;
-            color: #059669 !important;
-        }
-        .charge-hospitalizacion {
-            background: rgba(99, 102, 241, 0.12) !important;
-            color: #6366f1 !important;
+            font-size: 0.68rem;
         }
 
         .accounting-ledger__label-text {
@@ -1586,170 +1529,150 @@ try {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 0.35rem;
-            min-width: 140px;
+            gap: 0.25rem;
+            min-width: 130px;
         }
 
         .accounting-ledger__amount {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 800;
             font-variant-numeric: tabular-nums;
             color: var(--color-text);
             white-space: nowrap;
         }
-
-        .accounting-ledger__amount--income {
-            color: var(--color-success);
-        }
-
-        .accounting-ledger__amount--expense {
-            color: var(--color-danger);
-        }
+        .accounting-ledger__amount--income { color: var(--color-success); }
+        .accounting-ledger__amount--expense { color: var(--color-danger); }
 
         .accounting-ledger__pct {
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             font-weight: 600;
             color: var(--color-text-secondary);
         }
 
         .accounting-ledger__bar {
             width: 100%;
-            max-width: 120px;
+            max-width: 100px;
             height: 4px;
             background: var(--color-border);
             border-radius: 4px;
             overflow: hidden;
         }
-
         .accounting-ledger__bar-fill {
             height: 100%;
             border-radius: 4px;
             background: var(--color-primary);
             transition: width 0.3s ease;
         }
-
-        .accounting-ledger__bar-fill--income {
-            background: var(--color-success);
-        }
-
-        .accounting-ledger__bar-fill--expense {
-            background: var(--color-danger);
-        }
+        .accounting-ledger__bar-fill--income { background: var(--color-success); }
+        .accounting-ledger__bar-fill--expense { background: var(--color-danger); }
 
         .accounting-empty-note {
-            padding: 1.5rem 1.25rem;
+            padding: 1.25rem 1rem;
             text-align: center;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: var(--color-text-secondary);
         }
-
         .accounting-empty-note i {
             display: block;
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            opacity: 0.5;
+            font-size: 1.35rem;
+            margin-bottom: 0.4rem;
+            opacity: 0.45;
         }
 
-        .accounting-performance {
-            margin-top: 1.25rem;
-        }
+        /* ===== PERFORMANCE METRICS ===== */
+        .accounting-performance { margin-top: 1.25rem; }
 
         .accounting-metric-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
-            padding: 1rem 1.25rem 1.25rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.85rem;
+            padding: 0.85rem 1.25rem 1.25rem;
         }
 
         @media (max-width: 768px) {
-            .accounting-metric-grid {
-                grid-template-columns: 1fr;
-            }
-
+            .accounting-metric-grid { grid-template-columns: 1fr; }
             .accounting-ledger__row {
                 grid-template-columns: 1fr;
-                gap: 0.5rem;
+                gap: 0.4rem;
             }
-
             .accounting-ledger__values {
                 align-items: flex-start;
                 min-width: 0;
             }
-
-            .accounting-ledger__bar {
-                max-width: 100%;
-            }
+            .accounting-ledger__bar { max-width: 100%; }
         }
 
         .accounting-metric {
-            padding: 1rem 1.1rem;
+            padding: 0.9rem 1rem;
             border-radius: var(--radius-md);
-            background: var(--color-card);
+            background: var(--color-surface);
             border: 1px solid var(--color-border);
+            transition: box-shadow 0.2s;
+        }
+        .accounting-metric:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .accounting-metric__label {
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
             color: var(--color-text-secondary);
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.25rem;
         }
-
         .accounting-metric__value {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             font-weight: 800;
             font-variant-numeric: tabular-nums;
             line-height: 1.2;
         }
-
         .accounting-metric__meta {
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: var(--color-text-secondary);
-            margin-top: 0.35rem;
+            margin-top: 0.25rem;
         }
 
-        .accounting-metric--highlight {
-            grid-column: 1 / -1;
-            background: rgba(var(--color-primary-rgb), 0.06);
-            border-color: rgba(var(--color-primary-rgb), 0.25);
-        }
-
-        /* ===== RATIOS FINANCIEROS ===== */
+        /* ===== SECTION DIVIDERS ===== */
         .accounting-section {
-            padding-top: .5rem;
+            padding-top: 0.5rem;
+        }
+        .accounting-section .section-header {
+            margin-bottom: 0.25rem;
         }
         .accounting-section .section-header h3 {
-            padding-bottom: .5rem;
+            padding-bottom: 0.35rem;
             border-bottom: 2px solid var(--color-primary);
             display: inline-block;
         }
+
+        /* ===== RATIO CARDS ===== */
         .ratio-card {
             background: var(--color-card);
             border: 1px solid var(--color-border);
-            border-radius: 8px;
-            padding: .55rem .7rem;
+            border-radius: var(--radius-md);
+            padding: 0.7rem 0.85rem;
             height: 100%;
-            transition: all .2s;
+            transition: all 0.2s;
         }
         .ratio-card:hover {
-            border-color: var(--color-primary);
-            box-shadow: var(--shadow-sm);
+            border-color: rgba(var(--color-primary-rgb), 0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transform: translateY(-1px);
         }
         .ratio-label {
-            font-size: .65rem;
+            font-size: 0.62rem;
             text-transform: uppercase;
-            letter-spacing: .4px;
+            letter-spacing: 0.4px;
             color: var(--color-text-secondary);
             font-weight: 600;
-            margin-bottom: .1rem;
+            margin-bottom: 0.15rem;
             line-height: 1.2;
         }
         .ratio-value {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            margin: .15rem 0;
+            margin: 0.1rem 0;
             line-height: 1.05;
         }
         .ratio-meta {
@@ -1759,135 +1682,330 @@ try {
             line-height: 1.2;
         }
 
-        /* ===== CARDS TOTALES CONTABLES (NUEVO) ===== */
-        .totales-card {
-            background: var(--color-card);
-            border: 1px solid var(--color-border);
-            border-left: 4px solid var(--color-info);
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
-            box-shadow: var(--shadow-sm);
-            transition: all .2s;
-            text-align: center;
-            height: 100%;
+        /* ===== TOTALES CONSOLIDADOS — CSS GRID ===== */
+        .totales-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
         }
-        .totales-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        .totales-card.info { border-left-color: #0dcaf0; }
-        .totales-card.success { border-left-color: #198754; }
-        .totales-card.danger { border-left-color: #dc3545; }
-        .totales-card.primary { border-left-color: #6366f1; }
-        .totales-card.muted { border-left-color: #6c757d; }
-        .totales-card .totales-icon {
-            font-size: 1.5rem;
-            color: var(--color-text-secondary);
-            margin-bottom: .35rem;
+        @media (max-width: 991px) {
+            .totales-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        .totales-card .totales-label {
-            font-size: .8rem;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            color: var(--color-text-secondary);
-            font-weight: 600;
-            margin-bottom: .5rem;
-        }
-        .totales-card .totales-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: .35rem;
-            font-variant-numeric: tabular-nums;
-        }
-        .totales-card .totales-historico {
-            font-size: .72rem;
-            color: var(--color-text-secondary);
-            border-top: 1px solid var(--color-border);
-            padding-top: .35rem;
-            margin-top: .5rem;
+        @media (max-width: 575px) {
+            .totales-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
         }
 
-        /* ====== CANTIDADES — distinción Período vs Histórico ====== */
-        .cantidad-card .row-periodo td {
+        /* ===== CANTIDADES ABSOLUTAS CARDS ===== */
+        .abs-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            height: 100%;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .abs-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            transform: translateY(-1px);
+        }
+        .abs-card__header {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-surface);
+        }
+        .abs-card__icon {
+            font-size: 1rem;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .abs-card__title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
             color: var(--color-text);
+        }
+        .abs-card__body {
+            padding: 0.5rem 1rem 0.7rem;
+        }
+        .abs-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid var(--color-border);
+            gap: 0.5rem;
+        }
+        .abs-row:last-child { border-bottom: none; }
+        .abs-row--total {
+            border-top: 1px solid var(--color-border);
+            margin-top: 0.15rem;
+            padding-top: 0.45rem;
+        }
+        .abs-row__label {
+            font-size: 0.78rem;
+            color: var(--color-text);
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        .abs-row__label--periodo {
             font-weight: 600;
         }
-        .cantidad-card .row-historico td {
-            color: var(--color-text-secondary);
-            font-style: italic;
-        }
-        .cantidad-card .label-periodo::before {
+        .abs-row__label--periodo::before {
             content: "▸ ";
             color: var(--color-text-secondary);
+            font-size: 0.75em;
         }
-        .cantidad-card .label-historico::before {
+        .abs-row__label--historico {
+            color: var(--color-text-secondary);
+            font-style: italic;
+            font-size: 0.74rem;
+        }
+        .abs-row__label--historico::before {
             content: "▾ ";
             color: var(--color-text-muted);
+            font-size: 0.75em;
         }
+        .abs-row__value {
+            font-size: 0.82rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            color: var(--color-text);
+        }
+        .abs-row__value--positive { color: var(--color-success); }
+        .abs-row__value--negative { color: var(--color-danger); }
+        .abs-row__value--muted { color: var(--color-text-secondary); font-weight: 600; }
+        .abs-row__value--accent { color: var(--color-primary); }
 
-        /* ===== CARDS CANTIDADES ABSOLUTAS ===== */
-        .cantidad-card {
+        /* ===== TOTALES CONSOLIDADOS COMPACT GRID ===== */
+        .cons-card {
             background: var(--color-card);
             border: 1px solid var(--color-border);
-            border-left: 4px solid #0dcaf0;
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            padding: 0.75rem 0.65rem;
             height: 100%;
-            box-shadow: var(--shadow-sm);
-            transition: all .2s;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow 0.2s, transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
         }
-        .cantidad-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-        .cantidad-card.warning { border-left-color: #ffc107; }
-        .cantidad-card.success { border-left-color: #198754; }
-        .cantidad-card .cantidad-title {
-            font-size: .82rem;
+        .cons-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+        }
+        .cons-card__icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            margin-bottom: 0.15rem;
+        }
+        .cons-card__label {
+            font-size: 0.6rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .4px;
+            letter-spacing: 0.3px;
             color: var(--color-text-secondary);
-            margin-bottom: .75rem;
+            line-height: 1.2;
+        }
+        .cons-card__value {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .cons-card__periodo {
+            font-size: 0.6rem;
+            color: var(--color-text-secondary);
+            opacity: 0.8;
+            line-height: 1.2;
+        }
+
+        /* ===== RATIOS LAYOUT: CARDS + TABLE SIDE BY SIDE ===== */
+        .ratios-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 1rem;
+            align-items: start;
+        }
+        @media (max-width: 991px) {
+            .ratios-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .ratios-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        .ratios-cards-grid .ratio-card {
+            padding: 0.6rem 0.7rem;
+            margin: 0;
+        }
+        .ratios-cards-grid .ratio-label {
+            font-size: 0.6rem;
+        }
+        .ratios-cards-grid .ratio-value {
+            font-size: 1.05rem;
+        }
+        .ratios-cards-grid .ratio-meta {
+            font-size: 0.6rem;
+        }
+
+        /* ===== RATIO DETAIL TABLE ===== */
+        .ratio-detail-table {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .ratio-detail-table__header {
+            padding: 0.85rem 1.15rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--color-text);
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-surface);
             display: flex;
             align-items: center;
         }
-        .cantidad-card .cantidad-title i { margin-right: .5rem; font-size: 1.05rem; }
-        .cantidad-card .cantidad-table { width: 100%; margin: 0; }
-        .cantidad-card .cantidad-table td {
-            padding: 5px 0;
-            border: none;
-            font-size: .9rem;
+        .ratio-detail-table__table {
+            margin-bottom: 0;
+            --bs-table-bg: transparent;
+            color: var(--color-text);
         }
-        .cantidad-card .cantidad-table tr.divider td {
-            border-top: 1px solid var(--color-border);
-            padding-top: 7px;
+        .ratio-detail-table__table thead th {
+            padding: 0.65rem 1rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border-bottom: 1.5px solid var(--color-border);
         }
-        .cantidad-card .cantidad-table td.text-end { padding-right: .25rem; }
+        .ratio-detail-table__table td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.82rem;
+            vertical-align: middle;
+        }
+        .ratio-detail-table__table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .ratio-detail-table__table tbody tr:hover {
+            background: rgba(var(--color-primary-rgb), 0.03);
+        }
+        .ratio-name {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+        .ratio-name--accent {
+            color: var(--color-primary);
+        }
+        .ratio-value-cell {
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .ratio-desc {
+            font-size: 0.76rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+        .ratio-highlight-row {
+            background: rgba(var(--color-primary-rgb), 0.05);
+        }
+        .ratio-highlight-row:hover {
+            background: rgba(var(--color-primary-rgb), 0.08) !important;
+        }
 
-        /* ===== CARDS CXC / CXP ===== */
+        /* ===== CXC / CXP CARDS ===== */
         .cxc-card,
         .cxp-card {
             background: var(--color-card);
             border: 1px solid var(--color-border);
-            border-radius: 10px;
-            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            padding: 1.1rem;
             height: 100%;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow 0.2s;
+        }
+        .cxc-card:hover,
+        .cxp-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
         }
         .cxc-card { border-top: 4px solid #198754; }
         .cxp-card { border-top: 4px solid #dc3545; }
         .cxc-card .cxc-title,
         .cxp-card .cxp-title {
-            font-size: .92rem;
+            font-size: 0.85rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .5px;
+            letter-spacing: 0.5px;
             color: var(--color-text-secondary);
-            margin-bottom: .85rem;
+            margin-bottom: 0.7rem;
             display: flex;
             align-items: center;
-            gap: .5rem;
+            gap: 0.5rem;
         }
         .cxc-card .cxc-total,
         .cxp-card .cxp-total {
-            font-size: 1.75rem;
+            font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: .75rem;
+            margin-bottom: 0.65rem;
+        }
+
+        /* ===== CUSTOM BOOTSTRAP EXTENSIONS ===== */
+        .col-xl-15 {
+            flex: 0 0 auto;
+            width: 20%;
+        }
+        @media (max-width: 1199.98px) {
+            .col-xl-15 { width: 25%; }
+        }
+        @media (max-width: 767.98px) {
+            .col-xl-15 { width: 50%; }
+        }
+
+        /* ===== PDF SECTION CARD ===== */
+        .pdf-export-card {
+            border: 1px solid rgba(var(--color-success-rgb), 0.25);
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, var(--color-card) 0%, rgba(var(--color-success-rgb), 0.03) 100%);
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .pdf-export-card:hover {
+            border-color: rgba(var(--color-success-rgb), 0.4);
+            box-shadow: 0 4px 16px rgba(var(--color-success-rgb), 0.1);
+        }
+        .pdf-export-card .btn-success {
+            padding: 0.7rem 2rem;
+            font-weight: 700;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.25);
+            transition: all 0.2s;
+        }
+        .pdf-export-card .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(var(--color-success-rgb), 0.35);
         }
 
         /* ===== LOADING SPINNER ===== */
@@ -1895,30 +2013,28 @@ try {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem 1rem;
+            padding: 1.5rem 1rem;
             color: var(--color-text-secondary);
-            font-size: .9rem;
+            font-size: 0.85rem;
         }
-        .audit-loading .spinner-border-sm { margin-right: .5rem; }
+        .audit-loading .spinner-border-sm { margin-right: 0.5rem; }
 
-        /* Hide tabs in print mode */
         /* ===== CUSTOM MODAL ===== */
         .custom-modal-overlay {
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.45);
             display: flex;
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(4px);
             animation: fadeIn 0.2s ease;
         }
-
         .custom-modal-container {
             background: var(--color-card);
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             width: 90%;
             max-width: 1100px;
             max-height: 85vh;
@@ -1926,58 +2042,51 @@ try {
             flex-direction: column;
             animation: slideUp 0.25s ease;
         }
-
         .custom-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.25rem 1.5rem;
+            padding: 1.1rem 1.35rem;
             border-bottom: 1px solid var(--color-border);
         }
-
         .custom-modal-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             color: var(--color-text);
             margin: 0;
         }
-
         .custom-modal-close {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.35rem;
             color: var(--color-text-secondary);
             cursor: pointer;
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 0.4rem;
             border-radius: var(--radius-sm);
             transition: background 0.15s;
+            line-height: 1;
         }
-
         .custom-modal-close:hover {
             background: var(--color-surface);
         }
-
         .custom-modal-body {
             flex: 1;
             overflow-y: auto;
-            padding: 1.25rem 1.5rem;
+            padding: 1.1rem 1.35rem;
         }
-
         .custom-modal-footer {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.5rem;
+            padding: 0.85rem 1.35rem;
             border-top: 1px solid var(--color-border);
         }
-
         .custom-modal-footer .total-label {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--color-text-secondary);
         }
-
         .custom-modal-footer .total-amount {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 800;
             color: var(--color-success);
         }
@@ -1986,25 +2095,20 @@ try {
             width: 100%;
             border-collapse: collapse;
         }
-
         .desglose-table th {
-            padding: 0.75rem 0.875rem;
-            font-size: 0.72rem;
+            padding: 0.65rem 0.8rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             color: var(--color-text-secondary);
             background: var(--color-surface);
-            border-bottom: 2px solid var(--color-border);
+            border-bottom: 1.5px solid var(--color-border);
             text-align: left;
         }
-
-        .desglose-table th.text-end {
-            text-align: right;
-        }
-
+        .desglose-table th.text-end { text-align: right; }
         .desglose-table td {
-            padding: 0.7rem 0.875rem;
+            padding: 0.6rem 0.8rem;
             border-bottom: 1px solid var(--color-border);
             color: var(--color-text);
             font-size: 0.85rem;
@@ -2193,7 +2297,7 @@ try {
             </div>
         </header>
 
-        <main class="main-content">
+        <main class="main-content reports-page">
             <?php render_breadcrumbs([
                 ['label' => 'Dashboard', 'url' => '../dashboard/index.php'],
                 ['label' => 'Reportes'],
@@ -2216,42 +2320,36 @@ try {
 
             <!-- Panel de filtros -->
             <div class="filter-panel animate-in">
-                <div class="filter-header mb-4">
-                    <h3 class="filter-title">
-                        <i class="bi bi-calendar3 text-primary"></i>
-                        Parámetros del Reporte
-                    </h3>
-                    <p class="text-muted small">Seleccione jornada o mes para auditar los movimientos</p>
+                <div class="filter-title">
+                    <i class="bi bi-sliders2 text-primary"></i>
+                    Filtrar por período
                 </div>
                 <form method="GET" class="filter-form">
-                    <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-sm <?php echo $filtro_tipo === 'jornada' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('jornada')">
-                            <i class="bi bi-calendar-day"></i> Por Jornada
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn <?php echo $filtro_tipo === 'jornada' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('jornada')">
+                            <i class="bi bi-calendar-day"></i> Jornada
                         </button>
-                        <button type="button" class="btn btn-sm <?php echo $filtro_tipo === 'mes' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('mes')">
-                            <i class="bi bi-calendar-month"></i> Por Mes
-                        </button>
-                    </div>
-                    <div class="d-flex gap-3 align-items-end">
-                        <input type="hidden" name="filtro_tipo" id="filtro_tipo" value="<?php echo $filtro_tipo; ?>">
-
-                        <div class="form-group flex-grow-1" id="jornadaInput" style="<?php echo $filtro_tipo === 'mes' ? 'display:none;' : ''; ?>">
-                            <label for="fecha_filtro" class="form-label fw-semibold">Fecha de Jornada</label>
-                            <input type="date" class="form-control" id="fecha_filtro" name="fecha_filtro"
-                                value="<?php echo htmlspecialchars($fecha_filtro); ?>">
-                        </div>
-
-                        <div class="form-group flex-grow-1" id="mesInput" style="<?php echo $filtro_tipo === 'jornada' ? 'display:none;' : ''; ?>">
-                            <label for="mes_filtro" class="form-label fw-semibold">Mes</label>
-                            <input type="month" class="form-control" id="mes_filtro" name="mes_filtro"
-                                value="<?php echo $mes_filtro; ?>">
-                        </div>
-
-                        <button type="submit" class="action-btn">
-                            <i class="bi bi-search me-2"></i>
-                            Generar Análisis
+                        <button type="button" class="btn <?php echo $filtro_tipo === 'mes' ? 'btn-primary' : 'btn-outline-secondary'; ?>" onclick="switchFiltroTipo('mes')">
+                            <i class="bi bi-calendar-month"></i> Mes
                         </button>
                     </div>
+
+                    <input type="hidden" name="filtro_tipo" id="filtro_tipo" value="<?php echo $filtro_tipo; ?>">
+
+                    <div id="jornadaInput" style="<?php echo $filtro_tipo === 'mes' ? 'display:none;' : ''; ?>">
+                        <input type="date" id="fecha_filtro" name="fecha_filtro"
+                            value="<?php echo htmlspecialchars($fecha_filtro); ?>">
+                    </div>
+
+                    <div id="mesInput" style="<?php echo $filtro_tipo === 'jornada' ? 'display:none;' : ''; ?>">
+                        <input type="month" id="mes_filtro" name="mes_filtro"
+                            value="<?php echo $mes_filtro; ?>">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-search me-1"></i>
+                        Generar
+                    </button>
                 </form>
             </div>
 
@@ -2597,85 +2695,88 @@ try {
                                 <p class="text-muted small mb-0">Valores monetarios detallados del período seleccionado</p>
                               </div>
 
-                              <div class="row g-3 mt-2">
+                              <div class="row g-2 mt-2">
                                 <!-- Inventario: Valor Compra vs Valor Venta -->
-                                <div class="col-md-6">
-                                  <div class="cantidad-card">
-                                    <div class="cantidad-title text-info">
-                                      <i class="bi bi-box-seam"></i> Valor de Inventario
+                                <div class="col-md-4">
+                                  <div class="abs-card">
+                                    <div class="abs-card__header">
+                                      <i class="bi bi-box-seam abs-card__icon" style="color: #0dcaf0;"></i>
+                                      <span class="abs-card__title">Valor de Inventario</span>
                                     </div>
-                                    <table class="cantidad-table">
-                                      <tr>
-                                        <td>Valor en Costo de Compra <small class="text-muted">(Hosp + Qx + Farm)</small></td>
-                                        <td class="text-end fw-bold">Q<?= number_format($inv_valor_compra, 2) ?></td>
-                                      </tr>
-                                      <tr>
-                                        <td>Valor en Precio de Venta <small class="text-muted">(Hosp + Qx + Farm)</small></td>
-                                        <td class="text-end fw-bold text-success">Q<?= number_format($inv_valor_venta, 2) ?></td>
-                                      </tr>
-                                      <tr class="divider">
-                                        <td>Margen Potencial</td>
-                                        <td class="text-end fw-bold">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 2) ?></td>
-                                      </tr>
-                                    </table>
+                                    <div class="abs-card__body">
+                                      <div class="abs-row">
+                                        <span class="abs-row__label">Costo de Compra <span class="text-muted">(H+Q+F)</span></span>
+                                        <span class="abs-row__value">Q<?= number_format($inv_valor_compra, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label">Precio de Venta <span class="text-muted">(H+Q+F)</span></span>
+                                        <span class="abs-row__value abs-row__value--positive">Q<?= number_format($inv_valor_venta, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row abs-row--total">
+                                        <span class="abs-row__label">Margen Potencial</span>
+                                        <span class="abs-row__value abs-row__value--accent">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 2) ?></span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
                                 <!-- Compras del período -->
-                                <div class="col-md-6">
-                                  <div class="cantidad-card warning">
-                                    <div class="cantidad-title text-warning">
-                                      <i class="bi bi-cart-plus"></i> Compras
+                                <div class="col-md-4">
+                                  <div class="abs-card">
+                                    <div class="abs-card__header">
+                                      <i class="bi bi-cart-plus abs-card__icon" style="color: #ffc107;"></i>
+                                      <span class="abs-card__title">Compras</span>
                                     </div>
-                                    <table class="cantidad-table">
-                                      <tr class="row-periodo">
-                                        <td class="label-periodo">Total Comprado (período)</td>
-                                        <td class="text-end fw-bold">Q<?= number_format($total_compras_periodo, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-historico">
-                                        <td class="label-historico">Histórico</td>
-                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_compras_historico, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-periodo">
-                                        <td class="label-periodo">Total Pagado (período)</td>
-                                        <td class="text-end fw-bold text-success">Q<?= number_format($total_compras_pagadas, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-historico">
-                                        <td class="label-historico">Histórico</td>
-                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_pagadas_historico, 2) ?></td>
-                                      </tr>
-                                      <tr class="divider">
-                                        <td>Pendiente a Pagar <small class="text-muted">(histórico)</small></td>
-                                        <td class="text-end fw-bold text-danger">Q<?= number_format($total_pendiente_historico, 2) ?></td>
-                                      </tr>
-                                    </table>
+                                    <div class="abs-card__body">
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--periodo">Comprado (período)</span>
+                                        <span class="abs-row__value">Q<?= number_format($total_compras_periodo, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--historico">Histórico</span>
+                                        <span class="abs-row__value abs-row__value--muted">Q<?= number_format($total_compras_historico, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--periodo">Pagado (período)</span>
+                                        <span class="abs-row__value abs-row__value--positive">Q<?= number_format($total_compras_pagadas, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--historico">Histórico pagado</span>
+                                        <span class="abs-row__value abs-row__value--muted">Q<?= number_format($total_pagadas_historico, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row abs-row--total">
+                                        <span class="abs-row__label">Pendiente <span class="text-muted">(histórico)</span></span>
+                                        <span class="abs-row__value abs-row__value--negative">Q<?= number_format($total_pendiente_historico, 2) ?></span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
                                 <!-- Ventas del período -->
-                                <div class="col-md-6">
-                                  <div class="cantidad-card success">
-                                    <div class="cantidad-title text-success">
-                                      <i class="bi bi-cart-check"></i> Ventas
+                                <div class="col-md-4">
+                                  <div class="abs-card">
+                                    <div class="abs-card__header">
+                                      <i class="bi bi-cart-check abs-card__icon" style="color: #198754;"></i>
+                                      <span class="abs-card__title">Ventas</span>
                                     </div>
-                                    <table class="cantidad-table">
-                                      <tr class="row-periodo">
-                                        <td class="label-periodo">Total Ventas (período, sin traslados)</td>
-                                        <td class="text-end fw-bold">Q<?= number_format($total_ventas_periodo, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-historico">
-                                        <td class="label-historico">Histórico</td>
-                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_ventas_historico, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-periodo divider">
-                                        <td class="label-periodo">Traslados (Costo Compra) (período)</td>
-                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_traslados_costo, 2) ?></td>
-                                      </tr>
-                                      <tr class="row-historico">
-                                        <td class="label-historico">Histórico</td>
-                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_traslados_historico, 2) ?></td>
-                                      </tr>
-                                    </table>
+                                    <div class="abs-card__body">
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--periodo">Ventas (período, sin traslados)</span>
+                                        <span class="abs-row__value">Q<?= number_format($total_ventas_periodo, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--historico">Histórico</span>
+                                        <span class="abs-row__value abs-row__value--muted">Q<?= number_format($total_ventas_historico, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--periodo">Traslados <span class="text-muted">(costo, período)</span></span>
+                                        <span class="abs-row__value abs-row__value--muted">Q<?= number_format($total_traslados_costo, 2) ?></span>
+                                      </div>
+                                      <div class="abs-row">
+                                        <span class="abs-row__label abs-row__label--historico">Histórico traslados</span>
+                                        <span class="abs-row__value abs-row__value--muted">Q<?= number_format($total_traslados_historico, 2) ?></span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -2691,65 +2792,54 @@ try {
                                     <p class="text-muted small mb-0">Resumen comparativo: Período actual vs Histórico (snapshot)</p>
                                 </div>
 
-                                <div class="row g-3 mt-2">
-                                    <!-- Total de Compras -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card info">
-                                            <div class="totales-icon"><i class="bi bi-cart-plus"></i></div>
-                                            <div class="totales-label">Total de Compras</div>
-                                            <div class="totales-value text-info">Q<?= number_format($total_compras_historico, 2) ?></div>
-                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_compras_periodo, 2) ?></div>
+                                <div class="totales-grid mt-2">
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(13,202,240,0.1); color: #0dcaf0;">
+                                            <i class="bi bi-cart-plus"></i>
                                         </div>
+                                        <div class="cons-card__label">Total Compras</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_compras_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_periodo, 0) ?></div>
                                     </div>
-
-                                    <!-- Compras Pagadas -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card success">
-                                            <div class="totales-icon"><i class="bi bi-check-circle"></i></div>
-                                            <div class="totales-label">Compras Pagadas</div>
-                                            <div class="totales-value text-success">Q<?= number_format($total_pagadas_historico, 2) ?></div>
-                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_compras_pagadas, 2) ?></div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                                            <i class="bi bi-check-circle"></i>
                                         </div>
+                                        <div class="cons-card__label">Compras Pagadas</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_pagadas_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_pagadas, 0) ?></div>
                                     </div>
-
-                                    <!-- Traslados (Costo Compra) -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card muted">
-                                            <div class="totales-icon"><i class="bi bi-arrow-left-right"></i></div>
-                                            <div class="totales-label">Traslados (Costo Compra)</div>
-                                            <div class="totales-value text-muted">Q<?= number_format($total_traslados_historico, 2) ?></div>
-                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_traslados_costo, 2) ?></div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(108,117,125,0.1); color: #6c757d;">
+                                            <i class="bi bi-arrow-left-right"></i>
                                         </div>
+                                        <div class="cons-card__label">Traslados (Costo)</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_traslados_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_traslados_costo, 0) ?></div>
                                     </div>
-
-                                    <!-- Compras Pendientes -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card danger">
-                                            <div class="totales-icon"><i class="bi bi-exclamation-circle"></i></div>
-                                            <div class="totales-label">Compras Pendientes</div>
-                                            <div class="totales-value text-danger">Q<?= number_format($total_pendiente_historico, 2) ?></div>
-                                            <div class="totales-historico">CxP histórica (snapshot)</div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(220,53,69,0.1); color: #dc3545;">
+                                            <i class="bi bi-exclamation-circle"></i>
                                         </div>
+                                        <div class="cons-card__label">Compras Pendientes</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_pendiente_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">CxP snapshot</div>
                                     </div>
-
-                                    <!-- Total de Ventas -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card success">
-                                            <div class="totales-icon"><i class="bi bi-cart-check"></i></div>
-                                            <div class="totales-label">Total de Ventas</div>
-                                            <div class="totales-value text-success">Q<?= number_format($total_ventas_historico, 2) ?></div>
-                                            <div class="totales-historico">Histórico (excl. canceladas) &middot; Período: Q<?= number_format($total_ventas_periodo, 2) ?></div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                                            <i class="bi bi-cart-check"></i>
                                         </div>
+                                        <div class="cons-card__label">Total Ventas</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_ventas_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_ventas_periodo, 0) ?></div>
                                     </div>
-
-                                    <!-- Margen Potencial -->
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="totales-card primary">
-                                            <div class="totales-icon"><i class="bi bi-graph-up-arrow"></i></div>
-                                            <div class="totales-label">Margen Potencial Inv.</div>
-                                            <div class="totales-value text-primary">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 2) ?></div>
-                                            <div class="totales-historico">Venta - Compra (Hosp + Qx + Farm)</div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(99,102,241,0.1); color: #6366f1;">
+                                            <i class="bi bi-graph-up-arrow"></i>
                                         </div>
+                                        <div class="cons-card__label">Margen Potencial</div>
+                                        <div class="cons-card__value">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 0) ?></div>
+                                        <div class="cons-card__periodo">Venta − Compra</div>
                                     </div>
                                 </div>
                             </div>
@@ -2764,9 +2854,8 @@ try {
                                     <p class="text-muted small mb-0">Análisis cuantitativo del período <?= $filtro_label ?? '' ?></p>
                                 </div>
 
-                                <div class="row g-3 mt-2">
-                                    <!-- Margen Bruto -->
-                                    <div class="col-md-4 col-lg-2">
+                                <div class="ratios-layout mt-2">
+                                    <div class="ratios-cards-grid">
                                         <div class="ratio-card">
                                             <div class="ratio-label">Margen Bruto</div>
                                             <div class="ratio-value <?= $margen_bruto_pct >= 30 ? 'text-success' : ($margen_bruto_pct >= 15 ? 'text-warning' : 'text-danger') ?>">
@@ -2774,9 +2863,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Margen / Ingresos</small>
                                         </div>
-                                    </div>
-                                    <!-- Margen Operativo -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">Margen Operativo</div>
                                             <div class="ratio-value <?= $margen_operativo_pct >= 20 ? 'text-success' : ($margen_operativo_pct >= 10 ? 'text-warning' : 'text-danger') ?>">
@@ -2784,9 +2870,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Marg.Op / Ingresos</small>
                                         </div>
-                                    </div>
-                                    <!-- Margen Neto -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">Margen Neto</div>
                                             <div class="ratio-value <?= $margen_neto_pct >= 10 ? 'text-success' : ($margen_neto_pct >= 0 ? 'text-warning' : 'text-danger') ?>">
@@ -2794,9 +2877,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Flujo Caja / Ingresos</small>
                                         </div>
-                                    </div>
-                                    <!-- ROI -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">ROI</div>
                                             <div class="ratio-value <?= $roi_pct >= 15 ? 'text-success' : ($roi_pct >= 5 ? 'text-warning' : 'text-danger') ?>">
@@ -2804,9 +2884,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Retorno / Activos</small>
                                         </div>
-                                    </div>
-                                    <!-- Rotación de Inventario -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">Rotación Inventario</div>
                                             <div class="ratio-value text-info">
@@ -2814,9 +2891,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">veces / período</small>
                                         </div>
-                                    </div>
-                                    <!-- DSO -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">DSO</div>
                                             <div class="ratio-value <?= $dso <= 30 ? 'text-success' : ($dso <= 60 ? 'text-warning' : 'text-danger') ?>">
@@ -2824,9 +2898,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Días de cobro</small>
                                         </div>
-                                    </div>
-                                    <!-- DPO -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">DPO</div>
                                             <div class="ratio-value <?= $dpo >= 30 ? 'text-success' : 'text-warning' ?>">
@@ -2834,9 +2905,6 @@ try {
                                             </div>
                                             <small class="ratio-meta">Días de pago</small>
                                         </div>
-                                    </div>
-                                    <!-- DIO -->
-                                    <div class="col-md-4 col-lg-2">
                                         <div class="ratio-card">
                                             <div class="ratio-label">DIO</div>
                                             <div class="ratio-value text-info">
@@ -2845,87 +2913,87 @@ try {
                                             <small class="ratio-meta">Días de inventario</small>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Tabla detallada de ratios -->
-                                <div class="card shadow-sm mt-4">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><i class="bi bi-table me-2"></i>Tabla Detallada de Ratios</h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>Ratio</th>
-                                                        <th class="text-end">Valor</th>
-                                                        <th class="text-end">Interpretación</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <td><strong>Margen Bruto</strong></td>
-                                                        <td class="text-end"><?= number_format($margen_bruto_pct, 2) ?>%</td>
-                                                        <td class="text-end text-muted">Margen bruto sobre ingresos</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Margen Operativo</strong></td>
-                                                        <td class="text-end"><?= number_format($margen_operativo_pct, 2) ?>%</td>
-                                                        <td class="text-end text-muted">Después de depreciación estimada</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Margen Neto</strong></td>
-                                                        <td class="text-end"><?= number_format($margen_neto_pct, 2) ?>%</td>
-                                                        <td class="text-end text-muted">Flujo de caja neto sobre ingresos</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>ROI</strong></td>
-                                                        <td class="text-end"><?= number_format($roi_pct, 2) ?>%</td>
-                                                        <td class="text-end text-muted">Retorno sobre inversión</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Rotación de Inventario</strong></td>
-                                                        <td class="text-end"><?= number_format($rotacion_inventario, 2) ?>x</td>
-                                                        <td class="text-end text-muted">Veces que rota el inventario en el período</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>DSO</strong></td>
-                                                        <td class="text-end"><?= number_format($dso, 1) ?> días</td>
-                                                        <td class="text-end text-muted">Días de ventas en CxC</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>DPO</strong></td>
-                                                        <td class="text-end"><?= number_format($dpo, 1) ?> días</td>
-                                                        <td class="text-end text-muted">Días de compras en CxP</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>DIO</strong></td>
-                                                        <td class="text-end"><?= number_format($dio, 1) ?> días</td>
-                                                        <td class="text-end text-muted">Días de inventario en almacén</td>
-                                                    </tr>
-                                                    <tr class="table-info">
-                                                        <td><strong>Ciclo de Conversión de Efectivo</strong></td>
-                                                        <td class="text-end"><strong><?= number_format($cce, 1) ?> días</strong></td>
-                                                        <td class="text-end text-muted">DIO + DSO − DPO</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>EBITDA Estimado</strong></td>
-                                                        <td class="text-end">Q<?= number_format($ebitda, 2) ?></td>
-                                                        <td class="text-end text-muted">Antes de impuestos y depreciación</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Punto de Equilibrio</strong></td>
-                                                        <td class="text-end">Q<?= number_format($punto_equilibrio, 2) ?></td>
-                                                        <td class="text-end text-muted">Ingreso mínimo para no perder</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Apalancamiento</strong></td>
-                                                        <td class="text-end"><?= number_format($apalancamiento * 100, 2) ?>%</td>
-                                                        <td class="text-end text-muted">CxP / (CxP + Patrimonio)</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                    <div class="ratio-detail-table">
+                                        <div class="ratio-detail-table__header">
+                                            <i class="bi bi-table me-2"></i>
+                                            Tabla Detallada de Ratios
                                         </div>
+                                    <div class="table-responsive">
+                                        <table class="table ratio-detail-table__table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ratio</th>
+                                                    <th class="text-end">Valor</th>
+                                                    <th class="text-end">Interpretación</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><span class="ratio-name">Margen Bruto</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $margen_bruto_pct >= 30 ? 'text-success' : ($margen_bruto_pct >= 15 ? 'text-warning' : 'text-danger') ?>"><?= number_format($margen_bruto_pct, 2) ?>%</td>
+                                                    <td class="text-end ratio-desc">Margen bruto sobre ingresos</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">Margen Operativo</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $margen_operativo_pct >= 20 ? 'text-success' : ($margen_operativo_pct >= 10 ? 'text-warning' : 'text-danger') ?>"><?= number_format($margen_operativo_pct, 2) ?>%</td>
+                                                    <td class="text-end ratio-desc">Después de depreciación estimada</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">Margen Neto</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $margen_neto_pct >= 10 ? 'text-success' : ($margen_neto_pct >= 0 ? 'text-warning' : 'text-danger') ?>"><?= number_format($margen_neto_pct, 2) ?>%</td>
+                                                    <td class="text-end ratio-desc">Flujo de caja neto sobre ingresos</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">ROI</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $roi_pct >= 15 ? 'text-success' : ($roi_pct >= 5 ? 'text-warning' : 'text-danger') ?>"><?= number_format($roi_pct, 2) ?>%</td>
+                                                    <td class="text-end ratio-desc">Retorno sobre inversión</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">Rotación de Inventario</span></td>
+                                                    <td class="text-end ratio-value-cell text-info"><?= number_format($rotacion_inventario, 2) ?>x</td>
+                                                    <td class="text-end ratio-desc">Veces que rota el inventario en el período</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">DSO</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $dso <= 30 ? 'text-success' : ($dso <= 60 ? 'text-warning' : 'text-danger') ?>"><?= number_format($dso, 1) ?> días</td>
+                                                    <td class="text-end ratio-desc">Días de ventas en CxC</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">DPO</span></td>
+                                                    <td class="text-end ratio-value-cell <?= $dpo >= 30 ? 'text-success' : 'text-warning' ?>"><?= number_format($dpo, 1) ?> días</td>
+                                                    <td class="text-end ratio-desc">Días de compras en CxP</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">DIO</span></td>
+                                                    <td class="text-end ratio-value-cell text-info"><?= number_format($dio, 1) ?> días</td>
+                                                    <td class="text-end ratio-desc">Días de inventario en almacén</td>
+                                                </tr>
+                                                <tr class="ratio-highlight-row">
+                                                    <td><span class="ratio-name ratio-name--accent">Ciclo de Conversión de Efectivo</span></td>
+                                                    <td class="text-end ratio-value-cell fw-bold"><?= number_format($cce, 1) ?> días</td>
+                                                    <td class="text-end ratio-desc">DIO + DSO − DPO</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">EBITDA Estimado</span></td>
+                                                    <td class="text-end ratio-value-cell fw-bold">Q<?= number_format($ebitda, 2) ?></td>
+                                                    <td class="text-end ratio-desc">Antes de impuestos y depreciación</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">Punto de Equilibrio</span></td>
+                                                    <td class="text-end ratio-value-cell fw-bold">Q<?= number_format($punto_equilibrio, 2) ?></td>
+                                                    <td class="text-end ratio-desc">Ingreso mínimo para no perder</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="ratio-name">Apalancamiento</span></td>
+                                                    <td class="text-end ratio-value-cell fw-bold"><?= number_format($apalancamiento * 100, 2) ?>%</td>
+                                                    <td class="text-end ratio-desc">CxP / (CxP + Patrimonio)</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
+                            </div>
                             </div>
 
                             <!-- ============= SECCIÓN 6: CUENTAS POR COBRAR Y PAGAR ============= -->
@@ -2972,21 +3040,24 @@ try {
 
                             <!-- ============= SECCIÓN 8: EXPORTAR PDF ============= -->
                             <div class="accounting-section mt-5 mb-5">
-                                <div class="card shadow-sm border-success">
+                                <div class="pdf-export-card card">
                                     <div class="card-body text-center p-4">
-                                        <i class="bi bi-file-pdf text-success" style="font-size: 3rem;"></i>
-                                        <h4 class="mt-2 mb-2">Auditoría Contable Completa</h4>
-                                        <p class="text-muted mb-3">
-                                            Genere un PDF profesional con todos los datos contables del período:
-                                            KPIs, ratios, CxC/CxP, top transacciones y firmas.
+                                        <div class="mb-3">
+                                            <span class="d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 16px; background: rgba(var(--color-success-rgb), 0.1);">
+                                                <i class="bi bi-file-pdf text-success" style="font-size: 2rem;"></i>
+                                            </span>
+                                        </div>
+                                        <h4 class="mb-2">Auditoría Contable Completa</h4>
+                                        <p class="text-muted mb-3" style="max-width: 480px; margin-left: auto; margin-right: auto;">
+                                            Genere un PDF profesional con KPIs, ratios, CxC/CxP, top transacciones y firmas.
                                         </p>
                                         <a href="export_auditoria_contable.php?<?= http_build_query(['start' => substr($start_datetime, 0, 10), 'end' => substr($end_datetime, 0, 10)]) ?>"
                                            target="_blank"
                                            class="btn btn-success btn-lg">
-                                            <i class="bi bi-download"></i> Generar PDF de Auditoría Contable
+                                            <i class="bi bi-download me-2"></i> Generar PDF de Auditoría Contable
                                         </a>
                                         <div class="mt-3 small text-muted">
-                                            <i class="bi bi-shield-check"></i> La generación del PDF queda registrada en la auditoría del sistema.
+                                            <i class="bi bi-shield-check me-1"></i> La generación queda registrada en la auditoría del sistema.
                                         </div>
                                     </div>
                                 </div>
