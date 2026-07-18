@@ -192,9 +192,7 @@ $page_title = "Combos de Operación";
             </div>
         <?php else: ?>
             <div class="row g-3">
-                <?php foreach ($combos as $cb):
-                    $margen = $cb['precio_total'] - $cb['total_gasto'];
-                ?>
+                <?php foreach ($combos as $cb): ?>
                 <div class="col-md-6 col-lg-4">
                     <div class="combo-card h-100">
                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -204,26 +202,10 @@ $page_title = "Combos de Operación";
                             </div>
                             <span class="badge <?php echo $cb['estado'] === 'Activo' ? 'bg-success' : 'bg-secondary'; ?>"><?php echo $cb['estado']; ?></span>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="combo-section-title combo-section-ganancia">Ganancias</span>
-                            <strong class="text-success">Q<?php echo number_format($cb['total_ganancia'], 2); ?></strong>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="combo-section-title combo-section-gasto">Gastos</span>
-                            <strong class="text-danger">Q<?php echo number_format($cb['total_gasto'], 2); ?></strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold">Precio Total:</span>
-                            <strong class="text-primary fs-5">Q<?php echo number_format($cb['precio_total'], 2); ?></strong>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Margen:</small>
-                            <small class="fw-bold <?php echo $margen >= 0 ? 'text-success' : 'text-danger'; ?>">
-                                Q<?php echo number_format($margen, 2); ?>
-                            </small>
-                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-graph-up"></i> Ver rentabilidad, márgenes y totales financieros en
+                            <a href="../reports/index.php">Reportes &rarr; Contabilidad &amp; Ratios</a>
+                        </p>
                         <?php if ($user_type === 'admin'): ?>
                         <div class="d-flex gap-2 mt-3">
                             <button class="btn btn-sm btn-outline-primary flex-fill" onclick='editCombo(<?php echo (int)$cb['id_combo']; ?>)'>

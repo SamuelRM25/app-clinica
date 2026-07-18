@@ -27,7 +27,6 @@ try {
             'widget-appointments',
             'widget-hospitalized',
             'widget-alerts',
-            'widget-revenue',
             'widget-inventory',
             'widget-patients',
             'widget-calendar',
@@ -117,13 +116,6 @@ try {
             'icon' => 'bi-exclamation-triangle',
             'color' => 'warning',
             'enabled' => $settings['widget-alerts'] ?? 1
-        ],
-        'widget-revenue' => [
-            'name' => 'Ingresos del Día',
-            'desc' => 'Resumen de ventas, cobros y facturación del día en curso.',
-            'icon' => 'bi-cash-stack',
-            'color' => 'success',
-            'enabled' => $settings['widget-revenue'] ?? 1
         ],
         'widget-inventory' => [
             'name' => 'Estado de Inventario',

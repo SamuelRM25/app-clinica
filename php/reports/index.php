@@ -339,6 +339,202 @@ try {
     // 9. Desempeño neto
     $net_cash_flow = $total_gross_revenue - $total_egresos;
 
+// ============ RATIOS FINANCIEROS + CxC / CxP ============
+
+    // Rotación de inventario = Costo de Ventas / Inventario Promedio
+    $stmt_inv_prom = $conn->prepare("SELECT COALESCE(AVG(stock_hospital + stock_quirofano), 0) FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
+    $stmt_inv_prom->execute([$id_hospital]);
+    $inventario_promedio_unidades = (float)$stmt_inv_prom->fetchColumn();
+    // Valor del inventario promedio (unidades * costo promedio)
+    $stmt_inv_val = $conn->prepare("SELECT COALESCE(AVG((stock_hospital + stock_quirofano) * COALESCE(pi.unit_cost, 0)), 0)
+                                  FROM inventario i LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+                                  WHERE i.id_hospital = ? AND i.estado = 'Disponible'");
+    $stmt_inv_val->execute([$id_hospital]);
+    $inventario_promedio_valor = (float)$stmt_inv_val->fetchColumn();
+    $rotacion_inventario = ($inventario_promedio_valor > 0) ? ($sales_cost / $inventario_promedio_valor) : 0;
+
+    // Cuentas por Cobrar (CxC) — hospitalización con saldo pendiente
+    $stmt_cxc = $conn->prepare("SELECT COALESCE(SUM(saldo_pendiente), 0)
+                              FROM cuenta_hospitalaria
+                              WHERE id_hospital = ? AND estado_pago NOT IN ('Pagado','Condonado') AND saldo_pendiente > 0");
+    $stmt_cxc->execute([$id_hospital]);
+    $cxc_total = (float)$stmt_cxc->fetchColumn();
+
+    // Cuentas por Pagar (CxP) — compras con saldo pendiente
+    $stmt_cxp = $conn->prepare("SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0)
+                              FROM purchase_headers
+                              WHERE id_hospital = ? AND payment_status != 'Pagado'");
+    $stmt_cxp->execute([$id_hospital]);
+    $cxp_total = (float)$stmt_cxp->fetchColumn();
+
+    // Días del período para DSO/DPO
+    $dias_periodo = 30;
+    if ($start_datetime && $end_datetime) {
+        $dias_periodo = max(1, (strtotime($end_datetime) - strtotime($start_datetime)) / 86400);
+    }
+
+    // DSO (Days Sales Outstanding) = CxC / Ingresos_diarios
+    $ingresos_diarios = ($dias_periodo > 0) ? ($total_gross_revenue / $dias_periodo) : 1;
+    $dso = ($ingresos_diarios > 0) ? ($cxc_total / $ingresos_diarios) : 0;
+
+    // DPO (Days Payable Outstanding) = CxP / Compras_diarias
+    $compras_diarias = ($dias_periodo > 0) ? ($total_purchases_meds / $dias_periodo) : 1;
+    $dpo = ($compras_diarias > 0) ? ($cxp_total / max(1, $compras_diarias)) : 0;
+
+    // DIO (Days Inventory Outstanding) = Inv_promedio / Costo_ventas_diario
+    $costo_diario = ($dias_periodo > 0) ? ($sales_cost / $dias_periodo) : 1;
+    $dio = ($costo_diario > 0) ? ($inventario_promedio_valor / $costo_diario) : 0;
+
+    // Ciclo de Conversión de Efectivo = DIO + DSO - DPO
+    $cce = $dio + $dso - $dpo;
+
+    // EBITDA estimado = Utilidad Bruta - 5% depreciación estimada sobre egresos
+    $depreciacion_estimada = $total_egresos * 0.05;
+    $ebitda = $total_gross_profit - $depreciacion_estimada;
+
+    // Punto de equilibrio: Costos Fijos / (1 - Costos Variables / Ventas)
+    $costos_fijos = $total_gastos * 0.7;
+    $costos_variables = $total_purchases_meds + $sales_cost;
+    $punto_equilibrio = 0;
+    if ($total_gross_revenue > $costos_variables) {
+        $ratio_mc = 1 - ($costos_variables / $total_gross_revenue);
+        $punto_equilibrio = ($ratio_mc > 0) ? ($costos_fijos / $ratio_mc) : 0;
+    }
+
+    // Márgenes
+    $margen_bruto_pct = ($total_gross_revenue > 0) ? ($total_gross_profit / $total_gross_revenue) * 100 : 0;
+    $margen_operativo_pct = ($total_gross_revenue > 0) ? (($total_gross_profit - $depreciacion_estimada) / $total_gross_revenue) * 100 : 0;
+    $margen_neto_pct = ($total_gross_revenue > 0) ? ($net_cash_flow / $total_gross_revenue) * 100 : 0;
+
+    // ROI simplificado = Utilidad Neta / (Inventario Promedio + CxC)
+    $activos_proxy = $inventario_promedio_valor + $cxc_total;
+    $roi_pct = ($activos_proxy > 0) ? ($net_cash_flow / $activos_proxy) * 100 : 0;
+
+    // Apalancamiento = CxP / (CxP + Patrimonio estimado)
+    $patrimonio_estimado = max(1, $total_gross_profit * 12);
+    $apalancamiento = ($cxp_total + $patrimonio_estimado) > 0 ? ($cxp_total / ($cxp_total + $patrimonio_estimado)) : 0;
+
+    // ============ CANTIDADES ABSOLUTAS (snapshot inventario, resto por período) ============
+    $start_date_only = substr($start_datetime, 0, 10);
+    $end_date_only = substr($end_datetime, 0, 10);
+
+    // 1) Valor de COMPRA en inventario (snapshot actual)
+    $stmt_inv_compra = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano) * precio_compra), 0)
+                                      FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
+    $stmt_inv_compra->execute([$id_hospital]);
+    $inv_valor_compra = (float)$stmt_inv_compra->fetchColumn();
+
+    // 2) Valor de VENTA en inventario (snapshot actual)
+    $stmt_inv_venta = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano) * precio_venta), 0)
+                                     FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
+    $stmt_inv_venta->execute([$id_hospital]);
+    $inv_valor_venta = (float)$stmt_inv_venta->fetchColumn();
+
+    // 3) Total de compras del período
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM purchase_headers
+                            WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt->execute([$start_date_only, $end_date_only, $id_hospital]);
+    $total_compras_periodo = (float)$stmt->fetchColumn();
+
+    // 4) Total de ventas del período (sin traslados)
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM ventas
+                            WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ? AND tipo_pago != 'Traslado'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_ventas_periodo = (float)$stmt->fetchColumn();
+
+    // 5) Total de compras pagadas
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount), 0) FROM purchase_headers
+                            WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ? AND payment_status = 'Pagado'");
+    $stmt->execute([$start_date_only, $end_date_only, $id_hospital]);
+    $total_compras_pagadas = (float)$stmt->fetchColumn();
+
+    // 6) Traslados en costo de compra (incluye Transferencia con precio_venta=0)
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)), 0)
+                            FROM detalle_ventas dv
+                            JOIN ventas v ON dv.id_venta = v.id_venta
+                            JOIN inventario i ON dv.id_inventario = i.id_inventario
+                            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+                            WHERE v.fecha_venta BETWEEN ? AND ? AND v.id_hospital = ?
+                              AND v.tipo_pago IN ('Traslado','Transferencia') AND dv.precio_unitario = 0");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_traslados_costo = (float)$stmt->fetchColumn();
+
+    // 7) Total pendiente a pagar
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount - paid_amount), 0) FROM purchase_headers
+                            WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ? AND payment_status != 'Pagado'");
+    $stmt->execute([$start_date_only, $end_date_only, $id_hospital]);
+    $total_pendiente_pagar = (float)$stmt->fetchColumn();
+
+    // Compras del período (para auditoría PDF)
+    $stmt_compras = $conn->prepare("SELECT COUNT(*) FROM purchase_headers WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_compras->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $compras_periodo_count = (int)$stmt_compras->fetchColumn();
+
+    // Gastos del período
+    $stmt_gastos_count = $conn->prepare("SELECT COUNT(*) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt_gastos_count->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $gastos_periodo_count = (int)$stmt_gastos_count->fetchColumn();
+
+    // CxC desglosado por antigüedad
+    $stmt_cxc_aging = $conn->prepare("SELECT
+            SUM(CASE WHEN DATEDIFF(CURDATE(), e.fecha_ingreso) BETWEEN 0 AND 30 THEN ch.saldo_pendiente ELSE 0 END) AS cxc_0_30,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), e.fecha_ingreso) BETWEEN 31 AND 60 THEN ch.saldo_pendiente ELSE 0 END) AS cxc_31_60,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), e.fecha_ingreso) BETWEEN 61 AND 90 THEN ch.saldo_pendiente ELSE 0 END) AS cxc_61_90,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), e.fecha_ingreso) > 90 THEN ch.saldo_pendiente ELSE 0 END) AS cxc_90_mas
+        FROM cuenta_hospitalaria ch
+        JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
+        WHERE ch.id_hospital = ? AND ch.estado_pago NOT IN ('Pagado','Condonado')
+            AND ch.saldo_pendiente > 0");
+    $stmt_cxc_aging->execute([$id_hospital]);
+    $cxc_aging = $stmt_cxc_aging->fetch(PDO::FETCH_ASSOC) ?: ['cxc_0_30' => 0, 'cxc_31_60' => 0, 'cxc_61_90' => 0, 'cxc_90_mas' => 0];
+
+    // Top 10 proveedores por compras del período
+    $stmt_top_prov = $conn->prepare("SELECT ph.provider_name, SUM(ph.total_amount) AS total
+                                   FROM purchase_headers ph
+                                   WHERE ph.purchase_date BETWEEN ? AND ? AND ph.id_hospital = ?
+                                   GROUP BY ph.provider_name
+                                   ORDER BY total DESC
+                                   LIMIT 10");
+    $stmt_top_prov->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $top_proveedores = $stmt_top_prov->fetchAll(PDO::FETCH_ASSOC);
+
+    // Top 10 pacientes por saldo pendiente
+    $stmt_top_pac = $conn->prepare("SELECT p.nombre, p.apellido, ch.id_cuenta, ch.total_general,
+                                          COALESCE(ch.total_pagado, 0) AS total_pagado,
+                                          ch.saldo_pendiente AS saldo,
+                                          DATEDIFF(CURDATE(), e.fecha_ingreso) AS dias_mora
+                                   FROM cuenta_hospitalaria ch
+                                   JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
+                                   JOIN pacientes p ON e.id_paciente = p.id_paciente
+                                   WHERE ch.id_hospital = ? AND ch.estado_pago NOT IN ('Pagado','Condonado')
+                                       AND ch.saldo_pendiente > 0
+                                   ORDER BY saldo DESC
+                                   LIMIT 10");
+    $stmt_top_pac->execute([$id_hospital]);
+    $top_pacientes_saldo = $stmt_top_pac->fetchAll(PDO::FETCH_ASSOC);
+
+    // Resumen de auditoría del período (top usuarios, conteo por módulo)
+    $stmt_audit_resumen = $conn->prepare("SELECT modulo, accion, COUNT(*) AS total
+                                          FROM audit_log
+                                          WHERE id_hospital = ?
+                                            AND fecha_audit BETWEEN ? AND ?
+                                            AND modulo IN ('billing','dispensary','purchases','gastos','hospitalization','tarifas','surgery','inventory')
+                                          GROUP BY modulo, accion
+                                          ORDER BY modulo, accion");
+    $stmt_audit_resumen->execute([$id_hospital, $start_datetime, $end_datetime]);
+    $audit_resumen = $stmt_audit_resumen->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt_top_users = $conn->prepare("SELECT user_nombre, COUNT(*) AS movimientos
+                                      FROM audit_log
+                                      WHERE id_hospital = ?
+                                        AND fecha_audit BETWEEN ? AND ?
+                                        AND modulo IN ('billing','dispensary','purchases','gastos','hospitalization','tarifas','surgery','inventory')
+                                      GROUP BY user_nombre
+                                      ORDER BY movimientos DESC
+                                      LIMIT 5");
+    $stmt_top_users->execute([$id_hospital, $start_datetime, $end_datetime]);
+    $top_usuarios_audit = $stmt_top_users->fetchAll(PDO::FETCH_ASSOC);
+
 // ============ MÉTRICAS ADICIONALES ============
 
     // Total de pacientes registrados
@@ -1482,6 +1678,128 @@ try {
             border-color: rgba(var(--color-primary-rgb), 0.25);
         }
 
+        /* ===== RATIOS FINANCIEROS ===== */
+        .accounting-section {
+            padding-top: .5rem;
+        }
+        .accounting-section .section-header h3 {
+            padding-bottom: .5rem;
+            border-bottom: 2px solid var(--color-primary);
+            display: inline-block;
+        }
+        .ratio-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: .55rem .7rem;
+            height: 100%;
+            transition: all .2s;
+        }
+        .ratio-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+        .ratio-label {
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            margin-bottom: .1rem;
+            line-height: 1.2;
+        }
+        .ratio-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: .15rem 0;
+            line-height: 1.05;
+        }
+        .ratio-meta {
+            color: var(--color-text-secondary);
+            font-size: .65rem;
+            margin-top: .1rem;
+            line-height: 1.2;
+        }
+
+        /* ===== CARDS CANTIDADES ABSOLUTAS ===== */
+        .cantidad-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid #0dcaf0;
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            height: 100%;
+            box-shadow: var(--shadow-sm);
+            transition: all .2s;
+        }
+        .cantidad-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        .cantidad-card.warning { border-left-color: #ffc107; }
+        .cantidad-card.success { border-left-color: #198754; }
+        .cantidad-card .cantidad-title {
+            font-size: .82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--color-text-secondary);
+            margin-bottom: .75rem;
+            display: flex;
+            align-items: center;
+        }
+        .cantidad-card .cantidad-title i { margin-right: .5rem; font-size: 1.05rem; }
+        .cantidad-card .cantidad-table { width: 100%; margin: 0; }
+        .cantidad-card .cantidad-table td {
+            padding: 5px 0;
+            border: none;
+            font-size: .9rem;
+        }
+        .cantidad-card .cantidad-table tr.divider td {
+            border-top: 1px solid var(--color-border);
+            padding-top: 7px;
+        }
+        .cantidad-card .cantidad-table td.text-end { padding-right: .25rem; }
+
+        /* ===== CARDS CXC / CXP ===== */
+        .cxc-card,
+        .cxp-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            height: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+        .cxc-card { border-top: 4px solid #198754; }
+        .cxp-card { border-top: 4px solid #dc3545; }
+        .cxc-card .cxc-title,
+        .cxp-card .cxp-title {
+            font-size: .92rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--color-text-secondary);
+            margin-bottom: .85rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .cxc-card .cxc-total,
+        .cxp-card .cxp-total {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: .75rem;
+        }
+
+        /* ===== LOADING SPINNER ===== */
+        .audit-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            color: var(--color-text-secondary);
+            font-size: .9rem;
+        }
+        .audit-loading .spinner-border-sm { margin-right: .5rem; }
+
         /* Hide tabs in print mode */
         /* ===== CUSTOM MODAL ===== */
         .custom-modal-overlay {
@@ -2178,15 +2496,495 @@ try {
                                         <div class="accounting-metric__label">Flujo de efectivo neto</div>
                                         <div class="accounting-metric__value <?php echo $net_cash_flow >= 0 ? 'text-primary' : 'text-danger'; ?>">
                                             Q<?php echo number_format($net_cash_flow, 2); ?>
+                                         </div>
+                                         <div class="accounting-metric__meta">Ingresos − pagos a proveedores y gastos</div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                            <!-- ============= SECCIÓN 4.5: CANTIDADES ABSOLUTAS ============= -->
+                            <div class="accounting-section mt-5">
+                              <div class="section-header">
+                                <h3 class="section-title h4 mb-1">
+                                  <i class="bi bi-calculator text-info me-2"></i>
+                                  Cantidades Absolutas del Período
+                                </h3>
+                                <p class="text-muted small mb-0">Valores monetarios detallados del período seleccionado</p>
+                              </div>
+
+                              <div class="row g-3 mt-2">
+                                <!-- Inventario: Valor Compra vs Valor Venta -->
+                                <div class="col-md-6">
+                                  <div class="cantidad-card">
+                                    <div class="cantidad-title text-info">
+                                      <i class="bi bi-box-seam"></i> Valor de Inventario (Snapshot)
+                                    </div>
+                                    <table class="cantidad-table">
+                                      <tr>
+                                        <td>Valor en Costo de Compra</td>
+                                        <td class="text-end fw-bold">Q<?= number_format($inv_valor_compra, 2) ?></td>
+                                      </tr>
+                                      <tr>
+                                        <td>Valor en Precio de Venta</td>
+                                        <td class="text-end fw-bold text-success">Q<?= number_format($inv_valor_venta, 2) ?></td>
+                                      </tr>
+                                      <tr class="divider">
+                                        <td>Margen Potencial</td>
+                                        <td class="text-end fw-bold">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 2) ?></td>
+                                      </tr>
+                                    </table>
+                                  </div>
+                                </div>
+
+                                <!-- Compras del período -->
+                                <div class="col-md-6">
+                                  <div class="cantidad-card warning">
+                                    <div class="cantidad-title text-warning">
+                                      <i class="bi bi-cart-plus"></i> Compras del Período
+                                    </div>
+                                    <table class="cantidad-table">
+                                      <tr>
+                                        <td>Total Comprado</td>
+                                        <td class="text-end fw-bold">Q<?= number_format($total_compras_periodo, 2) ?></td>
+                                      </tr>
+                                      <tr>
+                                        <td>Total Pagado</td>
+                                        <td class="text-end fw-bold text-success">Q<?= number_format($total_compras_pagadas, 2) ?></td>
+                                      </tr>
+                                      <tr class="divider">
+                                        <td>Pendiente a Pagar</td>
+                                        <td class="text-end fw-bold text-danger">Q<?= number_format($total_pendiente_pagar, 2) ?></td>
+                                      </tr>
+                                    </table>
+                                  </div>
+                                </div>
+
+                                <!-- Ventas del período -->
+                                <div class="col-md-6">
+                                  <div class="cantidad-card success">
+                                    <div class="cantidad-title text-success">
+                                      <i class="bi bi-cart-check"></i> Ventas del Período
+                                    </div>
+                                    <table class="cantidad-table">
+                                      <tr>
+                                        <td>Total Ventas (sin traslados)</td>
+                                        <td class="text-end fw-bold">Q<?= number_format($total_ventas_periodo, 2) ?></td>
+                                      </tr>
+                                      <tr class="divider">
+                                        <td>Traslados (Costo de Compra)</td>
+                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_traslados_costo, 2) ?></td>
+                                      </tr>
+                                    </table>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- ============= SECCIÓN 5: RATIOS FINANCIEROS ============= -->
+                            <div class="accounting-section mt-5">
+                                <div class="section-header">
+                                    <h3 class="section-title h4 mb-1">
+                                        <i class="bi bi-percent text-primary me-2"></i>
+                                        Ratios Financieros
+                                    </h3>
+                                    <p class="text-muted small mb-0">Análisis cuantitativo del período <?= $filtro_label ?? '' ?></p>
+                                </div>
+
+                                <div class="row g-3 mt-2">
+                                    <!-- Margen Bruto -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">Margen Bruto</div>
+                                            <div class="ratio-value <?= $margen_bruto_pct >= 30 ? 'text-success' : ($margen_bruto_pct >= 15 ? 'text-warning' : 'text-danger') ?>">
+                                                <?= number_format($margen_bruto_pct, 2) ?>%
+                                            </div>
+                                            <small class="ratio-meta">Utilidad / Ingresos</small>
                                         </div>
-                                        <div class="accounting-metric__meta">Ingresos − pagos a proveedores y gastos</div>
+                                    </div>
+                                    <!-- Margen Operativo -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">Margen Operativo</div>
+                                            <div class="ratio-value <?= $margen_operativo_pct >= 20 ? 'text-success' : ($margen_operativo_pct >= 10 ? 'text-warning' : 'text-danger') ?>">
+                                                <?= number_format($margen_operativo_pct, 2) ?>%
+                                            </div>
+                                            <small class="ratio-meta">Util.Op / Ingresos</small>
+                                        </div>
+                                    </div>
+                                    <!-- Margen Neto -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">Margen Neto</div>
+                                            <div class="ratio-value <?= $margen_neto_pct >= 10 ? 'text-success' : ($margen_neto_pct >= 0 ? 'text-warning' : 'text-danger') ?>">
+                                                <?= number_format($margen_neto_pct, 2) ?>%
+                                            </div>
+                                            <small class="ratio-meta">Flujo Caja / Ingresos</small>
+                                        </div>
+                                    </div>
+                                    <!-- ROI -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">ROI</div>
+                                            <div class="ratio-value <?= $roi_pct >= 15 ? 'text-success' : ($roi_pct >= 5 ? 'text-warning' : 'text-danger') ?>">
+                                                <?= number_format($roi_pct, 2) ?>%
+                                            </div>
+                                            <small class="ratio-meta">Utilidad / Activos</small>
+                                        </div>
+                                    </div>
+                                    <!-- Rotación de Inventario -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">Rotación Inventario</div>
+                                            <div class="ratio-value text-info">
+                                                <?= number_format($rotacion_inventario, 2) ?>
+                                            </div>
+                                            <small class="ratio-meta">veces / período</small>
+                                        </div>
+                                    </div>
+                                    <!-- DSO -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">DSO</div>
+                                            <div class="ratio-value <?= $dso <= 30 ? 'text-success' : ($dso <= 60 ? 'text-warning' : 'text-danger') ?>">
+                                                <?= number_format($dso, 1) ?> días
+                                            </div>
+                                            <small class="ratio-meta">Días de cobro</small>
+                                        </div>
+                                    </div>
+                                    <!-- DPO -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">DPO</div>
+                                            <div class="ratio-value <?= $dpo >= 30 ? 'text-success' : 'text-warning' ?>">
+                                                <?= number_format($dpo, 1) ?> días
+                                            </div>
+                                            <small class="ratio-meta">Días de pago</small>
+                                        </div>
+                                    </div>
+                                    <!-- DIO -->
+                                    <div class="col-md-4 col-lg-2">
+                                        <div class="ratio-card">
+                                            <div class="ratio-label">DIO</div>
+                                            <div class="ratio-value text-info">
+                                                <?= number_format($dio, 1) ?> días
+                                            </div>
+                                            <small class="ratio-meta">Días de inventario</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla detallada de ratios -->
+                                <div class="card shadow-sm mt-4">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="bi bi-table me-2"></i>Tabla Detallada de Ratios</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ratio</th>
+                                                        <th class="text-end">Valor</th>
+                                                        <th class="text-end">Interpretación</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><strong>Margen Bruto</strong></td>
+                                                        <td class="text-end"><?= number_format($margen_bruto_pct, 2) ?>%</td>
+                                                        <td class="text-end text-muted">Utilidad bruta sobre ingresos</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Margen Operativo</strong></td>
+                                                        <td class="text-end"><?= number_format($margen_operativo_pct, 2) ?>%</td>
+                                                        <td class="text-end text-muted">Después de depreciación estimada</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Margen Neto</strong></td>
+                                                        <td class="text-end"><?= number_format($margen_neto_pct, 2) ?>%</td>
+                                                        <td class="text-end text-muted">Flujo de caja neto sobre ingresos</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>ROI</strong></td>
+                                                        <td class="text-end"><?= number_format($roi_pct, 2) ?>%</td>
+                                                        <td class="text-end text-muted">Retorno sobre inversión</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Rotación de Inventario</strong></td>
+                                                        <td class="text-end"><?= number_format($rotacion_inventario, 2) ?>x</td>
+                                                        <td class="text-end text-muted">Veces que rota el inventario en el período</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>DSO</strong></td>
+                                                        <td class="text-end"><?= number_format($dso, 1) ?> días</td>
+                                                        <td class="text-end text-muted">Días de ventas en CxC</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>DPO</strong></td>
+                                                        <td class="text-end"><?= number_format($dpo, 1) ?> días</td>
+                                                        <td class="text-end text-muted">Días de compras en CxP</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>DIO</strong></td>
+                                                        <td class="text-end"><?= number_format($dio, 1) ?> días</td>
+                                                        <td class="text-end text-muted">Días de inventario en almacén</td>
+                                                    </tr>
+                                                    <tr class="table-info">
+                                                        <td><strong>Ciclo de Conversión de Efectivo</strong></td>
+                                                        <td class="text-end"><strong><?= number_format($cce, 1) ?> días</strong></td>
+                                                        <td class="text-end text-muted">DIO + DSO − DPO</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>EBITDA Estimado</strong></td>
+                                                        <td class="text-end">Q<?= number_format($ebitda, 2) ?></td>
+                                                        <td class="text-end text-muted">Utilidad antes de impuestos y depreciación</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Punto de Equilibrio</strong></td>
+                                                        <td class="text-end">Q<?= number_format($punto_equilibrio, 2) ?></td>
+                                                        <td class="text-end text-muted">Ingreso mínimo para no perder</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Apalancamiento</strong></td>
+                                                        <td class="text-end"><?= number_format($apalancamiento * 100, 2) ?>%</td>
+                                                        <td class="text-end text-muted">CxP / (CxP + Patrimonio)</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- ============= SECCIÓN 6: CUENTAS POR COBRAR Y PAGAR ============= -->
+                            <div class="accounting-section mt-5">
+                                <div class="section-header">
+                                    <h3 class="section-title h4 mb-1">
+                                        <i class="bi bi-cash-coin text-warning me-2"></i>
+                                        Cuentas por Cobrar y Pagar
+                                    </h3>
+                                    <p class="text-muted small mb-0">Estado actual de obligaciones y derechos al <?= date('Y-m-d') ?></p>
+                                </div>
+
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-6">
+                                        <div class="cxc-card">
+                                            <div class="cxc-title">
+                                                <i class="bi bi-arrow-down-circle text-success"></i> Cuentas por Cobrar (CxC)
+                                            </div>
+                                            <div class="cxc-total text-success">Q<?= number_format($cxc_total, 2) ?></div>
+                                            <table class="table table-sm mb-0">
+                                                <thead><tr><th>Rango</th><th class="text-end">Monto</th></tr></thead>
+                                                <tbody>
+                                                    <tr><td>0 – 30 días</td><td class="text-end">Q<?= number_format((float)$cxc_aging['cxc_0_30'], 2) ?></td></tr>
+                                                    <tr><td>31 – 60 días</td><td class="text-end">Q<?= number_format((float)$cxc_aging['cxc_31_60'], 2) ?></td></tr>
+                                                    <tr><td>61 – 90 días</td><td class="text-end">Q<?= number_format((float)$cxc_aging['cxc_61_90'], 2) ?></td></tr>
+                                                    <tr class="table-danger"><td>&gt; 90 días</td><td class="text-end">Q<?= number_format((float)$cxc_aging['cxc_90_mas'], 2) ?></td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="cxp-card">
+                                            <div class="cxp-title">
+                                                <i class="bi bi-arrow-up-circle text-danger"></i> Cuentas por Pagar (CxP)
+                                            </div>
+                                            <div class="cxp-total text-danger">Q<?= number_format($cxp_total, 2) ?></div>
+                                            <small class="text-muted">Saldo total pendiente con proveedores</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <?php if (!empty($top_pacientes_saldo)): ?>
+                                <div class="card shadow-sm mt-4">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="bi bi-people me-2"></i>Top 10 Pacientes con Mayor Saldo Pendiente</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Paciente</th>
+                                                        <th class="text-end">Total Cuenta</th>
+                                                        <th class="text-end">Pagado</th>
+                                                        <th class="text-end">Saldo</th>
+                                                        <th class="text-end">Días</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($top_pacientes_saldo as $pac): ?>
+                                                    <tr>
+                                                        <td><?= htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido']) ?></td>
+                                                        <td class="text-end">Q<?= number_format((float)$pac['total_general'], 2) ?></td>
+                                                        <td class="text-end text-success">Q<?= number_format((float)$pac['total_pagado'], 2) ?></td>
+                                                        <td class="text-end text-danger fw-bold">Q<?= number_format((float)$pac['saldo'], 2) ?></td>
+                                                        <td class="text-end"><?= (int)$pac['dias_mora'] ?> d</td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($top_proveedores)): ?>
+                                <div class="card shadow-sm mt-4">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="bi bi-truck me-2"></i>Top 10 Proveedores del Período</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead class="table-light">
+                                                    <tr><th>Proveedor</th><th class="text-end">Total Comprado</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($top_proveedores as $prov): ?>
+                                                    <tr>
+                                                        <td><?= htmlspecialchars($prov['provider_name']) ?></td>
+                                                        <td class="text-end">Q<?= number_format((float)$prov['total'], 2) ?></td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- ============= SECCIÓN 7: AUDITORÍA DE TRANSACCIONES ============= -->
+                            <div class="accounting-section mt-5">
+                                <div class="section-header">
+                                    <h3 class="section-title h4 mb-1">
+                                        <i class="bi bi-shield-check text-success me-2"></i>
+                                        Auditoría de Transacciones
+                                    </h3>
+                                    <p class="text-muted small mb-0">Trazabilidad completa de movimientos financieros del período</p>
+                                </div>
+
+                                <div class="card shadow-sm mt-3">
+                                    <div class="card-body">
+                                        <!-- Filtros -->
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label small">Módulo</label>
+                                                <select id="audit_filter_modulo" class="form-select form-select-sm">
+                                                    <option value="">Todos</option>
+                                                    <option value="billing">Cobros</option>
+                                                    <option value="dispensary">Dispensario</option>
+                                                    <option value="purchases">Compras</option>
+                                                    <option value="gastos">Gastos</option>
+                                                    <option value="hospitalization">Hospitalización</option>
+                                                    <option value="tarifas">Tarifas</option>
+                                                    <option value="surgery">Cirugía</option>
+                                                    <option value="inventory">Inventario</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small">Acción</label>
+                                                <select id="audit_filter_accion" class="form-select form-select-sm">
+                                                    <option value="">Todas</option>
+                                                    <option value="create">Crear</option>
+                                                    <option value="update">Actualizar</option>
+                                                    <option value="delete">Eliminar</option>
+                                                    <option value="cancel">Cancelar</option>
+                                                    <option value="export">Exportar</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small">Usuario</label>
+                                                <input type="text" id="audit_filter_usuario" class="form-control form-control-sm" placeholder="Buscar...">
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <button class="btn btn-primary btn-sm w-100" onclick="loadAuditoria()">
+                                                    <i class="bi bi-search"></i> Buscar
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div id="audit_results">
+                                            <div class="audit-loading">
+                                                <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                                                Cargando auditoría...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Resumen agregado de auditoría -->
+                                <div class="row g-3 mt-3">
+                                    <div class="col-md-6">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-bar-chart me-2"></i>Conteo por Módulo y Acción</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead><tr><th>Módulo</th><th>Acción</th><th class="text-end">Total</th></tr></thead>
+                                                        <tbody>
+                                                            <?php if (empty($audit_resumen)): ?>
+                                                                <tr><td colspan="3" class="text-center text-muted">Sin movimientos en el período</td></tr>
+                                                            <?php else: foreach ($audit_resumen as $a): ?>
+                                                                <tr>
+                                                                    <td><span class="badge bg-secondary"><?= htmlspecialchars($a['modulo']) ?></span></td>
+                                                                    <td><?= htmlspecialchars($a['accion']) ?></td>
+                                                                    <td class="text-end"><?= (int)$a['total'] ?></td>
+                                                                </tr>
+                                                            <?php endforeach; endif; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-person-badge me-2"></i>Top Usuarios con Más Movimientos</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead><tr><th>Usuario</th><th class="text-end">Movimientos</th></tr></thead>
+                                                        <tbody>
+                                                            <?php if (empty($top_usuarios_audit)): ?>
+                                                                <tr><td colspan="2" class="text-center text-muted">Sin datos</td></tr>
+                                                            <?php else: foreach ($top_usuarios_audit as $u): ?>
+                                                                <tr>
+                                                                    <td><?= htmlspecialchars($u['user_nombre'] ?? 'N/A') ?></td>
+                                                                    <td class="text-end"><?= (int)$u['movimientos'] ?></td>
+                                                                </tr>
+                                                            <?php endforeach; endif; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ============= SECCIÓN 8: EXPORTAR PDF ============= -->
+                            <div class="accounting-section mt-5 mb-5">
+                                <div class="card shadow-sm border-success">
+                                    <div class="card-body text-center p-4">
+                                        <i class="bi bi-file-pdf text-success" style="font-size: 3rem;"></i>
+                                        <h4 class="mt-2 mb-2">Auditoría Contable Completa</h4>
+                                        <p class="text-muted mb-3">
+                                            Genere un PDF profesional con todos los datos contables del período:
+                                            KPIs, ratios, CxC/CxP, top transacciones y firmas.
+                                        </p>
+                                        <a href="export_auditoria_contable.php?<?= http_build_query(['start' => substr($start_datetime, 0, 10), 'end' => substr($end_datetime, 0, 10)]) ?>"
+                                           target="_blank"
+                                           class="btn btn-success btn-lg">
+                                            <i class="bi bi-download"></i> Generar PDF de Auditoría Contable
+                                        </a>
+                                        <div class="mt-3 small text-muted">
+                                            <i class="bi bi-shield-check"></i> La generación del PDF queda registrada en la auditoría del sistema.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
-                </div>
-            </div>
+                     </div>
+                 </div>
+             </div>
 
             <!-- TAB 3: VENTAS Y RENTABILIDAD DE FARMACIA -->
             <div id="tab-pharmacy" class="tab-content">
@@ -3109,6 +3907,98 @@ try {
     </script>
     <script>
         function showPdfLoading() { Swal.fire({ title: 'Generando reporte...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }); }
+
+        // Carga el panel de auditoría con filtros
+        async function loadAuditoria() {
+            const modulo = document.getElementById('audit_filter_modulo').value;
+            const accion = document.getElementById('audit_filter_accion').value;
+            const usuario = document.getElementById('audit_filter_usuario').value;
+            const start = '<?= substr($start_datetime, 0, 10) ?>';
+            const end = '<?= substr($end_datetime, 0, 10) ?>';
+
+            const params = new URLSearchParams({ start, end, modulo, accion, usuario });
+            const results = document.getElementById('audit_results');
+            results.innerHTML = '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-success"></div> Cargando...</div>';
+
+            try {
+                const res = await fetch('get_auditoria.php?' + params.toString());
+                const json = await res.json();
+                if (!json.success) {
+                    results.innerHTML = '<div class="audit-loading text-danger"><i class="bi bi-exclamation-triangle me-2"></i> Error: ' + (json.message || 'desconocido') + '</div>';
+                    return;
+                }
+                renderAuditoria(json.data);
+            } catch (e) {
+                results.innerHTML = '<div class="audit-loading text-danger"><i class="bi bi-exclamation-triangle me-2"></i> Error de red: ' + e.message + '</div>';
+            }
+        }
+
+        function renderAuditoria(data) {
+            const results = document.getElementById('audit_results');
+            if (!data.rows || data.rows.length === 0) {
+                results.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> Sin resultados para los filtros aplicados</div>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-sm table-hover">';
+            html += '<thead class="table-light"><tr>';
+            html += '<th>Fecha</th><th>Usuario</th><th>Módulo</th><th>Acción</th><th>Tabla</th><th>ID</th><th class="text-end">Monto</th><th>Descripción</th>';
+            html += '</tr></thead><tbody>';
+
+            data.rows.forEach(r => {
+                const fecha = new Date(r.fecha_audit).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' });
+                const moduloBadge = '<span class="badge bg-secondary">' + escapeHtml(r.modulo) + '</span>';
+                const accionBadge = {
+                    'create': '<span class="badge bg-success">create</span>',
+                    'update': '<span class="badge bg-warning">update</span>',
+                    'delete': '<span class="badge bg-danger">delete</span>',
+                    'cancel': '<span class="badge bg-danger">cancel</span>',
+                    'export': '<span class="badge bg-info">export</span>',
+                }[r.accion] || '<span class="badge bg-light text-dark">' + escapeHtml(r.accion) + '</span>';
+
+                const monto = (r.monto !== null && r.monto !== undefined)
+                    ? 'Q' + parseFloat(r.monto).toFixed(2)
+                    : (r.total !== null && r.total !== undefined ? 'Q' + parseFloat(r.total).toFixed(2) : '—');
+
+                html += '<tr>';
+                html += '<td><small>' + fecha + '</small></td>';
+                html += '<td><small>' + escapeHtml(r.user_nombre || 'N/A') + '</small></td>';
+                html += '<td>' + moduloBadge + '</td>';
+                html += '<td>' + accionBadge + '</td>';
+                html += '<td><small>' + escapeHtml(r.tabla_afectada || '—') + '</small></td>';
+                html += '<td><small>' + (r.id_registro || '—') + '</small></td>';
+                html += '<td class="text-end">' + monto + '</td>';
+                html += '<td><small>' + escapeHtml((r.descripcion || '').substring(0, 80)) + '</small></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            html += '<div class="small text-muted mt-2">Mostrando ' + data.rows.length + ' registros de ' + data.total + ' totales</div>';
+            results.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        // Cargar auditoría al entrar al tab accounting
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('[data-tab]');
+            tabs.forEach(t => {
+                t.addEventListener('click', function() {
+                    if (this.dataset.tab === 'accounting') {
+                        setTimeout(loadAuditoria, 100);
+                    }
+                });
+            });
+            // Si el tab ya está activo por default
+            const activeTab = document.querySelector('.tab-button.active') || document.querySelector('[data-tab].active');
+            if (activeTab && activeTab.dataset.tab === 'accounting') {
+                setTimeout(loadAuditoria, 200);
+            }
+        });
     </script>
 </body>
 

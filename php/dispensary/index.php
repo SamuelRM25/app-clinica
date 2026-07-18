@@ -632,7 +632,7 @@ try {
                 </div>
             </div>
 
-            <!-- Estadísticas principales -->
+            <!-- Estadísticas principales (sin Q; ver Reportes > Contabilidad) -->
             <div class="stats-grid">
                 <!-- Ventas del día -->
                 <div class="stat-card animate-in delay-1">
@@ -646,7 +646,7 @@ try {
                         </div>
                     </div>
                     <div class="text-muted">
-                        Total: Q<?php echo number_format($today_sales['total'] ?? 0, 2); ?>
+                        Operaciones registradas
                     </div>
                 </div>
 
@@ -662,7 +662,7 @@ try {
                         </div>
                     </div>
                     <div class="text-muted">
-                        Total: Q<?php echo number_format($month_sales['total'] ?? 0, 2); ?>
+                        Operaciones del mes
                     </div>
                 </div>
 
@@ -678,7 +678,7 @@ try {
                         </div>
                     </div>
                     <div class="text-muted">
-                        Total: Q<?php echo number_format($total_sales['total'] ?? 0, 2); ?>
+                        Histórico acumulado
                     </div>
                 </div>
 
@@ -992,8 +992,8 @@ try {
                                 <p class="mt-2 text-muted">Cargando historial...</p>
                             </div>
                             <div class="border-top px-4 py-3 d-flex justify-content-between align-items-center bg-light">
-                                <span class="fw-bold">Total de Jornada:</span>
-                                <span class="fs-4 fw-bold text-success" id="historyTotalSum">Q0.00</span>
+                                <span class="fw-bold">Operaciones de Jornada:</span>
+                                <span class="fs-5 fw-bold text-primary" id="historyTotalSum">0</span>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="detail-pane" role="tabpanel">
@@ -2022,16 +2022,16 @@ try {
                                 tbody.appendChild(row);
                             });
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = `Q${totalJornada.toFixed(2)}`;
-                            console.log('[openHistory] rendered', data.sales.length, 'rows, total:', totalJornada);
+                            if (totalEl) totalEl.textContent = data.sales.length.toString();
+                            console.log('[openHistory] rendered', data.sales.length, 'rows');
                         } else if (data.status === 'error') {
                             tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Error del servidor: ${data.message || 'Desconocido'}</td></tr>`;
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = 'Q0.00';
+                            if (totalEl) totalEl.textContent = '0';
                         } else {
                             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en el período seleccionado.</td></tr>';
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = 'Q0.00';
+                            if (totalEl) totalEl.textContent = '0';
                             console.log('[openHistory] no sales found for period');
                         }
                     } catch (error) {

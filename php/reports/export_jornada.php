@@ -21,6 +21,12 @@ if ($user_type !== 'admin') {
     die("Acceso denegado.");
 }
 
+// Auditoría: registrar exportación
+audit_log('export', 'reports', "Exportación de Jornada: date=$date, shift=$shift, format=$format", [
+    'tabla_afectada' => 'audit_log',
+    'datos_nuevos' => ['tipo' => 'jornada', 'fecha' => $date, 'turno' => $shift, 'formato' => $format],
+]);
+
 // Obtener parámetros de fecha, formato y jornada
 $date = $_GET['date'] ?? date('Y-m-d');
 $format = $_GET['format'] ?? 'html'; // html, csv, excel, word

@@ -23,6 +23,12 @@ if ($user_type !== 'admin') {
     die("Acceso denegado.");
 }
 
+// Auditoría: registrar exportación
+audit_log('export', 'reports', "Exportación de Labs: $start_date a $end_date, format=$format", [
+    'tabla_afectada' => 'audit_log',
+    'datos_nuevos' => ['tipo' => 'labs', 'desde' => $start_date, 'hasta' => $end_date, 'formato' => $format],
+]);
+
 // Obtener parámetros de fecha y formato
 $start_date = $_GET['start'] ?? date('Y-m-01');
 $end_date = $_GET['end'] ?? date('Y-m-d');

@@ -112,6 +112,17 @@ try {
 
     $conn->commit();
 
+    audit_log('update', 'purchases', "Ajuste histórico por traslados aplicado a compra #$purchase_header_id: {$total_qty} unidades, Q{$total_reduction}", [
+        'tabla_afectada' => 'purchase_headers',
+        'id_registro' => $purchase_header_id,
+        'datos_nuevos' => [
+            'total_reduction' => $total_reduction,
+            'total_qty' => $total_qty,
+            'productos' => $product_details,
+            'notas' => $notes,
+        ],
+    ]);
+
     ob_clean();
     echo json_encode([
         'success' => true,

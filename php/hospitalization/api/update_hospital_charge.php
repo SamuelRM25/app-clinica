@@ -70,12 +70,22 @@ try {
     $id_cuenta = $cargo_info['id_cuenta'];
 
     // 2. Update the charge (manually recalculate subtotal)
+    // Capture OLD values for audit
+    $stmt_old = $conn->prepare("SELECT descripcion, cantidad, precio_unitario, tipo_cargo, subtotal, id_inventario FROM cargos_hospitalarios WHERE id_cargo = ?");
+    $stmt_old->execute([$id_cargo]);
+    $old_charge = $stmt_old->fetch(PDO::FETCH_ASSOC);
+
     $stmt_update = $conn->prepare("
-        UPDATE cargos_hospitalarios 
+        UPDATE cargos_hospitalarios
         SET descripcion = ?, cantidad = ?, precio_unitario = ?
         WHERE id_cargo = ? AND id_hospital = ?
     ");
     $stmt_update->execute([$descripcion, $cantidad, $precio_unitario, $id_cargo, $id_hospital]);
+
+    // Fetch NEW values for audit
+    $stmt_new = $conn->prepare("SELECT descripcion, cantidad, precio_unitario, tipo_cargo, subtotal FROM cargos_hospitalarios WHERE id_cargo = ?");
+    $stmt_new->execute([$id_cargo]);
+    $new_charge = $stmt_new->fetch(PDO::FETCH_ASSOC);
 
     // 3. Recalculate account totals (copied logic from detalle_encamamiento.php)
     $stmt_sync = $conn->prepare("
@@ -94,6 +104,13 @@ try {
     $stmt_sync->execute([$id_cuenta]);
 
     $conn->commit();
+
+    audit_log('update', 'hospitalization', "Cargo #$id_cargo actualizado: {$descripcion} (Cant: $cantidad x Q$precio_unitario)", [
+        'tabla_afectada' => 'cargos_hospitalarios',
+        'id_registro' => $id_cargo,
+        'datos_anteriores' => $old_charge,
+        'datos_nuevos' => array_merge($new_charge, ['id_cuenta' => $id_cuenta]),
+    ]);
 
     echo json_encode([
         'status' => 'success',

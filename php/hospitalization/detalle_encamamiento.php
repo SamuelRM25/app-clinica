@@ -123,6 +123,11 @@ try {
         // Check if this is a "RETRASADO" admission
         $is_retrasado_record = (strpos($encamamiento['notas_ingreso'] ?? '', '[RETRASADO]') !== false);
 
+        // Detectar si el encamamiento es post-traslado de cirugía para tarifa fija Q600
+        $es_post_operatorio = (strpos($encamamiento['notas_ingreso'] ?? '', 'Auto-trasladado desde cirugía') !== false);
+        // Tarifa fija Q600 por noche para post-operatorio de cirugía, sino la tarifa normal del cuarto
+        $tarifa_a_aplicar = $es_post_operatorio ? 600.00 : (float)$encamamiento['tarifa_por_noche'];
+
         // We charge for the first day, and every midnight that passed
         // SKIP if it's a delayed record to avoid automatic charges for retrospective days
         $interval = new DateInterval('P1D');
@@ -140,11 +145,12 @@ try {
                     (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
                     VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?, ?)
                 ");
-                $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")";
+                $sufijo_postop = $es_post_operatorio ? ' [Post-operatorio Q600]' : '';
+                $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")" . $sufijo_postop;
                 $stmt_add_night->execute([
                     $id_cuenta,
                     $desc,
-                    $encamamiento['tarifa_por_noche'],
+                    $tarifa_a_aplicar,
                     $date_str,
                     $user_id,
                     $id_hospital
@@ -779,7 +785,7 @@ output_keep_alive_script();
 
                     <?php echo '<!-- DEBUG: $cuenta=' . ($cuenta ? 'TRUTHY total='.$cuenta['total_general'] : 'FALSY') . ' id_hospital='.$id_hospital.' -->'; ?>
                     <?php if ($cuenta): ?>
-                            <!-- Account Summary Grid -->
+                            <!-- Resumen financiero del paciente -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-3">
                                     <div class="stat-card p-3 h-100">

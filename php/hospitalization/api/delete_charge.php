@@ -50,7 +50,12 @@ try {
     }
     $id_cuenta = $cuenta['id_cuenta'];
 
-    // 2. Intentar revertir stock si el cargo es de medicamento/inventario
+    // 2. Capturar datos del cargo ANTES de cancelar (para auditoría)
+    $stmt_old = $conn->prepare("SELECT id_cargo, id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, id_inventario, referencia_id, referencia_tabla FROM cargos_hospitalarios WHERE id_cargo = ? AND id_cuenta = ?");
+    $stmt_old->execute([$id_cargo, $id_cuenta]);
+    $old_charge = $stmt_old->fetch(PDO::FETCH_ASSOC);
+
+    // 3. Intentar revertir stock si el cargo es de medicamento/inventario
     $reversion_info = revertirStockSiProcede($conn, $id_cargo, $id_hospital, $user_id, 'Eliminado manualmente desde hospitalización');
 
     // 3. Si revertirStockSiProcede devolvió reverted=false porque el cargo ya estaba cancelado,
@@ -85,6 +90,18 @@ try {
     $stmt_sync->execute([$id_cuenta]);
 
     $conn->commit();
+
+    // Auditoría: registrar cancelación de cargo
+    audit_log($old_charge ? 'delete' : 'cancel', 'hospitalization', "Cargo #$id_cargo cancelado: {$old_charge['descripcion']} (Subtotal: Q{$old_charge['subtotal']})" . ($reversion_info['reverted'] ? " + Stock revertido: {$reversion_info['cantidad']} unid de {$reversion_info['medicamento']}" : ''), [
+        'tabla_afectada' => 'cargos_hospitalarios',
+        'id_registro' => $id_cargo,
+        'datos_anteriores' => $old_charge,
+        'datos_nuevos' => [
+            'cancelado' => 1,
+            'motivo' => 'Eliminado por el usuario',
+            'stock_revertido' => $reversion_info['reverted'] ?? false,
+        ],
+    ]);
 
     // Respuesta estructurada
     if ($reversion_info['reverted']) {

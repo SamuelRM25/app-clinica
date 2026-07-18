@@ -16,6 +16,12 @@ if ($_SESSION['tipoUsuario'] !== 'admin') {
     die("Acceso denegado.");
 }
 
+// Auditoría: registrar exportación
+audit_log('export', 'reports', "Exportación de Rentabilidad: $start_date a $end_date, format=$format", [
+    'tabla_afectada' => 'audit_log',
+    'datos_nuevos' => ['tipo' => 'rentabilidad', 'desde' => $start_date, 'hasta' => $end_date, 'formato' => $format],
+]);
+
 // Obtener parámetros
 $start_date = $_GET['start'] ?? date('Y-m-01');
 $end_date = $_GET['end'] ?? date('Y-m-d');

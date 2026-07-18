@@ -20,6 +20,12 @@ if (!in_array($user_id, [1, 9, 10])) {
     die("Acceso denegado.");
 }
 
+// Auditoría: registrar exportación
+audit_log('export', 'reports', "Exportación de Traslados: $start_date a $end_date", [
+    'tabla_afectada' => 'audit_log',
+    'datos_nuevos' => ['tipo' => 'traslados', 'desde' => $start_date, 'hasta' => $end_date],
+]);
+
 // Obtener parámetros de fecha
 $start_date = $_GET['start'] ?? date('Y-m-01');
 $end_date = $_GET['end'] ?? date('Y-m-d');

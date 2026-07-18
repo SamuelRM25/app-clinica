@@ -287,17 +287,17 @@ try {
                     </div>
                 </div>
 
-                <div class="stat-card animate-in delay-4">
+                <div class="stat-card animate-in delay-4 border-start border-info border-4">
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Ingresos Estimados</div>
-                            <div class="stat-value">Q<?php echo number_format($stats['ingresos_estimados'] ?? 0, 2); ?>
-                            </div>
+                            <div class="stat-value text-info"><?= number_format((float)($stats['ingresos_estimados'] ?? 0), 2) ?></div>
                         </div>
-                        <div class="stat-icon success">
-                            <i class="bi bi-currency-dollar"></i>
+                        <div class="stat-icon info">
+                            <i class="bi bi-cash-stack"></i>
                         </div>
                     </div>
+                    <small class="text-muted">Total estimado del día</small>
                 </div>
             </div>
 

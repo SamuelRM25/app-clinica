@@ -440,7 +440,7 @@ try {
                 </div>
             </div>
 
-            <!-- Estadísticas principales -->
+            <!-- Estadísticas principales (sin Q; ver Reportes > Contabilidad) -->
             <div class="stats-grid">
                 <!-- Compras del mes -->
                 <div class="stat-card animate-in delay-1">
@@ -455,7 +455,7 @@ try {
                     </div>
                     <div class="stat-change positive">
                         <i class="bi bi-currency-exchange"></i>
-                        <span>Total: Q<?php echo number_format($month_total, 2); ?></span>
+                        <span>Operaciones del mes</span>
                     </div>
                 </div>
 
@@ -472,7 +472,7 @@ try {
                     </div>
                     <div class="stat-change">
                         <i class="bi bi-cash-coin"></i>
-                        <span>Saldo: Q<?php echo number_format($total_balance, 2); ?></span>
+                        <span>Documentos por liquidar</span>
                     </div>
                 </div>
 
@@ -489,7 +489,7 @@ try {
                     </div>
                     <div class="stat-change positive">
                         <i class="bi bi-arrow-up-right"></i>
-                        <span>Total: Q<?php echo number_format($today_total, 2); ?></span>
+                        <span>Operaciones del día</span>
                     </div>
                 </div>
 
@@ -506,7 +506,7 @@ try {
                     </div>
                     <div class="stat-change">
                         <i class="bi bi-currency-exchange"></i>
-                        <span>Total: Q<?php echo number_format($old_total, 2); ?></span>
+                        <span>Histórico pendiente</span>
                     </div>
                 </div>
 
@@ -538,9 +538,6 @@ try {
                 </button>
                 <button class="tab-btn" data-tab="paid-payments">
                     <i class="bi bi-check-circle me-2"></i>Pagos Realizados
-                </button>
-                <button class="tab-btn" data-tab="accounting">
-                    <i class="bi bi-bar-chart-line me-2"></i>Contabilidad
                 </button>
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
@@ -982,132 +979,6 @@ try {
                 </section>
             </div>
 
-            <!-- Pestaña: Contabilidad -->
-            <div class="tab-content" id="accounting-tab">
-                <section class="appointments-section animate-in">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-bar-chart-line text-primary section-title-icon"></i>
-                            Contabilidad de Compras
-                        </h3>
-                    </div>
-
-                    <!-- Filtros de período -->
-                    <div class="accounting-filters mb-4">
-                        <div class="btn-group" role="group" aria-label="Filtros de período">
-                            <button type="button" class="btn btn-outline-primary active" data-accounting-period="current_month">
-                                <i class="bi bi-calendar-month me-1"></i> Mes Actual
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" data-accounting-period="previous_month">
-                                <i class="bi bi-calendar-minus me-1"></i> Mes Anterior
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" data-accounting-period="specific_month">
-                                <i class="bi bi-calendar3 me-1"></i> Específico
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" data-accounting-period="all">
-                                <i class="bi bi-infinity me-1"></i> General
-                            </button>
-                        </div>
-                        <div class="mt-2" id="specificMonthContainer" style="display:none;">
-                            <input type="month" id="specificMonthInput" class="form-control form-control-sm" style="max-width: 200px;" value="<?php echo date('Y-m'); ?>">
-                        </div>
-                        <small class="text-muted mt-2 d-block">
-                            <i class="bi bi-info-circle"></i> Período: <strong id="accountingPeriodLabel"><?php echo date('Y-m'); ?></strong>
-                        </small>
-                    </div>
-
-                    <!-- Loading -->
-                    <div id="accountingLoading" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
-                        </div>
-                        <p class="text-muted mt-2">Cargando contabilidad...</p>
-                    </div>
-
-                    <!-- Contenido principal (oculto hasta cargar) -->
-                    <div id="accountingContent" style="display:none;">
-                        <!-- KPIs -->
-                        <div class="accounting-kpi-grid mb-4">
-                            <div class="accounting-kpi accounting-kpi--primary">
-                                <div class="accounting-kpi__icon"><i class="bi bi-cart-plus"></i></div>
-                                <div class="accounting-kpi__body">
-                                    <div class="accounting-kpi__label">Total Comprado</div>
-                                    <div class="accounting-kpi__value" id="kpiCompradoTotal">Q 0.00</div>
-                                    <div class="accounting-kpi__meta"><span id="kpiCompradoNum">0</span> compras</div>
-                                </div>
-                            </div>
-                            <div class="accounting-kpi accounting-kpi--success">
-                                <div class="accounting-kpi__icon"><i class="bi bi-cash-coin"></i></div>
-                                <div class="accounting-kpi__body">
-                                    <div class="accounting-kpi__label">Total Pagado</div>
-                                    <div class="accounting-kpi__value" id="kpiPagadoTotal">Q 0.00</div>
-                                    <div class="accounting-kpi__meta"><span id="kpiPagadoNum">0</span> pagos realizados</div>
-                                </div>
-                            </div>
-                            <div class="accounting-kpi accounting-kpi--warning">
-                                <div class="accounting-kpi__icon"><i class="bi bi-exclamation-circle"></i></div>
-                                <div class="accounting-kpi__body">
-                                    <div class="accounting-kpi__label">Saldo Pendiente</div>
-                                    <div class="accounting-kpi__value" id="kpiPendienteSaldo">Q 0.00</div>
-                                    <div class="accounting-kpi__meta"><span id="kpiPendienteNum">0</span> compras pendientes</div>
-                                </div>
-                            </div>
-                            <div class="accounting-kpi accounting-kpi--info">
-                                <div class="accounting-kpi__icon"><i class="bi bi-building"></i></div>
-                                <div class="accounting-kpi__body">
-                                    <div class="accounting-kpi__label">Proveedores</div>
-                                    <div class="accounting-kpi__value" id="kpiProveedores">0</div>
-                                    <div class="accounting-kpi__meta">proveedores únicos</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Detalle por proveedor -->
-                        <div class="accounting-section mb-4">
-                            <h4 class="accounting-section__title"><i class="bi bi-building me-2"></i>Detalle por Proveedor</h4>
-                            <div class="accounting-table-wrap" data-tarifa-table>
-                                <table class="accounting-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Proveedor</th>
-                                            <th class="text-center"># Compras</th>
-                                            <th class="text-end">Total Comprado</th>
-                                            <th class="text-end">Total Pagado</th>
-                                            <th class="text-end">Saldo</th>
-                                            <th style="width: 180px;">% Pagado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="accountingProveedorBody">
-                                        <tr><td colspan="6" class="text-center text-muted py-4">Sin datos para el período</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Resumen últimos 12 meses -->
-                        <div class="accounting-section">
-                            <h4 class="accounting-section__title"><i class="bi bi-calendar3 me-2"></i>Resumen Últimos 12 Meses</h4>
-                            <div class="accounting-table-wrap" data-tarifa-table>
-                                <table class="accounting-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Mes</th>
-                                            <th class="text-center"># Compras</th>
-                                            <th class="text-end">Total Comprado</th>
-                                            <th class="text-center"># Pagos</th>
-                                            <th class="text-end">Total Pagado</th>
-                                            <th class="text-end">Diferencia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="accountingMensualBody">
-                                        <tr><td colspan="6" class="text-center text-muted py-4">Sin datos</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
 
             <!-- Pestaña: Top Proveedores -->
             <div class="tab-content" id="top-providers-tab">

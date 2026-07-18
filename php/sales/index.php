@@ -545,7 +545,7 @@ try {
                 </div>
             </div>
 
-            <!-- Estadísticas principales -->
+            <!-- Estadísticas principales (sin Q; ver Reportes > Contabilidad) -->
             <div class="stats-grid">
                 <!-- Ventas de hoy -->
                 <div class="stat-card animate-in delay-1">
@@ -569,7 +569,7 @@ try {
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Recaudado Hoy</div>
-                            <div class="stat-value">Q<?php echo number_format($total_hoy, 2); ?></div>
+                            <div class="stat-value"><?= $ventas_hoy ?> ops</div>
                         </div>
                         <div class="stat-icon success">
                             <i class="bi bi-currency-dollar"></i>
@@ -577,7 +577,7 @@ try {
                     </div>
                     <div class="stat-change positive">
                         <i class="bi bi-graph-up-arrow"></i>
-                        <span>Total del día</span>
+                        <span>Operaciones del día</span>
                     </div>
                 </div>
 
@@ -586,7 +586,7 @@ try {
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Ventas Mes</div>
-                            <div class="stat-value">Q<?php echo number_format($total_mes, 2); ?></div>
+                            <div class="stat-value"><?= $ventas_mes ?> ops</div>
                         </div>
                         <div class="stat-icon info">
                             <i class="bi bi-calendar-month"></i>

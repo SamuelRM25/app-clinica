@@ -213,56 +213,15 @@ try {
     $show_appointments = isset($widget_settings['widget-appointments']) ? (int) $widget_settings['widget-appointments'] : 1;
     $show_hospitalized = isset($widget_settings['widget-hospitalized']) ? (int) $widget_settings['widget-hospitalized'] : 1;
     $show_alerts = isset($widget_settings['widget-alerts']) ? (int) $widget_settings['widget-alerts'] : 1;
-    $show_revenue = isset($widget_settings['widget-revenue']) ? (int) $widget_settings['widget-revenue'] : 1;
+    // widget-revenue eliminado — ver Reportes > Contabilidad & Ratios
     $show_inventory = isset($widget_settings['widget-inventory']) ? (int) $widget_settings['widget-inventory'] : 1;
     $show_patients = isset($widget_settings['widget-patients']) ? (int) $widget_settings['widget-patients'] : 1;
     $show_calendar = isset($widget_settings['widget-calendar']) ? (int) $widget_settings['widget-calendar'] : 1;
     $show_labs = isset($widget_settings['widget-labs']) ? (int) $widget_settings['widget-labs'] : 1;
 
     // ============ DATA FOR ADDITIONAL WIDGETS ============
-    // 1. Revenue data
-    $revenue_ventas = 0;
-    $revenue_proc = 0;
-    $revenue_exams = 0;
-    $revenue_consults = 0;
-    $revenue_hosp = 0;
-
-    try {
-        $stmt = $conn->prepare("SELECT SUM(total) FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND id_hospital = ?");
-        $stmt->execute([$hospital_id]);
-        $revenue_ventas = (float) $stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {
-    }
-
-    try {
-        $stmt = $conn->prepare("SELECT SUM(cobro) FROM procedimientos_menores WHERE MONTH(fecha_procedimiento) = MONTH(CURDATE()) AND YEAR(fecha_procedimiento) = YEAR(CURDATE()) AND id_hospital = ?");
-        $stmt->execute([$id_hospital]);
-        $revenue_proc = (float) $stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {
-    }
-
-    try {
-        $stmt = $conn->prepare("SELECT SUM(cobro) FROM examenes_realizados WHERE MONTH(fecha_examen) = MONTH(CURDATE()) AND YEAR(fecha_examen) = YEAR(CURDATE()) AND id_hospital = ?");
-        $stmt->execute([$id_hospital]);
-        $revenue_exams = (float) $stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {
-    }
-
-    try {
-        $stmt = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE MONTH(fecha_consulta) = MONTH(CURDATE()) AND YEAR(fecha_consulta) = YEAR(CURDATE()) AND id_hospital = ?");
-        $stmt->execute([$id_hospital]);
-        $revenue_consults = (float) $stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {
-    }
-
-    try {
-        $stmt = $conn->prepare("SELECT SUM(total_general) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE MONTH(e.fecha_alta) = MONTH(CURDATE()) AND YEAR(e.fecha_alta) = YEAR(CURDATE()) AND e.id_hospital = ?");
-        $stmt->execute([$id_hospital]);
-        $revenue_hosp = (float) $stmt->fetchColumn() ?: 0;
-    } catch (\Exception $e) {
-    }
-
-    $total_monthly_revenue = $revenue_ventas + $revenue_proc + $revenue_exams + $revenue_consults + $revenue_hosp;
+    // Widget "Ingresos del Mes" eliminado: ahora vive en Reportes > Contabilidad & Ratios
+    // (acceso solo admin). Mantenemos counts operativos (citas/pacientes) en este dashboard.
 
     // 2. Patients widget data
     $total_patients_count = 0;
@@ -2351,98 +2310,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
             <!-- ============ NEW WIDGETS ============ -->
 
-            <!-- 1. WIDGET REVENUE (Ingresos del Mes) -->
-            <?php if ($show_revenue): ?>
-                    <section class="appointments-section animate-in delay-3" id="widget-revenue">
-                        <div class="section-header">
-                            <h3 class="section-title">
-                                <i class="bi bi-currency-dollar text-success section-title-icon"></i>
-                                Ingresos Generales del Mes (Estimado)
-                            </h3>
-                            <div class="badge bg-success p-2 fs-6">
-                                Total: Q<?php echo number_format($total_monthly_revenue, 2); ?>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 p-3">
-                            <div class="col-md-4">
-                                <div class="stat-card border-start border-success border-4 shadow-sm h-100 mb-0">
-                                    <div class="stat-header">
-                                        <div>
-                                            <div class="stat-title text-success">Ventas de Farmacia</div>
-                                            <div class="stat-value text-success" style="font-size: 1.25rem;">
-                                                Q<?php echo number_format($revenue_ventas, 2); ?></div>
-                                        </div>
-                                        <div class="stat-icon success">
-                                            <i class="bi bi-capsule"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card border-start border-primary border-4 shadow-sm h-100 mb-0">
-                                    <div class="stat-header">
-                                        <div>
-                                            <div class="stat-title text-primary">Consultas Médicas</div>
-                                            <div class="stat-value text-primary" style="font-size: 1.25rem;">
-                                                Q<?php echo number_format($revenue_consults, 2); ?></div>
-                                        </div>
-                                        <div class="stat-icon primary">
-                                            <i class="bi bi-people-fill"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card border-start border-warning border-4 shadow-sm h-100 mb-0">
-                                    <div class="stat-header">
-                                        <div>
-                                            <div class="stat-title text-warning">Procedimientos Menores</div>
-                                            <div class="stat-value text-warning" style="font-size: 1.25rem;">
-                                                Q<?php echo number_format($revenue_proc, 2); ?></div>
-                                        </div>
-                                        <div class="stat-icon warning">
-                                            <i class="bi bi-bandaid-fill"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mt-3">
-                                <div class="stat-card border-start border-info border-4 shadow-sm h-100 mb-0">
-                                    <div class="stat-header">
-                                        <div>
-                                            <div class="stat-title text-info">Exámenes de Laboratorio</div>
-                                            <div class="stat-value text-info" style="font-size: 1.25rem;">
-                                                Q<?php echo number_format($revenue_exams, 2); ?></div>
-                                        </div>
-                                        <div class="stat-icon info">
-                                            <i class="bi bi-droplet-fill"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mt-3">
-                                <div class="stat-card border-start border-secondary border-4 shadow-sm h-100 mb-0">
-                                    <div class="stat-header">
-                                        <div>
-                                            <div class="stat-title text-secondary">Cuentas de Hospitalización</div>
-                                            <div class="stat-value text-secondary" style="font-size: 1.25rem;">
-                                                Q<?php echo number_format($revenue_hosp, 2); ?></div>
-                                        </div>
-                                        <div class="stat-icon secondary">
-                                            <i class="bi bi-hospital"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-center mt-3 p-2">
-                            <a href="../reports/index.php" class="text-primary text-decoration-none fw-bold">
-                                Ir al Centro de Analítica <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </section>
-            <?php endif; ?>
+            <!-- 1. WIDGET REVENUE eliminado: ahora vive en Reportes > Contabilidad & Ratios (solo admin) -->
 
             <!-- 2. WIDGET INVENTORY (Resumen de Inventario) -->
             <?php if ($show_inventory): ?>
@@ -4753,7 +4621,6 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
                 { id: 'widget-appointments', name: 'Citas de Hoy' },
                 { id: 'widget-hospitalized', name: 'Pacientes Hospitalizados' },
                 { id: 'widget-alerts', name: 'Panel de Alertas' },
-                { id: 'widget-revenue', name: 'Ingresos Mensuales' },
                 { id: 'widget-inventory', name: 'Monitoreo de Inventario' },
                 { id: 'widget-patients', name: 'Últimos Pacientes Registrados' },
                 { id: 'widget-calendar', name: 'Agenda Semanal' },
