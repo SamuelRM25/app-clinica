@@ -232,6 +232,23 @@ $queries['pago_proveedores'] = [
               JOIN purchase_headers ph ON pp.purchase_header_id = ph.id
               WHERE pp.payment_date BETWEEN ? AND ?
                 AND pp.id_hospital = ?
+                AND pp.payment_method != 'Traslado'
+              ORDER BY pp.payment_date DESC, pp.created_at DESC",
+    'params' => [$start, $end, $id_hospital],
+];
+
+$queries['pago_traslado'] = [
+    'sql' => "SELECT
+                pp.payment_date AS fecha,
+                ph.provider_name AS paciente,
+                CONCAT(ph.document_type, ' ', COALESCE(ph.document_number, ''), ' (#', ph.id, ') — ', pp.payment_method) AS descripcion,
+                pp.amount AS monto,
+                0 AS costo
+              FROM purchase_payments pp
+              JOIN purchase_headers ph ON pp.purchase_header_id = ph.id
+              WHERE pp.payment_date BETWEEN ? AND ?
+                AND pp.id_hospital = ?
+                AND pp.payment_method = 'Traslado'
               ORDER BY pp.payment_date DESC, pp.created_at DESC",
     'params' => [$start, $end, $id_hospital],
 ];
@@ -249,7 +266,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['gastos_varios', 'pago_proveedores']);
+    $has_costo = !in_array($categoria, ['gastos_varios', 'pago_proveedores', 'pago_traslado']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);

@@ -34,7 +34,7 @@ try {
 
     // Verificar si ya se aplicó un ajuste (nuevo sistema o histórico)
     $stmt_applied = $conn->prepare("SELECT COUNT(*) FROM purchase_payments
-        WHERE purchase_header_id = ? AND payment_method = 'Transferencia' AND id_hospital = ?");
+        WHERE purchase_header_id = ? AND payment_method = 'Traslado' AND id_hospital = ?");
     $stmt_applied->execute([$purchase_id, $id_hospital]);
     $already_applied = (int)$stmt_applied->fetchColumn() > 0;
 

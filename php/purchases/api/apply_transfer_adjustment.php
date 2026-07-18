@@ -35,9 +35,9 @@ try {
 
     $conn->beginTransaction();
 
-    // 1. Verificar idempotencia (cualquier pago Transferencia ya cubre los ajustes)
+    // 1. Verificar idempotencia (cualquier pago Traslado ya cubre los ajustes)
     $stmt_check = $conn->prepare("SELECT COUNT(*) FROM purchase_payments
-        WHERE purchase_header_id = ? AND payment_method = 'Transferencia' AND id_hospital = ?");
+        WHERE purchase_header_id = ? AND payment_method = 'Traslado' AND id_hospital = ?");
     $stmt_check->execute([$purchase_header_id, $id_hospital]);
     if ((int)$stmt_check->fetchColumn() > 0) {
         throw new Exception('El ajuste histórico ya fue aplicado anteriormente.');
@@ -106,7 +106,7 @@ try {
     $stmt_pay = $conn->prepare("
         INSERT INTO purchase_payments
             (purchase_header_id, amount, payment_date, payment_method, notes, id_hospital)
-        VALUES (?, ?, NOW(), 'Transferencia', ?, ?)
+        VALUES (?, ?, NOW(), 'Traslado', ?, ?)
     ");
     $stmt_pay->execute([$purchase_header_id, $total_reduction, $notes, $id_hospital]);
 

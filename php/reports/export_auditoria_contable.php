@@ -89,15 +89,19 @@ try {
     $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound + $total_xray + $total_electro + $total_billings + $total_hospitalization;
 
     // === EGRESOS ===
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(pp.amount), 0) FROM purchase_payments pp JOIN purchase_headers ph ON pp.purchase_header_id = ph.id WHERE pp.payment_date BETWEEN ? AND ? AND pp.id_hospital = ?");
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(pp.amount), 0) FROM purchase_payments pp JOIN purchase_headers ph ON pp.purchase_header_id = ph.id WHERE pp.payment_date BETWEEN ? AND ? AND pp.id_hospital = ? AND pp.payment_method != 'Traslado'");
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_purchases_meds = (float)$stmt->fetchColumn();
+
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(pp.amount), 0) FROM purchase_payments pp WHERE pp.payment_date BETWEEN ? AND ? AND pp.id_hospital = ? AND pp.payment_method = 'Traslado'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_pagos_traslado = (float)$stmt->fetchColumn();
 
     $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_gastos = (float)$stmt->fetchColumn();
 
-    $total_egresos = $total_purchases_meds + $total_gastos;
+    $total_egresos = $total_purchases_meds + $total_gastos + $total_pagos_traslado;
 
     // Costos farmacia (purchase_items JOIN)
     $stmt = $conn->prepare("SELECT COALESCE(SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)), 0) FROM detalle_ventas dv JOIN ventas v ON dv.id_venta = v.id_venta JOIN inventario i ON dv.id_inventario = i.id_inventario LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id WHERE v.fecha_venta BETWEEN ? AND ? AND v.id_hospital = ? AND v.tipo_pago != 'Traslado'");
@@ -185,14 +189,14 @@ try {
     $stmt->execute([$start_date, $end_date, $id_hospital]);
     $total_compras_pagadas = (float)$stmt->fetchColumn();
 
-    // 6) Traslados en costo de compra (incluye Transferencia con precio_venta=0)
+    // 6) Traslados en costo de compra
     $stmt = $conn->prepare("SELECT COALESCE(SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)), 0)
                            FROM detalle_ventas dv
                            JOIN ventas v ON dv.id_venta = v.id_venta
                            JOIN inventario i ON dv.id_inventario = i.id_inventario
                            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
                            WHERE v.fecha_venta BETWEEN ? AND ? AND v.id_hospital = ?
-                             AND v.tipo_pago IN ('Traslado','Transferencia') AND dv.precio_unitario = 0");
+                             AND v.tipo_pago = 'Traslado' AND dv.precio_unitario = 0");
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_traslados_costo = (float)$stmt->fetchColumn();
 
@@ -292,6 +296,7 @@ try {
 
     $egresos_cat = [
         ['Pago a Proveedores', $total_purchases_meds],
+        ['Pago por Traslado', $total_pagos_traslado],
         ['Gastos Generales', $total_gastos],
     ];
 

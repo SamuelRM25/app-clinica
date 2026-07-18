@@ -142,7 +142,7 @@ try {
         $stmt_ins_pay = $conn->prepare("
             INSERT INTO purchase_payments
                 (purchase_header_id, amount, payment_date, payment_method, notes, id_hospital)
-            VALUES (?, ?, NOW(), 'Transferencia', ?, ?)
+            VALUES (?, ?, NOW(), 'Traslado', ?, ?)
         ");
 
         foreach ($data['items'] as $item) {
@@ -184,7 +184,7 @@ try {
             ]);
 
             // Registrar abono documentando el traslado
-            $notes = "Transferencia: {$item['cantidad']} unid de {$product_name} a {$destination}. Valor: Q{$reduction}";
+            $notes = "Traslado: {$item['cantidad']} unid de {$product_name} a {$destination}. Valor: Q{$reduction}";
             $stmt_ins_pay->execute([
                 $pi_row['purchase_header_id'],
                 $reduction,
