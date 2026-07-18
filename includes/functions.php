@@ -572,7 +572,7 @@ function revertirStockSiProcede($conn, $id_cargo, $id_hospital, $user_id, $notas
  *
  * @return array Mismo formato que revertirStockSiProcede
  */
-function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id, $notas_extra = '') {
+function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id, $notas_extra = '', $cantidad_retorno = null) {
     $stmt = $conn->prepare("SELECT cc.*, inv.nom_medicamento
                             FROM cirugia_consumos cc
                             JOIN inventario inv ON cc.id_inventario = inv.id_inventario
@@ -585,10 +585,20 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
     }
 
     $id_inventario = (int)$consumo['id_inventario'];
-    $cantidad = (float)$consumo['cantidad'];
+    $cantidad_original = (float)$consumo['cantidad'];
+    // Si no se especifica cantidad, se retorna todo (comportamiento legacy)
+    if ($cantidad_retorno === null || $cantidad_retorno <= 0) {
+        $cantidad_retorno = $cantidad_original;
+    }
+    if ($cantidad_retorno > $cantidad_original) {
+        return ['reverted' => false, 'error' => 'La cantidad a retornar no puede ser mayor a la consumida'];
+    }
+    $cantidad = (float)$cantidad_retorno;
+    $cantidad_restante = $cantidad_original - $cantidad;
+    $es_retorno_total = ($cantidad_restante <= 0);
     $stock_column = 'stock_quirofano';
 
-    // 1. Revertir stock
+    // 1. Revertir stock (solo la cantidad devuelta)
     $stmtRevert = $conn->prepare("UPDATE inventario SET {$stock_column} = {$stock_column} + ?
                                     WHERE id_inventario = ? AND id_hospital = ?");
     $stmtRevert->execute([$cantidad, $id_inventario, $id_hospital]);
@@ -600,9 +610,14 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
 
     $medicamento = $consumo['nom_medicamento'];
 
-    // 3. Eliminar el registro del consumo
-    $stmtDel = $conn->prepare("DELETE FROM cirugia_consumos WHERE id = ?");
-    $stmtDel->execute([$id_consumo]);
+    // 3. Si es retorno total → eliminar; si es parcial → reducir cantidad
+    if ($es_retorno_total) {
+        $stmtDel = $conn->prepare("DELETE FROM cirugia_consumos WHERE id = ?");
+        $stmtDel->execute([$id_consumo]);
+    } else {
+        $stmtUpd = $conn->prepare("UPDATE cirugia_consumos SET cantidad = cantidad - ? WHERE id = ?");
+        $stmtUpd->execute([$cantidad, $id_consumo]);
+    }
 
     // 4. Si existe cargo en cargos_hospitalarios relacionado, cancelarlo también
     // (Mejor esfuerzo: buscar por id_cirugia + id_inventario + descripción)
@@ -631,7 +646,8 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
         $stmtLog = $conn->prepare("INSERT INTO movimientos_stock_log
                                     (id_inventario, id_hospital, id_referencia, tabla_origen, tipo_movimiento, stock_column, cantidad, usuario_id, notas)
                                     VALUES (?, ?, ?, 'cirugia_consumos', 'reversion', ?, ?, ?, ?)");
-        $notas_log = 'Reversión por eliminación de consumo de cirugía #' . $consumo['id_cirugia'];
+        $tipo_mov = $es_retorno_total ? 'reversion' : 'reversion_parcial';
+        $notas_log = ($es_retorno_total ? 'Reversión total' : 'Reversión parcial de ' . $cantidad . ' (quedan ' . $cantidad_restante . ')') . ' — Cirugía #' . $consumo['id_cirugia'];
         if ($notas_extra) $notas_log .= '. ' . $notas_extra;
         $stmtLog->execute([$id_inventario, $id_hospital, $id_consumo, $stock_column, $cantidad, $user_id, $notas_log]);
     } catch (Exception $e) {
@@ -639,11 +655,16 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
     }
 
     if (function_exists('audit_log')) {
-        audit_log('update', 'inventory', "Reversión stock (cirugía): {$medicamento} x {$cantidad}", [
+        $msgAudit = $es_retorno_total
+            ? "Reversión stock (cirugía): {$medicamento} x {$cantidad}"
+            : "Reversión parcial stock (cirugía): {$medicamento} x {$cantidad} (quedan {$cantidad_restante})";
+        audit_log('update', 'inventory', $msgAudit, [
             'id_inventario' => $id_inventario,
             'id_consumo' => $id_consumo,
             'stock_column' => $stock_column,
             'cantidad' => $cantidad,
+            'cantidad_restante' => $cantidad_restante,
+            'retorno_total' => $es_retorno_total,
             'stock_nuevo' => $stock_nuevo
         ]);
     }
@@ -653,6 +674,8 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
         'id_inventario' => $id_inventario,
         'medicamento' => $medicamento,
         'cantidad' => $cantidad,
+        'cantidad_restante' => $cantidad_restante,
+        'retorno_total' => $es_retorno_total,
         'stock_column' => $stock_column,
         'stock_nuevo' => $stock_nuevo,
         'origen_label' => 'Quirófano'

@@ -342,11 +342,11 @@ try {
 // ============ RATIOS FINANCIEROS + CxC / CxP ============
 
     // Rotación de inventario = Costo de Ventas / Inventario Promedio
-    $stmt_inv_prom = $conn->prepare("SELECT COALESCE(AVG(stock_hospital + stock_quirofano), 0) FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
+    $stmt_inv_prom = $conn->prepare("SELECT COALESCE(AVG(stock_hospital + stock_quirofano + cantidad_med), 0) FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
     $stmt_inv_prom->execute([$id_hospital]);
     $inventario_promedio_unidades = (float)$stmt_inv_prom->fetchColumn();
     // Valor del inventario promedio (unidades * costo promedio)
-    $stmt_inv_val = $conn->prepare("SELECT COALESCE(AVG((stock_hospital + stock_quirofano) * COALESCE(pi.unit_cost, 0)), 0)
+    $stmt_inv_val = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano + cantidad_med) * COALESCE(pi.unit_cost, 0)), 0)
                                   FROM inventario i LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
                                   WHERE i.id_hospital = ? AND i.estado = 'Disponible'");
     $stmt_inv_val->execute([$id_hospital]);
@@ -419,13 +419,13 @@ try {
     $end_date_only = substr($end_datetime, 0, 10);
 
     // 1) Valor de COMPRA en inventario (snapshot actual)
-    $stmt_inv_compra = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano) * precio_compra), 0)
+    $stmt_inv_compra = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano + cantidad_med) * precio_compra), 0)
                                       FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
     $stmt_inv_compra->execute([$id_hospital]);
     $inv_valor_compra = (float)$stmt_inv_compra->fetchColumn();
 
     // 2) Valor de VENTA en inventario (snapshot actual)
-    $stmt_inv_venta = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano) * precio_venta), 0)
+    $stmt_inv_venta = $conn->prepare("SELECT COALESCE(SUM((stock_hospital + stock_quirofano + cantidad_med) * precio_venta), 0)
                                      FROM inventario WHERE id_hospital = ? AND estado = 'Disponible'");
     $stmt_inv_venta->execute([$id_hospital]);
     $inv_valor_venta = (float)$stmt_inv_venta->fetchColumn();
@@ -469,6 +469,38 @@ try {
     $stmt_compras = $conn->prepare("SELECT COUNT(*) FROM purchase_headers WHERE purchase_date BETWEEN ? AND ? AND id_hospital = ?");
     $stmt_compras->execute([$start_datetime, $end_datetime, $id_hospital]);
     $compras_periodo_count = (int)$stmt_compras->fetchColumn();
+
+    // ============ TOTALES HISTÓRICOS (snapshot, no se filtran por período) ============
+
+    // Total de Compras histórico
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM purchase_headers WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
+    $total_compras_historico = (float)$stmt->fetchColumn();
+
+    // Total de Compras Pagadas histórico
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount), 0) FROM purchase_headers WHERE id_hospital = ?");
+    $stmt->execute([$id_hospital]);
+    $total_pagadas_historico = (float)$stmt->fetchColumn();
+
+    // Total de Compras Pendientes histórico (= snapshot CxP)
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) FROM purchase_headers WHERE id_hospital = ? AND payment_status != 'Pagado'");
+    $stmt->execute([$id_hospital]);
+    $total_pendiente_historico = (float)$stmt->fetchColumn();
+
+    // Total de Ventas histórico (sin traslados, excluyendo canceladas)
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM ventas WHERE id_hospital = ? AND tipo_pago != 'Traslado' AND estado != 'Cancelado'");
+    $stmt->execute([$id_hospital]);
+    $total_ventas_historico = (float)$stmt->fetchColumn();
+
+    // Total de Traslados histórico (precio compra)
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(dv.cantidad_vendida * COALESCE(pi.unit_cost, 0)), 0)
+                           FROM detalle_ventas dv
+                           JOIN ventas v ON dv.id_venta = v.id_venta
+                           JOIN inventario i ON dv.id_inventario = i.id_inventario
+                           LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+                           WHERE v.id_hospital = ? AND v.tipo_pago IN ('Traslado','Transferencia') AND dv.precio_unitario = 0");
+    $stmt->execute([$id_hospital]);
+    $total_traslados_historico = (float)$stmt->fetchColumn();
 
     // Gastos del período
     $stmt_gastos_count = $conn->prepare("SELECT COUNT(*) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
@@ -1721,6 +1753,69 @@ try {
             line-height: 1.2;
         }
 
+        /* ===== CARDS TOTALES CONTABLES (NUEVO) ===== */
+        .totales-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-info);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            transition: all .2s;
+            text-align: center;
+            height: 100%;
+        }
+        .totales-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .totales-card.info { border-left-color: #0dcaf0; }
+        .totales-card.success { border-left-color: #198754; }
+        .totales-card.danger { border-left-color: #dc3545; }
+        .totales-card.primary { border-left-color: #6366f1; }
+        .totales-card.muted { border-left-color: #6c757d; }
+        .totales-card .totales-icon {
+            font-size: 1.5rem;
+            color: var(--color-text-secondary);
+            margin-bottom: .35rem;
+        }
+        .totales-card .totales-label {
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            margin-bottom: .5rem;
+        }
+        .totales-card .totales-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: .35rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .totales-card .totales-historico {
+            font-size: .72rem;
+            color: var(--color-text-secondary);
+            border-top: 1px solid var(--color-border);
+            padding-top: .35rem;
+            margin-top: .5rem;
+        }
+
+        /* ====== CANTIDADES — distinción Período vs Histórico ====== */
+        .cantidad-card .row-periodo td {
+            color: var(--color-text);
+            font-weight: 600;
+        }
+        .cantidad-card .row-historico td {
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+        .cantidad-card .label-periodo::before {
+            content: "▸ ";
+            color: var(--color-text-secondary);
+        }
+        .cantidad-card .label-historico::before {
+            content: "▾ ";
+            color: var(--color-text-muted);
+        }
+
         /* ===== CARDS CANTIDADES ABSOLUTAS ===== */
         .cantidad-card {
             background: var(--color-card);
@@ -2517,15 +2612,15 @@ try {
                                 <div class="col-md-6">
                                   <div class="cantidad-card">
                                     <div class="cantidad-title text-info">
-                                      <i class="bi bi-box-seam"></i> Valor de Inventario (Snapshot)
+                                      <i class="bi bi-box-seam"></i> Valor de Inventario
                                     </div>
                                     <table class="cantidad-table">
                                       <tr>
-                                        <td>Valor en Costo de Compra</td>
+                                        <td>Valor en Costo de Compra <small class="text-muted">(Hosp + Qx + Farm)</small></td>
                                         <td class="text-end fw-bold">Q<?= number_format($inv_valor_compra, 2) ?></td>
                                       </tr>
                                       <tr>
-                                        <td>Valor en Precio de Venta</td>
+                                        <td>Valor en Precio de Venta <small class="text-muted">(Hosp + Qx + Farm)</small></td>
                                         <td class="text-end fw-bold text-success">Q<?= number_format($inv_valor_venta, 2) ?></td>
                                       </tr>
                                       <tr class="divider">
@@ -2540,20 +2635,28 @@ try {
                                 <div class="col-md-6">
                                   <div class="cantidad-card warning">
                                     <div class="cantidad-title text-warning">
-                                      <i class="bi bi-cart-plus"></i> Compras del Período
+                                      <i class="bi bi-cart-plus"></i> Compras
                                     </div>
                                     <table class="cantidad-table">
-                                      <tr>
-                                        <td>Total Comprado</td>
+                                      <tr class="row-periodo">
+                                        <td class="label-periodo">Total Comprado (período)</td>
                                         <td class="text-end fw-bold">Q<?= number_format($total_compras_periodo, 2) ?></td>
                                       </tr>
-                                      <tr>
-                                        <td>Total Pagado</td>
+                                      <tr class="row-historico">
+                                        <td class="label-historico">Histórico</td>
+                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_compras_historico, 2) ?></td>
+                                      </tr>
+                                      <tr class="row-periodo">
+                                        <td class="label-periodo">Total Pagado (período)</td>
                                         <td class="text-end fw-bold text-success">Q<?= number_format($total_compras_pagadas, 2) ?></td>
                                       </tr>
+                                      <tr class="row-historico">
+                                        <td class="label-historico">Histórico</td>
+                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_pagadas_historico, 2) ?></td>
+                                      </tr>
                                       <tr class="divider">
-                                        <td>Pendiente a Pagar</td>
-                                        <td class="text-end fw-bold text-danger">Q<?= number_format($total_pendiente_pagar, 2) ?></td>
+                                        <td>Pendiente a Pagar <small class="text-muted">(histórico)</small></td>
+                                        <td class="text-end fw-bold text-danger">Q<?= number_format($total_pendiente_historico, 2) ?></td>
                                       </tr>
                                     </table>
                                   </div>
@@ -2563,21 +2666,102 @@ try {
                                 <div class="col-md-6">
                                   <div class="cantidad-card success">
                                     <div class="cantidad-title text-success">
-                                      <i class="bi bi-cart-check"></i> Ventas del Período
+                                      <i class="bi bi-cart-check"></i> Ventas
                                     </div>
                                     <table class="cantidad-table">
-                                      <tr>
-                                        <td>Total Ventas (sin traslados)</td>
+                                      <tr class="row-periodo">
+                                        <td class="label-periodo">Total Ventas (período, sin traslados)</td>
                                         <td class="text-end fw-bold">Q<?= number_format($total_ventas_periodo, 2) ?></td>
                                       </tr>
-                                      <tr class="divider">
-                                        <td>Traslados (Costo de Compra)</td>
+                                      <tr class="row-historico">
+                                        <td class="label-historico">Histórico</td>
+                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_ventas_historico, 2) ?></td>
+                                      </tr>
+                                      <tr class="row-periodo divider">
+                                        <td class="label-periodo">Traslados (Costo Compra) (período)</td>
                                         <td class="text-end fw-bold text-muted">Q<?= number_format($total_traslados_costo, 2) ?></td>
+                                      </tr>
+                                      <tr class="row-historico">
+                                        <td class="label-historico">Histórico</td>
+                                        <td class="text-end fw-bold text-muted">Q<?= number_format($total_traslados_historico, 2) ?></td>
                                       </tr>
                                     </table>
                                   </div>
                                 </div>
                               </div>
+                            </div>
+
+                            <!-- ============= NUEVA SECCIÓN: TOTALES CONTABLES CONSOLIDADOS ============= -->
+                            <div class="accounting-section mt-5">
+                                <div class="section-header">
+                                    <h3 class="section-title h4 mb-1">
+                                        <i class="bi bi-calculator text-success me-2"></i>
+                                        Totales Contables Consolidados
+                                    </h3>
+                                    <p class="text-muted small mb-0">Resumen comparativo: Período actual vs Histórico (snapshot)</p>
+                                </div>
+
+                                <div class="row g-3 mt-2">
+                                    <!-- Total de Compras -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card info">
+                                            <div class="totales-icon"><i class="bi bi-cart-plus"></i></div>
+                                            <div class="totales-label">Total de Compras</div>
+                                            <div class="totales-value text-info">Q<?= number_format($total_compras_historico, 2) ?></div>
+                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_compras_periodo, 2) ?></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Compras Pagadas -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card success">
+                                            <div class="totales-icon"><i class="bi bi-check-circle"></i></div>
+                                            <div class="totales-label">Compras Pagadas</div>
+                                            <div class="totales-value text-success">Q<?= number_format($total_pagadas_historico, 2) ?></div>
+                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_compras_pagadas, 2) ?></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Traslados (Costo Compra) -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card muted">
+                                            <div class="totales-icon"><i class="bi bi-arrow-left-right"></i></div>
+                                            <div class="totales-label">Traslados (Costo Compra)</div>
+                                            <div class="totales-value text-muted">Q<?= number_format($total_traslados_historico, 2) ?></div>
+                                            <div class="totales-historico">Histórico &middot; Período: Q<?= number_format($total_traslados_costo, 2) ?></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Compras Pendientes -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card danger">
+                                            <div class="totales-icon"><i class="bi bi-exclamation-circle"></i></div>
+                                            <div class="totales-label">Compras Pendientes</div>
+                                            <div class="totales-value text-danger">Q<?= number_format($total_pendiente_historico, 2) ?></div>
+                                            <div class="totales-historico">CxP histórica (snapshot)</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Total de Ventas -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card success">
+                                            <div class="totales-icon"><i class="bi bi-cart-check"></i></div>
+                                            <div class="totales-label">Total de Ventas</div>
+                                            <div class="totales-value text-success">Q<?= number_format($total_ventas_historico, 2) ?></div>
+                                            <div class="totales-historico">Histórico (excl. canceladas) &middot; Período: Q<?= number_format($total_ventas_periodo, 2) ?></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Margen Potencial -->
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="totales-card primary">
+                                            <div class="totales-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                                            <div class="totales-label">Margen Potencial Inv.</div>
+                                            <div class="totales-value text-primary">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 2) ?></div>
+                                            <div class="totales-historico">Venta - Compra (Hosp + Qx + Farm)</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- ============= SECCIÓN 5: RATIOS FINANCIEROS ============= -->
@@ -2794,169 +2978,6 @@ try {
                                     </div>
                                 </div>
 
-                                <?php if (!empty($top_pacientes_saldo)): ?>
-                                <div class="card shadow-sm mt-4">
-                                    <div class="card-body">
-                                        <h6 class="card-title"><i class="bi bi-people me-2"></i>Top 10 Pacientes con Mayor Saldo Pendiente</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>Paciente</th>
-                                                        <th class="text-end">Total Cuenta</th>
-                                                        <th class="text-end">Pagado</th>
-                                                        <th class="text-end">Saldo</th>
-                                                        <th class="text-end">Días</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($top_pacientes_saldo as $pac): ?>
-                                                    <tr>
-                                                        <td><?= htmlspecialchars($pac['nombre'] . ' ' . $pac['apellido']) ?></td>
-                                                        <td class="text-end">Q<?= number_format((float)$pac['total_general'], 2) ?></td>
-                                                        <td class="text-end text-success">Q<?= number_format((float)$pac['total_pagado'], 2) ?></td>
-                                                        <td class="text-end text-danger fw-bold">Q<?= number_format((float)$pac['saldo'], 2) ?></td>
-                                                        <td class="text-end"><?= (int)$pac['dias_mora'] ?> d</td>
-                                                    </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
-
-                                <?php if (!empty($top_proveedores)): ?>
-                                <div class="card shadow-sm mt-4">
-                                    <div class="card-body">
-                                        <h6 class="card-title"><i class="bi bi-truck me-2"></i>Top 10 Proveedores del Período</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover">
-                                                <thead class="table-light">
-                                                    <tr><th>Proveedor</th><th class="text-end">Total Comprado</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($top_proveedores as $prov): ?>
-                                                    <tr>
-                                                        <td><?= htmlspecialchars($prov['provider_name']) ?></td>
-                                                        <td class="text-end">Q<?= number_format((float)$prov['total'], 2) ?></td>
-                                                    </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-
-                            <!-- ============= SECCIÓN 7: AUDITORÍA DE TRANSACCIONES ============= -->
-                            <div class="accounting-section mt-5">
-                                <div class="section-header">
-                                    <h3 class="section-title h4 mb-1">
-                                        <i class="bi bi-shield-check text-success me-2"></i>
-                                        Auditoría de Transacciones
-                                    </h3>
-                                    <p class="text-muted small mb-0">Trazabilidad completa de movimientos financieros del período</p>
-                                </div>
-
-                                <div class="card shadow-sm mt-3">
-                                    <div class="card-body">
-                                        <!-- Filtros -->
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-md-3">
-                                                <label class="form-label small">Módulo</label>
-                                                <select id="audit_filter_modulo" class="form-select form-select-sm">
-                                                    <option value="">Todos</option>
-                                                    <option value="billing">Cobros</option>
-                                                    <option value="dispensary">Dispensario</option>
-                                                    <option value="purchases">Compras</option>
-                                                    <option value="gastos">Gastos</option>
-                                                    <option value="hospitalization">Hospitalización</option>
-                                                    <option value="tarifas">Tarifas</option>
-                                                    <option value="surgery">Cirugía</option>
-                                                    <option value="inventory">Inventario</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small">Acción</label>
-                                                <select id="audit_filter_accion" class="form-select form-select-sm">
-                                                    <option value="">Todas</option>
-                                                    <option value="create">Crear</option>
-                                                    <option value="update">Actualizar</option>
-                                                    <option value="delete">Eliminar</option>
-                                                    <option value="cancel">Cancelar</option>
-                                                    <option value="export">Exportar</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small">Usuario</label>
-                                                <input type="text" id="audit_filter_usuario" class="form-control form-control-sm" placeholder="Buscar...">
-                                            </div>
-                                            <div class="col-md-3 d-flex align-items-end">
-                                                <button class="btn btn-primary btn-sm w-100" onclick="loadAuditoria()">
-                                                    <i class="bi bi-search"></i> Buscar
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div id="audit_results">
-                                            <div class="audit-loading">
-                                                <div class="spinner-border spinner-border-sm text-success" role="status"></div>
-                                                Cargando auditoría...
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Resumen agregado de auditoría -->
-                                <div class="row g-3 mt-3">
-                                    <div class="col-md-6">
-                                        <div class="card shadow-sm">
-                                            <div class="card-body">
-                                                <h6 class="card-title"><i class="bi bi-bar-chart me-2"></i>Conteo por Módulo y Acción</h6>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm">
-                                                        <thead><tr><th>Módulo</th><th>Acción</th><th class="text-end">Total</th></tr></thead>
-                                                        <tbody>
-                                                            <?php if (empty($audit_resumen)): ?>
-                                                                <tr><td colspan="3" class="text-center text-muted">Sin movimientos en el período</td></tr>
-                                                            <?php else: foreach ($audit_resumen as $a): ?>
-                                                                <tr>
-                                                                    <td><span class="badge bg-secondary"><?= htmlspecialchars($a['modulo']) ?></span></td>
-                                                                    <td><?= htmlspecialchars($a['accion']) ?></td>
-                                                                    <td class="text-end"><?= (int)$a['total'] ?></td>
-                                                                </tr>
-                                                            <?php endforeach; endif; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="card shadow-sm">
-                                            <div class="card-body">
-                                                <h6 class="card-title"><i class="bi bi-person-badge me-2"></i>Top Usuarios con Más Movimientos</h6>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm">
-                                                        <thead><tr><th>Usuario</th><th class="text-end">Movimientos</th></tr></thead>
-                                                        <tbody>
-                                                            <?php if (empty($top_usuarios_audit)): ?>
-                                                                <tr><td colspan="2" class="text-center text-muted">Sin datos</td></tr>
-                                                            <?php else: foreach ($top_usuarios_audit as $u): ?>
-                                                                <tr>
-                                                                    <td><?= htmlspecialchars($u['user_nombre'] ?? 'N/A') ?></td>
-                                                                    <td class="text-end"><?= (int)$u['movimientos'] ?></td>
-                                                                </tr>
-                                                            <?php endforeach; endif; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- ============= SECCIÓN 8: EXPORTAR PDF ============= -->

@@ -151,6 +151,27 @@ try {
                     $stmtCargoCombo->execute([$id_cuenta, "Cirugía: {$comboNombre} (#{$cirugia['numero_cirugia']})", (float)$cirugia['cargo_total'], $user_id, $id_hospital]);
                 }
 
+                // Cargos de descuentos aplicados (se restan del total)
+                $stmtDescuentos = $conn->prepare("SELECT id_descuento, concepto, monto FROM cirugia_descuentos WHERE id_cirugia = ? AND id_hospital = ? AND cancelado = 0 ORDER BY creado_en ASC");
+                $stmtDescuentos->execute([$id_cirugia, $id_hospital]);
+                $descuentosCirugia = $stmtDescuentos->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($descuentosCirugia as $d) {
+                    $stmtCargoDesc = $conn->prepare("
+                        INSERT INTO cargos_hospitalarios
+                        (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
+                         fecha_cargo, registrado_por, id_hospital)
+                        VALUES (?, 'Descuento', ?, 1, ?, NOW(), ?, ?)
+                    ");
+                    // Guardamos el descuento como precio_unitario positivo (se gestiona como tipo Descuento)
+                    $stmtCargoDesc->execute([
+                        $id_cuenta,
+                        "Descuento: {$d['concepto']} (Cirugía #{$cirugia['numero_cirugia']})",
+                        (float)$d['monto'],
+                        $user_id,
+                        $id_hospital
+                    ]);
+                }
+
                 // Cargos de medicamentos consumidos
                 $stmtConsumos = $conn->prepare("SELECT cc.*, inv.nom_medicamento FROM cirugia_consumos cc JOIN inventario inv ON cc.id_inventario = inv.id_inventario WHERE cc.id_cirugia = ?");
                 $stmtConsumos->execute([$id_cirugia]);

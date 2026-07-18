@@ -137,7 +137,7 @@ $page_title = "Combos de Operación";
             background: rgba(13,110,253,.04);
         }
 
-        /* Totals panel */
+        /* Totals panel (legacy, ya no usado pero mantenido por compatibilidad) */
         .totals-panel {
             background: var(--color-surface);
             border-radius: 10px;
@@ -150,6 +150,67 @@ $page_title = "Combos de Operación";
             border-radius: 8px;
             padding: .75rem 1rem;
             border: 1px solid var(--color-border);
+        }
+
+        /* ===== PANEL TOTAL DEL COMBO ===== */
+        .combo-total-panel {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .combo-total-panel .total-block .form-control-lg {
+            font-size: 1.5rem;
+        }
+
+        /* ===== FÓRMULA MATEMÁTICA ===== */
+        .formula-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: .75rem;
+            background: var(--color-bg);
+            border-radius: 8px;
+            padding: .85rem 1rem;
+            border: 1px solid var(--color-border);
+            min-height: 70px;
+        }
+        .formula-display .formula-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .15rem;
+            min-width: 90px;
+        }
+        .formula-display .formula-label {
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+        }
+        .formula-display .formula-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .formula-display .formula-item.result {
+            background: rgba(25, 135, 84, 0.08);
+            padding: .35rem .65rem;
+            border-radius: 6px;
+            border: 1px solid rgba(25, 135, 84, 0.25);
+        }
+        .formula-display .formula-op {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+            margin-top: -.35rem; /* alinear con el valor */
+        }
+        @media (max-width: 767.98px) {
+            .formula-display { flex-wrap: wrap; gap: .35rem; }
+            .formula-display .formula-op { display: none; }
         }
 
         /* Responsive */
@@ -262,24 +323,49 @@ $page_title = "Combos de Operación";
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-lg-6">
-                            <div class="combo-section-panel gan">
-                                <div class="section-title-bar">
-                                    <h6 class="mb-0 text-success fw-bold">
-                                        <i class="bi bi-arrow-up-circle me-1"></i> Ganancias
-                                        <small class="text-muted ms-2">(lo que cobra al paciente)</small>
-                                    </h6>
-                                    <span class="badge bg-success" id="badge-count-gan">0</span>
+                        <!-- CAMPO TOTAL (entrada manual) -->
+                        <div class="col-lg-12 mb-3">
+                            <div class="combo-total-panel">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-3">
+                                        <div class="total-block">
+                                            <small class="text-muted text-uppercase fw-bold d-block">Total del Combo (Q)</small>
+                                            <input type="number" step="0.01" min="0"
+                                                   class="form-control form-control-lg fw-bold text-primary"
+                                                   id="precio_total" name="precio_total" value="0"
+                                                   placeholder="0.00" required>
+                                            <small class="text-muted">Ingrese manualmente el monto que se cobra al paciente</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="formula-display" id="formula-display">
+                                            <div class="formula-item">
+                                                <span class="formula-label">Total</span>
+                                                <span class="formula-value text-primary" id="formula-total">Q0.00</span>
+                                            </div>
+                                            <span class="formula-op">−</span>
+                                            <div class="formula-item">
+                                                <span class="formula-label">Gastos</span>
+                                                <span class="formula-value text-danger" id="formula-gastos">Q0.00</span>
+                                            </div>
+                                            <span class="formula-op">=</span>
+                                            <div class="formula-item result">
+                                                <span class="formula-label">Ganancia</span>
+                                                <span class="formula-value text-success" id="formula-ganancia">Q0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div id="items-ganancia"></div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
+
+                        <!-- SOLO GASTOS (breakdown) -->
+                        <div class="col-lg-12">
                             <div class="combo-section-panel gas">
                                 <div class="section-title-bar">
                                     <h6 class="mb-0 text-danger fw-bold">
-                                        <i class="bi bi-arrow-down-circle me-1"></i> Gastos
-                                        <small class="text-muted ms-2">(costos internos)</small>
+                                        <i class="bi bi-arrow-down-circle me-1"></i> Gastos del Combo
+                                        <small class="text-muted ms-2">(costos internos — se descontarán del Total)</small>
                                     </h6>
                                     <span class="badge bg-danger" id="badge-count-gas">0</span>
                                 </div>
@@ -290,38 +376,12 @@ $page_title = "Combos de Operación";
 
                     <div class="alert alert-info border-0 mb-3 small">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Tip:</strong> Para que un item descuente stock al iniciar la cirugía, seleccione un medicamento del inventario en la categoría. Use "Agregar otro cargo" para items personalizados (sin descuento de stock).
+                        <strong>Tip:</strong> Ingrese el <b>Total</b> del combo (lo que cobrará al paciente).
+                        Luego agregue los <b>Gastos</b> (costos) en la sección inferior.
+                        La <b>Ganancia</b> se calcula automáticamente: <code>Total − Gastos = Ganancia</code>.
+                        Para medicamentos con descuento de stock, vincule el item desde el inventario de la fila.
                     </div>
 
-                    <div class="totals-panel">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-4">
-                                <div class="total-block">
-                                    <small class="text-muted text-uppercase fw-bold d-block">Total Ganancias</small>
-                                    <div class="fs-3 fw-bold text-success" id="sum-ganancia">Q0.00</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="total-block">
-                                    <small class="text-muted text-uppercase fw-bold d-block">Total Gastos</small>
-                                    <div class="fs-3 fw-bold text-danger" id="sum-gasto">Q0.00</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="total-block">
-                                    <small class="text-muted text-uppercase fw-bold d-block">Precio Total (Q)</small>
-                                    <input type="number" step="0.01" min="0" class="form-control form-control-lg fw-bold text-primary" id="precio_total" name="precio_total" value="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <datalist id="list-cat-Ganancia">
-                        <option value="Encamamiento">
-                        <option value="Medicamento de sala">
-                        <option value="Uso de sala">
-                        <option value="Medicamentos de habitación">
-                    </datalist>
                     <datalist id="list-cat-Gasto">
                         <option value="Costo de medicamento de sala">
                         <option value="Costo de medicamento de habitación">
@@ -343,7 +403,6 @@ $page_title = "Combos de Operación";
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const CATS_GANANCIA = ['Encamamiento', 'Medicamento de sala', 'Uso de sala', 'Medicamentos de habitación'];
 const CATS_GASTO = ['Costo de medicamento de sala', 'Costo de medicamento de habitación', 'Anestesia', 'Dietas', 'Ingreso', 'Circulación'];
 
 let comboModal;
@@ -470,9 +529,10 @@ function escapeHtml(str) {
 }
 
 function addExtraItem(tipo) {
-    const containerId = tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
+    // Solo Gasto está permitido en el nuevo flujo
+    const containerId = 'items-gasto';
     document.getElementById(containerId).insertAdjacentHTML('beforeend',
-        itemRowHtml(tipo, '', '', 0, true)
+        itemRowHtml('Gasto', '', '', 0, true)
     );
     updateTotals();
 }
@@ -486,37 +546,32 @@ function removeItem(btn) {
 }
 
 function addMoreButton(tipo) {
-    return `<button type="button" class="add-more" onclick="addExtraItem('${tipo}')">
-        <i class="bi bi-plus-circle me-1"></i> Agregar otro cargo
+    return `<button type="button" class="add-more" onclick="addExtraItem('Gasto')">
+        <i class="bi bi-plus-circle me-1"></i> Agregar otro gasto
     </button>`;
 }
 
 function seedItems(tipo) {
-    const cats = tipo === 'Ganancia' ? CATS_GANANCIA : CATS_GASTO;
-    const containerId = tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
+    // Solo se precargan categorías de Gastos (Ganancias se reemplazó por Total manual)
+    const cats = CATS_GASTO;
+    const containerId = 'items-gasto';
     cats.forEach(c => {
-        // Solo las categorías de medicamentos se precargan con búsqueda; las demás quedan vacías
-        if (tipo === 'Ganancia' && (c === 'Medicamento de sala' || c === 'Medicamentos de habitación')) {
-            document.getElementById(containerId).insertAdjacentHTML('beforeend',
-                itemRowHtml(tipo, c, '', 0, false, null, 1, '')
-            );
-        } else {
-            document.getElementById(containerId).insertAdjacentHTML('beforeend',
-                itemRowHtml(tipo, c, '', 0, false, null, 1, '')
-            );
-        }
+        document.getElementById(containerId).insertAdjacentHTML('beforeend',
+            itemRowHtml('Gasto', c, '', 0, false, null, 1, '')
+        );
     });
-    document.getElementById(containerId).insertAdjacentHTML('beforeend', addMoreButton(tipo));
+    document.getElementById(containerId).insertAdjacentHTML('beforeend', addMoreButton('Gasto'));
 }
 
 function openComboModal() {
     document.getElementById('comboModalTitle').innerHTML = '<i class="bi bi-stack me-2"></i>Nuevo Combo';
     document.getElementById('comboForm').reset();
     document.getElementById('id_combo').value = '';
-    document.getElementById('items-ganancia').innerHTML = '';
-    document.getElementById('items-gasto').innerHTML = '';
+    // Limpiar contenedor de Gastos (Ganancias eliminado)
+    const itemsGasto = document.getElementById('items-gasto');
+    if (itemsGasto) itemsGasto.innerHTML = '';
 
-    seedItems('Ganancia');
+    // Solo se cargan categorías de Gastos
     seedItems('Gasto');
 
     updateTotals();
@@ -540,16 +595,15 @@ async function editCombo(id) {
         document.getElementById('precio_total').value = parseFloat(c.precio_total || 0).toFixed(2);
         document.getElementById('estado').value = c.estado;
 
-        document.getElementById('items-ganancia').innerHTML = '';
-        document.getElementById('items-gasto').innerHTML = '';
+        // Limpiar contenedor
+        const itemsGasto2 = document.getElementById('items-gasto');
+        if (itemsGasto2) itemsGasto2.innerHTML = '';
 
-        // Seed all predefined rows with default 0
-        seedItems('Ganancia');
+        // Seed predefined rows for Gastos only
         seedItems('Gasto');
 
-        // Apply existing items into matching predefined rows
-        const predefinedG = new Set(CATS_GANANCIA);
         const predefinedE = new Set(CATS_GASTO);
+        const predefinedG = new Set(); // Ganancias ya no aplica — items Ganancia legacy se migran al Total
 
         const existingByCat = {};
         const usedItemIds = new Set();
@@ -560,7 +614,7 @@ async function editCombo(id) {
             existingByCat[k].push(it);
         });
 
-        document.querySelectorAll('#items-ganancia .item-row[data-predef="1"], #items-gasto .item-row[data-predef="1"]').forEach(row => {
+        document.querySelectorAll('#items-gasto .item-row[data-predef="1"]').forEach(row => {
             const tipo = row.dataset.tipo;
             const cat = row.querySelector('.item-cat').value;
             const matches = existingByCat[tipo + '|' + cat];
@@ -590,14 +644,15 @@ async function editCombo(id) {
             }
         });
 
-        // Existing items whose category is NOT in predefined list → add as extras
+        // Existing items not in predefined list → add as extras
         json.data.items.forEach(it => {
-            const isPredef = it.tipo === 'Ganancia' ? predefinedG.has(it.categoria) : predefinedE.has(it.categoria);
+            // Ganancias legacy: ignorar al editar (su valor ya está en precio_total)
+            if (it.tipo === 'Ganancia') return;
+            const isPredef = predefinedE.has(it.categoria);
             if (!isPredef || usedItemIds.has(it.id_item)) {
                 if (!usedItemIds.has(it.id_item)) {
-                    const containerId = it.tipo === 'Ganancia' ? 'items-ganancia' : 'items-gasto';
-                    document.getElementById(containerId).insertAdjacentHTML('beforeend',
-                        itemRowHtml(it.tipo, it.categoria, it.descripcion || '', parseFloat(it.monto || 0), true,
+                    document.getElementById('items-gasto').insertAdjacentHTML('beforeend',
+                        itemRowHtml('Gasto', it.categoria, it.descripcion || '', parseFloat(it.monto || 0), true,
                                     it.id_inventario, parseFloat(it.cantidad || 1), it.descripcion || '')
                     );
                     usedItemIds.add(it.id_item);
@@ -613,22 +668,31 @@ async function editCombo(id) {
 }
 
 function updateTotals() {
-    let sg = 0, sd = 0;
-    let countG = 0, countD = 0;
-    document.querySelectorAll('#items-ganancia .item-row').forEach(r => {
-        countG++;
-        sg += parseFloat(r.querySelector('.item-monto').value) || 0;
-    });
+    let sd = 0;
+    let countD = 0;
     document.querySelectorAll('#items-gasto .item-row').forEach(r => {
         countD++;
         sd += parseFloat(r.querySelector('.item-monto').value) || 0;
     });
-    document.getElementById('sum-ganancia').textContent = 'Q' + sg.toFixed(2);
-    document.getElementById('sum-gasto').textContent = 'Q' + sd.toFixed(2);
-    document.getElementById('badge-count-gan').textContent = countG;
-    document.getElementById('badge-count-gas').textContent = countD;
-    const pt = document.getElementById('precio_total');
-    if (document.activeElement !== pt) pt.value = sg.toFixed(2);
+    // Badge de cantidad
+    const badgeGas = document.getElementById('badge-count-gas');
+    if (badgeGas) badgeGas.textContent = countD;
+    // Fórmula: Total - Gastos = Ganancia
+    const total = parseFloat(document.getElementById('precio_total').value) || 0;
+    const gastos = sd;
+    const ganancia = total - gastos;
+    const fmt = (n) => 'Q' + (isFinite(n) ? n.toFixed(2) : '0.00');
+    const fTotal = document.getElementById('formula-total');
+    const fGastos = document.getElementById('formula-gastos');
+    const fGanancia = document.getElementById('formula-ganancia');
+    if (fTotal) fTotal.textContent = fmt(total);
+    if (fGastos) fGastos.textContent = fmt(gastos);
+    if (fGanancia) {
+        fGanancia.textContent = fmt(ganancia);
+        // Color: verde si positivo, rojo si negativo
+        fGanancia.classList.toggle('text-danger', ganancia < 0);
+        fGanancia.classList.toggle('text-success', ganancia >= 0);
+    }
 }
 
 async function saveCombo(e) {
@@ -643,12 +707,14 @@ async function saveCombo(e) {
         const monto = parseFloat(row.querySelector('.item-monto').value) || 0;
         const cantidad = parseFloat(row.querySelector('.item-cantidad')?.value || 1) || 1;
         const predef = row.dataset.predef === '1' ? 1 : 0;
+        // Solo guardar items tipo Gasto (Ganancias se reemplazó por Total manual)
+        if (tipo !== 'Gasto') return;
         // Para filas predefinidas vacías → no guardar
         if (predef === 1 && monto === 0 && !desc.trim() && !medInput.trim() && !idInv && cat) {
             return;
         }
         items.push({
-            tipo,
+            tipo: 'Gasto',
             categoria: cat,
             descripcion: idInv ? medInput : desc,
             monto,

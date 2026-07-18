@@ -32,6 +32,10 @@ try {
         echo json_encode(['success' => false, 'message' => 'Código y nombre son obligatorios']);
         exit;
     }
+    if ($precio_total < 0) {
+        echo json_encode(['success' => false, 'message' => 'El Total del combo no puede ser negativo']);
+        exit;
+    }
     if (!in_array($estado, ['Activo', 'Inactivo'], true)) $estado = 'Activo';
 
     $items_json = $_POST['items_json'] ?? '[]';
@@ -59,13 +63,15 @@ try {
         $count = 0;
         $med_count = 0;
         foreach ($items as $it) {
+            // Solo guardar items tipo Gasto (Ganancias se reemplazó por Total manual)
             $tipo = $it['tipo'] ?? '';
+            if ($tipo !== 'Gasto') continue;
             $categoria = substr(trim((string)($it['categoria'] ?? '')), 0, 50);
             $desc = substr(trim((string)($it['descripcion'] ?? '')), 0, 150);
             $monto = (float)($it['monto'] ?? 0);
             $id_inventario = isset($it['id_inventario']) && $it['id_inventario'] ? (int)$it['id_inventario'] : null;
             $cantidad = isset($it['cantidad']) && $it['cantidad'] > 0 ? (float)$it['cantidad'] : 1;
-            if (!in_array($tipo, ['Ganancia', 'Gasto'], true) || $categoria === '') continue;
+            if ($categoria === '') continue;
             $stmtItem->execute([$newId, $id_inventario, $cantidad, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
             $count++;
             if ($id_inventario) $med_count++;
@@ -98,13 +104,15 @@ try {
         $count = 0;
         $med_count = 0;
         foreach ($items as $it) {
+            // Solo guardar items tipo Gasto (Ganancias se reemplazó por Total manual)
             $tipo = $it['tipo'] ?? '';
+            if ($tipo !== 'Gasto') continue;
             $categoria = substr(trim((string)($it['categoria'] ?? '')), 0, 50);
             $desc = substr(trim((string)($it['descripcion'] ?? '')), 0, 150);
             $monto = (float)($it['monto'] ?? 0);
             $id_inventario = isset($it['id_inventario']) && $it['id_inventario'] ? (int)$it['id_inventario'] : null;
             $cantidad = isset($it['cantidad']) && $it['cantidad'] > 0 ? (float)$it['cantidad'] : 1;
-            if (!in_array($tipo, ['Ganancia', 'Gasto'], true) || $categoria === '') continue;
+            if ($categoria === '') continue;
             $stmtItem->execute([$id_combo_int, $id_inventario, $cantidad, $tipo, $categoria, $desc ?: null, $monto, $id_hospital]);
             $count++;
             if ($id_inventario) $med_count++;
@@ -112,7 +120,7 @@ try {
 
         $conn->commit();
 
-        audit_log('update', 'surgery', "Combo actualizado: $nombre", [
+        audit_log('update', 'surgery', "Combo actualizado: $nombre con $count gastos", [
             'table_name' => 'cirugia_combos',
             'record_id' => $id_combo_int,
             'old_data' => $oldData,

@@ -21,6 +21,9 @@ if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
 $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 $user_id = (int)$_SESSION['user_id'];
 $id_consumo = (int)($_POST['id_consumo'] ?? 0);
+// Cantidad a retornar (opcional). Si es null/0/ausente, retorna todo.
+$cantidad_retorno_raw = $_POST['cantidad_retorno'] ?? null;
+$cantidad_retorno = ($cantidad_retorno_raw === null || $cantidad_retorno_raw === '') ? null : (float)$cantidad_retorno_raw;
 
 if (!$id_consumo) {
     echo json_encode(['success' => false, 'message' => 'ID de consumo requerido']);
@@ -32,7 +35,8 @@ try {
     $conn = $database->getConnection();
 
     // Llamar al helper que maneja toda la lógica de reversión
-    $result = revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id, 'Eliminado manualmente desde detalle de cirugía');
+    // Si $cantidad_retorno es null, retorna todo (comportamiento legacy)
+    $result = revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id, 'Retorno manual desde detalle de cirugía', $cantidad_retorno);
 
     if (!$result['reverted']) {
         echo json_encode([
@@ -42,11 +46,20 @@ try {
         exit;
     }
 
+    if ($result['retorno_total'] ?? true) {
+        $mensaje = "✓ Se retornaron {$result['cantidad']} unidades de '{$result['medicamento']}' al inventario de {$result['origen_label']}. Stock actual: {$result['stock_nuevo']}";
+    } else {
+        $restante = $result['cantidad_restante'] ?? 0;
+        $mensaje = "✓ Se retornaron {$result['cantidad']} unidades de '{$result['medicamento']}'. Quedan {$restante} unidades en el consumo. Stock actual: {$result['stock_nuevo']}";
+    }
+
     echo json_encode([
         'success' => true,
-        'message' => "✓ Se retornaron {$result['cantidad']} unidades de '{$result['medicamento']}' al inventario de {$result['origen_label']}. Stock actual: {$result['stock_nuevo']}",
+        'message' => $mensaje,
         'medicamento' => $result['medicamento'],
         'cantidad' => $result['cantidad'],
+        'cantidad_restante' => $result['cantidad_restante'] ?? 0,
+        'retorno_total' => $result['retorno_total'] ?? true,
         'stock_nuevo' => $result['stock_nuevo'],
         'origen_label' => $result['origen_label']
     ]);

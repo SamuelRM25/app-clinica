@@ -51,6 +51,22 @@ try {
     $stmtCons->execute([$id_cirugia]);
     $consumos = $stmtCons->fetchAll(PDO::FETCH_ASSOC);
 
+    // Descuentos aplicados a esta cirugía
+    $stmtDesc = $conn->prepare("
+        SELECT id_descuento, concepto, monto, creado_en, cancelado, motivo_cancelacion
+        FROM cirugia_descuentos
+        WHERE id_cirugia = ? AND id_hospital = ?
+        ORDER BY creado_en DESC
+    ");
+    $stmtDesc->execute([$id_cirugia, $id_hospital]);
+    $descuentos = $stmtDesc->fetchAll(PDO::FETCH_ASSOC);
+
+    // Total descuentos activos (no cancelados)
+    $total_descuentos = 0.0;
+    foreach ($descuentos as $d) {
+        if (!$d['cancelado']) $total_descuentos += (float)$d['monto'];
+    }
+
     // Equipo
     $stmtEq = $conn->prepare("SELECT ce.*, u.nombre, u.apellido, u.especialidad FROM cirugia_equipo ce JOIN usuarios u ON ce.id_usuario = u.idUsuario WHERE ce.id_cirugia = ?");
     $stmtEq->execute([$id_cirugia]);
@@ -291,8 +307,103 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                     </div>
                 </div>
             </div>
+
+            <!-- Descuentos -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-3 border-start border-success border-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-percent me-2 text-success"></i>Descuentos Aplicados</h5>
+                        <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso', 'Finalizada'], true)): ?>
+                            <button class="btn btn-sm btn-success" onclick="openDescuentoModal()">
+                                <i class="bi bi-plus"></i> Agregar Descuento
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (empty($descuentos)): ?>
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-percent" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">No se han aplicado descuentos a esta cirugía.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="data-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Concepto</th>
+                                            <th class="text-end">Monto</th>
+                                            <th class="text-center">Aplicado</th>
+                                            <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso', 'Finalizada'], true)): ?>
+                                                <th class="text-center">Acción</th>
+                                            <?php endif; ?>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($descuentos as $d): ?>
+                                            <tr class="<?= $d['cancelado'] ? 'text-decoration-line-through text-muted' : '' ?>">
+                                                <td><?php echo htmlspecialchars($d['concepto']); ?></td>
+                                                <td class="text-end fw-bold text-success">-Q<?php echo number_format((float)$d['monto'], 2); ?></td>
+                                                <td class="text-center"><small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($d['creado_en'])); ?></small></td>
+                                                <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso', 'Finalizada'], true)): ?>
+                                                    <td class="text-center">
+                                                        <?php if (!$d['cancelado']): ?>
+                                                        <button class="btn btn-sm btn-outline-danger"
+                                                                onclick="eliminarDescuento(<?= (int)$d['id_descuento']; ?>, '<?= htmlspecialchars(addslashes($d['concepto'])); ?>', <?= (float)$d['monto']; ?>)"
+                                                                title="Eliminar descuento">
+                                                            <i class="bi bi-x-circle"></i>
+                                                        </button>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary">Cancelado</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                <?php endif; ?>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <tr class="table-success">
+                                            <td class="fw-bold">Total Descuentos:</td>
+                                            <td class="text-end fw-bold text-success">-Q<?php echo number_format($total_descuentos, 2); ?></td>
+                                            <td colspan="<?= in_array($cirugia['estado'], ['Programada', 'En_Curso', 'Finalizada'], true) ? '2' : '1' ?>"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
+</div>
+
+<!-- Modal Agregar Descuento -->
+<div class="modal fade" id="descuentoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-percent me-2"></i>Agregar Descuento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="descuentoForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                    <input type="hidden" name="id_cirugia" value="<?= $id_cirugia ?>">
+                    <div class="mb-3">
+                        <label class="form-label">Concepto del Descuento *</label>
+                        <input type="text" class="form-control" name="concepto" id="desc-concepto" required maxlength="255" placeholder="Ej: Descuento por convenio, promoción...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto del Descuento (Q) *</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control form-control-lg" name="monto" id="desc-monto" required>
+                        <small class="text-muted">Este monto se restará del total de la cirugía al momento de aplicar cargos al paciente.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Aplicar Descuento</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Agregar Medicamento -->
@@ -485,22 +596,134 @@ async function cargarComboCirugia(forzar = false) {
     }
 }
 
-async function eliminarConsumo(idConsumo, nombreMedicamento, cantidad) {
+// --- DESCUENTOS ---
+let descuentoModal;
+document.addEventListener('DOMContentLoaded', () => {
+    const dm = document.getElementById('descuentoModal');
+    if (dm) descuentoModal = new bootstrap.Modal(dm);
+    const df = document.getElementById('descuentoForm');
+    if (df) df.addEventListener('submit', saveDescuento);
+});
+
+function openDescuentoModal() {
+    const f = document.getElementById('descuentoForm');
+    if (f) f.reset();
+    descuentoModal.show();
+}
+
+async function saveDescuento(e) {
+    e.preventDefault();
+    const concepto = document.getElementById('desc-concepto').value.trim();
+    const monto = parseFloat(document.getElementById('desc-monto').value) || 0;
+    if (!concepto) {
+        Swal.fire('Error', 'Ingrese un concepto para el descuento', 'error');
+        return;
+    }
+    if (monto <= 0) {
+        Swal.fire('Error', 'El monto del descuento debe ser mayor a cero', 'error');
+        return;
+    }
+    const fd = new FormData(e.target);
+    Swal.fire({ title: 'Aplicando descuento...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch('api/save_descuento_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            descuentoModal.hide();
+            Swal.fire({
+                icon: 'success',
+                title: '✓ Descuento aplicado',
+                text: json.message,
+                html: '<div class="text-start small mt-2">Se desconto Q' + parseFloat(json.monto).toFixed(2) + ' por "' + escapeHtml(json.concepto) + '".<br>Total descuentos acumulados: <strong>Q' + parseFloat(json.total_descuentos).toFixed(2) + '</strong></div>'
+            }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+    }
+}
+
+async function eliminarDescuento(idDescuento, concepto, monto) {
     const r = await Swal.fire({
-        title: '¿Retornar al inventario?',
-        html: `<div class="text-start">
-            <p>Se retornarán <strong>${cantidad} unidades</strong> de <strong>"${escapeHtml(nombreMedicamento)}"</strong> al inventario de <strong>Quirófano</strong>.</p>
-            <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
-        </div>`,
+        title: '¿Eliminar descuento?',
+        html: '<div class="text-start"><p>Se eliminara el descuento de <strong>Q' + parseFloat(monto).toFixed(2) + '</strong> por concepto <strong>"' + escapeHtml(concepto) + '"</strong>.</p><p class="text-muted small mb-0">Esta accion no se puede deshacer.</p></div>',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Sí, retornar',
+        confirmButtonText: 'Si, eliminar',
         cancelButtonText: 'Cancelar'
     });
     if (!r.isConfirmed) return;
+    const fd = new FormData();
+    fd.append('id_descuento', idDescuento);
+    fd.append('csrf_token', csrf);
+    Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch('api/delete_descuento_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            Swal.fire({ icon: 'success', title: '✓ Descuento eliminado', text: json.message }).then(() => location.reload());
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+    }
+}
+
+async function eliminarConsumo(idConsumo, nombreMedicamento, cantidad) {
+    // Modal con input de cantidad a retornar (permite retorno parcial)
+    const { value: formValues } = await Swal.fire({
+        title: 'Retornar al inventario',
+        html: `<div class="text-start">
+            <p>Medicamento: <strong>${escapeHtml(nombreMedicamento)}</strong></p>
+            <p>Cantidad consumida: <strong>${cantidad} unidades</strong></p>
+            <label class="form-label fw-bold mt-2">Cantidad a retornar *</label>
+            <input type="number" id="retorno-cantidad" class="form-control form-control-lg text-end" min="0.01" max="${cantidad}" step="0.01" value="${cantidad}" required>
+            <div class="d-flex gap-2 mt-2">
+                <button type="button" id="btn-retorno-all" class="btn btn-sm btn-outline-secondary flex-fill" data-set-retorno="all">Todo (${cantidad})</button>
+                <button type="button" id="btn-retorno-half" class="btn btn-sm btn-outline-secondary flex-fill" data-set-retorno="half">Mitad</button>
+                <button type="button" id="btn-retorno-one" class="btn btn-sm btn-outline-secondary flex-fill" data-set-retorno="one">Solo 1</button>
+            </div>
+            <p class="text-muted small mb-0 mt-2"><i class="bi bi-info-circle"></i> Si retorna menos del total, el consumo se reducirá con la cantidad restante.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Retornar',
+        cancelButtonText: 'Cancelar',
+        didOpen: () => {
+            // Asignar eventos a los botones de selección rápida (cantidad total, mitad, 1)
+            // El problema es que las comillas dobles en onclick="..." dentro de un template literal JS
+            // cierran el onclick prematuramente. Usamos data-attributes + addEventListener aquí.
+            const inputCant = document.getElementById('retorno-cantidad');
+            const btnAll = document.getElementById('btn-retorno-all');
+            const btnHalf = document.getElementById('btn-retorno-half');
+            const btnOne = document.getElementById('btn-retorno-one');
+            const maxCant = parseFloat(inputCant ? inputCant.max : 0) || 0;
+            if (btnAll) btnAll.addEventListener('click', () => { if (inputCant) inputCant.value = maxCant; });
+            if (btnHalf) btnHalf.addEventListener('click', () => { if (inputCant) inputCant.value = Math.max(1, Math.floor(maxCant / 2)); });
+            if (btnOne) btnOne.addEventListener('click', () => { if (inputCant) inputCant.value = 1; });
+        },
+        preConfirm: () => {
+            const inputEl = document.getElementById('retorno-cantidad');
+            const v = parseFloat(inputEl ? inputEl.value : 0);
+            if (!v || v <= 0) {
+                Swal.showValidationMessage('Ingrese una cantidad válida');
+                return false;
+            }
+            const cantMax = parseFloat(inputEl ? inputEl.max : 0) || 0;
+            if (v > cantMax) {
+                Swal.showValidationMessage('No puede retornar más de ' + cantMax);
+                return false;
+            }
+            return { cantidad_retorno: v };
+        }
+    });
+    if (!formValues) return;
 
     const fd = new FormData();
     fd.append('id_consumo', idConsumo);
+    fd.append('cantidad_retorno', formValues.cantidad_retorno);
     fd.append('csrf_token', csrf);
 
     Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -509,14 +732,16 @@ async function eliminarConsumo(idConsumo, nombreMedicamento, cantidad) {
         const res = await fetch('api/delete_consumo_cirugia.php', { method: 'POST', body: fd });
         const json = await res.json();
         if (json.success) {
+            const esTotal = json.retorno_total !== false;
+            const titleTxt = esTotal ? '✓ Stock retornado' : '✓ Retorno parcial';
+            const extraTxt = esTotal
+                ? '<br>Stock actual: <strong>' + json.stock_nuevo + '</strong>'
+                : '<br>Stock actual: <strong>' + json.stock_nuevo + '</strong><br>Quedan <strong>' + json.cantidad_restante + '</strong> unidades en el consumo';
             Swal.fire({
                 icon: 'success',
-                title: '✓ Stock retornado',
+                title: titleTxt,
                 text: json.message,
-                html: `<div class="text-start small mt-2">
-                    <strong>${json.cantidad}</strong> unidades de <strong>${escapeHtml(json.medicamento)}</strong> retornadas al inventario de <strong>${json.origen_label}</strong>.
-                    <br>Stock actual: <strong>${json.stock_nuevo}</strong>
-                </div>`
+                html: '<div class="text-start small mt-2">Se retornaron <strong>' + json.cantidad + '</strong> unidades de <strong>' + escapeHtml(json.medicamento) + '</strong> al inventario de <strong>' + json.origen_label + '</strong>.' + extraTxt + '</div>'
             }).then(() => location.reload());
         } else {
             Swal.fire('Error', json.message, 'error');
