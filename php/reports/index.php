@@ -276,6 +276,23 @@ try {
     $stmt_lab->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_laboratory = (float) ($stmt_lab->fetchColumn() ?: 0);
 
+    // 5.b Laboratorio - costo (calculado por laboratorio_externo)
+    $stmt_lab_cost = $conn->prepare("
+        SELECT COALESCE(SUM(CASE
+            WHEN ol.laboratorio_externo = 'Medilab' THEN COALESCE(cp.precio_medilab, 0)
+            WHEN ol.laboratorio_externo = 'La Esperanza' THEN COALESCE(cp.precio_la_esperanza, 0)
+            ELSE 0
+        END), 0) AS costo
+        FROM examenes_realizados er
+        LEFT JOIN ordenes_laboratorio ol ON er.id_orden = ol.id_orden
+        LEFT JOIN catalogo_pruebas cp ON er.id_prueba = cp.id_prueba
+        WHERE er.fecha_examen BETWEEN ? AND ?
+          AND er.id_hospital = ?
+          AND (er.tipo_examen IS NULL OR (er.tipo_examen NOT LIKE '%ultrasonido%' AND er.tipo_examen NOT LIKE '%rayos x%' AND er.tipo_examen NOT LIKE '%rx%'))
+    ");
+    $stmt_lab_cost->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $laboratory_cost = (float) ($stmt_lab_cost->fetchColumn() ?: 0);
+
     $stmt_us = $conn->prepare("SELECT SUM(cobro) FROM ultrasonidos WHERE fecha_ultrasonido BETWEEN ? AND ? AND id_hospital = ?");
     $stmt_us->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_ultrasound = (float) ($stmt_us->fetchColumn() ?: 0);
@@ -312,29 +329,54 @@ try {
 
     // 6.b Hospitalizaciones (Cuentas de encamamientos dados de alta)
     $stmt_hosp = $conn->prepare("
-        SELECT SUM(total_general) 
-        FROM cuenta_hospitalaria ch 
-        JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento 
+        SELECT SUM(total_general)
+        FROM cuenta_hospitalaria ch
+        JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento
         WHERE e.fecha_alta BETWEEN ? AND ?
         AND e.id_hospital = ?
     ");
     $stmt_hosp->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_hospitalization = $stmt_hosp->fetchColumn() ?: 0;
 
+    // 6.c Hospitalizaciones - costo (medicamentos + insumos del purchase_items)
+    $stmt_hosp_cost = $conn->prepare("
+        SELECT COALESCE(SUM(ch.cantidad * COALESCE(pi.unit_cost, 0)), 0) AS costo
+        FROM cargos_hospitalarios ch
+        JOIN cuenta_hospitalaria cu ON ch.id_cuenta = cu.id_cuenta
+        JOIN encamamientos e ON cu.id_encamamiento = e.id_encamamiento
+        LEFT JOIN inventario i ON ch.referencia_id = i.id_inventario
+                              AND ch.referencia_tabla = 'inventario'
+        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+        WHERE ch.cancelado = 0
+          AND ch.tipo_cargo IN ('Medicamento','Insumo')
+          AND ch.fecha_cargo BETWEEN ? AND ?
+          AND e.id_hospital = ?
+    ");
+    $stmt_hosp_cost->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $hospitalization_cost = (float) ($stmt_hosp_cost->fetchColumn() ?: 0);
+
     // 7. Ingresos brutos totales
     $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound
         + $total_xray + $total_electro + $total_billings + $total_hospitalization;
 
+    // Mapeo de categoria -> (revenue, cost) ya calculados
     $ingresos_categorias = [
-        ['label' => 'Ventas Farmacia', 'categoria' => 'farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $total_sales_meds],
-        ['label' => 'Consultas Médicas', 'categoria' => 'consultas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings],
-        ['label' => 'Laboratorio', 'categoria' => 'laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory],
-        ['label' => 'Ultrasonido', 'categoria' => 'ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound],
-        ['label' => 'Rayos X', 'categoria' => 'rayos_x', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray],
-        ['label' => 'Electrocardiograma', 'categoria' => 'electro', 'icon' => 'bi-heart-pulse', 'badge' => 'charge-electro', 'monto' => $total_electro],
-        ['label' => 'Procedimientos', 'categoria' => 'procedimientos', 'icon' => 'bi-bandaid', 'badge' => 'charge-procedimiento', 'monto' => (float) $total_procedures],
-        ['label' => 'Hospitalización', 'categoria' => 'hospitalizacion', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization],
+        ['label' => 'Ventas Farmacia', 'categoria' => 'farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $sales_revenue, 'costo' => (float) $sales_cost],
+        ['label' => 'Consultas Médicas', 'categoria' => 'consultas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings, 'costo' => (float) $category_profit['consultations']['cost']],
+        ['label' => 'Laboratorio', 'categoria' => 'laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory, 'costo' => $laboratory_cost],
+        ['label' => 'Ultrasonido', 'categoria' => 'ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound, 'costo' => (float) $category_profit['ultrasonidos']['cost']],
+        ['label' => 'Rayos X', 'categoria' => 'rayos_x', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray, 'costo' => (float) $category_profit['rayos_x']['cost']],
+        ['label' => 'Electrocardiograma', 'categoria' => 'electro', 'icon' => 'bi-heart-pulse', 'badge' => 'charge-electro', 'monto' => $total_electro, 'costo' => (float) $category_profit['electrocardiogramas']['cost']],
+        ['label' => 'Procedimientos', 'categoria' => 'procedimientos', 'icon' => 'bi-bandaid', 'badge' => 'charge-procedimiento', 'monto' => (float) $total_procedures, 'costo' => (float) $category_profit['procedimientos']['cost']],
+        ['label' => 'Hospitalización', 'categoria' => 'hospitalizacion', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization, 'costo' => $hospitalization_cost],
     ];
+
+    // Calcular ganancia y margen (Costo / Monto * 100) por categoría
+    foreach ($ingresos_categorias as &$cat) {
+        $cat['ganancia'] = (float)$cat['monto'] - (float)$cat['costo'];
+        $cat['margen']   = $cat['monto'] > 0 ? ((float)$cat['costo'] / (float)$cat['monto']) * 100 : 0;
+    }
+    unset($cat);
 
     $total_egresos = (float)$total_purchases_meds + $total_gastos + $total_pagos_traslado;
 
@@ -1558,6 +1600,33 @@ try {
             color: var(--color-text-secondary);
         }
 
+        /* Ganancia + Margen en el ledger */
+        .accounting-ledger__profit,
+        .accounting-ledger__margin {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        .accounting-ledger__profit-label,
+        .accounting-ledger__margin-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            opacity: 0.75;
+        }
+        .accounting-ledger__profit-value,
+        .accounting-ledger__margin-value {
+            font-variant-numeric: tabular-nums;
+        }
+        .accounting-ledger__values {
+            gap: 0.3rem;
+        }
+
         .accounting-ledger__bar {
             width: 100%;
             max-width: 100px;
@@ -2587,6 +2656,7 @@ try {
                                 <ul class="accounting-ledger">
                                     <?php foreach ($ingresos_categorias as $cat):
                                         $pct = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
+                                        $margen_color = $cat['margen'] >= 70 ? 'text-danger' : ($cat['margen'] >= 40 ? 'text-warning' : 'text-success');
                                         ?>
                                             <li class="accounting-ledger__row" data-categoria="<?php echo $cat['categoria']; ?>" onclick="openCategoriaDesglose(this)">
                                                 <div class="accounting-ledger__label">
@@ -2605,6 +2675,18 @@ try {
                                                     <span class="accounting-ledger__amount accounting-ledger__amount--income">
                                                         Q<?php echo number_format($cat['monto'], 2); ?>
                                                     </span>
+                                                    <div class="accounting-ledger__profit">
+                                                        <span class="accounting-ledger__profit-label">Gan.</span>
+                                                        <span class="accounting-ledger__profit-value <?php echo $cat['ganancia'] >= 0 ? 'text-success' : 'text-danger'; ?>">
+                                                            Q<?php echo number_format($cat['ganancia'], 2); ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="accounting-ledger__margin">
+                                                        <span class="accounting-ledger__margin-label">Margen</span>
+                                                        <span class="accounting-ledger__margin-value <?php echo $margen_color; ?>">
+                                                            <?php echo number_format($cat['margen'], 1); ?>%
+                                                        </span>
+                                                    </div>
                                                     <span class="accounting-ledger__pct">
                                                         <?php echo number_format($pct, 1); ?>% del total
                                                     </span>
@@ -3491,6 +3573,10 @@ try {
                         <div class="total-label">Ganancia</div>
                         <span class="total-amount" id="desgloseProfit" style="color:var(--color-success);">Q0.00</span>
                     </div>
+                    <div id="desgloseMargenFooter">
+                        <div class="total-label">Margen</div>
+                        <span class="total-amount" id="desgloseMargen" style="color:var(--color-primary);">0.0%</span>
+                    </div>
                 </div>
                 <button type="button" class="action-btn secondary" onclick="closeDesgloseModal()">
                     <i class="bi bi-x-lg"></i> Cerrar
@@ -3748,8 +3834,10 @@ try {
                     document.getElementById('desgloseTotalCosto').textContent = 'Q0.00';
                     document.getElementById('desgloseProfit').textContent = 'Q0.00';
                     document.getElementById('desgloseProfit').style.color = 'var(--color-success)';
+                    document.getElementById('desgloseMargen').textContent = '0.0%';
                     document.getElementById('desgloseCostoFooter').style.display = '';
                     document.getElementById('desgloseProfitFooter').style.display = '';
+                    document.getElementById('desgloseMargenFooter').style.display = '';
                     document.getElementById('categoriaDesgloseModal').style.display = 'flex';
 
                     const url = 'get_categoria_desglose.php?categoria=' + encodeURIComponent(categoria) +
@@ -3785,6 +3873,7 @@ try {
                     var totalCosto = data.total_costo || 0;
                     var totalProfit = data.total_profit || 0;
                     var hasCosto = data.has_costo !== false;
+                    var totalMargen = totalMonto > 0 ? (totalCosto / totalMonto) * 100 : 0;
 
                     if (rows.length === 0) {
                         document.getElementById('desgloseBody').innerHTML =
@@ -3792,13 +3881,16 @@ try {
                         document.getElementById('desgloseTotal').textContent = 'Q0.00';
                         document.getElementById('desgloseTotalCosto').textContent = 'Q0.00';
                         document.getElementById('desgloseProfit').textContent = 'Q0.00';
+                        document.getElementById('desgloseMargen').textContent = '0.0%';
                         document.getElementById('desgloseCostoFooter').style.display = hasCosto ? '' : 'none';
                         document.getElementById('desgloseProfitFooter').style.display = hasCosto ? '' : 'none';
+                        document.getElementById('desgloseMargenFooter').style.display = hasCosto ? '' : 'none';
                         return;
                     }
 
                     document.getElementById('desgloseCostoFooter').style.display = hasCosto ? '' : 'none';
                     document.getElementById('desgloseProfitFooter').style.display = hasCosto ? '' : 'none';
+                    document.getElementById('desgloseMargenFooter').style.display = hasCosto ? '' : 'none';
 
                     if (data.categoria === 'hospitalizacion') {
                         renderHospitalizacionAcordeon(rows, hasCosto);
@@ -3806,6 +3898,7 @@ try {
                         document.getElementById('desgloseTotalCosto').textContent = 'Q' + formatNumber(totalCosto);
                         document.getElementById('desgloseProfit').textContent = 'Q' + formatNumber(totalProfit);
                         document.getElementById('desgloseProfit').style.color = totalProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+                        document.getElementById('desgloseMargen').textContent = totalMargen.toFixed(1) + '%';
                         return;
                     }
 
@@ -3817,13 +3910,15 @@ try {
                 '<th>Descripción</th>' +
                 (isLab ? '<th>Laboratorio</th>' : '') +
                 '<th class="text-end">Monto</th>' +
-                (hasCosto ? '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>' : '') +
+                (hasCosto ? '<th class="text-end">Costo</th><th class="text-end">Ganancia</th><th class="text-end">Margen</th>' : '') +
                 '</tr></thead><tbody>';
 
             for (var i = 0; i < rows.length; i++) {
                 var r = rows[i];
                 var profit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
                 var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                var margen = r.monto > 0 ? ((r.costo || 0) / r.monto) * 100 : 0;
+                var margenClass = margen >= 70 ? 'text-danger' : (margen >= 40 ? 'text-warning' : 'text-success');
                 html += '<tr>' +
                     '<td class="row-num">' + (i + 1) + '</td>' +
                     '<td>' + (r.fecha || '') + '</td>' +
@@ -3835,7 +3930,8 @@ try {
                 html += '<td class="text-end fw-bold text-success">Q' + formatNumber(r.monto) + '</td>';
                 if (hasCosto) {
                     html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
-                        '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
+                        '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>' +
+                        '<td class="text-end fw-bold ' + margenClass + '">' + margen.toFixed(1) + '%</td>';
                 }
                 html += '</tr>';
             }
@@ -3846,6 +3942,7 @@ try {
                     document.getElementById('desgloseTotalCosto').textContent = 'Q' + formatNumber(totalCosto);
                     document.getElementById('desgloseProfit').textContent = 'Q' + formatNumber(totalProfit);
                     document.getElementById('desgloseProfit').style.color = totalProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+                    document.getElementById('desgloseMargen').textContent = totalMargen.toFixed(1) + '%';
                 }
 
                 function escapeHtml(str) {
@@ -3880,7 +3977,7 @@ try {
                         '<th>Paciente</th>' +
                         '<th class="text-end">Total Monto</th>';
                     if (hasCosto) {
-                        html += '<th class="text-end">Total Costo</th><th class="text-end">Total Ganancia</th>';
+                        html += '<th class="text-end">Total Costo</th><th class="text-end">Total Ganancia</th><th class="text-end">Margen</th>';
                     }
                     html += '</tr></thead><tbody>';
 
@@ -3889,6 +3986,8 @@ try {
                         var g = grupos[p];
                         var profit = g.totalMonto - g.totalCosto;
                         var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                        var margen = g.totalMonto > 0 ? (g.totalCosto / g.totalMonto) * 100 : 0;
+                        var margenClass = margen >= 70 ? 'text-danger' : (margen >= 40 ? 'text-warning' : 'text-success');
                         var detailId = 'detalle-paciente-' + i;
 
                         html += '<tr class="paciente-row" onclick="togglePacienteDetalle(\'' + detailId + '\', this)">' +
@@ -3897,16 +3996,17 @@ try {
                             '<td class="text-end fw-bold text-success">Q' + formatNumber(g.totalMonto) + '</td>';
                         if (hasCosto) {
                             html += '<td class="text-end text-danger">Q' + formatNumber(g.totalCosto) + '</td>' +
-                                '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>';
+                                '<td class="text-end fw-bold ' + profitClass + '">Q' + formatNumber(profit) + '</td>' +
+                                '<td class="text-end fw-bold ' + margenClass + '">' + margen.toFixed(1) + '%</td>';
                         }
                         html += '</tr>';
                         html += '<tr id="' + detailId + '" class="detalle-row" style="display:none">' +
-                            '<td colspan="' + (hasCosto ? 5 : 3) + '" style="padding:0">' +
+                            '<td colspan="' + (hasCosto ? 6 : 3) + '" style="padding:0">' +
                             '<table class="sub-table"><thead><tr>' +
                             '<th>Fecha</th><th>Descripción</th>' +
                             '<th class="text-end">Monto</th>';
                         if (hasCosto) {
-                            html += '<th class="text-end">Costo</th><th class="text-end">Ganancia</th>';
+                            html += '<th class="text-end">Costo</th><th class="text-end">Ganancia</th><th class="text-end">Margen</th>';
                         }
                         html += '</tr></thead><tbody>';
 
@@ -3914,13 +4014,16 @@ try {
                             var r = g.rows[j];
                             var rProfit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
                             var rProfitClass = rProfit >= 0 ? 'text-success' : 'text-danger';
+                            var rMargen = r.monto > 0 ? ((r.costo || 0) / r.monto) * 100 : 0;
+                            var rMargenClass = rMargen >= 70 ? 'text-danger' : (rMargen >= 40 ? 'text-warning' : 'text-success');
                             html += '<tr>' +
                                 '<td>' + (r.fecha || '') + '</td>' +
                                 '<td>' + escapeHtml(r.descripcion || '') + '</td>' +
                                 '<td class="text-end text-success">Q' + formatNumber(r.monto) + '</td>';
                             if (hasCosto) {
                                 html += '<td class="text-end text-danger">Q' + formatNumber(r.costo || 0) + '</td>' +
-                                    '<td class="text-end fw-bold ' + rProfitClass + '">Q' + formatNumber(rProfit) + '</td>';
+                                    '<td class="text-end fw-bold ' + rProfitClass + '">Q' + formatNumber(rProfit) + '</td>' +
+                                    '<td class="text-end fw-bold ' + rMargenClass + '">' + rMargen.toFixed(1) + '%</td>';
                             }
                             html += '</tr>';
                         }
