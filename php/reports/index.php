@@ -83,8 +83,17 @@ try {
 
     // ============ CÁLCULO DE MÉTRICAS DE REPORTES ============
 
-    // 1. Ventas de medicamentos
-    $stmt_sales = $conn->prepare("SELECT SUM(total) as total_sales FROM ventas WHERE fecha_venta BETWEEN ? AND ? AND id_hospital = ?");
+    // 1. Ventas de medicamentos (alineado con Auditoría de Medicamentos:
+    //    excluye traslados y items con precio 0, calcula desde detalle_ventas)
+    $stmt_sales = $conn->prepare("
+        SELECT COALESCE(SUM(dv.cantidad_vendida * dv.precio_unitario), 0) as total_sales
+        FROM detalle_ventas dv
+        JOIN ventas v ON dv.id_venta = v.id_venta
+        WHERE v.fecha_venta BETWEEN ? AND ?
+        AND v.id_hospital = ?
+        AND v.tipo_pago != 'Traslado'
+        AND dv.precio_unitario > 0
+    ");
     $stmt_sales->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_sales_meds = $stmt_sales->fetch(PDO::FETCH_ASSOC)['total_sales'] ?? 0;
 
@@ -2832,14 +2841,6 @@ try {
                                         <div class="cons-card__label">Total Ventas</div>
                                         <div class="cons-card__value">Q<?= number_format($total_ventas_historico, 0) ?></div>
                                         <div class="cons-card__periodo">Período: Q<?= number_format($total_ventas_periodo, 0) ?></div>
-                                    </div>
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(99,102,241,0.1); color: #6366f1;">
-                                            <i class="bi bi-graph-up-arrow"></i>
-                                        </div>
-                                        <div class="cons-card__label">Margen Potencial</div>
-                                        <div class="cons-card__value">Q<?= number_format($inv_valor_venta - $inv_valor_compra, 0) ?></div>
-                                        <div class="cons-card__periodo">Venta − Compra</div>
                                     </div>
                                 </div>
                             </div>
