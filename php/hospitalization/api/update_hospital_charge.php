@@ -71,7 +71,7 @@ try {
 
     // 2. Update the charge (manually recalculate subtotal)
     // Capture OLD values for audit
-    $stmt_old = $conn->prepare("SELECT descripcion, cantidad, precio_unitario, tipo_cargo, subtotal, id_inventario FROM cargos_hospitalarios WHERE id_cargo = ?");
+    $stmt_old = $conn->prepare("SELECT descripcion, cantidad, precio_unitario, tipo_cargo, subtotal, referencia_id, referencia_tabla FROM cargos_hospitalarios WHERE id_cargo = ?");
     $stmt_old->execute([$id_cargo]);
     $old_charge = $stmt_old->fetch(PDO::FETCH_ASSOC);
 

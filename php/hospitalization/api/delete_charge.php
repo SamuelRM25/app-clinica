@@ -51,7 +51,7 @@ try {
     $id_cuenta = $cuenta['id_cuenta'];
 
     // 2. Capturar datos del cargo ANTES de cancelar (para auditoría)
-    $stmt_old = $conn->prepare("SELECT id_cargo, id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, id_inventario, referencia_id, referencia_tabla FROM cargos_hospitalarios WHERE id_cargo = ? AND id_cuenta = ?");
+    $stmt_old = $conn->prepare("SELECT id_cargo, id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, subtotal, referencia_id, referencia_tabla FROM cargos_hospitalarios WHERE id_cargo = ? AND id_cuenta = ?");
     $stmt_old->execute([$id_cargo, $id_cuenta]);
     $old_charge = $stmt_old->fetch(PDO::FETCH_ASSOC);
 
