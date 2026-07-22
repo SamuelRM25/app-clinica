@@ -1,7 +1,9 @@
 <?php
 // dashboard.php - Dashboard Centro Médico Herrera Saenz
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
-session_start();
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+start_app_session();
 
 error_log("DASHBOARD DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESSION['user_id'] ?? 'not set'));
 
@@ -12,10 +14,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Incluir configuraciones y funciones
+// Incluir configuraciones adicionales
 require_once '../../config/database.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/multitenant.php';
 
 $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 

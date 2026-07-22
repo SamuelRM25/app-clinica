@@ -397,7 +397,12 @@ date_default_timezone_set('America/Guatemala');
                 <?php if (isset($_GET['error'])): ?>
                     <div class="error-message">
                         <i class="bi bi-exclamation-circle"></i>
-                        <span><?php echo $_GET['error'] === '2' ? 'Demasiados intentos. Espere 60 segundos.' : 'Usuario o contraseña incorrectos.'; ?></span>
+                        <span><?php
+                            $err = $_GET['error'];
+                            if ($err === '2') echo 'Demasiados intentos. Espere 60 segundos.';
+                            elseif ($err === 'sesion_expirada') echo 'Sesión expirada. Se ha renovado automáticamente. Intente de nuevo.';
+                            else echo 'Usuario o contraseña incorrectos.';
+                        ?></span>
                     </div>
                 <?php endif; ?>
 

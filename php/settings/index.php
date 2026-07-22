@@ -923,7 +923,7 @@ $page_title = "Configuración del Sistema";
                     <div class="tab-pane fade" id="tarifas" role="tabpanel">
                         <div class="settings-content-card">
                             <h3 class="section-title mb-4">Tarifas de Servicios</h3>
-                            <p class="text-muted mb-3"><i class="bi bi-hospital"></i> Hospital: <strong id="currentHospitalName">-</strong></p>
+                            <p class="text-muted mb-3"><i class="bi bi-hospital"></i> Hospital: <strong id="currentHospitalName"><?php echo htmlspecialchars($_SESSION['hospital_nombre'] ?? '-'); ?></strong></p>
 
                             <ul class="nav nav-tabs mb-4" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -1849,13 +1849,25 @@ $page_title = "Configuración del Sistema";
             });
         }
 
+        function showTarifaError(msg) {
+            ['tarifa-consulta-body','tarifa-electro-body','tarifa-procedimiento-body',
+             'tarifa-rayos_x-body','tarifa-ultrasonido-body'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.innerHTML.includes('Cargando')) {
+                    el.innerHTML = `<tr><td colspan="11" class="text-center text-danger py-4">${msg}</td></tr>`;
+                }
+            });
+        }
+
         async function loadTarifas() {
             console.log('[ Tarifas] Iniciando carga...');
             try {
                 const response = await fetch('api/get_tarifas.php');
                 console.log('[Tarifas] Response status:', response.status);
                 if (!response.ok) {
-                    console.error('HTTP error:', response.status, response.statusText);
+                    const text = await response.text();
+                    console.error('HTTP error:', response.status, text.slice(0, 200));
+                    showTarifaError('Error HTTP ' + response.status);
                     return;
                 }
                 const contentType = response.headers.get('content-type');
@@ -1863,12 +1875,14 @@ $page_title = "Configuración del Sistema";
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
                     console.error('Non-JSON response:', text.slice(0, 200));
+                    showTarifaError('Respuesta inválida del servidor');
                     return;
                 }
                 const res = await response.json();
                 console.log('[Tarifas] Response:', JSON.stringify(res).slice(0, 200));
                 if (!res.success || !res.tarifas) {
                     console.error('API error:', res.message || 'Unknown error');
+                    showTarifaError(res.message || 'Error del servidor');
                     return;
                 }
                 const t = res.tarifas;
@@ -1885,6 +1899,7 @@ $page_title = "Configuración del Sistema";
                 console.log('[Tarifas] Renderizado completo');
             } catch (error) {
                 console.error('Error loading tarifas:', error);
+                showTarifaError('Error de red: ' + error.message);
             }
         }
 
@@ -2117,7 +2132,11 @@ $page_title = "Configuración del Sistema";
                     return r.json();
                 })
                 .then(data => {
-                    if (!data.success || !data.data.length) {
+                    if (!data.success) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">' + (data.error || 'Error al cargar') + '</td></tr>';
+                        return;
+                    }
+                    if (!data.data.length) {
                         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay pruebas registradas</td></tr>';
                         return;
                     }

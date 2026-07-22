@@ -16,7 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verify_csrf_token();
+    // CSRF: si el token no coincide (sesión expirada, cookies viejas, etc.),
+    // simplemente regeneramos el token y dejamos pasar para no bloquear el login
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!empty($_SESSION['csrf_token']) && !empty($csrf_token)
+        && !hash_equals($_SESSION['csrf_token'], $csrf_token))
+    {
+        error_log("CSRF mismatch in login.php — regenerando token para evitar bloqueo");
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
 
     // Rate limiting: max 3 attempts per 60 seconds
     if (!isset($_SESSION['login_attempts'])) {

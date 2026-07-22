@@ -186,12 +186,19 @@ function start_app_session(): void {
         || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
     // 2. Detectar cookie path dinámicamente desde SCRIPT_NAME
-    //    Ej: /base/php/auth/login.php → /base/
-    //        /GitHub/app-clinica/php/settings/index.php → /GitHub/app-clinica/
+    //    Ej: /base/index.php           → /base/
+    //        /base/php/auth/login.php  → /base/
+    //        /GitHub/app-clinica/index.php → /GitHub/app-clinica/
+    //        /GitHub/app-clinica/php/...   → /GitHub/app-clinica/
     $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
     $cookie_path = '/';
     if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
         $cookie_path = rtrim($matches[1], '/') . '/';
+    } elseif ($script_name !== '/' && $script_name !== '') {
+        $dir = dirname($script_name);
+        if ($dir !== '/' && $dir !== '.') {
+            $cookie_path = rtrim($dir, '/') . '/';
+        }
     }
 
     // 3. Cookie config dinámica (path y secure se adaptan al entorno)
@@ -283,6 +290,11 @@ function verify_session()
     $base_path = '/';
     if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
         $base_path = rtrim($matches[1], '/') . '/';
+    } elseif ($script_name !== '/' && $script_name !== '') {
+        $dir = dirname($script_name);
+        if ($dir !== '/' && $dir !== '.') {
+            $base_path = rtrim($dir, '/') . '/';
+        }
     }
     $project_root_url = ($is_https ? 'https' : 'http')
         . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
