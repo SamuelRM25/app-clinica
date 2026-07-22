@@ -1,8 +1,8 @@
 <?php
 // settings/save_settings.php - Guardar configuración del sistema
-session_start();
-require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+start_app_session();
+require_once '../../config/database.php';
 require_once '../../includes/multitenant.php';
 
 

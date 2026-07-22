@@ -1,12 +1,9 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../../index.php");
-    exit;
-}
+require_once '../../includes/functions.php';
+start_app_session();
+verify_session();
 
 require_once '../../config/database.php';
-require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
 $db = new Database();

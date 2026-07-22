@@ -179,15 +179,27 @@ function start_app_session(): void {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
-    // Ensure consistent session name and cookie params across all PHP files
-    if (session_name() === 'PHPSESSID' || session_name() === '') {
-        @session_name('CLINICA_BASE');
+
+    // 1. Detectar HTTPS (para cookie secure flag)
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ($_SERVER['SERVER_PORT'] ?? 80) == 443
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+    // 2. Detectar cookie path dinámicamente desde SCRIPT_NAME
+    //    Ej: /base/php/auth/login.php → /base/
+    //        /GitHub/app-clinica/php/settings/index.php → /GitHub/app-clinica/
+    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+    $cookie_path = '/';
+    if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
+        $cookie_path = rtrim($matches[1], '/') . '/';
     }
+
+    // 3. Cookie config dinámica (path y secure se adaptan al entorno)
     @session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/',
-        'domain' => '',
-        'secure' => false,
+        'path'     => $cookie_path,
+        'domain'   => '',
+        'secure'   => $is_https,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -263,10 +275,18 @@ function sanitize_input($data)
 
 function verify_session()
 {
-    // Build an absolute URL back to the project root that works regardless of caller's depth
-    $project_root_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+    // Build an absolute URL back to the project root (detect path dinámicamente)
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ($_SERVER['SERVER_PORT'] ?? 80) == 443
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+    $base_path = '/';
+    if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
+        $base_path = rtrim($matches[1], '/') . '/';
+    }
+    $project_root_url = ($is_https ? 'https' : 'http')
         . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-        . '/GitHub/app-clinica/index.php';
+        . $base_path . 'index.php';
 
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $project_root_url);
@@ -372,8 +392,14 @@ function output_keep_alive_script()
                     if (!init.headers.has('X-CSRF-Token')) {
                         init.headers.set('X-CSRF-Token', window.CSRF_TOKEN);
                     }
-                } else if (!init.headers['X-CSRF-Token']) {
-                    init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+                } else {
+                    let _hasToken = false;
+                    for (const _k in init.headers) {
+                        if (_k.toLowerCase() === 'x-csrf-token') { _hasToken = true; break; }
+                    }
+                    if (!_hasToken) {
+                        init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+                    }
                 }
                 // Asegurar que las cookies de sesión viajen en cross-origin y same-origin
                 init.credentials = init.credentials || 'same-origin';

@@ -1,8 +1,8 @@
 <?php
 // settings/index.php - Configuración del Sistema Modernizada - Centro Médico Herrera Saenz
-session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+start_app_session();
 require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
@@ -80,7 +80,7 @@ $page_title = "Configuración del Sistema";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -89,6 +89,9 @@ $page_title = "Configuración del Sistema";
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <?php include '../../includes/theme_head.php'; ?>
+
+    <!-- Seguridad y Protección de Código -->
+    <script src="../../assets/js/security.js"></script>
 
     <style>
         .settings-layout {
@@ -2101,7 +2104,18 @@ $page_title = "Configuración del Sistema";
             tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
 
             fetch('api/get_lab_costs.php')
-                .then(r => r.json())
+                .then(async r => {
+                    if (!r.ok) {
+                        const txt = await r.text();
+                        throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 100));
+                    }
+                    const ct = r.headers.get('content-type');
+                    if (!ct || !ct.includes('application/json')) {
+                        const txt = await r.text();
+                        throw new Error('Respuesta no JSON: ' + txt.slice(0, 100));
+                    }
+                    return r.json();
+                })
                 .then(data => {
                     if (!data.success || !data.data.length) {
                         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay pruebas registradas</td></tr>';
@@ -2148,26 +2162,41 @@ $page_title = "Configuración del Sistema";
             const items = Object.values(grouped);
             let completed = 0;
 
+            let lastSuccess = true;
             items.forEach(item => {
                 item.csrf_token = csrfToken;
                 fetch('api/save_lab_cost.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(item)
                 })
-                    .then(r => r.json())
+                    .then(async r => {
+                        if (!r.ok) {
+                            const txt = await r.text();
+                            throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 100));
+                        }
+                        const ct = r.headers.get('content-type');
+                        if (!ct || !ct.includes('application/json')) {
+                            const txt = await r.text();
+                            throw new Error('Respuesta no JSON: ' + txt.slice(0, 100));
+                        }
+                        return r.json();
+                    })
                     .then(res => {
+                        if (!res.success) lastSuccess = false;
                         completed++;
                         if (completed === items.length) {
+                            const ok = lastSuccess && res.success;
                             Swal.fire({
-                                icon: res.success ? 'success' : 'error',
-                                title: res.success ? 'Costos guardados' : 'Error',
-                                text: res.success ? `${items.length} prueba(s) actualizada(s)` : res.error
+                                icon: ok ? 'success' : 'error',
+                                title: ok ? 'Costos guardados' : 'Error',
+                                text: ok ? `${items.length} prueba(s) actualizada(s)` : (res.error || 'Error al guardar')
                             });
-                            if (res.success) loadLabCosts();
+                            if (ok) loadLabCosts();
                         }
                     })
                     .catch(err => {
+                        lastSuccess = false;
                         completed++;
                         if (completed === items.length) {
                             Swal.fire({ icon: 'error', title: 'Error de red', text: err.message });
@@ -2216,7 +2245,7 @@ $page_title = "Configuración del Sistema";
         async function saveTarifa() {
             const id_tarifa = document.getElementById('tarifaId').value;
             const tipo = document.getElementById('tarifaTipo').value;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || window.CSRF_TOKEN || '';
 
             let payload = {
                 action: id_tarifa ? 'update' : 'create',
@@ -2259,9 +2288,22 @@ $page_title = "Configuración del Sistema";
             try {
                 const response = await fetch('api/save_tarifas.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('saveTarifa HTTP error:', response.status, text.slice(0, 200));
+                    Swal.fire('Error', 'Error del servidor: ' + (response.status === 403 ? 'Permiso denegado (sesión expirada?)' : response.status), 'error');
+                    return;
+                }
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('saveTarifa non-JSON response:', text.slice(0, 200));
+                    Swal.fire('Error', 'Respuesta inesperada del servidor', 'error');
+                    return;
+                }
                 const res = await response.json();
                 if (res.success) {
                     Swal.fire('Éxito', res.message, 'success').then(() => {
@@ -2272,6 +2314,7 @@ $page_title = "Configuración del Sistema";
                     Swal.fire('Error', res.message, 'error');
                 }
             } catch (error) {
+                console.error('saveTarifa error:', error);
                 Swal.fire('Error', 'Fallo en la comunicación con el servidor', 'error');
             }
         }

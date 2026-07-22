@@ -1,7 +1,7 @@
 <?php
-session_start();
-require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+start_app_session();
+require_once '../../../config/database.php';
 
 header('Content-Type: application/json');
 

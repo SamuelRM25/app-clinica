@@ -1,9 +1,9 @@
 <?php
-session_start();
-header('Content-Type: application/json');
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
+start_app_session();
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Sesión no válida']);

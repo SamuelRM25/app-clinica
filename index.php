@@ -1,8 +1,8 @@
 <?php
 // index.php - Sistema de Gestión Médica
-session_start();
 require_once __DIR__ . '/config/hospital.php';
 require_once __DIR__ . '/includes/functions.php';
+start_app_session();
 
 error_log("INDEX DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESSION['user_id'] ?? 'not set'));
 

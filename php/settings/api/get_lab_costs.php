@@ -1,13 +1,10 @@
 <?php
-session_start();
+require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+start_app_session();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'No autorizado']);
-    exit;
-}
-
-require_once '../../../config/database.php';
+verify_session();
 
 try {
     $database = new Database();

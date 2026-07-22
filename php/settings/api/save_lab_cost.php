@@ -1,18 +1,15 @@
 <?php
-session_start();
+require_once '../../../config/database.php';
+require_once '../../../includes/functions.php';
+start_app_session();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'No autorizado']);
-    exit;
-}
-
-require_once '../../../config/database.php';
+verify_session();
 
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!hash_equals($_SESSION['csrf_token'] ?? '', $data['csrf_token'] ?? '')) {
-    echo json_encode(['success' => false, 'error' => 'Token CSRF inválido']);
+    echo json_encode(['success' => false, 'error' => 'Token CSRF inválido. Recargue la página.']);
     exit;
 }
 

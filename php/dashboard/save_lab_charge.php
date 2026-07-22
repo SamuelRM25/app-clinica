@@ -1,16 +1,15 @@
 <?php
 // save_lab_charge.php
-session_start();
+require_once '../../config/database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/multitenant.php';
+start_app_session();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
 }
-
-require_once '../../config/database.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/multitenant.php';
 
 
 try {

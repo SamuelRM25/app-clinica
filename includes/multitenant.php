@@ -4,9 +4,7 @@
  */
 require_once __DIR__ . '/../config/hospital.php'; // Identidad de la carpeta
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+start_app_session();
 
 // ── Seguridad: Verificar que la sesión pertenezca a esta carpeta ──
 if (isset($_SESSION['id_hospital'])) {

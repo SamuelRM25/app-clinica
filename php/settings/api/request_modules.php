@@ -2,7 +2,8 @@
 /**
  * request_modules.php - API para que hospitales envíen solicitudes de módulos
  */
-session_start();
+require_once '../../../includes/functions.php';
+start_app_session();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -11,7 +12,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once '../../../config/database.php';
-require_once '../../../includes/functions.php';
 
 // CSRF validation
 $csrf_header = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';

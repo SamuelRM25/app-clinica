@@ -1,9 +1,9 @@
 <?php
 // settings/api/delete_user.php
 // Soft delete / reactivate: toggle the `activo` flag instead of DELETE FROM.
-session_start();
-require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
+start_app_session();
+require_once '../../../config/database.php';
 
 header('Content-Type: application/json');
 
