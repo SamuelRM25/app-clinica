@@ -4,7 +4,10 @@ require_once '../../../includes/functions.php';
 start_app_session();
 header('Content-Type: application/json');
 
-verify_session();
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'error' => 'No autorizado']);
+    exit;
+}
 
 try {
     $database = new Database();
