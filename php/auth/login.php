@@ -1,19 +1,12 @@
 <?php
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => false,
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
-ini_set('session.gc_maxlifetime', 28800);
-session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
 require_once '../../config/hospital.php'; // Identidad de la carpeta
+
+// Iniciar sesión con configuración consistente
+start_app_session();
 
 
 // Si alguien llega por GET, redirigir al formulario de login real

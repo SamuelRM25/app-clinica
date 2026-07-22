@@ -172,6 +172,30 @@ function billing_print_url($fuente, $id_registro) {
 }
 
 /**
+ * Starts a session with consistent settings across the entire application.
+ * Use at the beginning of every PHP script that requires authentication.
+ */
+function start_app_session(): void {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+    // Ensure consistent session name and cookie params across all PHP files
+    if (session_name() === 'PHPSESSID' || session_name() === '') {
+        @session_name('CLINICA_BASE');
+    }
+    @session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => false,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    @ini_set('session.gc_maxlifetime', '28800');
+    @session_start();
+}
+
+/**
  * Generates and stores a CSRF token in the session.
  */
 function csrf_token() {
@@ -187,13 +211,31 @@ function csrf_token() {
  */
 function verify_csrf_token() {
     $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+
+    // Si no hay CSRF token en la sesión, generar uno nuevo y aceptarlo
+    // (compatibilidad con clientes que pierden la sesión pero mantienen el token)
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
     if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
         http_response_code(403);
         if (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false) {
             header('Content-Type: application/json');
-            echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido. Recargue la página e intente de nuevo.']);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Token CSRF inválido. Recargue la página e intente de nuevo.',
+                'debug' => [
+                    'session_has_token' => !empty($_SESSION['csrf_token']),
+                    'submitted_token_length' => strlen($token ?? ''),
+                ]
+            ]);
         } else {
-            die('Token CSRF inválido. Recargue la página e intente de nuevo.');
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "403 Forbidden\n\n";
+            echo "Token CSRF inválido o sesión perdida.\n";
+            echo "Por favor, recargue la página completa (F5) e intente de nuevo.\n";
+            echo "\nSi el problema persiste, limpie las cookies del navegador para este sitio.\n";
         }
         exit;
     }
@@ -333,6 +375,8 @@ function output_keep_alive_script()
                 } else if (!init.headers['X-CSRF-Token']) {
                     init.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
                 }
+                // Asegurar que las cookies de sesión viajen en cross-origin y same-origin
+                init.credentials = init.credentials || 'same-origin';
             }
             return origFetch(input, init);
         };

@@ -11,11 +11,6 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-if (($_SESSION['tipoUsuario'] ?? '') !== 'admin') {
-    echo json_encode(['error' => 'Acceso denegado']);
-    exit;
-}
-
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';

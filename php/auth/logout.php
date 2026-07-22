@@ -1,7 +1,7 @@
 <?php
-session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+start_app_session();
 
 $user_id = $_SESSION['user_id'] ?? null;
 $user_nombre = $_SESSION['nombre'] ?? null;
