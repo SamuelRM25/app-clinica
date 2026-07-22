@@ -1,5 +1,6 @@
 <IfModule lsapi_module>
     php_value session.name "CLINICA_BASE"
+    php_value session.cookie_path "/"
     php_value session.cookie_httponly "1"
     php_value session.use_strict_mode "1"
     php_value session.cookie_samesite "Lax"
@@ -9,6 +10,7 @@
 </IfModule>
 <IfModule mod_php.c>
     php_value session.name "CLINICA_BASE"
+    php_value session.cookie_path "/"
     php_value session.cookie_httponly "1"
     php_value session.use_strict_mode "1"
     php_value session.cookie_samesite "Lax"

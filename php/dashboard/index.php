@@ -9,8 +9,8 @@ error_log("DASHBOARD DEBUG: session_id = " . session_id() . ", user_id = " . ($_
 
 // Verificar sesión activa
 if (!isset($_SESSION['user_id'])) {
-    error_log("DASHBOARD DEBUG: Session not set. Redirecting to index.php");
-    header("Location: ../../index.php");
+    error_log("DASHBOARD DEBUG: Session not set. Redirecting to index.php?loop=1");
+    header("Location: ../../index.php?loop=1");
     exit;
 }
 
@@ -3235,11 +3235,11 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                         if (type === 'Consulta') {
                             if (tarifas.consulta[doctorId]) {
-                                price = isHabil ? tarifas.consulta[doctorId].normal : tarifas.consulta[doctorId].inutil;
+                                price = isHabil ? tarifas.consulta[doctorId].normal : tarifas.consulta[doctorId].inhabil;
                             }
                         } else {
                             if (tarifas.reconsulta[doctorId]) {
-                                price = isHabil ? tarifas.reconsulta[doctorId].normal : tarifas.reconsulta[doctorId].inutil;
+                                price = isHabil ? tarifas.reconsulta[doctorId].normal : tarifas.reconsulta[doctorId].inhabil;
                             }
                         }
 
@@ -4127,22 +4127,27 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <input type="hidden" id="xray_patient_id" name="patient_id">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Número de Regiones</label>
-                            <select class="form-select" id="xray_regions" onchange="updateXrayPrice()">
-                                <option value="1">1 Región</option>
-                                <option value="2">2 Regiones</option>
-                                <option value="3">3 Regiones</option>
+                            <label class="form-label">Tipo de Estudio (Rayos X)</label>
+                            <select class="form-select" id="xraySelect" name="xray_type" required onchange="updateXrayPrice()">
+                                <option value="">Seleccione estudio...</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Tipo de Estudio (Rayos X)</label>
-                            <input type="text" class="form-control" name="xray_type" required
-                                placeholder="Ej: Torax, Mano, etc.">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Horario / Tarifa</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check xray-rate-type" name="xray_rate_type"
+                                    id="xray_rate_normal" value="normal" checked>
+                                <label class="btn btn-outline-secondary" for="xray_rate_normal">Normal</label>
+                                <input type="radio" class="btn-check xray-rate-type" name="xray_rate_type"
+                                    id="xray_rate_inhabil" value="inhabil">
+                                <label class="btn btn-outline-secondary" for="xray_rate_inhabil">Inhábil</label>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Monto a Cobrar (Q)</label>
-                            <input type="number" class="form-control" id="xray_amount" name="amount" required
+                            <input type="number" class="form-control" id="xray_amount" name="amount" readonly
                                 step="0.01" placeholder="0.00">
+                            <small class="text-muted">El monto se actualiza al seleccionar el estudio y tarifa</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Tipo de Pago</label>
@@ -4169,7 +4174,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 <div class="modal-footer">
                     <div class="me-auto small text-muted">
                         <i class="bi bi-info-circle me-1"></i>
-                        <span id="xrayPriceHint">Seleccione región para ver precio</span>
+                        <span id="xrayPriceHint">Seleccione estudio para ver precio</span>
                     </div>
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-secondary" id="saveXrayBtn">Guardar Cobro</button>
@@ -4276,38 +4281,40 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     if (Array.isArray(t.consulta) && t.consulta.length > 0) {
                         const consultaObj = {};
                         t.consulta.forEach(item => {
-                            if (item.id_medico) consultaObj[item.id_medico] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                            if (item.id_medico) consultaObj[item.id_medico] = { normal: item.precio_normal, inhabil: item.precio_inhabil };
                         });
                         tarifas.consulta = consultaObj;
                     }
                     if (Array.isArray(t.reconsulta) && t.reconsulta.length > 0) {
                         const reconsObj = {};
                         t.reconsulta.forEach(item => {
-                            if (item.id_medico) reconsObj[item.id_medico] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                            if (item.id_medico) reconsObj[item.id_medico] = { normal: item.precio_normal, inhabil: item.precio_inhabil };
                         });
                         tarifas.reconsulta = reconsObj;
                     }
                     if (t.electrocardiograma && t.electrocardiograma.precio_normal) {
-                        tarifas.electrocardiograma = { normal: t.electrocardiograma.precio_normal, inutil: t.electrocardiograma.precio_inhabil };
+                        tarifas.electrocardiograma = { normal: t.electrocardiograma.precio_normal, inhabil: t.electrocardiograma.precio_inhabil };
                     }
                     if (Array.isArray(t.procedimiento) && t.procedimiento.length > 0) {
                         const procObj = {};
                         t.procedimiento.forEach(item => {
-                            if (item.nombre_servicio) procObj[item.nombre_servicio] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                            if (item.nombre_servicio) procObj[item.nombre_servicio] = { normal: item.precio_normal, inhabil: item.precio_inhabil };
                         });
                         tarifas.procedimiento = procObj;
                     }
                     if (Array.isArray(t.rayos_x) && t.rayos_x.length > 0) {
                         const rxObj = {};
                         t.rayos_x.forEach(item => {
-                            if (item.region_count) rxObj[item.region_count] = { normal: item.precio_normal, inutil: item.precio_inhabil };
+                            const key = item.id_tarifa;
+                            rxObj[key] = { region: item.region, proyeccion: item.proyeccion, normal: item.precio_normal, inhabil: item.precio_inhabil };
                         });
                         tarifas.rayos_x = rxObj;
+                        populateXrayDropdown();
                     }
                     if (Array.isArray(t.ultrasonido) && t.ultrasonido.length > 0) {
                         const usObj = {};
                         t.ultrasonido.forEach(item => {
-                            if (item.nombre_servicio) usObj[item.nombre_servicio] = { normal: item.precio_normal, inutil: item.precio_inhabil, radio: item.precio_radio || 0, iradio: item.precio_inhabil };
+                            if (item.nombre_servicio) usObj[item.nombre_servicio] = { normal: item.precio_normal, inhabil: item.precio_inhabil, radio: item.precio_radio || 0, iradio: item.precio_inhabil };
                         });
                         tarifas.ultrasonido = usObj;
                     }
@@ -4338,7 +4345,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
 document.addEventListener('DOMContentLoaded', loadTarifas);
 
-        document.getElementById('xrayBillingModal')?.addEventListener('shown.bs.modal', updateXrayPrice);
+        document.getElementById('xrayBillingModal')?.addEventListener('shown.bs.modal', function() {
+            const select = document.getElementById('xraySelect');
+            if (select) select.dispatchEvent(new Event('change'));
+        });
+        document.getElementById('xraySelect')?.addEventListener('change', updateXrayPrice);
+        document.querySelectorAll('.xray-rate-type').forEach(radio => {
+            radio.addEventListener('change', updateXrayPrice);
+        });
         document.getElementById('electroBillingModal')?.addEventListener('shown.bs.modal', updateElectroPrice);
         document.getElementById('procedureBillingModal')?.addEventListener('shown.bs.modal', updateProcedurePrice);
         document.getElementById('ultrasoundBillingModal')?.addEventListener('shown.bs.modal', function() {
@@ -4433,7 +4447,7 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
             const isHabil = document.getElementById('electro_habil').checked;
             const priceField = document.getElementById('electro_precio');
             if (tarifas.electrocardiograma && tarifas.electrocardiograma.normal) {
-                priceField.value = isHabil ? tarifas.electrocardiograma.normal.toFixed(2) : tarifas.electrocardiograma.inutil.toFixed(2);
+                priceField.value = isHabil ? tarifas.electrocardiograma.normal.toFixed(2) : tarifas.electrocardiograma.inhabil.toFixed(2);
             } else {
                 priceField.value = '';
             }
@@ -4445,26 +4459,46 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
             const priceField = document.getElementById('procedurePrice');
 
             if (procedure && tarifas.procedimiento[procedure]) {
-                const price = isHabil ? tarifas.procedimiento[procedure].normal : tarifas.procedimiento[procedure].inutil;
+                const price = isHabil ? tarifas.procedimiento[procedure].normal : tarifas.procedimiento[procedure].inhabil;
                 priceField.value = price.toFixed(2);
             } else {
                 priceField.value = '';
             }
         }
 
-        function updateXrayPrice() {
-            const regions = parseInt(document.getElementById('xray_regions').value) || 1;
-            const priceField = document.getElementById('xray_amount');
-            const date = new Date();
-            const day = date.getDay();
-            const hour = date.getHours();
-            const isHabil = day >= 1 && day <= 6 && !(day === 6 && hour >= 13);
+        function populateXrayDropdown() {
+            const select = document.getElementById('xraySelect');
+            if (!select) return;
+            const keys = Object.keys(tarifas.rayos_x || {});
+            if (keys.length === 0) return;
+            select.innerHTML = '<option value="">Seleccione estudio...</option>';
+            keys.sort((a, b) => {
+                const ra = tarifas.rayos_x[a].region || '';
+                const rb = tarifas.rayos_x[b].region || '';
+                return ra.localeCompare(rb, undefined, { numeric: true });
+            }).forEach(key => {
+                const item = tarifas.rayos_x[key];
+                const opt = document.createElement('option');
+                opt.value = key;
+                const proy = item.proyeccion ? ' - ' + item.proyeccion : '';
+                opt.textContent = 'Reg ' + item.region + proy + ' (Q' + (item.normal || 0).toFixed(2) + ')';
+                select.appendChild(opt);
+            });
+        }
 
-            if (tarifas.rayos_x && tarifas.rayos_x[regions]) {
-                const price = isHabil ? tarifas.rayos_x[regions].normal : tarifas.rayos_x[regions].inutil;
-                priceField.value = price.toFixed(2);
+        function updateXrayPrice() {
+            const selectedKey = document.getElementById('xraySelect').value;
+            const rateType = document.querySelector('input[name="xray_rate_type"]:checked').value;
+            const priceField = document.getElementById('xray_amount');
+
+            if (selectedKey && tarifas.rayos_x && tarifas.rayos_x[selectedKey]) {
+                const tipo = tarifas.rayos_x[selectedKey];
+                const price = rateType === 'inhabil' ? (tipo.inhabil || 0) : (tipo.normal || 0);
+                priceField.value = price > 0 ? price.toFixed(2) : '';
+                priceField.readOnly = true;
             } else {
                 priceField.value = '';
+                priceField.readOnly = true;
             }
         }
 

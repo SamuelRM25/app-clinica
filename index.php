@@ -8,9 +8,18 @@ error_log("INDEX DEBUG: session_id = " . session_id() . ", user_id = " . ($_SESS
 
 // Verificar si el usuario ya está autenticado
 if (isset($_SESSION['user_id'])) {
-    error_log("INDEX DEBUG: Already authenticated. Redirecting to php/dashboard/index.php");
-    header("Location: php/dashboard/index.php");
-    exit;
+    // Si llegamos con ?loop=1, dashboard no encontró la sesión por cookies viejas
+    // Rompemos el loop cerrando la sesión y mostrando el login
+    if (isset($_GET['loop']) && $_GET['loop'] === '1') {
+        error_log("INDEX DEBUG: Redirect loop detected (loop=1). Destroying session.");
+        session_unset();
+        session_destroy();
+        // Fall through to show login page
+    } else {
+        error_log("INDEX DEBUG: Already authenticated. Redirecting to php/dashboard/index.php");
+        header("Location: php/dashboard/index.php");
+        exit;
+    }
 }
 
 // Configuración inicial

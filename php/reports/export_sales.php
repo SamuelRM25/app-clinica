@@ -69,7 +69,7 @@ try {
         $total_cost += $row['total_costo'];
     }
     $total_profit = $total_revenue - $total_cost;
-    $total_margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
+    $total_margin = ($total_revenue > 0 && $total_cost > 0) ? ($total_profit / $total_cost) * 100 : ($total_revenue > 0 ? 100 : 0);
 
     // Exportación CSV
     if ($format === 'csv') {
@@ -85,7 +85,7 @@ try {
 
         foreach ($data as $row) {
             $ganancia = $row['total_venta'] - $row['total_costo'];
-            $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+            $margen = ($row['total_venta'] > 0 && $row['total_costo'] > 0) ? ($ganancia / $row['total_costo']) * 100 : ($row['total_venta'] > 0 ? 100 : 0);
             $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
             $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
 
@@ -128,7 +128,7 @@ try {
 
         foreach ($data as $row) {
             $ganancia = $row['total_venta'] - $row['total_costo'];
-            $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+            $margen = ($row['total_venta'] > 0 && $row['total_costo'] > 0) ? ($ganancia / $row['total_costo']) * 100 : ($row['total_venta'] > 0 ? 100 : 0);
             $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
             $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
 
@@ -198,7 +198,7 @@ try {
             <tbody>
                 <?php foreach ($data as $row):
                     $ganancia = $row['total_venta'] - $row['total_costo'];
-                    $margen = $row['total_venta'] > 0 ? ($ganancia / $row['total_venta']) * 100 : 0;
+            $margen = ($row['total_venta'] > 0 && $row['total_costo'] > 0) ? ($ganancia / $row['total_costo']) * 100 : ($row['total_venta'] > 0 ? 100 : 0);
                     $p_venta = $row['cantidad_total'] > 0 ? $row['total_venta'] / $row['cantidad_total'] : 0;
                     $p_costo = $row['cantidad_total'] > 0 ? $row['total_costo'] / $row['cantidad_total'] : 0;
                     ?>

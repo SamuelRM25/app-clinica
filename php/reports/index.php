@@ -371,10 +371,10 @@ try {
         ['label' => 'Hospitalización', 'categoria' => 'hospitalizacion', 'icon' => 'bi-hospital', 'badge' => 'charge-otro', 'monto' => (float) $total_hospitalization, 'costo' => $hospitalization_cost],
     ];
 
-    // Calcular ganancia y margen (Costo / Monto * 100) por categoría
+    // Calcular ganancia y margen ((Monto - Costo) / Costo * 100) por categoría
     foreach ($ingresos_categorias as &$cat) {
         $cat['ganancia'] = (float)$cat['monto'] - (float)$cat['costo'];
-        $cat['margen']   = $cat['monto'] > 0 ? ((float)$cat['costo'] / (float)$cat['monto']) * 100 : 0;
+        $cat['margen']   = ($cat['monto'] > 0 && $cat['costo'] > 0) ? (($cat['monto'] - $cat['costo']) / $cat['costo']) * 100 : ($cat['monto'] > 0 ? 100 : 0);
     }
     unset($cat);
 
@@ -745,7 +745,7 @@ try {
         $total_meds_costo += $row['total_costo'];
     }
     $total_meds_ganancia = $total_meds_venta - $total_meds_costo;
-    $total_meds_margen = $total_meds_venta > 0 ? ($total_meds_ganancia / $total_meds_venta) * 100 : 0;
+    $total_meds_margen = ($total_meds_venta > 0 && $total_meds_costo > 0) ? ($total_meds_ganancia / $total_meds_costo) * 100 : ($total_meds_venta > 0 ? 100 : 0);
 
     // ============ REPORTE DETALLADO DE LABORATORIOS ============
 
@@ -2656,7 +2656,7 @@ try {
                                 <ul class="accounting-ledger">
                                     <?php foreach ($ingresos_categorias as $cat):
                                         $pct = $total_gross_revenue > 0 ? ($cat['monto'] / $total_gross_revenue) * 100 : 0;
-                                        $margen_color = $cat['margen'] >= 70 ? 'text-danger' : ($cat['margen'] >= 40 ? 'text-warning' : 'text-success');
+                                        $margen_color = $cat['margen'] >= 150 ? 'text-success' : ($cat['margen'] >= 80 ? 'text-warning' : 'text-danger');
                                         ?>
                                             <li class="accounting-ledger__row" data-categoria="<?php echo $cat['categoria']; ?>" onclick="openCategoriaDesglose(this)">
                                                 <div class="accounting-ledger__label">
@@ -2776,7 +2776,61 @@ try {
                                  </div>
                              </div>
 
-                            <!-- ============= SECCIÓN 4.5: CANTIDADES ABSOLUTAS ============= -->
+                            <!-- ============= SECCIÓN: TOTALES CONTABLES CONSOLIDADOS ============= -->
+                            <div class="accounting-section mt-5">
+                                <div class="section-header">
+                                    <h3 class="section-title h4 mb-1">
+                                        <i class="bi bi-calculator text-success me-2"></i>
+                                        Totales Contables Consolidados
+                                    </h3>
+                                    <p class="text-muted small mb-0">Resumen comparativo: Período actual vs Histórico (snapshot)</p>
+                                </div>
+
+                                <div class="totales-grid mt-2">
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(13,202,240,0.1); color: #0dcaf0;">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </div>
+                                        <div class="cons-card__label">Total Compras</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_compras_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_periodo, 0) ?></div>
+                                    </div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                                            <i class="bi bi-check-circle"></i>
+                                        </div>
+                                        <div class="cons-card__label">Compras Pagadas</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_pagadas_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_pagadas, 0) ?></div>
+                                    </div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(108,117,125,0.1); color: #6c757d;">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                        </div>
+                                        <div class="cons-card__label">Traslados (Costo)</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_traslados_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_traslados_costo, 0) ?></div>
+                                    </div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(220,53,69,0.1); color: #dc3545;">
+                                            <i class="bi bi-exclamation-circle"></i>
+                                        </div>
+                                        <div class="cons-card__label">Compras Pendientes</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_pendiente_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">CxP snapshot</div>
+                                    </div>
+                                    <div class="cons-card">
+                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
+                                            <i class="bi bi-cart-check"></i>
+                                        </div>
+                                        <div class="cons-card__label">Total Ventas</div>
+                                        <div class="cons-card__value">Q<?= number_format($total_ventas_historico, 0) ?></div>
+                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_ventas_periodo, 0) ?></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ============= SECCIÓN: CANTIDADES ABSOLUTAS DEL PERÍODO ============= -->
                             <div class="accounting-section mt-5">
                               <div class="section-header">
                                 <h3 class="section-title h4 mb-1">
@@ -2871,60 +2925,6 @@ try {
                                   </div>
                                 </div>
                               </div>
-                            </div>
-
-                            <!-- ============= NUEVA SECCIÓN: TOTALES CONTABLES CONSOLIDADOS ============= -->
-                            <div class="accounting-section mt-5">
-                                <div class="section-header">
-                                    <h3 class="section-title h4 mb-1">
-                                        <i class="bi bi-calculator text-success me-2"></i>
-                                        Totales Contables Consolidados
-                                    </h3>
-                                    <p class="text-muted small mb-0">Resumen comparativo: Período actual vs Histórico (snapshot)</p>
-                                </div>
-
-                                <div class="totales-grid mt-2">
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(13,202,240,0.1); color: #0dcaf0;">
-                                            <i class="bi bi-cart-plus"></i>
-                                        </div>
-                                        <div class="cons-card__label">Total Compras</div>
-                                        <div class="cons-card__value">Q<?= number_format($total_compras_historico, 0) ?></div>
-                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_periodo, 0) ?></div>
-                                    </div>
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
-                                            <i class="bi bi-check-circle"></i>
-                                        </div>
-                                        <div class="cons-card__label">Compras Pagadas</div>
-                                        <div class="cons-card__value">Q<?= number_format($total_pagadas_historico, 0) ?></div>
-                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_compras_pagadas, 0) ?></div>
-                                    </div>
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(108,117,125,0.1); color: #6c757d;">
-                                            <i class="bi bi-arrow-left-right"></i>
-                                        </div>
-                                        <div class="cons-card__label">Traslados (Costo)</div>
-                                        <div class="cons-card__value">Q<?= number_format($total_traslados_historico, 0) ?></div>
-                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_traslados_costo, 0) ?></div>
-                                    </div>
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(220,53,69,0.1); color: #dc3545;">
-                                            <i class="bi bi-exclamation-circle"></i>
-                                        </div>
-                                        <div class="cons-card__label">Compras Pendientes</div>
-                                        <div class="cons-card__value">Q<?= number_format($total_pendiente_historico, 0) ?></div>
-                                        <div class="cons-card__periodo">CxP snapshot</div>
-                                    </div>
-                                    <div class="cons-card">
-                                        <div class="cons-card__icon" style="background: rgba(25,135,84,0.1); color: #198754;">
-                                            <i class="bi bi-cart-check"></i>
-                                        </div>
-                                        <div class="cons-card__label">Total Ventas</div>
-                                        <div class="cons-card__value">Q<?= number_format($total_ventas_historico, 0) ?></div>
-                                        <div class="cons-card__periodo">Período: Q<?= number_format($total_ventas_periodo, 0) ?></div>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- ============= SECCIÓN 5: RATIOS FINANCIEROS ============= -->
@@ -3221,7 +3221,7 @@ try {
                                                                     $p_venta = $item['cantidad'] > 0 ? $item['total_venta'] / $item['cantidad'] : 0;
                                                                     $p_costo = $item['cantidad'] > 0 ? $item['total_costo'] / $item['cantidad'] : 0;
                                                                     $ganancia = $item['total_venta'] - $item['total_costo'];
-                                                                    $margen = $item['total_venta'] > 0 ? ($ganancia / $item['total_venta']) * 100 : 0;
+                                                                     $margen = ($item['total_venta'] > 0 && $item['total_costo'] > 0) ? ($ganancia / $item['total_costo']) * 100 : ($item['total_venta'] > 0 ? 100 : 0);
                                                                     $origen_class = $item['origen'] === 'Farmacia' ? 'charge-farmacia' : 'charge-hospitalizacion';
                                                                 ?>
                                                                     <tr>
@@ -3235,7 +3235,7 @@ try {
                                                                         <td class="text-end fw-bold <?php echo $ganancia >= 0 ? 'text-success' : 'text-danger'; ?>">Q<?php echo number_format($ganancia, 2); ?></td>
                                                                         <td class="text-center">
                                                                             <?php
-                                                                            $margen_color = $margen > 30 ? 'bg-success' : ($margen > 15 ? 'bg-warning text-dark' : 'bg-danger');
+                                                                            $margen_color = $margen >= 150 ? 'bg-success' : ($margen >= 80 ? 'bg-warning text-dark' : 'bg-danger');
                                                                             ?>
                                                                             <span class="badge <?php echo $margen_color; ?> rounded-pill px-2" style="min-width: 45px;">
                                                                                 <?php echo number_format($margen, 0); ?>%
@@ -3873,7 +3873,7 @@ try {
                     var totalCosto = data.total_costo || 0;
                     var totalProfit = data.total_profit || 0;
                     var hasCosto = data.has_costo !== false;
-                    var totalMargen = totalMonto > 0 ? (totalCosto / totalMonto) * 100 : 0;
+                    var totalMargen = (totalMonto > 0 && totalCosto > 0) ? ((totalMonto - totalCosto) / totalCosto) * 100 : (totalMonto > 0 ? 100 : 0);
 
                     if (rows.length === 0) {
                         document.getElementById('desgloseBody').innerHTML =
@@ -3917,8 +3917,8 @@ try {
                 var r = rows[i];
                 var profit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
                 var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
-                var margen = r.monto > 0 ? ((r.costo || 0) / r.monto) * 100 : 0;
-                var margenClass = margen >= 70 ? 'text-danger' : (margen >= 40 ? 'text-warning' : 'text-success');
+                var margen = (r.monto > 0 && r.costo > 0) ? ((r.monto - (r.costo || 0)) / r.costo) * 100 : (r.monto > 0 ? 100 : 0);
+                var margenClass = margen >= 150 ? 'text-success' : (margen >= 80 ? 'text-warning' : 'text-danger');
                 html += '<tr>' +
                     '<td class="row-num">' + (i + 1) + '</td>' +
                     '<td>' + (r.fecha || '') + '</td>' +
@@ -3986,8 +3986,8 @@ try {
                         var g = grupos[p];
                         var profit = g.totalMonto - g.totalCosto;
                         var profitClass = profit >= 0 ? 'text-success' : 'text-danger';
-                        var margen = g.totalMonto > 0 ? (g.totalCosto / g.totalMonto) * 100 : 0;
-                        var margenClass = margen >= 70 ? 'text-danger' : (margen >= 40 ? 'text-warning' : 'text-success');
+                        var margen = (g.totalMonto > 0 && g.totalCosto > 0) ? ((g.totalMonto - g.totalCosto) / g.totalCosto) * 100 : (g.totalMonto > 0 ? 100 : 0);
+                        var margenClass = margen >= 150 ? 'text-success' : (margen >= 80 ? 'text-warning' : 'text-danger');
                         var detailId = 'detalle-paciente-' + i;
 
                         html += '<tr class="paciente-row" onclick="togglePacienteDetalle(\'' + detailId + '\', this)">' +
@@ -4014,8 +4014,8 @@ try {
                             var r = g.rows[j];
                             var rProfit = (r.profit !== undefined ? r.profit : r.monto - (r.costo || 0));
                             var rProfitClass = rProfit >= 0 ? 'text-success' : 'text-danger';
-                            var rMargen = r.monto > 0 ? ((r.costo || 0) / r.monto) * 100 : 0;
-                            var rMargenClass = rMargen >= 70 ? 'text-danger' : (rMargen >= 40 ? 'text-warning' : 'text-success');
+                            var rMargen = (r.monto > 0 && r.costo > 0) ? ((r.monto - (r.costo || 0)) / r.costo) * 100 : (r.monto > 0 ? 100 : 0);
+                            var rMargenClass = rMargen >= 150 ? 'text-success' : (rMargen >= 80 ? 'text-warning' : 'text-danger');
                             html += '<tr>' +
                                 '<td>' + (r.fecha || '') + '</td>' +
                                 '<td>' + escapeHtml(r.descripcion || '') + '</td>' +

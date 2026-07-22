@@ -180,31 +180,13 @@ function start_app_session(): void {
         return;
     }
 
-    // 1. Detectar HTTPS (para cookie secure flag)
     $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || ($_SERVER['SERVER_PORT'] ?? 80) == 443
         || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
-    // 2. Detectar cookie path dinámicamente desde SCRIPT_NAME
-    //    Ej: /base/index.php           → /base/
-    //        /base/php/auth/login.php  → /base/
-    //        /GitHub/app-clinica/index.php → /GitHub/app-clinica/
-    //        /GitHub/app-clinica/php/...   → /GitHub/app-clinica/
-    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
-    $cookie_path = '/';
-    if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
-        $cookie_path = rtrim($matches[1], '/') . '/';
-    } elseif ($script_name !== '/' && $script_name !== '') {
-        $dir = dirname($script_name);
-        if ($dir !== '/' && $dir !== '.') {
-            $cookie_path = rtrim($dir, '/') . '/';
-        }
-    }
-
-    // 3. Cookie config dinámica (path y secure se adaptan al entorno)
     @session_set_cookie_params([
         'lifetime' => 0,
-        'path'     => $cookie_path,
+        'path'     => '/',
         'domain'   => '',
         'secure'   => $is_https,
         'httponly' => true,
@@ -282,20 +264,10 @@ function sanitize_input($data)
 
 function verify_session()
 {
-    // Build an absolute URL back to the project root (detect path dinámicamente)
     $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || ($_SERVER['SERVER_PORT'] ?? 80) == 443
         || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
     $base_path = '/';
-    if (preg_match('#^(/[^/]+(?:/[^/]+)?)/php/#', $script_name, $matches)) {
-        $base_path = rtrim($matches[1], '/') . '/';
-    } elseif ($script_name !== '/' && $script_name !== '') {
-        $dir = dirname($script_name);
-        if ($dir !== '/' && $dir !== '.') {
-            $base_path = rtrim($dir, '/') . '/';
-        }
-    }
     $project_root_url = ($is_https ? 'https' : 'http')
         . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
         . $base_path . 'index.php';
@@ -375,7 +347,7 @@ function time_ago($datetime, $full = false)
 if (isset($_GET['keep_alive']) && $_GET['keep_alive'] == '1') {
     // Asegurar que la sesión esté iniciada
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        start_app_session();
     }
 
     // Devolver respuesta JSON y terminar ejecución

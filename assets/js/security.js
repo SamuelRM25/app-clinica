@@ -33,57 +33,6 @@
         }
     }, false);
 
-    // DevTools Detection
-    const protectContent = () => {
-        document.body.innerHTML = `
-            <div style="
-                display: flex; 
-                flex-direction: column;
-                justify-content: center; 
-                align-items: center; 
-                height: 100vh; 
-                width: 100vw; 
-                background: #f8f9fa; 
-                color: #333; 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                text-align: center;
-                position: fixed;
-                top: 0;
-                left: 0;
-                z-index: 999999;
-            ">
-                <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #dc3545;">Contenido Protegido</h1>
-                <p style="font-size: 1.2rem; font-weight: 500;">Derechos reservados RS SOLUTIONS</p>
-                <div style="margin-top: 2rem; padding: 1rem; border-top: 1px solid #dee2e6; color: #6c757d;">
-                    El acceso a las herramientas de desarrollador está restringido en esta plataforma.
-                </div>
-            </div>
-        `;
-    };
-
-    // Detection using debugger
-    setInterval(function() {
-        const startTime = performance.now();
-        debugger;
-        const endTime = performance.now();
-        if (endTime - startTime > 100) {
-            protectContent();
-        }
-    }, 1000);
-
-    // Detection using window size (if DevTools is docked)
-    const threshold = 160;
-    const checkSize = () => {
-        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-        if (widthThreshold || heightThreshold) {
-            protectContent();
-        }
-    };
-
-    window.addEventListener('resize', checkSize);
-    checkSize();
-
     // Prevent text selection and image dragging
     const style = document.createElement('style');
     style.innerHTML = `
