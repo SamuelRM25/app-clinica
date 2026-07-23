@@ -2735,9 +2735,11 @@ try {
 
                 const payload = { descripcion: descripcion, cantidad: cantidad, subtotal: subtotal, total: total, fecha: fecha };
 
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.content : '';
                 fetch('save_gasto.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                     body: JSON.stringify(payload)
                 })
                 .then(function(r) { return r.json(); })
@@ -2781,9 +2783,11 @@ try {
                 }).then(function(result) {
                     if (!result.isConfirmed || !result.value) return;
                     const motivo = result.value;
+                    const csrfMeta2 = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken2 = csrfMeta2 ? csrfMeta2.content : '';
                     fetch('delete_gasto.php', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken2 },
                         body: JSON.stringify({ id: id, motivo: motivo })
                     })
                     .then(function(r) { return r.json(); })

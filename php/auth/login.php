@@ -118,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['especialidad'] = $user['especialidad'];
         $_SESSION['tipoUsuario'] = $user['tipoUsuario'];
         $_SESSION['usuario'] = $user['usuario'];
+        $_SESSION['es_creador'] = !empty($user['es_creador']);
         $_SESSION['login_attempts'] = 0;
 
         audit_log_auth('login_exitoso', 'Usuario: ' . $user['usuario'] . ' - Hospital ID: ' . $user['id_hospital']);

@@ -4,6 +4,7 @@
  */
 
 (function() {
+    if (window.ES_CREADOR) return;
     // Disable right click
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();

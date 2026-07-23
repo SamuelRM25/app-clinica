@@ -303,6 +303,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
         media="print" onload="this.media='all'">
 
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <!-- Seguridad y Protección de Código -->
     <!-- <script defer src="../../assets/js/security.js"></script> -->
 
