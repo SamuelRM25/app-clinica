@@ -96,6 +96,8 @@ try {
             $item['costo_digital_inhabil'] = $t['costo_digital_inhabil'] !== null ? (float)$t['costo_digital_inhabil'] : null;
             $item['costo_impreso_normal']  = $t['costo_impreso_normal']  !== null ? (float)$t['costo_impreso_normal']  : null;
             $item['costo_impreso_inhabil'] = $t['costo_impreso_inhabil'] !== null ? (float)$t['costo_impreso_inhabil'] : null;
+            $item['precio_impreso_normal']  = $t['costo_normal']  !== null ? (float)$t['costo_normal']  : null;
+            $item['precio_impreso_inhabil'] = $t['costo_inhabil'] !== null ? (float)$t['costo_inhabil'] : null;
             $result['rayos_x'][] = $item;
         } elseif ($tipo === 'ultrasonido') {
             $item['nombre_servicio'] = $nombre;

@@ -23,11 +23,17 @@ try {
     $tipo_estudio = $_POST['xray_type'] ?? '';
     $cobro = $_POST['amount'] ?? 0;
     $tipo_pago = $_POST['tipo_pago'] ?? 'Efectivo';
+    $modalidad = in_array($_POST['modalidad'] ?? '', ['digital', 'impreso'], true) ? $_POST['modalidad'] : 'digital';
     $usuario = $_SESSION['nombre'];
     $id_hospital = $_SESSION['id_hospital'] ?? 0;
 
     if (!$id_paciente || !$cobro) {
         throw new Exception('Datos incompletos');
+    }
+
+    $colCheck = $conn->query("SHOW COLUMNS FROM rayos_x LIKE 'modalidad'");
+    if ($colCheck && $colCheck->rowCount() === 0) {
+        $conn->exec("ALTER TABLE rayos_x ADD COLUMN modalidad ENUM('digital','impreso') NOT NULL DEFAULT 'digital' AFTER tipo_pago");
     }
 
     $stmtP = $conn->prepare("SELECT CONCAT(nombre, ' ', apellido) as nombre FROM pacientes WHERE id_paciente = ? AND id_hospital = ?");
@@ -37,11 +43,11 @@ try {
 
     $stmt = $conn->prepare("
         INSERT INTO rayos_x 
-        (id_paciente, nombre_paciente, tipo_estudio, cobro, usuario, tipo_pago, id_hospital) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (id_paciente, nombre_paciente, tipo_estudio, cobro, usuario, tipo_pago, modalidad, id_hospital) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-    $stmt->execute([$id_paciente, $nombre_paciente, $tipo_estudio, $cobro, $usuario, $tipo_pago, $id_hospital]);
+    $stmt->execute([$id_paciente, $nombre_paciente, $tipo_estudio, $cobro, $usuario, $tipo_pago, $modalidad, $id_hospital]);
     $id = $conn->lastInsertId();
 
     echo json_encode([

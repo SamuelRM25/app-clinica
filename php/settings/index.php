@@ -280,6 +280,56 @@ $page_title = "Configuración del Sistema";
             0%, 100% { transform: translateX(0); }
             50% { transform: translateX(4px); }
         }
+
+        /* Responsive grid layout for tarifa tables — uses horizontal space, stays compact */
+        .tarifa-table-wrap { max-height: none; overflow: visible; }
+        .tarifa-table-wrap::after { display: none; }
+        .tarifa-scroll-hint { display: none !important; }
+        .tarifa-table-wrap table { min-width: 0 !important; width: 100% !important; margin: 0; border-collapse: separate; border-spacing: 0 0.5rem; }
+        .tarifa-table-wrap thead { display: none; }
+        .tarifa-table-wrap tbody { display: block; }
+        .tarifa-table-wrap tr {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0 1.25rem;
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.6rem;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            align-items: center;
+        }
+        .tarifa-table-wrap td {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0 !important;
+            border: none;
+            border-bottom: 1px solid var(--color-border);
+            min-width: 0;
+        }
+        .tarifa-table-wrap td:last-child { border-bottom: none; justify-content: flex-end; }
+        .tarifa-table-wrap td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .tarifa-table-wrap .tarifa-input {
+            min-width: 0;
+            max-width: 140px;
+            width: 100%;
+            flex: 1 1 auto;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+        .tarifa-table-wrap td.text-center { text-align: right; }
     </style>
 </head>
 
@@ -1080,13 +1130,15 @@ $page_title = "Configuración del Sistema";
                                                 <th>Precio Inhábil (Q)</th>
                                                 <th>Costo Digital Normal (Q)</th>
                                                 <th>Costo Digital Inhábil (Q)</th>
+                                                <th>Precio Impreso Normal (Q)</th>
+                                                <th>Precio Impreso Inhábil (Q)</th>
                                                 <th>Costo Impreso Normal (Q)</th>
                                                 <th>Costo Impreso Inhábil (Q)</th>
                                                 <th class="text-center">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tarifa-rayos_x-body">
-                                            <tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr>
+                                            <tr><td colspan="11" class="text-center text-muted">Cargando...</td></tr>
                                         </tbody>
                                     </table>
                                         <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
@@ -1473,22 +1525,34 @@ $page_title = "Configuración del Sistema";
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Precio Normal (Q)</label>
+                                <label class="form-label small fw-bold">Precio Digital Normal (Q)</label>
                                 <input type="number" step="0.01" name="precio_normal" id="tarifaNormal" class="form-control" required placeholder="0.00">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Precio Inhábil (Q)</label>
+                                <label class="form-label small fw-bold">Precio Digital Inhábil (Q)</label>
                                 <input type="number" step="0.01" name="precio_inhabil" id="tarifaInhabil" class="form-control" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-12" id="tarifa-rayosx-precios" class="d-none">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Precio Impreso Normal (Q)</label>
+                                    <input type="number" step="0.01" name="precio_impreso_normal" id="tarifaPrecioImpresoNormal" class="form-control" placeholder="0.00">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Precio Impreso Inhábil (Q)</label>
+                                    <input type="number" step="0.01" name="precio_impreso_inhabil" id="tarifaPrecioImpresoInhabil" class="form-control" placeholder="0.00">
+                                </div>
                             </div>
                         </div>
                         <hr class="my-3">
                         <p class="text-muted small mb-2"><i class="bi bi-info-circle"></i> Costos (opcional, para reportes de ganancia)</p>
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="tarifa-generic-costos">
                                 <label class="form-label small fw-bold">Costo Normal (Q)</label>
                                 <input type="number" step="0.01" name="costo_normal" id="tarifaCostoNormal" class="form-control" placeholder="0.00">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="tarifa-generic-costos">
                                 <label class="form-label small fw-bold">Costo Inhábil (Q)</label>
                                 <input type="number" step="0.01" name="costo_inhabil" id="tarifaCostoInhabil" class="form-control" placeholder="0.00">
                             </div>
@@ -1940,49 +2004,49 @@ $page_title = "Configuración del Sistema";
                 const idTarifa = c ? c.id_tarifa : (r ? r.id_tarifa : '');
 
                 html += `<tr>
-                    <td>${getMedicoName(parseInt(medId))}</td>
-                    <td>${getMedicoEspecialidad(parseInt(medId))}</td>
-                    <td>
+                    <td data-label="Médico">${getMedicoName(parseInt(medId))}</td>
+                    <td data-label="Especialidad">${getMedicoEspecialidad(parseInt(medId))}</td>
+                    <td data-label="Consulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaNormal}"
                             data-medico="${medId}" data-tipo="consulta" data-field="precio_normal"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Consulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaInhabil}"
                             data-medico="${medId}" data-tipo="consulta" data-field="precio_inhabil"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Costo Consulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoNormal}"
                             data-medico="${medId}" data-tipo="consulta" data-field="costo_normal"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Costo Consulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoInhabil}"
                             data-medico="${medId}" data-tipo="consulta" data-field="costo_inhabil"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Reconsulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsNormal}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_normal"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Reconsulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsInhabil}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_inhabil"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Costo Reconsulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoNormal}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="costo_normal"
                             placeholder="0.00">
                     </td>
-                    <td>
+                    <td data-label="Costo Reconsulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoInhabil}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="costo_inhabil"
                             placeholder="0.00">
                     </td>
-                    <td class="text-center">
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${idTarifa || 0}, 'consulta')" title="Eliminar">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -1998,21 +2062,21 @@ $page_title = "Configuración del Sistema";
             const costInhabil = electro && electro.costo_inhabil !== null && electro.costo_inhabil !== undefined ? electro.costo_inhabil : '';
             if (!electro || !electro.id_tarifa) {
                 body.innerHTML = `<tr>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
-                    <td class="text-center">
+                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
+                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
+                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
                     </td>
                 </tr>`;
             } else {
                 body.innerHTML = `<tr>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="${costNormal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="${costInhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
-                    <td class="text-center">
+                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
+                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
+                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="${costNormal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
+                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="${costInhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${electro.id_tarifa}, 'electrocardiograma')"><i class="bi bi-trash"></i></button>
                     </td>
@@ -2031,16 +2095,16 @@ $page_title = "Configuración del Sistema";
                 const cN = (p.costo_normal  != null) ? p.costo_normal  : '';
                 const cI = (p.costo_inhabil != null) ? p.costo_inhabil : '';
                 html += `<tr>
-                    <td>${p.nombre_servicio || '-'}</td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_normal}"
+                    <td data-label="Procedimiento">${p.nombre_servicio || '-'}</td>
+                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_normal}"
                         data-tipo="procedimiento" data-field="precio_normal" data-id="${p.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_inhabil}"
+                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${p.precio_inhabil}"
                         data-tipo="procedimiento" data-field="precio_inhabil" data-id="${p.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
+                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
                         data-tipo="procedimiento" data-field="costo_normal" data-id="${p.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
+                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
                         data-tipo="procedimiento" data-field="costo_inhabil" data-id="${p.id_tarifa}" placeholder="0.00"></td>
-                    <td class="text-center">
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${p.id_tarifa}, 'procedimiento')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`;
@@ -2051,31 +2115,37 @@ $page_title = "Configuración del Sistema";
         function renderRayosX(rayos_x) {
             const body = document.getElementById('tarifa-rayos_x-body');
             if (rayos_x.length === 0) {
-                body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
+                body.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4"><em>No hay regiones configuradas. Haga clic en "Agregar Región" para crear una.</em></td></tr>';
                 return;
             }
             let html = '';
             rayos_x.forEach(r => {
                 const cDN = (r.costo_digital_normal  != null) ? r.costo_digital_normal  : '';
                 const cDI = (r.costo_digital_inhabil != null) ? r.costo_digital_inhabil : '';
+                const pIN = (r.precio_impreso_normal  != null) ? r.precio_impreso_normal  : '';
+                const pII = (r.precio_impreso_inhabil != null) ? r.precio_impreso_inhabil : '';
                 const cIN = (r.costo_impreso_normal  != null) ? r.costo_impreso_normal  : '';
                 const cII = (r.costo_impreso_inhabil != null) ? r.costo_impreso_inhabil : '';
                 html += `<tr>
-                    <td>${escapeHtml(r.region || r.region_count || '')}</td>
-                    <td>${escapeHtml(r.proyeccion || '')}</td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
+                    <td data-label="Región">${escapeHtml(r.region || r.region_count || '')}</td>
+                    <td data-label="Proyección">${escapeHtml(r.proyeccion || '')}</td>
+                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_normal}"
                         data-tipo="rayos_x" data-field="precio_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
+                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${r.precio_inhabil}"
                         data-tipo="rayos_x" data-field="precio_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDN}"
+                    <td data-label="Costo Digital Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDN}"
                         data-tipo="rayos_x" data-field="costo_digital_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDI}"
+                    <td data-label="Costo Digital Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cDI}"
                         data-tipo="rayos_x" data-field="costo_digital_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cIN}"
+                    <td data-label="Precio Impreso Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${pIN}"
+                        data-tipo="rayos_x" data-field="precio_impreso_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td data-label="Precio Impreso Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${pII}"
+                        data-tipo="rayos_x" data-field="precio_impreso_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
+                    <td data-label="Costo Impreso Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cIN}"
                         data-tipo="rayos_x" data-field="costo_impreso_normal" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cII}"
+                    <td data-label="Costo Impreso Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cII}"
                         data-tipo="rayos_x" data-field="costo_impreso_inhabil" data-id="${r.id_tarifa}" placeholder="0.00"></td>
-                    <td class="text-center">
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${r.id_tarifa}, 'rayos_x')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`;
@@ -2094,18 +2164,18 @@ $page_title = "Configuración del Sistema";
                 const cN = (u.costo_normal  != null) ? u.costo_normal  : '';
                 const cI = (u.costo_inhabil != null) ? u.costo_inhabil : '';
                 html += `<tr>
-                    <td>${u.nombre_servicio || '-'}</td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_normal}"
+                    <td data-label="Tipo">${u.nombre_servicio || '-'}</td>
+                    <td data-label="Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_normal}"
                         data-tipo="ultrasonido" data-field="precio_normal" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_inhabil}"
+                    <td data-label="Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_inhabil}"
                         data-tipo="ultrasonido" data-field="precio_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_radio || 0}"
+                    <td data-label="Radio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${u.precio_radio || 0}"
                         data-tipo="ultrasonido" data-field="precio_radio" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
+                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cN}"
                         data-tipo="ultrasonido" data-field="costo_normal" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
+                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cI}"
                         data-tipo="ultrasonido" data-field="costo_inhabil" data-id="${u.id_tarifa}" placeholder="0.00"></td>
-                    <td class="text-center">
+                    <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${u.id_tarifa}, 'ultrasonido')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`;
@@ -2143,15 +2213,15 @@ $page_title = "Configuración del Sistema";
                     let html = '';
                     data.data.forEach(p => {
                         html += `<tr data-id="${p.id_prueba}">
-                            <td class="text-muted small">${p.codigo_prueba || ''}</td>
-                            <td class="fw-medium">${escapeHtml(p.nombre_prueba)}</td>
-                            <td><span class="badge bg-secondary">${p.categoria || 'Gral'}</span></td>
-                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                            <td data-label="Código" class="text-muted small">${p.codigo_prueba || ''}</td>
+                            <td data-label="Nombre de la Prueba" class="fw-medium">${escapeHtml(p.nombre_prueba)}</td>
+                            <td data-label="Categoría"><span class="badge bg-secondary">${p.categoria || 'Gral'}</span></td>
+                            <td data-label="Precio Venta (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
                                 value="${parseFloat(p.precio || 0).toFixed(2)}" readonly></td>
-                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                            <td data-label="Costo Medialab (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
                                 value="${parseFloat(p.precio_medilab || 0).toFixed(2)}"
                                 data-field="precio_medilab" data-id="${p.id_prueba}" placeholder="0.00"></td>
-                            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                            <td data-label="Costo La Esperanza (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
                                 value="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}"
                                 data-field="precio_la_esperanza" data-id="${p.id_prueba}" placeholder="0.00"></td>
                         </tr>`;
@@ -2239,6 +2309,8 @@ $page_title = "Configuración del Sistema";
             document.querySelectorAll('.tarifa-fields').forEach(el => el.classList.add('d-none'));
             document.getElementById('tarifa-radio-field').classList.add('d-none');
             document.getElementById('tarifa-rayosx-costos').classList.add('d-none');
+            document.getElementById('tarifa-rayosx-precios').classList.add('d-none');
+            document.querySelectorAll('#tarifa-generic-costos').forEach(el => el.classList.remove('d-none'));
 
             if (tipo === 'consulta' || tipo === 'reconsulta') {
                 document.getElementById('tarifa-fields-consulta').classList.remove('d-none');
@@ -2255,7 +2327,9 @@ $page_title = "Configuración del Sistema";
             } else if (tipo === 'rayos_x') {
                 document.getElementById('tarifa-fields-region').classList.remove('d-none');
                 document.getElementById('tarifa-fields-proyeccion').classList.remove('d-none');
+                document.getElementById('tarifa-rayosx-precios').classList.remove('d-none');
                 document.getElementById('tarifa-rayosx-costos').classList.remove('d-none');
+                document.querySelectorAll('#tarifa-generic-costos').forEach(el => el.classList.add('d-none'));
             }
 
             tarifaModal.show();
@@ -2294,6 +2368,10 @@ $page_title = "Configuración del Sistema";
             } else if (tipo === 'rayos_x') {
                 payload.region = document.getElementById('tarifaRegion').value;
                 payload.proyeccion = document.getElementById('tarifaProyeccion').value;
+                const pIN = parseFloat(document.getElementById('tarifaPrecioImpresoNormal').value);
+                if (!isNaN(pIN) && document.getElementById('tarifaPrecioImpresoNormal').value !== '') payload.precio_impreso_normal = pIN;
+                const pII = parseFloat(document.getElementById('tarifaPrecioImpresoInhabil').value);
+                if (!isNaN(pII) && document.getElementById('tarifaPrecioImpresoInhabil').value !== '') payload.precio_impreso_inhabil = pII;
                 const cDN = parseFloat(document.getElementById('tarifaCostoDigitalNormal').value);
                 if (!isNaN(cDN) && document.getElementById('tarifaCostoDigitalNormal').value !== '') payload.costo_digital_normal = cDN;
                 const cDI = parseFloat(document.getElementById('tarifaCostoDigitalInhabil').value);
@@ -2350,7 +2428,7 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil');
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil' || field === 'precio_impreso_normal' || field === 'precio_impreso_inhabil');
                 const rawValue = input.value;
                 const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const medico = parseInt(input.dataset.medico) || null;
@@ -2370,6 +2448,8 @@ $page_title = "Configuración del Sistema";
                         costo_inhabil: null,
                         costo_digital_normal: null,
                         costo_digital_inhabil: null,
+                        precio_impreso_normal: null,
+                        precio_impreso_inhabil: null,
                         costo_impreso_normal: null,
                         costo_impreso_inhabil: null
                     };
@@ -2382,7 +2462,7 @@ $page_title = "Configuración del Sistema";
             inputs.forEach(input => {
                 const tipo = input.dataset.tipo;
                 const field = input.dataset.field;
-                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil');
+                const isCostField = (field === 'costo_normal' || field === 'costo_inhabil' || field === 'costo_digital_normal' || field === 'costo_digital_inhabil' || field === 'costo_impreso_normal' || field === 'costo_impreso_inhabil' || field === 'precio_impreso_normal' || field === 'precio_impreso_inhabil');
                 const rawValue = input.value;
                 const value = isCostField ? (rawValue === '' ? null : parseFloat(rawValue)) : (parseFloat(rawValue) || 0);
                 const id = parseInt(input.dataset.id) || null;
@@ -2399,6 +2479,8 @@ $page_title = "Configuración del Sistema";
                         costo_inhabil: null,
                         costo_digital_normal: null,
                         costo_digital_inhabil: null,
+                        precio_impreso_normal: null,
+                        precio_impreso_inhabil: null,
                         costo_impreso_normal: null,
                         costo_impreso_inhabil: null
                     };

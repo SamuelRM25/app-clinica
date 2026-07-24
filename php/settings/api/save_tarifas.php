@@ -75,6 +75,11 @@ try {
         $costo_impreso_normal  = isset($data['costo_impreso_normal'])  && $data['costo_impreso_normal']  !== '' && $data['costo_impreso_normal']  !== null ? (float)$data['costo_impreso_normal']  : null;
         $costo_impreso_inhabil = isset($data['costo_impreso_inhabil']) && $data['costo_impreso_inhabil'] !== '' && $data['costo_impreso_inhabil'] !== null ? (float)$data['costo_impreso_inhabil'] : null;
 
+        if ($tipo === 'rayos_x') {
+            if (isset($data['precio_impreso_normal'])  && $data['precio_impreso_normal']  !== '' && $data['precio_impreso_normal']  !== null) $costo_normal  = (float)$data['precio_impreso_normal'];
+            if (isset($data['precio_impreso_inhabil']) && $data['precio_impreso_inhabil'] !== '' && $data['precio_impreso_inhabil'] !== null) $costo_inhabil = (float)$data['precio_impreso_inhabil'];
+        }
+
         $stmt = $conn->prepare("
             INSERT INTO tarifas_servicios (id_hospital, tipo_servicio, id_medico, nombre_servicio,
                 precio_normal, precio_inhabil, precio_radio,
@@ -129,6 +134,15 @@ try {
         $costo_digital_inhabil = isset($data['costo_digital_inhabil']) && $data['costo_digital_inhabil'] !== '' && $data['costo_digital_inhabil'] !== null ? (float)$data['costo_digital_inhabil'] : null;
         $costo_impreso_normal  = isset($data['costo_impreso_normal'])  && $data['costo_impreso_normal']  !== '' && $data['costo_impreso_normal']  !== null ? (float)$data['costo_impreso_normal']  : null;
         $costo_impreso_inhabil = isset($data['costo_impreso_inhabil']) && $data['costo_impreso_inhabil'] !== '' && $data['costo_impreso_inhabil'] !== null ? (float)$data['costo_impreso_inhabil'] : null;
+
+        $fetchTipoStmt = $conn->prepare("SELECT tipo_servicio FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
+        $fetchTipoStmt->execute([$id_tarifa, $id_hospital]);
+        $currentTipo = $fetchTipoStmt->fetchColumn();
+
+        if ($currentTipo === 'rayos_x') {
+            if (isset($data['precio_impreso_normal'])  && $data['precio_impreso_normal']  !== '' && $data['precio_impreso_normal']  !== null) $costo_normal  = (float)$data['precio_impreso_normal'];
+            if (isset($data['precio_impreso_inhabil']) && $data['precio_impreso_inhabil'] !== '' && $data['precio_impreso_inhabil'] !== null) $costo_inhabil = (float)$data['precio_impreso_inhabil'];
+        }
 
         $fetchStmt = $conn->prepare("SELECT tipo_servicio, id_medico, nombre_servicio, precio_normal, precio_inhabil, precio_radio, costo_normal, costo_inhabil, costo_digital_normal, costo_digital_inhabil, costo_impreso_normal, costo_impreso_inhabil FROM tarifas_servicios WHERE id_tarifa = ? AND id_hospital = ?");
         $fetchStmt->execute([$id_tarifa, $id_hospital]);
@@ -209,6 +223,11 @@ try {
             $costo_digital_inhabil = isset($item['costo_digital_inhabil']) && $item['costo_digital_inhabil'] !== '' && $item['costo_digital_inhabil'] !== null ? (float)$item['costo_digital_inhabil'] : null;
             $costo_impreso_normal  = isset($item['costo_impreso_normal'])  && $item['costo_impreso_normal']  !== '' && $item['costo_impreso_normal']  !== null ? (float)$item['costo_impreso_normal']  : null;
             $costo_impreso_inhabil = isset($item['costo_impreso_inhabil']) && $item['costo_impreso_inhabil'] !== '' && $item['costo_impreso_inhabil'] !== null ? (float)$item['costo_impreso_inhabil'] : null;
+
+            if ($tipo === 'rayos_x') {
+                if (isset($item['precio_impreso_normal'])  && $item['precio_impreso_normal']  !== '' && $item['precio_impreso_normal']  !== null) $costo_normal  = (float)$item['precio_impreso_normal'];
+                if (isset($item['precio_impreso_inhabil']) && $item['precio_impreso_inhabil'] !== '' && $item['precio_impreso_inhabil'] !== null) $costo_inhabil = (float)$item['precio_impreso_inhabil'];
+            }
 
             $id_tarifa = isset($item['id_tarifa']) && (int)$item['id_tarifa'] > 0 ? (int)$item['id_tarifa'] : null;
 

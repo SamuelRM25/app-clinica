@@ -4145,6 +4145,17 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             </div>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Modalidad de Entrega</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check xray-modalidad" name="xray_modalidad"
+                                    id="xray_modalidad_digital" value="digital" checked>
+                                <label class="btn btn-outline-primary" for="xray_modalidad_digital"><i class="bi bi-display me-1"></i>Digital</label>
+                                <input type="radio" class="btn-check xray-modalidad" name="xray_modalidad"
+                                    id="xray_modalidad_impreso" value="impreso">
+                                <label class="btn btn-outline-primary" for="xray_modalidad_impreso"><i class="bi bi-printer me-1"></i>Impreso</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Monto a Cobrar (Q)</label>
                             <input type="number" class="form-control" id="xray_amount" name="amount" readonly
                                 step="0.01" placeholder="0.00">
@@ -4307,7 +4318,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         const rxObj = {};
                         t.rayos_x.forEach(item => {
                             const key = item.id_tarifa;
-                            rxObj[key] = { region: item.region, proyeccion: item.proyeccion, normal: item.precio_normal, inhabil: item.precio_inhabil };
+                            rxObj[key] = {
+                                region: item.region,
+                                proyeccion: item.proyeccion,
+                                normal: item.precio_normal,
+                                inhabil: item.precio_inhabil,
+                                precio_impreso_normal: item.precio_impreso_normal,
+                                precio_impreso_inhabil: item.precio_impreso_inhabil
+                            };
                         });
                         tarifas.rayos_x = rxObj;
                         populateXrayDropdown();
@@ -4352,6 +4370,9 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
         });
         document.getElementById('xraySelect')?.addEventListener('change', updateXrayPrice);
         document.querySelectorAll('.xray-rate-type').forEach(radio => {
+            radio.addEventListener('change', updateXrayPrice);
+        });
+        document.querySelectorAll('.xray-modalidad').forEach(radio => {
             radio.addEventListener('change', updateXrayPrice);
         });
         document.getElementById('electroBillingModal')?.addEventListener('shown.bs.modal', updateElectroPrice);
@@ -4489,17 +4510,32 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
 
         function updateXrayPrice() {
             const selectedKey = document.getElementById('xraySelect').value;
-            const rateType = document.querySelector('input[name="xray_rate_type"]:checked').value;
+            const rateType = document.querySelector('input[name="xray_rate_type"]:checked')?.value || 'normal';
+            const modalidad = document.querySelector('input[name="xray_modalidad"]:checked')?.value || 'digital';
             const priceField = document.getElementById('xray_amount');
+            const hint = document.getElementById('xrayPriceHint');
 
             if (selectedKey && tarifas.rayos_x && tarifas.rayos_x[selectedKey]) {
                 const tipo = tarifas.rayos_x[selectedKey];
-                const price = rateType === 'inhabil' ? (tipo.inhabil || 0) : (tipo.normal || 0);
+                let price;
+                if (modalidad === 'impreso') {
+                    const precioImpresoNormal  = (tipo.precio_impreso_normal  != null ? tipo.precio_impreso_normal  : (tipo.normal  || 0));
+                    const precioImpresoInhabil = (tipo.precio_impreso_inhabil != null ? tipo.precio_impreso_inhabil : (tipo.inhabil || 0));
+                    price = rateType === 'inhabil' ? precioImpresoInhabil : precioImpresoNormal;
+                } else {
+                    price = rateType === 'inhabil' ? (tipo.inhabil || 0) : (tipo.normal || 0);
+                }
                 priceField.value = price > 0 ? price.toFixed(2) : '';
                 priceField.readOnly = true;
+                if (hint) {
+                    const modalidadLabel = modalidad === 'impreso' ? 'Impreso' : 'Digital';
+                    const tarifaLabel = rateType === 'inhabil' ? 'Inhábil' : 'Normal';
+                    hint.textContent = `${modalidadLabel} · ${tarifaLabel}`;
+                }
             } else {
                 priceField.value = '';
                 priceField.readOnly = true;
+                if (hint) hint.textContent = 'Seleccione estudio para ver precio';
             }
         }
 

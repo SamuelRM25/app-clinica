@@ -54,6 +54,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="catálogo de Pruebas de Laboratorio - Centro Médico Herrera Saenz">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -281,6 +282,7 @@ try {
                     </div>
                     <div class="modal-body">
                         <form id="testForm">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" id="id_prueba" name="id_prueba">
 
                             <div class="mb-3">
@@ -570,6 +572,11 @@ try {
 
             const formData = new FormData(form);
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const csrfInput = form.querySelector('input[name="csrf_token"]');
+            if (csrfInput) csrfInput.value = csrfToken;
+            formData.set('csrf_token', csrfToken);
+
             console.log('Saving test...');
             for (let [key, value] of formData.entries()) {
                 console.log(`${key}: ${value}`);
@@ -577,6 +584,7 @@ try {
 
             fetch('api/save_test.php', {
                 method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken },
                 body: formData
             })
                 .then(response => response.json())
