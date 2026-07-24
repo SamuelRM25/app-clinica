@@ -4,4 +4,4 @@
  * Archivo de identidad del hospital.
  */
 
-define('CURRENT_HOSPITAL_CODE', 'RS001');
+define('CURRENT_HOSPITAL_CODE', 'CMHS');
