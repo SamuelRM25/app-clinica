@@ -378,7 +378,7 @@ try {
     }
     unset($cat);
 
-    $total_egresos = (float)$total_purchases_meds + $total_gastos + $total_pagos_traslado;
+    $total_egresos = (float)$total_purchases_meds + $total_gastos;
 
     $egresos_categorias = [
         ['label' => 'Pago a Proveedores', 'categoria' => 'pago_proveedores', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
