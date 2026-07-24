@@ -31,9 +31,12 @@ $available_modules = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?> — <?php echo htmlspecialchars($h['nombre'] ?? ''); ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }

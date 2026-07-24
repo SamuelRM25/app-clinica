@@ -59,6 +59,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title>Reporte de Insumos - <?php echo $date; ?></title>
 
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
@@ -294,6 +295,8 @@ try {
             </div>
         </main>
     </div>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 </body>
 
 </html>

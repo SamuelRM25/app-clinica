@@ -102,6 +102,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
 <head>
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=optional" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -441,6 +442,8 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+<script defer src="../../assets/js/security.js"></script>
 <script>
 const idCirugia = <?php echo $id_cirugia; ?>;
 const csrf = <?php echo json_encode($csrf_token); ?>;

@@ -888,6 +888,8 @@ try {
     </script>
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
     <?php output_keep_alive_script(); ?>
 </body>
 

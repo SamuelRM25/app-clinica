@@ -922,6 +922,8 @@ try {
         // Init stats
         updateStats();
     </script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 </body>
 
 </html>

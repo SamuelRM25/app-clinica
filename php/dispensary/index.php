@@ -124,7 +124,8 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
-    <!-- <script src="../../assets/js/security.js"></script> -->
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script src="../../assets/js/security.js"></script>
 
     <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">

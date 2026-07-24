@@ -57,6 +57,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Crear Orden de Laboratorio - Centro Médico Herrera Saenz">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -379,6 +380,8 @@ try {
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 
     <!-- JavaScript Optimizado (mismo que index.php) -->
     <script>

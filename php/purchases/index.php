@@ -177,6 +177,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Seguridad y Protección de Código -->
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script src="../../assets/js/security.js"></script>
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->

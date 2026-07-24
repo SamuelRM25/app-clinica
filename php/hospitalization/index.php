@@ -156,6 +156,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -174,6 +175,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
 
     <!-- Seguridad y Protección de Código -->
     <script src="../../assets/js/security.js"></script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <?php include '../../includes/theme_head.php'; ?>

@@ -91,6 +91,7 @@ $page_title = "Configuración del Sistema";
     <?php include '../../includes/theme_head.php'; ?>
 
     <!-- Seguridad y Protección de Código -->
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script src="../../assets/js/security.js"></script>
 
     <style>

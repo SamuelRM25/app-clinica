@@ -245,6 +245,8 @@ $module_labels = [
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+  <script defer src="assets/js/security.js"></script>
   <?php include 'includes/theme_head.php'; ?>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

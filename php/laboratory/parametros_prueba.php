@@ -58,6 +58,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Configuración de Parámetros de Prueba - Laboratorio">
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -69,6 +70,8 @@ try {
 
     <!-- SortableJS para arrastrar y soltar -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 
     <!-- CSS Crítico (mismo que index.php) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">

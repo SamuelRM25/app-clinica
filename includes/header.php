@@ -37,6 +37,8 @@
     <?php if (function_exists('output_keep_alive_script'))
         output_keep_alive_script(); ?>
 
+    <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
+
     <!-- Seguridad y Protección de Código -->
     <?php
     $path_to_security = 'assets/js/security.js';

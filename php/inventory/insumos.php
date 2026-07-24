@@ -218,6 +218,8 @@ $page_title = "Gestión de Insumos - logo";
             });
         });
     </script>
+    <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
+    <script defer src="../../assets/js/security.js"></script>
 </body>
 
 </html>
