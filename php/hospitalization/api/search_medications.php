@@ -2,6 +2,7 @@
 // hospitalization/api/search_medications.php
 session_start();
 require_once '../../../config/database.php';
+require_once __DIR__ . '/../../../includes/functions.php';
 require_once __DIR__ . '/../../../includes/multitenant.php';
 
 header('Content-Type: application/json');

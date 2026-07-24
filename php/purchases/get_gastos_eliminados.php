@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
 header('Content-Type: application/json');

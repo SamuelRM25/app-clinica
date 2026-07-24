@@ -857,6 +857,10 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- SweetAlert2 (necesario para Swal.fire() en generateDischargesReport) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         // Theme management
         document.addEventListener('DOMContentLoaded', function () {
