@@ -74,7 +74,7 @@ try {
 
     // 4. Validar stock disponible antes de procesar
     $alertas = [];
-    $stmtPrecio = $conn->prepare("SELECT precio_venta, precio_hospital, stock_quirofano, nom_medicamento
+    $stmtPrecio = $conn->prepare("SELECT precio_venta, precio_hospital, precio_quirofano, stock_quirofano, nom_medicamento
                                   FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
     $stmtInsertConsumo = $conn->prepare("INSERT INTO cirugia_consumos
                                           (id_cirugia, id_inventario, cantidad, precio_unitario, subtotal, id_hospital)
@@ -116,7 +116,7 @@ try {
         }
 
         // Precio unitario (precio_hospital si existe, si no precio_venta)
-        $precio_unitario = (float)($inv['precio_hospital'] ?? $inv['precio_venta'] ?? 0);
+        $precio_unitario = (float)($inv['precio_quirofano'] ?? $inv['precio_hospital'] ?? $inv['precio_venta'] ?? 0);
         $subtotal = $precio_unitario * $cantidad;
 
         // Insert en cirugia_consumos

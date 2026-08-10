@@ -1318,6 +1318,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         <div class="col-md-3">
+                            <label for="edit_precio_quirofano" class="form-label">Precio Quirófano</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Q</span>
+                                <input type="number" class="form-control" id="edit_precio_quirofano"
+                                    name="precio_quirofano" min="0" step="0.01" value="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1795,6 +1803,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('edit_precio_compra').value = data.precio_compra || 0;
                             document.getElementById('edit_precio_venta').value = data.precio_venta || 0;
                             document.getElementById('edit_precio_hospital').value = data.precio_hospital || 0;
+                            document.getElementById('edit_precio_quirofano').value = data.precio_quirofano || 0;
                             document.getElementById('edit_precio_medico').value = data.precio_medico || 0;
                             document.getElementById('edit_precio_especial').value = data.precio_especial || 0;
                             document.getElementById('edit_fecha_adquisicion').value = data.fecha_adquisicion;

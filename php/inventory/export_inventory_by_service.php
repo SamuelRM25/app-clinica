@@ -54,6 +54,7 @@ try {
             precio_compra,
             precio_venta,
             precio_hospital,
+            precio_quirofano,
             precio_medico,
             precio_especial,
             fecha_vencimiento,
@@ -84,6 +85,7 @@ try {
         'Precio Compra',
         'Precio Venta',
         'Precio Hospital',
+        'Precio Quirófano',
         'Precio Médico',
         'Precio Especial',
         'Vencimiento',
@@ -103,6 +105,7 @@ try {
             number_format((float)($r['precio_compra'] ?? 0), 2),
             number_format((float)($r['precio_venta'] ?? 0), 2),
             number_format((float)($r['precio_hospital'] ?? 0), 2),
+            number_format((float)($r['precio_quirofano'] ?? 0), 2),
             number_format((float)($r['precio_medico'] ?? 0), 2),
             number_format((float)($r['precio_especial'] ?? 0), 2),
             $r['fecha_vencimiento'],
@@ -115,7 +118,7 @@ try {
     $tot_farm = array_sum(array_column($items, 'cantidad_med'));
     $tot_hosp = array_sum(array_column($items, 'stock_hospital'));
     $tot_quir = array_sum(array_column($items, 'stock_quirofano'));
-    fputcsv($output, ['TOTALES', '', '', '', '', $tot_farm, $tot_hosp, $tot_quir, '', '', '', '', '', '', '']);
+    fputcsv($output, ['TOTALES', '', '', '', '', $tot_farm, $tot_hosp, $tot_quir, '', '', '', '', '', '', '', '']);
 
 } catch (Exception $e) {
     error_log('export_inventory_by_service.php error: ' . $e->getMessage());

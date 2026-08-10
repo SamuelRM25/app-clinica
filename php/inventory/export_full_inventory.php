@@ -40,6 +40,7 @@ fputcsv($output, array(
     'Factura Compra',
     'Precio Venta',
     'Precio Hospital',
+    'Precio Quirófano',
     'Precio Medico'
 ));
 
@@ -77,6 +78,7 @@ try {
             $row['document_number'] ?? 'N/A',
             $row['precio_venta'],
             $row['precio_hospital'],
+            $row['precio_quirofano'] ?? 0,
             $row['precio_medico']
         ));
     }

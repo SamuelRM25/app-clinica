@@ -491,7 +491,7 @@ async function doMedSearch(row, q, resultsDiv) {
         const json = await res.json();
         if (json.success && json.data.length) {
             resultsDiv.innerHTML = json.data.map(m =>
-                `<a href="javascript:void(0)" class="list-group-item list-group-item-action py-1 px-2 small" data-id="${m.id_inventario}" data-name="${escapeAttr(m.nom_medicamento + ' (' + (m.presentacion_med || '') + ')')}">
+                `<a href="javascript:void(0)" class="list-group-item list-group-item-action py-1 px-2 small" data-id="${m.id_inventario}" data-name="${escapeAttr(m.nom_medicamento + ' (' + (m.presentacion_med || '') + ')')}" data-price="${parseFloat(m.precio_quirofano || m.precio_hospital || m.precio_venta || 0).toFixed(2)}">
                     <strong>${escapeHtml(m.nom_medicamento)}</strong>
                     <small class="text-muted ms-1">${escapeHtml(m.presentacion_med || '')}</small>
                     <span class="badge bg-info ms-1">${parseFloat(m.stock_quirofano || 0).toFixed(0)} en Quirófano</span>
@@ -509,7 +509,7 @@ async function doMedSearch(row, q, resultsDiv) {
                     const tipo = row.dataset.tipo;
                     const cat = row.querySelector('.item-cat').value;
                     const desc = name;
-                    const monto = row.querySelector('.item-monto').value;
+const monto = a.dataset.price || row.querySelector('.item-monto').value;
                     const cantidad = row.querySelector('.item-cantidad').value;
                     const predef = row.dataset.predef === '1' ? 1 : 0;
                     row.outerHTML = itemRowHtml(tipo, cat, desc, monto, predef === 0, idInv, cantidad, name);

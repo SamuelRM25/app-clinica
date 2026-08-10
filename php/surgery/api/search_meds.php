@@ -15,8 +15,8 @@ try {
     $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $q = trim($_GET['q'] ?? '');
 
-    $sql = "SELECT id_inventario, codigo_barras, nom_medicamento, presentacion_med,
-                   cantidad_med, stock_hospital, stock_quirofano, precio_venta, precio_hospital, id_purchase_item
+$sql = "SELECT id_inventario, codigo_barras, nom_medicamento, presentacion_med,
+                    cantidad_med, stock_hospital, stock_quirofano, precio_venta, precio_hospital, precio_quirofano, id_purchase_item
             FROM inventario
             WHERE id_hospital = ? AND (cantidad_med > 0 OR stock_hospital > 0 OR stock_quirofano > 0)";
     $params = [$id_hospital];
