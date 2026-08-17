@@ -35,8 +35,6 @@ try {
     $id_sala = (int)($data['id_sala'] ?? 0);
     if (!$id_sala) throw new Exception('Debe seleccionar una sala quirúrgica');
 
-    $id_combo = !empty($data['id_combo']) ? (int)$data['id_combo'] : null;
-
     // Generar número de cirugía
     $today = date('Ymd');
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cirugias WHERE DATE(fecha_creacion) = CURDATE() AND id_hospital = ?");
@@ -93,12 +91,13 @@ try {
     // INSERT cirugía
     $cirujano_nombre = trim($data['cirujano_nombre'] ?? '');
     $anestesista_nombre = trim($data['anestesista_nombre'] ?? '');
+    $cargo_total = (float)($data['cargo_total'] ?? 0);
     $stmt = $conn->prepare("
         INSERT INTO cirugias (
-            numero_cirugia, id_paciente, id_sala, id_cirujano, cirujano_nombre, id_anestesista, anestesista_nombre, id_combo,
+            numero_cirugia, id_paciente, id_sala, id_cirujano, cirujano_nombre, id_anestesista, anestesista_nombre,
             tipo_paciente, referido_nombre, referido_apellido, procedimiento,
             fecha_programada, cargo_total, estado, created_by, id_hospital
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Programada', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Programada', ?, ?)
     ");
     $stmt->execute([
         $numero_cirugia,
@@ -108,7 +107,6 @@ try {
         $cirujano_nombre ?: null,
         null, // id_anestesista ya no se usa
         $anestesista_nombre ?: null,
-        $id_combo,
         $tipo_paciente,
         $tipo_paciente === 'Referido' ? trim($data['referido_nombre'] ?? '') : null,
         $tipo_paciente === 'Referido' ? trim($data['referido_apellido'] ?? '') : null,
@@ -140,7 +138,7 @@ try {
 
     audit_log('create', 'surgery', "Cirugía creada: $numero_cirugia", [
         'table_name' => 'cirugias', 'record_id' => $id_cirugia,
-        'new_data' => ['numero' => $numero_cirugia, 'id_paciente' => $id_paciente, 'id_combo' => $id_combo, 'cargo' => $cargo_total]
+        'new_data' => ['numero' => $numero_cirugia, 'id_paciente' => $id_paciente, 'cargo' => $cargo_total]
     ]);
 
     echo json_encode([

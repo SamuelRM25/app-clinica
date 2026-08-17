@@ -34,14 +34,28 @@ try {
     $subtotal    = (float)($data['subtotal'] ?? 0);
     $total       = (float)($data['total'] ?? ($cantidad * $subtotal));
     $fecha       = $data['fecha'] ?? date('Y-m-d');
+    $categoria   = trim($data['categoria'] ?? 'Gasto General');
+    $categoria_otra = trim($data['categoria_otra'] ?? '');
+
+    $categoriasValidas = ['Gasto General', 'Consulta Médica', 'Pago Comisiones Médicos', 'Otra'];
+    if (!in_array($categoria, $categoriasValidas, true)) {
+        $categoria = 'Gasto General';
+    }
+    if ($categoria !== 'Otra') {
+        $categoria_otra = null;
+    } elseif ($categoria_otra === '') {
+        throw new Exception('Debe especificar la categoría personalizada');
+    }
 
     if ($cantidad < 1) $cantidad = 1;
     if ($subtotal < 0) $subtotal = 0;
     if ($total < 0) $total = $cantidad * $subtotal;
 
-    $stmt = $conn->prepare("INSERT INTO gastos (descripcion, cantidad, subtotal, total, fecha, created_by, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO gastos (descripcion, categoria, categoria_otra, cantidad, subtotal, total, fecha, created_by, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $descripcion,
+        $categoria,
+        $categoria_otra,
         $cantidad,
         $subtotal,
         $total,
@@ -51,11 +65,13 @@ try {
     ]);
     $gastoId = $conn->lastInsertId();
 
-    audit_log('create', 'gastos', "Gasto #$gastoId - {$descripcion} - Q{$total}", [
+    audit_log('create', 'gastos', "Gasto #$gastoId - {$descripcion} - Q{$total} - {$categoria}", [
         'table_name' => 'gastos',
         'record_id' => (int)$gastoId,
         'new_data' => [
             'descripcion' => $descripcion,
+            'categoria' => $categoria,
+            'categoria_otra' => $categoria_otra,
             'cantidad' => $cantidad,
             'subtotal' => $subtotal,
             'total' => $total,

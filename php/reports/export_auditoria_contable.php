@@ -97,9 +97,23 @@ try {
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_pagos_traslado = (float)$stmt->fetchColumn();
 
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Gasto General'");
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
-    $total_gastos = (float)$stmt->fetchColumn();
+    $total_gasto_general = (float)$stmt->fetchColumn();
+
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Consulta Médica'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_consulta_medica = (float)$stmt->fetchColumn();
+
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Pago Comisiones Médicos'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_pago_comisiones = (float)$stmt->fetchColumn();
+
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total), 0) FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Otra'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_gastos_otros = (float)$stmt->fetchColumn();
+
+    $total_gastos = $total_gasto_general + $total_consulta_medica + $total_pago_comisiones + $total_gastos_otros;
 
     $total_egresos = $total_purchases_meds + $total_gastos;
 
@@ -297,7 +311,10 @@ try {
     $egresos_cat = [
         ['Pago a Proveedores', $total_purchases_meds],
         ['Pago por Traslado', $total_pagos_traslado],
-        ['Gastos Generales', $total_gastos],
+        ['Gasto General', $total_gasto_general],
+        ['Consulta Médica', $total_consulta_medica],
+        ['Pago Comisiones Médicos', $total_pago_comisiones],
+        ['Otros Gastos', $total_gastos_otros],
     ];
 
     function fmt($v) { return 'Q' . number_format((float)$v, 2); }

@@ -206,7 +206,7 @@ $queries['hospitalizacion'] = [
     'params' => [$start, $end, $id_hospital],
 ];
 
-$queries['gastos_varios'] = [
+$queries['gasto_general'] = [
     'sql' => "SELECT
                 g.fecha AS fecha,
                 CONCAT(u.nombre, ' ', u.apellido) AS paciente,
@@ -217,6 +217,54 @@ $queries['gastos_varios'] = [
               LEFT JOIN usuarios u ON g.created_by = u.idUsuario
               WHERE DATE(g.fecha) BETWEEN DATE(?) AND DATE(?)
                 AND g.id_hospital = ?
+                AND g.categoria = 'Gasto General'
+              ORDER BY g.fecha DESC",
+    'params' => [$start, $end, $id_hospital],
+];
+
+$queries['consulta_medica'] = [
+    'sql' => "SELECT
+                g.fecha AS fecha,
+                CONCAT(u.nombre, ' ', u.apellido) AS paciente,
+                g.descripcion AS descripcion,
+                g.total AS monto,
+                0 AS costo
+              FROM gastos g
+              LEFT JOIN usuarios u ON g.created_by = u.idUsuario
+              WHERE DATE(g.fecha) BETWEEN DATE(?) AND DATE(?)
+                AND g.id_hospital = ?
+                AND g.categoria = 'Consulta Médica'
+              ORDER BY g.fecha DESC",
+    'params' => [$start, $end, $id_hospital],
+];
+
+$queries['pago_comisiones_medicos'] = [
+    'sql' => "SELECT
+                g.fecha AS fecha,
+                CONCAT(u.nombre, ' ', u.apellido) AS paciente,
+                g.descripcion AS descripcion,
+                g.total AS monto,
+                0 AS costo
+              FROM gastos g
+              LEFT JOIN usuarios u ON g.created_by = u.idUsuario
+              WHERE DATE(g.fecha) BETWEEN DATE(?) AND DATE(?)
+                AND g.id_hospital = ?
+                AND g.categoria = 'Pago Comisiones Médicos'
+              ORDER BY g.fecha DESC",
+    'params' => [$start, $end, $id_hospital],
+];
+
+$queries['gastos_otros'] = [
+    'sql' => "SELECT
+                g.fecha AS fecha,
+                COALESCE(g.categoria_otra, 'Otra') AS paciente,
+                g.descripcion AS descripcion,
+                g.total AS monto,
+                0 AS costo
+              FROM gastos g
+              WHERE DATE(g.fecha) BETWEEN DATE(?) AND DATE(?)
+                AND g.id_hospital = ?
+                AND g.categoria = 'Otra'
               ORDER BY g.fecha DESC",
     'params' => [$start, $end, $id_hospital],
 ];
@@ -266,7 +314,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['gastos_varios', 'pago_proveedores', 'pago_traslado']);
+    $has_costo = !in_array($categoria, ['gasto_general', 'consulta_medica', 'pago_comisiones_medicos', 'gastos_otros', 'pago_proveedores', 'pago_traslado']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);

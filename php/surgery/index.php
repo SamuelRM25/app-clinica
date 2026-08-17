@@ -49,25 +49,19 @@ try {
     $stmt_salas_total->execute([$id_hospital]);
     $salas_total = $stmt_salas_total->fetch(PDO::FETCH_ASSOC)['total'];
 
-    $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgicas WHERE estado = 'Disponible' AND id_hospital = ?");
+$stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgicas WHERE estado = 'Disponible' AND id_hospital = ?");
     $stmt_salas_disp->execute([$id_hospital]);
-    $salas_disponibles = $stmt_salas_disp->fetch(PDO::FETCH_ASSOC)['total'];
-
-    $stmt_combos = $conn->prepare("SELECT COUNT(*) as total FROM cirugia_combos WHERE estado = 'Activo' AND id_hospital = ?");
-    $stmt_combos->execute([$id_hospital]);
-    $combos_activos = $stmt_combos->fetch(PDO::FETCH_ASSOC)['total'];
+    $salas_disponibles = (int)$stmt_salas_disp->fetch(PDO::FETCH_ASSOC)['total'];
 
     // ===== Lista de cirugías recientes (últimas 50) =====
     $stmt_cirugias = $conn->prepare("
         SELECT c.id_cirugia, c.numero_cirugia, c.estado, c.fecha_programada,
                c.fecha_inicio, c.fecha_fin, c.cargo_total, c.tipo_paciente,
                COALESCE(CONCAT(p.nombre, ' ', p.apellido), CONCAT(c.referido_nombre, ' ', c.referido_apellido)) AS paciente,
-               s.nombre AS sala,
-               cc.nombre AS combo
+               s.nombre AS sala
         FROM cirugias c
         LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
         LEFT JOIN salas_quirurgicas s ON c.id_sala = s.id_sala
-        LEFT JOIN cirugia_combos cc ON c.id_combo = cc.id_combo
         WHERE c.id_hospital = ?
         ORDER BY c.fecha_programada DESC, c.id_cirugia DESC
         LIMIT 50
@@ -167,24 +161,12 @@ try {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-card">
-                        <div class="stat-icon bg-secondary"><i class="bi bi-stack"></i></div>
-                        <div class="stat-info">
-                            <div class="stat-label">Combos Activos</div>
-                            <div class="stat-value"><?php echo $combos_activos; ?></div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Acciones rápidas -->
             <div class="d-flex gap-2 mb-4 flex-wrap">
                 <a href="nueva_cirugia.php" class="action-btn primary">
                     <i class="bi bi-plus-circle"></i> Nueva Cirugía
-                </a>
-                <a href="combos.php" class="action-btn">
-                    <i class="bi bi-stack"></i> Gestionar Combos
                 </a>
                 <a href="salas.php" class="action-btn">
                     <i class="bi bi-door-open"></i> Gestionar Salas
@@ -213,7 +195,6 @@ try {
                                         <th># Cirugía</th>
                                         <th>Paciente</th>
                                         <th>Sala</th>
-                                        <th>Combo</th>
                                         <th>Fecha Programada</th>
                                         <th>Estado</th>
                                         <th>Cargo</th>
@@ -231,7 +212,6 @@ try {
                                                 <?php endif; ?>
                                             </td>
                                             <td><?php echo htmlspecialchars($c['sala'] ?? '—'); ?></td>
-                                            <td><?php echo htmlspecialchars($c['combo'] ?? '—'); ?></td>
                                             <td><?php echo $c['fecha_programada'] ? date('d/m/Y H:i', strtotime($c['fecha_programada'])) : '—'; ?></td>
                                             <td>
                                                 <?php

@@ -28,12 +28,10 @@ try {
                 COALESCE(CONCAT(p.nombre, ' ', p.apellido), CONCAT(c.referido_nombre, ' ', c.referido_apellido)) AS paciente,
                 p.dpi, p.fecha_nacimiento, p.genero,
                 s.nombre AS sala, s.codigo AS sala_codigo,
-                cc.nombre AS combo_nombre,
                 c.cirujano_nombre, c.anestesista_nombre
          FROM cirugias c
          LEFT JOIN pacientes p ON c.id_paciente = p.id_paciente
          LEFT JOIN salas_quirurgicas s ON c.id_sala = s.id_sala
-         LEFT JOIN cirugia_combos cc ON c.id_combo = cc.id_combo
          WHERE c.id_cirugia = ? AND c.id_hospital = ?
     ");
     $stmt->execute([$id_cirugia, $id_hospital]);
@@ -65,6 +63,36 @@ try {
     $total_descuentos = 0.0;
     foreach ($descuentos as $d) {
         if (!$d['cancelado']) $total_descuentos += (float)$d['monto'];
+    }
+
+    // Cargos de la cuenta de cirugía
+    $cargos_cirugia = [];
+    $totales_cargos = [
+        'Cirugía' => 0, 'Medicamento' => 0, 'Insumo' => 0,
+        'Honorario' => 0, 'Procedimiento' => 0, 'Laboratorio' => 0, 'Otro' => 0
+    ];
+    if ($cirugia['id_encamamiento']) {
+        $stmtCargos = $conn->prepare("
+            SELECT ch.id_cargo, ch.tipo_cargo, ch.descripcion, ch.cantidad, ch.precio_unitario,
+                   ch.subtotal, ch.fecha_cargo, ch.cancelado, u.nombre AS registrado_nombre, u.apellido AS registrado_apellido
+            FROM cargos_hospitalarios ch
+            LEFT JOIN usuarios u ON ch.registrado_por = u.idUsuario
+            WHERE ch.id_cirugia = ? AND ch.id_hospital = ?
+            ORDER BY ch.fecha_cargo DESC, ch.id_cargo DESC
+        ");
+        $stmtCargos->execute([$id_cirugia, $id_hospital]);
+        $cargos_cirugia = $stmtCargos->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($cargos_cirugia as $cg) {
+            if (!$cg['cancelado']) {
+                $tipo = $cg['tipo_cargo'];
+                if (isset($totales_cargos[$tipo])) {
+                    $totales_cargos[$tipo] += (float)$cg['subtotal'];
+                } else {
+                    $totales_cargos['Otro'] += (float)$cg['subtotal'];
+                }
+            }
+        }
     }
 
     // Equipo
@@ -152,7 +180,6 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                 <?php echo $cirugia['estado']; ?>
                             </span>
                             · Sala: <?php echo htmlspecialchars($cirugia['sala'] ?? '—'); ?>
-                            · Combo: <?php echo htmlspecialchars($cirugia['combo_nombre'] ?? '—'); ?>
                         </p>
                     </div>
                     <div class="d-flex flex-wrap gap-2 align-items-start">
@@ -164,14 +191,9 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                 <i class="bi bi-x-circle"></i> Cancelar
                             </button>
                         <?php elseif ($cirugia['estado'] === 'En_Curso'): ?>
-                            <button class="btn btn-primary" onclick="openConsumoModal()">
-                                <i class="bi bi-capsule"></i> Agregar Medicamento
+                            <button class="btn btn-primary" onclick="openCargoCirugiaModal()">
+                                <i class="bi bi-receipt"></i> Agregar Cargos
                             </button>
-                            <?php if (!empty($cirugia['id_combo'])): ?>
-                                <button class="btn btn-warning" onclick="cargarComboCirugia()" id="btnCargarCombo">
-                                    <i class="bi bi-box-seam"></i> Cargar Combo
-                                </button>
-                            <?php endif; ?>
                             <button class="btn btn-info" onclick="previewAsignacion()">
                                 <i class="bi bi-eye"></i> Ver Asignación
                             </button>
@@ -211,7 +233,15 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                             <dt class="col-sm-5">Fin:</dt><dd class="col-sm-7"><?php echo $cirugia['fecha_fin'] ? date('d/m/Y H:i', strtotime($cirugia['fecha_fin'])) : '—'; ?></dd>
                             <dt class="col-sm-5">Cirujano:</dt><dd class="col-sm-7"><?php echo htmlspecialchars($cirugia['cirujano_nombre'] ?? '—'); ?></dd>
                             <dt class="col-sm-5">Anestesista:</dt><dd class="col-sm-7"><?php echo htmlspecialchars($cirugia['anestesista_nombre'] ?? '—'); ?></dd>
-                            <dt class="col-sm-5">Cargo Total:</dt><dd class="col-sm-7 fw-bold text-primary fs-5">Q<?php echo number_format($cirugia['cargo_total'], 2); ?></dd>
+                            <dt class="col-sm-5">Cargo Total:</dt>
+                            <dd class="col-sm-7 fw-bold text-primary fs-5 d-flex align-items-center gap-2">
+                                <span id="cargo-total-display">Q<?php echo number_format($cirugia['cargo_total'], 2); ?></span>
+                                <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="editCargoTotal()" title="Editar cargo total">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </button>
+                                <?php endif; ?>
+                            </dd>
                         </dl>
                         <?php if ($cirugia['procedimiento']): ?>
                         <hr>
@@ -368,6 +398,136 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                     </tbody>
                                 </table>
                             </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cuenta de Cirugía: cargos -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Cuenta de Cirugía</h5>
+                        <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) && $cirugia['id_encamamiento']): ?>
+                            <button class="btn btn-sm btn-primary" onclick="openCargoCirugiaModal()">
+                                <i class="bi bi-plus"></i> Agregar Cargos
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!$cirugia['id_encamamiento']): ?>
+                            <div class="alert alert-info border-0 mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                La cuenta de cirugía se crea automáticamente al <strong>Iniciar la cirugía</strong>.
+                            </div>
+                        <?php else: ?>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Cirugía</small>
+                                        <strong class="text-primary">Q<?= number_format($totales_cargos['Cirugía'], 2) ?></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Medicamentos</small>
+                                        <strong class="text-info">Q<?= number_format($totales_cargos['Medicamento'], 2) ?></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Insumos</small>
+                                        <strong class="text-secondary">Q<?= number_format($totales_cargos['Insumo'], 2) ?></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Honorarios</small>
+                                        <strong class="text-warning">Q<?= number_format($totales_cargos['Honorario'], 2) ?></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Procedimientos</small>
+                                        <strong>Q<?= number_format($totales_cargos['Procedimiento'], 2) ?></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 col-6">
+                                    <div class="border rounded p-2 text-center bg-light">
+                                        <small class="text-muted d-block text-uppercase">Otros</small>
+                                        <strong class="text-muted">Q<?= number_format($totales_cargos['Otro'] + $totales_cargos['Laboratorio'], 2) ?></strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php if (empty($cargos_cirugia)): ?>
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                    <p class="mt-2 mb-0">No hay cargos registrados aún.</p>
+                                    <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                        <small>Use el botón <strong>Agregar Cargos</strong> para empezar.</small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="data-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tipo</th>
+                                                <th>Descripción</th>
+                                                <th class="text-end">Cant.</th>
+                                                <th class="text-end">Precio Unit.</th>
+                                                <th class="text-end">Subtotal</th>
+                                                <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                                    <th class="text-center">Acciones</th>
+                                                <?php endif; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($cargos_cirugia as $cg): ?>
+                                                <tr class="<?= $cg['cancelado'] ? 'text-decoration-line-through text-muted' : '' ?>">
+                                                    <td><?= date('d/m/Y H:i', strtotime($cg['fecha_cargo'])) ?></td>
+                                                    <td><span class="badge bg-secondary"><?= htmlspecialchars($cg['tipo_cargo']) ?></span></td>
+                                                    <td><?= htmlspecialchars($cg['descripcion']) ?>
+                                                        <?php if ($cg['cancelado']): ?>
+                                                            <small class="text-danger d-block">Cancelado</small>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-end"><?= number_format($cg['cantidad'], 2) ?></td>
+                                                    <td class="text-end">Q<?= number_format($cg['precio_unitario'], 2) ?></td>
+                                                    <td class="text-end fw-bold">Q<?= number_format($cg['subtotal'], 2) ?></td>
+                                                    <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                                        <td class="text-center">
+                                                            <?php if (!$cg['cancelado']): ?>
+                                                                <button class="btn btn-sm btn-outline-primary" onclick='editCargoCirugia(<?= json_encode($cg, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="Editar">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCargoCirugia(<?= (int)$cg['id_cargo'] ?>)" title="Eliminar">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    <?php endif; ?>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                            <?php
+                                            $subtotal_visible = 0;
+                                            foreach ($cargos_cirugia as $cg) {
+                                                if (!$cg['cancelado']) $subtotal_visible += (float)$cg['subtotal'];
+                                            }
+                                            ?>
+                                            <tr class="table-light">
+                                                <td colspan="<?= in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '5' : '4' ?>" class="text-end fw-bold">Total Cuenta:</td>
+                                                <td class="text-end fw-bold text-primary">Q<?= number_format($subtotal_visible, 2) ?></td>
+                                                <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
+                                                    <td></td>
+                                                <?php endif; ?>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -531,72 +691,381 @@ async function cambiarEstado(estado) {
     const res = await fetch('api/cambiar_estado_cirugia.php', { method: 'POST', body: fd });
     const json = await res.json();
     if (json.success) {
-        // Si pasó a En_Curso y hay combo con medicamentos, preguntar si quiere cargar
-        if (estado === 'En_Curso' && document.getElementById('btnCargarCombo')) {
-            Swal.fire({
-                icon: 'question',
-                title: 'Cirugía iniciada',
-                text: '¿Desea cargar los medicamentos del Combo y descontarlos del stock de Quirófano?',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, cargar combo',
-                cancelButtonText: 'Más tarde'
-            }).then(r => {
-                if (r.isConfirmed) cargarComboCirugia();
-                else location.reload();
-            });
-        } else {
-            Swal.fire('OK', json.message, 'success').then(() => location.reload());
-        }
+        Swal.fire('OK', json.message, 'success').then(() => location.reload());
     } else { Swal.fire('Error', json.message, 'error'); }
 }
 
-async function cargarComboCirugia(forzar = false) {
-    if (!forzar) {
-        const r = await Swal.fire({
-            title: '¿Cargar medicamentos del Combo?',
-            html: 'Se descontará el stock de Quirófano de todos los medicamentos vinculados al combo.',
-            icon: 'question', showCancelButton: true,
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'Cancelar'
-        });
-        if (!r.isConfirmed) return;
-    }
-
+async function editCargoTotal() {
+    const currentText = document.getElementById('cargo-total-display').textContent.replace(/[^\d.]/g, '');
+    const currentVal = parseFloat(currentText) || 0;
+    const { value: newVal } = await Swal.fire({
+        title: 'Editar Cargo Total',
+        html: `<p class="small text-muted mb-2">Valor actual: <strong>Q${currentVal.toFixed(2)}</strong></p>
+               <input id="swal-cargo" type="number" step="0.01" min="0" class="form-control form-control-lg" value="${currentVal.toFixed(2)}">
+               <input id="swal-motivo" type="text" maxlength="255" class="form-control mt-2" placeholder="Motivo (opcional)">`,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const v = parseFloat(document.getElementById('swal-cargo').value);
+            const m = document.getElementById('swal-motivo').value.trim();
+            if (isNaN(v) || v < 0) {
+                Swal.showValidationMessage('Ingrese un valor válido (≥ 0)');
+                return false;
+            }
+            return { value: v, motivo: m };
+        }
+    });
+    if (!newVal) return;
     const fd = new FormData();
     fd.append('id_cirugia', idCirugia);
-    fd.append('forzar', forzar ? '1' : '0');
+    fd.append('cargo_total', newVal.value);
+    fd.append('motivo', newVal.motivo);
     fd.append('csrf_token', csrf);
-
-    Swal.fire({ title: 'Cargando combo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
     try {
-        const res = await fetch('api/cargar_combo_cirugia.php', { method: 'POST', body: fd });
+        const res = await fetch('api/update_cargo_total.php', { method: 'POST', body: fd });
         const json = await res.json();
         if (json.success) {
-            Swal.fire({
-                icon: json.descargados > 0 ? 'success' : 'info',
-                title: 'Combo procesado',
-                text: json.message,
-                html: json.descargados > 0
-                    ? `<div class="text-start small mt-2"><strong>${json.descargados}</strong> medicamento(s) descontado(s) de Quirófano.${json.errores_stock && json.errores_stock.length ? '<br><span class="text-warning">Advertencias: ' + json.errores_stock.join('; ') + '</span>' : ''}</div>`
-                    : json.message
-            }).then(() => location.reload());
-        } else if (json.ya_cargado) {
-            const r2 = await Swal.fire({
-                title: 'Ya se cargaron medicamentos',
-                text: json.message,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Recargar (duplicar)',
-                cancelButtonText: 'Cancelar'
-            });
-            if (r2.isConfirmed) cargarComboCirugia(true);
+            document.getElementById('cargo-total-display').textContent = 'Q' + json.new_cargo.toFixed(2);
+            Swal.fire('Actualizado', json.message, 'success').then(() => location.reload());
         } else {
             Swal.fire('Error', json.message, 'error');
         }
-    } catch (err) {
-        Swal.fire('Error', 'Fallo de red: ' + err.message, 'error');
+    } catch (err) { Swal.fire('Error', 'Fallo de red', 'error'); }
+}
+
+async function cargarComboCirugia(forzar = false) {
+    // DEPRECATED: ya no se usa — los cargos se agregan manualmente via openCargoCirugiaModal
+    Swal.fire('Información', 'Use el botón "Agregar Cargos" para cargar medicamentos.', 'info');
+}
+
+// --- CUENTA DE CIRUGÍA: Agregar/Editar/Eliminar cargos ---
+async function openCargoCirugiaModal() {
+    const { value: formValues } = await Swal.fire({
+        title: 'Agregar Cargos a la Cirugía',
+        html: `
+        <div class="text-start mb-2">
+            <p class="text-muted small">Agregue uno o más cargos a la cuenta de la cirugía.</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm" id="batchCargoCirugiaTable">
+                <thead>
+                    <tr>
+                        <th style="width: 22%">Tipo</th>
+                        <th style="width: 43%">Descripción</th>
+                        <th style="width: 12%">Cant.</th>
+                        <th style="width: 13%">Precio</th>
+                        <th style="width: 10%"></th>
+                    </tr>
+                </thead>
+                <tbody id="cargoCirugiaRows">
+                    <tr>
+                        <td>
+                            <input list="tipos-cargo-cirugia-list" type="text" class="form-control form-control-sm cargo-tipo" name="tipo_cargo[]" required maxlength="50" placeholder="Tipo..." autocomplete="off">
+                        </td>
+                        <td>
+                            <div class="desc-container" style="position:relative;">
+                                <input type="text" class="form-control form-control-sm cargo-desc" name="descripcion[]" required placeholder="Descripción del cargo">
+                                <div class="search-results-inline" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ddd; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
+                                <input type="hidden" class="cargo-id-inventario" name="id_inventario[]">
+                            </div>
+                        </td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" min="0.01" required></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" min="0" required></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <datalist id="tipos-cargo-cirugia-list">
+            <option value="Cirugía">
+            <option value="Medicamento">
+            <option value="Insumo">
+            <option value="Honorario">
+            <option value="Procedimiento">
+            <option value="Laboratorio">
+            <option value="Otro">
+        </datalist>
+        <div class="text-start mt-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="addCargoCirugiaRowBtn">
+                <i class="bi bi-plus-lg"></i> Agregar otra fila
+            </button>
+        </div>
+        `,
+        width: 900,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar Cargos',
+        cancelButtonText: 'Cancelar',
+        didOpen: () => {
+            setupCargoCirugiaRows();
+            document.getElementById('addCargoCirugiaRowBtn').addEventListener('click', addCargoCirugiaRow);
+        },
+        preConfirm: () => {
+            const rows = document.querySelectorAll('#cargoCirugiaRows tr');
+            const cargos = [];
+
+            rows.forEach(row => {
+                const tipo = row.querySelector('[name="tipo_cargo[]"]').value.trim();
+                const desc = row.querySelector('[name="descripcion[]"]').value.trim();
+                const cant = parseFloat(row.querySelector('[name="cantidad[]"]').value) || 0;
+                const price = parseFloat(row.querySelector('[name="precio_unitario[]"]').value) || 0;
+                const idInv = parseInt(row.querySelector('.cargo-id-inventario').value) || 0;
+
+                if (tipo && desc && cant > 0 && price >= 0) {
+                    cargos.push({
+                        id_cirugia: idCirugia,
+                        tipo_cargo: tipo,
+                        descripcion: desc,
+                        cantidad: cant,
+                        precio_unitario: price,
+                        id_inventario: idInv || null
+                    });
+                }
+            });
+
+            if (cargos.length === 0) {
+                Swal.showValidationMessage('Debe agregar al menos un cargo válido');
+                return false;
+            }
+
+            const formData = new FormData();
+            cargos.forEach((cargo, index) => {
+                formData.append(`cargos[${index}][id_cirugia]`, cargo.id_cirugia);
+                formData.append(`cargos[${index}][tipo_cargo]`, cargo.tipo_cargo);
+                formData.append(`cargos[${index}][descripcion]`, cargo.descripcion);
+                formData.append(`cargos[${index}][cantidad]`, cargo.cantidad);
+                formData.append(`cargos[${index}][precio_unitario]`, cargo.precio_unitario);
+                if (cargo.id_inventario) formData.append(`cargos[${index}][id_inventario]`, cargo.id_inventario);
+            });
+            formData.append('csrf_token', csrf);
+
+            return fetch('api/add_cargo_cirugia.php', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message);
+                    return data;
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(error.message || 'Error del servidor');
+                });
+        }
+    });
+
+    if (formValues && formValues.success) {
+        Swal.fire('¡Éxito!', formValues.message, 'success').then(() => location.reload());
     }
+}
+
+function setupCargoCirugiaRows() {
+    document.querySelectorAll('#cargoCirugiaRows tr').forEach(row => setupCargoCirugiaRow(row));
+}
+
+function setupCargoCirugiaRow(row) {
+    const tipoSelect = row.querySelector('.cargo-tipo');
+    const descInput = row.querySelector('.cargo-desc');
+    const precioInput = row.querySelector('.cargo-precio');
+    const cantidadInput = row.querySelector('.cargo-cantidad');
+    const resultsDiv = row.querySelector('.search-results-inline');
+
+    tipoSelect.addEventListener('change', function () {
+        if (this.value === 'Medicamento' || this.value === 'Insumo') {
+            descInput.placeholder = 'Buscar ' + this.value.toLowerCase() + '...';
+            descInput.value = '';
+            precioInput.value = '';
+            row.querySelector('.cargo-id-inventario').value = '';
+        } else {
+            descInput.placeholder = 'Descripción del cargo';
+            resultsDiv.style.display = 'none';
+            row.querySelector('.cargo-id-inventario').value = '';
+        }
+    });
+
+    let timer;
+    descInput.addEventListener('input', function () {
+        clearTimeout(timer);
+        const tipo = tipoSelect.value;
+        const term = this.value;
+
+        if (tipo !== 'Medicamento' && tipo !== 'Insumo') {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+        if (term.length < 3) {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+
+        timer = setTimeout(() => {
+            fetch(`api/search_meds_quirofano.php?q=${encodeURIComponent(term)}`)
+                .then(res => res.json())
+                .then(data => {
+                    const items = (data.success ? data.data : data) || [];
+                    if (items.length === 0) {
+                        resultsDiv.innerHTML = '<div class="p-2 text-muted small">No se encontraron resultados</div>';
+                        resultsDiv.style.display = 'block';
+                        return;
+                    }
+                    let html = '';
+                    items.forEach(med => {
+                        const precio = med.precio_quirofano || med.precio_hospital || med.precio_venta || 0;
+                        html += `
+                            <div class="search-result-item p-2" style="cursor:pointer; border-bottom:1px solid #eee;"
+                                 data-name="${(med.nom_medicamento || '').replace(/"/g, '&quot;')}"
+                                 data-precio="${parseFloat(precio).toFixed(2)}"
+                                 data-id="${med.id_inventario}">
+                                <div class="fw-bold small">${escapeHtml(med.nom_medicamento)}</div>
+                                <div class="text-muted" style="font-size:0.75rem;">${escapeHtml(med.presentacion_med || '')}</div>
+                                <div class="d-flex justify-content-between" style="font-size:0.75rem;">
+                                    <span class="text-info">Quirófano: ${med.stock_quirofano || 0}</span>
+                                    <span class="fw-bold">Q${parseFloat(precio).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML = html;
+                    resultsDiv.style.display = 'block';
+
+                    resultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', function () {
+                            const name = this.getAttribute('data-name');
+                            const precio = this.getAttribute('data-precio');
+                            const idInv = this.getAttribute('data-id');
+
+                            descInput.value = name;
+                            precioInput.value = precio;
+                            row.querySelector('.cargo-id-inventario').value = idInv;
+                            resultsDiv.style.display = 'none';
+                        });
+                        item.addEventListener('mouseenter', function () { this.style.backgroundColor = '#f8f9fa'; });
+                        item.addEventListener('mouseleave', function () { this.style.backgroundColor = 'white'; });
+                    });
+                })
+                .catch(err => console.error('search error:', err));
+        }, 300);
+    });
+
+    descInput.addEventListener('blur', function () {
+        setTimeout(() => { resultsDiv.style.display = 'none'; }, 200);
+    });
+}
+
+function addCargoCirugiaRow() {
+    const tbody = document.getElementById('cargoCirugiaRows');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <input list="tipos-cargo-cirugia-list" type="text" class="form-control form-control-sm cargo-tipo" name="tipo_cargo[]" required maxlength="50" placeholder="Tipo..." autocomplete="off">
+        </td>
+        <td>
+            <div class="desc-container" style="position:relative;">
+                <input type="text" class="form-control form-control-sm cargo-desc" name="descripcion[]" required placeholder="Descripción del cargo">
+                <div class="search-results-inline" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ddd; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
+                <input type="hidden" class="cargo-id-inventario" name="id_inventario[]">
+            </div>
+        </td>
+        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" min="0.01" required></td>
+        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" min="0" required></td>
+        <td>
+            <button type="button" class="btn btn-link text-danger p-0 btn-remove-row">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(newRow);
+    setupCargoCirugiaRow(newRow);
+    newRow.querySelector('.btn-remove-row').addEventListener('click', () => newRow.remove());
+}
+
+async function editCargoCirugia(cargo) {
+    const { value: formValues } = await Swal.fire({
+        title: 'Editar Cargo',
+        html: `
+            <div class="text-start">
+                <label class="form-label fw-bold">Tipo</label>
+                <input id="edit-tipo" type="text" class="form-control" value="${escapeHtml(cargo.tipo_cargo)}" disabled>
+                <label class="form-label fw-bold mt-2">Descripción</label>
+                <input id="edit-desc" type="text" class="form-control" value="${escapeHtml(cargo.descripcion)}" maxlength="500">
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Cantidad</label>
+                        <input id="edit-cant" type="number" step="0.01" min="0.01" class="form-control" value="${cargo.cantidad}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Precio Unit. (Q)</label>
+                        <input id="edit-precio" type="number" step="0.01" min="0" class="form-control" value="${cargo.precio_unitario}">
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const desc = document.getElementById('edit-desc').value.trim();
+            const cant = parseFloat(document.getElementById('edit-cant').value) || 0;
+            const precio = parseFloat(document.getElementById('edit-precio').value) || 0;
+            if (!desc) { Swal.showValidationMessage('Descripción requerida'); return false; }
+            if (cant <= 0) { Swal.showValidationMessage('Cantidad debe ser > 0'); return false; }
+            if (precio < 0) { Swal.showValidationMessage('Precio inválido'); return false; }
+            return { desc, cant, precio };
+        }
+    });
+
+    if (!formValues) return;
+    const fd = new FormData();
+    fd.append('id_cargo', cargo.id_cargo);
+    fd.append('descripcion', formValues.desc);
+    fd.append('cantidad', formValues.cant);
+    fd.append('precio_unitario', formValues.precio);
+    fd.append('csrf_token', csrf);
+
+    try {
+        const res = await fetch('api/update_cargo_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            Swal.fire('Actualizado', json.message, 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) { Swal.fire('Error', 'Fallo de red', 'error'); }
+}
+
+async function deleteCargoCirugia(idCargo) {
+    const r = await Swal.fire({
+        title: '¿Eliminar cargo?',
+        text: 'El cargo se marcará como cancelado. Si está vinculado a inventario, se devolverá el stock.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+
+    const { value: motivo } = await Swal.fire({
+        title: 'Motivo de eliminación',
+        input: 'text',
+        inputPlaceholder: 'Opcional',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+    if (motivo === null) return;
+
+    const fd = new FormData();
+    fd.append('id_cargo', idCargo);
+    fd.append('motivo', motivo || 'Eliminado por el usuario');
+    fd.append('csrf_token', csrf);
+
+    Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch('api/delete_cargo_cirugia.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.success) {
+            Swal.fire('Eliminado', json.message, 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', json.message, 'error');
+        }
+    } catch (err) { Swal.fire('Error', 'Fallo de red', 'error'); }
 }
 
 // --- DESCUENTOS ---

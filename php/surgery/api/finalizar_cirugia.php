@@ -50,9 +50,15 @@ try {
 
     $id_encamamiento_creado = null;
     $cargo_aplicado = false;
+    $id_encamamiento_existente = null;
 
-    // 3. Auto-trasladar a encamamiento
-    if ($auto_trasladar) {
+    // 3. Si ya existe id_encamamiento (creado al iniciar cirugía), usarlo
+    if ($cirugia['id_encamamiento']) {
+        $id_encamamiento_existente = (int)$cirugia['id_encamamiento'];
+    }
+
+    // 4. Auto-trasladar a cama física (si auto_trasladar)
+    if ($auto_trasladar && !$id_encamamiento_existente) {
         // Buscar cama disponible EXCLUYENDO habitación 401
         $stmtCama = $conn->prepare("
             SELECT c.id_cama, c.id_habitacion, h.numero_habitacion, h.tarifa_por_noche
@@ -70,7 +76,6 @@ try {
 
         if ($cama) {
             $fecha_ingreso = date('Y-m-d H:i:s');
-            $fecha_alta = null;
             $motivo_ingreso = 'Post-operatorio de cirugía #' . $cirugia['numero_cirugia'];
             $diagnostico = $cirugia['procedimiento'] ?: 'Procedimiento quirúrgico';
 
@@ -78,7 +83,6 @@ try {
             $stmtCheck = $conn->prepare("SELECT id_encamamiento FROM encamamientos WHERE id_paciente = ? AND estado = 'Activo' AND id_hospital = ?");
             $stmtCheck->execute([$cirugia['id_paciente'], $id_hospital]);
             if ($stmtCheck->fetch()) {
-                // Ya está hospitalizado: no crear nuevo encamamiento
                 $id_encamamiento_existente = $stmtCheck->fetchColumn();
             } else {
                 $stmtIngreso = $conn->prepare("
@@ -86,7 +90,7 @@ try {
                     (id_paciente, id_cama, id_doctor, fecha_ingreso, fecha_alta,
                      motivo_ingreso, diagnostico_ingreso, tipo_ingreso, notas_ingreso,
                      estado, created_by, id_hospital)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Programado', ?, 'Activo', ?, ?)
+                    VALUES (?, ?, ?, ?, NULL, ?, ?, 'Programado', ?, 'Activo', ?, ?)
                 ");
                 $notas = 'Auto-trasladado desde cirugía #' . $cirugia['numero_cirugia'];
                 $stmtIngreso->execute([
@@ -94,7 +98,6 @@ try {
                     $cama['id_cama'],
                     $user_id,
                     $fecha_ingreso,
-                    $fecha_alta,
                     $motivo_ingreso,
                     $diagnostico,
                     $notas,
@@ -107,114 +110,79 @@ try {
                 $stmtUpdCama = $conn->prepare("UPDATE camas SET estado = 'Ocupada' WHERE id_cama = ? AND id_hospital = ?");
                 $stmtUpdCama->execute([$cama['id_cama'], $id_hospital]);
 
-                // Crear cuenta hospitalaria (si no existe trigger)
-                $stmtVerifCta = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
-                $stmtVerifCta->execute([$id_encamamiento_creado, $id_hospital]);
-                if (!$stmtVerifCta->fetch()) {
-                    $stmtCta = $conn->prepare("INSERT INTO cuenta_hospitalaria (id_encamamiento, id_hospital) VALUES (?, ?)");
-                    $stmtCta->execute([$id_encamamiento_creado, $id_hospital]);
-                }
+                // Crear cuenta hospitalaria
+                $stmtCta = $conn->prepare("INSERT INTO cuenta_hospitalaria (id_encamamiento, id_hospital) VALUES (?, ?)");
+                $stmtCta->execute([$id_encamamiento_creado, $id_hospital]);
+                $id_encamamiento_existente = $id_encamamiento_creado;
             }
+        }
+    }
 
-            // Obtener id_cuenta
-            $id_encamamiento_target = $id_encamamiento_creado ?: $id_encamamiento_existente;
-            $stmtCta2 = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
-            $stmtCta2->execute([$id_encamamiento_target, $id_hospital]);
-            $cuenta = $stmtCta2->fetch(PDO::FETCH_ASSOC);
+    // 5. Si existe encamamiento (viejo o nuevo), asociar a la cirugía y aplicar cargos
+    if ($id_encamamiento_existente) {
+        // Asociar encamamiento a la cirugía si no estaba
+        $stmtUpdCir = $conn->prepare("UPDATE cirugias SET id_encamamiento = ? WHERE id_cirugia = ? AND id_hospital = ?");
+        $stmtUpdCir->execute([$id_encamamiento_existente, $id_cirugia, $id_hospital]);
 
-            if ($cuenta) {
-                $id_cuenta = (int)$cuenta['id_cuenta'];
+        // Obtener id_cuenta
+        $stmtCta2 = $conn->prepare("SELECT id_cuenta FROM cuenta_hospitalaria WHERE id_encamamiento = ? AND id_hospital = ?");
+        $stmtCta2->execute([$id_encamamiento_existente, $id_hospital]);
+        $cuenta = $stmtCta2->fetch(PDO::FETCH_ASSOC);
 
-                // Cargo Q600 primera noche (tarifa cirugía)
-                $stmtCargoInicial = $conn->prepare("
-                    INSERT INTO cargos_hospitalarios
-                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
-                     fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
-                    VALUES (?, 'Habitación', ?, 1, 600.00, NOW(), CURDATE(), ?, ?)
-                ");
-                $descInicial = "Habitación {$cama['numero_habitacion']} - Post-operatorio Cirugía #{$cirugia['numero_cirugia']} (Q600 tarifa cirugía)";
-                $stmtCargoInicial->execute([$id_cuenta, $descInicial, $user_id, $id_hospital]);
+        if ($cuenta) {
+            $id_cuenta = (int)$cuenta['id_cuenta'];
 
-                // Cargo del combo (si hay)
-                if ((float)$cirugia['cargo_total'] > 0) {
-                    $stmtNombreCombo = $conn->prepare("SELECT nombre FROM cirugia_combos WHERE id_combo = ?");
-                    $stmtNombreCombo->execute([$cirugia['id_combo']]);
-                    $combo = $stmtNombreCombo->fetch(PDO::FETCH_ASSOC);
-                    $comboNombre = $combo['nombre'] ?? 'Combo';
-
-                    $stmtCargoCombo = $conn->prepare("
+            // Solo agregar Habitación Q600 si NO existe ya una (caso de auto_trasladar sin cama previa)
+            if ($auto_trasladar && $id_encamamiento_creado) {
+                $stmtCheckHab = $conn->prepare("SELECT COUNT(*) FROM cargos_hospitalarios WHERE id_cuenta = ? AND tipo_cargo = 'Habitación' AND descripcion LIKE '%Post-operatorio Cirugía%'");
+                $stmtCheckHab->execute([$id_cuenta]);
+                if ((int)$stmtCheckHab->fetchColumn() === 0) {
+                    $stmtCargoInicial = $conn->prepare("
                         INSERT INTO cargos_hospitalarios
-                        (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
-                         fecha_cargo, registrado_por, id_hospital)
-                        VALUES (?, 'Cirugía', ?, 1, ?, NOW(), ?, ?)
+                        (id_cuenta, id_cirugia, tipo_cargo, descripcion, cantidad, precio_unitario,
+                         fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
+                        VALUES (?, ?, 'Habitación', ?, 1, 600.00, NOW(), CURDATE(), ?, ?)
                     ");
-                    $stmtCargoCombo->execute([$id_cuenta, "Cirugía: {$comboNombre} (#{$cirugia['numero_cirugia']})", (float)$cirugia['cargo_total'], $user_id, $id_hospital]);
+                    $descInicial = "Habitación {$cama['numero_habitacion']} - Post-operatorio Cirugía #{$cirugia['numero_cirugia']} (Q600 tarifa cirugía)";
+                    $stmtCargoInicial->execute([$id_cuenta, $id_cirugia, $descInicial, $user_id, $id_hospital]);
                 }
-
-                // Cargos de descuentos aplicados (se restan del total)
-                $stmtDescuentos = $conn->prepare("SELECT id_descuento, concepto, monto FROM cirugia_descuentos WHERE id_cirugia = ? AND id_hospital = ? AND cancelado = 0 ORDER BY creado_en ASC");
-                $stmtDescuentos->execute([$id_cirugia, $id_hospital]);
-                $descuentosCirugia = $stmtDescuentos->fetchAll(PDO::FETCH_ASSOC);
-                foreach ($descuentosCirugia as $d) {
-                    $stmtCargoDesc = $conn->prepare("
-                        INSERT INTO cargos_hospitalarios
-                        (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
-                         fecha_cargo, registrado_por, id_hospital)
-                        VALUES (?, 'Descuento', ?, 1, ?, NOW(), ?, ?)
-                    ");
-                    // Guardamos el descuento como precio_unitario positivo (se gestiona como tipo Descuento)
-                    $stmtCargoDesc->execute([
-                        $id_cuenta,
-                        "Descuento: {$d['concepto']} (Cirugía #{$cirugia['numero_cirugia']})",
-                        (float)$d['monto'],
-                        $user_id,
-                        $id_hospital
-                    ]);
-                }
-
-                // Cargos de medicamentos consumidos
-                $stmtConsumos = $conn->prepare("SELECT cc.*, inv.nom_medicamento FROM cirugia_consumos cc JOIN inventario inv ON cc.id_inventario = inv.id_inventario WHERE cc.id_cirugia = ?");
-                $stmtConsumos->execute([$id_cirugia]);
-                $consumos = $stmtConsumos->fetchAll(PDO::FETCH_ASSOC);
-                $stmtCargoConsumo = $conn->prepare("
-                    INSERT INTO cargos_hospitalarios
-                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario,
-                     fecha_cargo, registrado_por, referencia_id, referencia_tabla, id_hospital)
-                    VALUES (?, 'Medicamento', ?, ?, ?, NOW(), ?, ?, 'inventario', ?)
-                ");
-                foreach ($consumos as $co) {
-                    $stmtCargoConsumo->execute([
-                        $id_cuenta,
-                        "{$co['nom_medicamento']} (Cirugía #{$cirugia['numero_cirugia']})",
-                        (float)$co['cantidad'],
-                        (float)$co['precio_unitario'],
-                        $user_id,
-                        (int)$co['id_inventario'],
-                        $id_hospital
-                    ]);
-                }
-
-                // Sync cuenta hospitalaria subtotales (total_general es GENERATED, no se actualiza manualmente)
-                $stmtSync = $conn->prepare("
-                    UPDATE cuenta_hospitalaria ch SET
-                        subtotal_habitacion = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Habitación' AND cancelado = 0), 0),
-                        subtotal_medicamentos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Medicamento' AND cancelado = 0), 0),
-                        subtotal_procedimientos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Cirugía' AND cancelado = 0), 0) + COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = 0), 0),
-                        subtotal_laboratorios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Laboratorio' AND cancelado = 0), 0),
-                        subtotal_honorarios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Honorario' AND cancelado = 0), 0),
-                        subtotal_otros = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Cirugía','Laboratorio','Honorario') AND cancelado = 0), 0)
-                    WHERE ch.id_cuenta = ?
-                ");
-                $stmtSync->execute([$id_cuenta]);
-
-                $cargo_aplicado = true;
             }
 
-            // Actualizar cirugia con id_encamamiento
-            if ($id_encamamiento_target) {
-                $stmtUpdCir = $conn->prepare("UPDATE cirugias SET id_encamamiento = ? WHERE id_cirugia = ?");
-                $stmtUpdCir->execute([$id_encamamiento_target, $id_cirugia]);
+            // Cargos de descuentos aplicados (se restan del total)
+            $stmtDescuentos = $conn->prepare("SELECT id_descuento, concepto, monto FROM cirugia_descuentos WHERE id_cirugia = ? AND id_hospital = ? AND cancelado = 0 ORDER BY creado_en ASC");
+            $stmtDescuentos->execute([$id_cirugia, $id_hospital]);
+            $descuentosCirugia = $stmtDescuentos->fetchAll(PDO::FETCH_ASSOC);
+            $stmtCargoDesc = $conn->prepare("
+                INSERT INTO cargos_hospitalarios
+                (id_cuenta, id_cirugia, tipo_cargo, descripcion, cantidad, precio_unitario,
+                 fecha_cargo, registrado_por, id_hospital)
+                VALUES (?, ?, 'Descuento', ?, 1, ?, NOW(), ?, ?)
+            ");
+            foreach ($descuentosCirugia as $d) {
+                $stmtCargoDesc->execute([
+                    $id_cuenta,
+                    $id_cirugia,
+                    "Descuento: {$d['concepto']} (Cirugía #{$cirugia['numero_cirugia']})",
+                    (float)$d['monto'],
+                    $user_id,
+                    $id_hospital
+                ]);
             }
+
+            // Sync cuenta hospitalaria subtotales
+            $stmtSync = $conn->prepare("
+                UPDATE cuenta_hospitalaria ch SET
+                    subtotal_habitacion = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Habitación' AND cancelado = 0), 0),
+                    subtotal_medicamentos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Medicamento' AND cancelado = 0), 0),
+                    subtotal_procedimientos = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Cirugía' AND cancelado = 0), 0) + COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Procedimiento' AND cancelado = 0), 0),
+                    subtotal_laboratorios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Laboratorio' AND cancelado = 0), 0),
+                    subtotal_honorarios = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo = 'Honorario' AND cancelado = 0), 0),
+                    subtotal_otros = COALESCE((SELECT SUM(subtotal) FROM cargos_hospitalarios WHERE id_cuenta = ch.id_cuenta AND tipo_cargo NOT IN ('Habitación','Medicamento','Procedimiento','Cirugía','Laboratorio','Honorario') AND cancelado = 0), 0)
+                WHERE ch.id_cuenta = ?
+            ");
+            $stmtSync->execute([$id_cuenta]);
+
+            $cargo_aplicado = true;
         }
     }
 

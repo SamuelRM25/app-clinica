@@ -107,10 +107,24 @@ try {
     $stmt_pagos_traslado->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_pagos_traslado = (float)($stmt_pagos_traslado->fetch(PDO::FETCH_ASSOC)['total_traslados'] ?? 0);
 
-    // 2b. Gastos generales del hospital
-    $stmt_gastos = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total_gastos FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ?");
-    $stmt_gastos->execute([$start_datetime, $end_datetime, $id_hospital]);
-    $total_gastos = (float)($stmt_gastos->fetch(PDO::FETCH_ASSOC)['total_gastos'] ?? 0);
+    // 2b. Gastos por categoría
+    $stmt_gastos_general = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Gasto General'");
+    $stmt_gastos_general->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_gasto_general = (float)($stmt_gastos_general->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+    $stmt_consulta_medica = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Consulta Médica'");
+    $stmt_consulta_medica->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_consulta_medica = (float)($stmt_consulta_medica->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+    $stmt_pago_comisiones = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Pago Comisiones Médicos'");
+    $stmt_pago_comisiones->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_pago_comisiones = (float)($stmt_pago_comisiones->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+    $stmt_gastos_otros = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Otra'");
+    $stmt_gastos_otros->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_gastos_otros = (float)($stmt_gastos_otros->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+    $total_gastos = $total_gasto_general + $total_consulta_medica + $total_pago_comisiones + $total_gastos_otros;
 
     // 3. Cálculo de Ganancia Real — farmacia (detalle_ventas → inventario → purchase_items)
     $stmt_actual_profit = $conn->prepare("
@@ -383,7 +397,10 @@ try {
     $egresos_categorias = [
         ['label' => 'Pago a Proveedores', 'categoria' => 'pago_proveedores', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
         ['label' => 'Pago por Traslado', 'categoria' => 'pago_traslado', 'icon' => 'bi-arrow-left-right', 'monto' => $total_pagos_traslado],
-        ['label' => 'Gastos Generales', 'categoria' => 'gastos_varios', 'icon' => 'bi-wallet2', 'monto' => $total_gastos],
+        ['label' => 'Gasto General', 'categoria' => 'gasto_general', 'icon' => 'bi-wallet2', 'monto' => $total_gasto_general],
+        ['label' => 'Consulta Médica', 'categoria' => 'consulta_medica', 'icon' => 'bi-clipboard-pulse', 'monto' => $total_consulta_medica],
+        ['label' => 'Pago Comisiones Médicos', 'categoria' => 'pago_comisiones_medicos', 'icon' => 'bi-people-fill', 'monto' => $total_pago_comisiones],
+        ['label' => 'Otros Gastos', 'categoria' => 'gastos_otros', 'icon' => 'bi-three-dots', 'monto' => $total_gastos_otros],
     ];
 
     // 8. Utilidad Bruta — incluye TODAS las fuentes de profit (farmacia + 5 categorías tarifadas)

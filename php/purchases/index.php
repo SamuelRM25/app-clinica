@@ -1096,6 +1096,7 @@ try {
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Descripción</th>
+                                    <th>Categoría</th>
                                     <th>Cant.</th>
                                     <th class="text-end">Subtotal</th>
                                     <th class="text-end">Total</th>
@@ -1105,16 +1106,16 @@ try {
                             </thead>
                             <tbody>
                                 <tr id="gastosLoadingRow">
-                                    <td colspan="7" class="text-center text-muted py-4">
+                                    <td colspan="8" class="text-center text-muted py-4">
                                         <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando gastos...
                                     </td>
                                 </tr>
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <td colspan="4" class="text-end fw-bold">Total Gastos:</td>
-                                    <td class="fw-bold text-danger" id="gastosTotalFooter">Q0.00</td>
-                                    <td colspan="2"></td>
+<td colspan="5" class="text-end fw-bold">Total Gastos:</td>
+                                <td class="fw-bold text-danger" id="gastosTotalFooter">Q0.00</td>
+                                <td colspan="2"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -1142,6 +1143,19 @@ try {
                             <label class="form-label">Descripción</label>
                             <textarea class="form-control" id="gasto_descripcion" rows="2"
                                 placeholder="Ej. Insumos para baños, materiales de limpieza, etc." required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" id="gasto_categoria" required onchange="onCategoriaChange()">
+                                <option value="Gasto General">Gasto General</option>
+                                <option value="Consulta Médica">Consulta Médica</option>
+                                <option value="Pago Comisiones Médicos">Pago Comisiones Médicos</option>
+                                <option value="Otra">Otra (especificar)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="gasto_categoria_otra_wrap" style="display:none">
+                            <label class="form-label">Especificar categoría</label>
+                            <input type="text" class="form-control" id="gasto_categoria_otra" maxlength="100" placeholder="Ej: Servicios básicos">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Fecha</label>
@@ -1195,6 +1209,7 @@ try {
                             <tr>
                                 <th>Fecha eliminación</th>
                                 <th>Descripción</th>
+                                <th>Categoría</th>
                                 <th>Cant.</th>
                                 <th class="text-end">Total</th>
                                 <th>Eliminado por</th>
@@ -1203,14 +1218,14 @@ try {
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...
                                 </td>
                             </tr>
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <td colspan="3" class="text-end fw-bold">Total Eliminados:</td>
+                                <td colspan="4" class="text-end fw-bold">Total Eliminados:</td>
                                 <td class="fw-bold text-danger" id="deletedGastosTotalFooter">Q0.00</td>
                                 <td colspan="2"></td>
                             </tr>
@@ -2650,14 +2665,14 @@ try {
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         if (!data.success) {
-                            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
-                            return;
+tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
+                        return;
                         }
                         renderGastosTable(data.rows || []);
                     })
                     .catch(function(err) {
                         console.error('Error loading gastos:', err);
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
                     });
             };
 
@@ -2674,7 +2689,7 @@ try {
                 if (!tbody) return;
 
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay gastos registrados en este mes</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay gastos registrados en este mes</td></tr>';
                     if (footer) footer.textContent = 'Q0.00';
                     return;
                 }
@@ -2683,9 +2698,13 @@ try {
                 let totalGeneral = 0;
                 rows.forEach(function(g) {
                     totalGeneral += g.total;
+                    const categoriaLabel = g.categoria === 'Otra' && g.categoria_otra
+                        ? 'Otra: ' + escapeHtml(g.categoria_otra)
+                        : escapeHtml(g.categoria || 'Gasto General');
                     html += '<tr>' +
                         '<td>' + g.fecha + '</td>' +
                         '<td>' + escapeHtml(g.descripcion) + '</td>' +
+                        '<td><span class="badge bg-secondary">' + categoriaLabel + '</span></td>' +
                         '<td class="text-center">' + g.cantidad + '</td>' +
                         '<td class="text-end">Q' + Number(g.subtotal).toFixed(2) + '</td>' +
                         '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
@@ -2701,12 +2720,29 @@ try {
 
             window.showNewGastoModal = function () {
                 document.getElementById('gasto_descripcion').value = '';
+                document.getElementById('gasto_categoria').value = 'Gasto General';
+                document.getElementById('gasto_categoria_otra').value = '';
+                document.getElementById('gasto_categoria_otra_wrap').style.display = 'none';
                 document.getElementById('gasto_fecha').value = '<?php echo date('Y-m-d'); ?>';
                 document.getElementById('gasto_cantidad').value = '1';
                 document.getElementById('gasto_subtotal').value = '';
                 document.getElementById('gasto_total').value = '0.00';
                 document.getElementById('newGastoModal').classList.add('active');
                 document.getElementById('gasto_descripcion').focus();
+            };
+
+            window.onCategoriaChange = function () {
+                const sel = document.getElementById('gasto_categoria');
+                const wrap = document.getElementById('gasto_categoria_otra_wrap');
+                const otraInput = document.getElementById('gasto_categoria_otra');
+                if (sel.value === 'Otra') {
+                    wrap.style.display = '';
+                    otraInput.required = true;
+                } else {
+                    wrap.style.display = 'none';
+                    otraInput.required = false;
+                    otraInput.value = '';
+                }
             };
 
             window.calcularGastoTotal = function () {
@@ -2717,6 +2753,8 @@ try {
 
             window.saveGasto = function () {
                 const descripcion = document.getElementById('gasto_descripcion').value.trim();
+                const categoria = document.getElementById('gasto_categoria').value;
+                const categoriaOtra = document.getElementById('gasto_categoria_otra').value.trim();
                 const fecha = document.getElementById('gasto_fecha').value;
                 const cantidad = parseInt(document.getElementById('gasto_cantidad').value) || 1;
                 const subtotal = parseFloat(document.getElementById('gasto_subtotal').value) || 0;
@@ -2730,11 +2768,23 @@ try {
                     Swal.fire({ title: 'Subtotal inválido', text: 'El subtotal debe ser mayor a 0', icon: 'warning', confirmButtonText: 'Entendido' });
                     return;
                 }
+                if (categoria === 'Otra' && !categoriaOtra) {
+                    Swal.fire({ title: 'Categoría requerida', text: 'Debe especificar el nombre de la categoría personalizada', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return;
+                }
 
                 const btn = document.getElementById('saveGastoBtn');
                 if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Guardando...'; }
 
-                const payload = { descripcion: descripcion, cantidad: cantidad, subtotal: subtotal, total: total, fecha: fecha };
+                const payload = {
+                    descripcion: descripcion,
+                    categoria: categoria,
+                    categoria_otra: categoria === 'Otra' ? categoriaOtra : '',
+                    cantidad: cantidad,
+                    subtotal: subtotal,
+                    total: total,
+                    fecha: fecha
+                };
 
                 const csrfMeta = document.querySelector('meta[name="csrf-token"]');
                 const csrfToken = csrfMeta ? csrfMeta.content : '';
@@ -2829,14 +2879,14 @@ try {
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         if (!data.success) {
-                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
                             return;
                         }
                         renderDeletedGastosTable(data.rows || []);
                     })
                     .catch(function(err) {
                         console.error('Error loading deleted gastos:', err);
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
                     });
             };
 
@@ -2846,7 +2896,7 @@ try {
                 if (!tbody) return;
 
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-check-circle me-2 text-success"></i>No hay gastos eliminados este mes</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-check-circle me-2 text-success"></i>No hay gastos eliminados este mes</td></tr>';
                     if (footer) footer.textContent = 'Q0.00';
                     return;
                 }
@@ -2855,9 +2905,13 @@ try {
                 let totalGeneral = 0;
                 rows.forEach(function(g) {
                     totalGeneral += g.total;
+                    const categoriaLabel = g.categoria === 'Otra' && g.categoria_otra
+                        ? 'Otra: ' + escapeHtml(g.categoria_otra)
+                        : escapeHtml(g.categoria || 'Gasto General');
                     html += '<tr>' +
                         '<td>' + g.fecha_eliminacion + '</td>' +
                         '<td>' + escapeHtml(g.descripcion) + '</td>' +
+                        '<td><span class="badge bg-secondary">' + categoriaLabel + '</span></td>' +
                         '<td class="text-center">' + g.cantidad + '</td>' +
                         '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
                         '<td>' + escapeHtml(g.eliminado_por_nombre || '—') + '</td>' +

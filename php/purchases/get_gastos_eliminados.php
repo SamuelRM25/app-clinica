@@ -20,6 +20,8 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         id_original INT NOT NULL,
         descripcion VARCHAR(255) NOT NULL,
+        categoria VARCHAR(50) NOT NULL DEFAULT 'Gasto General',
+        categoria_otra VARCHAR(100) NULL,
         cantidad INT NOT NULL DEFAULT 1,
         subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
         total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -31,7 +33,8 @@ try {
         eliminado_por INT NOT NULL,
         fecha_eliminacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_id_hospital (id_hospital),
-        INDEX idx_fecha_eliminacion (fecha_eliminacion)
+        INDEX idx_fecha_eliminacion (fecha_eliminacion),
+        INDEX idx_categoria_elim (categoria)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');

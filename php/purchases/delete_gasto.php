@@ -23,6 +23,8 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         id_original INT NOT NULL,
         descripcion VARCHAR(255) NOT NULL,
+        categoria VARCHAR(50) NOT NULL DEFAULT 'Gasto General',
+        categoria_otra VARCHAR(100) NULL,
         cantidad INT NOT NULL DEFAULT 1,
         subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
         total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -34,7 +36,8 @@ try {
         eliminado_por INT NOT NULL,
         fecha_eliminacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_id_hospital (id_hospital),
-        INDEX idx_fecha_eliminacion (fecha_eliminacion)
+        INDEX idx_fecha_eliminacion (fecha_eliminacion),
+        INDEX idx_categoria_elim (categoria)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $data = json_decode(file_get_contents('php://input'), true);
@@ -70,12 +73,14 @@ try {
         // Insert into gastos_eliminados
         $stmt = $conn->prepare("
             INSERT INTO gastos_eliminados
-                (id_original, descripcion, cantidad, subtotal, total, fecha, created_by, id_hospital, created_at, motivo_eliminacion, eliminado_por, fecha_eliminacion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (id_original, descripcion, categoria, categoria_otra, cantidad, subtotal, total, fecha, created_by, id_hospital, created_at, motivo_eliminacion, eliminado_por, fecha_eliminacion)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         $stmt->execute([
             $gasto['id'],
             $gasto['descripcion'],
+            $gasto['categoria'] ?? 'Gasto General',
+            $gasto['categoria_otra'] ?? null,
             $gasto['cantidad'],
             $gasto['subtotal'],
             $gasto['total'],

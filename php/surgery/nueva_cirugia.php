@@ -23,12 +23,8 @@ try {
     $stmtSalas = $conn->prepare("SELECT id_sala, codigo, nombre, tipo FROM salas_quirurgicas WHERE id_hospital = ? AND estado != 'Mantenimiento' ORDER BY codigo");
     $stmtSalas->execute([$id_hospital]);
     $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
-
-    $stmtCombos = $conn->prepare("SELECT id_combo, codigo, nombre, precio_total FROM cirugia_combos WHERE id_hospital = ? AND estado = 'Activo' ORDER BY nombre");
-    $stmtCombos->execute([$id_hospital]);
-    $combos = $stmtCombos->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $salas = $combos = [];
+    $salas = [];
     $error_msg = 'Error cargando datos: ' . htmlspecialchars($e->getMessage());
     error_log('nueva_cirugia.php: ' . $e->getMessage());
 }
@@ -140,20 +136,6 @@ $page_title = "Nueva Cirugía";
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Combo de Operación <small class="text-muted">(opcional)</small></label>
-                            <select class="form-select" name="id_combo" id="id_combo">
-                                <option value="">— Sin combo (ingresar cargo manual) —</option>
-                                <?php foreach ($combos as $c): ?>
-                                    <option value="<?php echo $c['id_combo']; ?>" data-precio="<?php echo $c['precio_total']; ?>">
-                                        <?php echo htmlspecialchars($c['nombre']); ?> — Q<?php echo number_format($c['precio_total'], 2); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <div id="combo-meds-preview" class="d-none"></div>
-                        </div>
-                        <div class="col-md-6">
                             <label class="form-label">Cirujano <small class="text-muted">(escribir manualmente)</small></label>
                             <input type="text" name="cirujano_nombre" id="cirujano_nombre" class="form-control" placeholder="Dr. Juan Pérez" maxlength="150">
                         </div>
@@ -239,45 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Patient search error:', e);
             }
         }, 300);
-    });
-
-    // Vista previa del combo: muestra los medicamentos del combo seleccionado
-    const previewDiv = document.getElementById('combo-meds-preview');
-    document.getElementById('id_combo').addEventListener('change', async (e) => {
-        const idCombo = e.target.value;
-        previewDiv.classList.add('d-none');
-        previewDiv.innerHTML = '';
-        if (!idCombo) return;
-        try {
-            const res = await fetch('api/get_combo_meds.php?id_combo=' + idCombo);
-            const json = await res.json();
-            if (!json.success) return;
-            const meds = json.medicamentos || [];
-            if (meds.length === 0) {
-                previewDiv.innerHTML = `<div class="alert alert-info border-0 mb-3"><i class="bi bi-info-circle me-2"></i>Este combo no tiene medicamentos vinculados. Solo incluye cargos fijos.</div>`;
-                previewDiv.classList.remove('d-none');
-                return;
-            }
-            const stockAlerts = meds.filter(m => !m.stock_suficiente);
-            let html = `<div class="alert alert-${stockAlerts.length > 0 ? 'warning' : 'success'} border-0 mb-3">
-                <h6 class="alert-heading"><i class="bi bi-${stockAlerts.length > 0 ? 'exclamation-triangle' : 'check-circle'} me-2"></i>Medicamentos del Combo: ${json.combo.nombre}</h6>
-                <p class="mb-2 small">Al iniciar la cirugía se descontarán automáticamente del stock de Quirófano:</p>
-                <ul class="mb-0 small">`;
-            meds.forEach(m => {
-                const ok = m.stock_suficiente;
-                html += `<li>
-                    <strong>${escapeHtml(m.nom_medicamento)}</strong>
-                    <span class="text-muted">(cantidad: ${parseInt(m.cantidad)})</span>
-                    — Stock en Quirófano: <span class="badge bg-${ok ? 'success' : 'danger'}">${parseInt(m.stock_quirofano || 0)}</span>
-                    ${!ok ? '<span class="text-danger ms-1">(faltan ' + m.stock_faltante + ')</span>' : ''}
-                </li>`;
-            });
-            html += '</ul></div>';
-            previewDiv.innerHTML = html;
-            previewDiv.classList.remove('d-none');
-        } catch (err) {
-            console.error('combo preview error:', err);
-        }
     });
 
     // Form submit
