@@ -37,6 +37,7 @@ try {
             'descripcion' => $_POST['descripcion'] ?? '',
             'cantidad' => $_POST['cantidad'] ?? 1,
             'precio_unitario' => $_POST['precio_unitario'] ?? 0,
+            'precio_costo' => $_POST['precio_costo'] ?? 0,
             'id_inventario' => $_POST['id_inventario'] ?? null,
         ];
     } else {
@@ -63,11 +64,25 @@ try {
 
         $cantidad = floatval($cargo_data['cantidad'] ?? 1);
         $precio_unitario = floatval($cargo_data['precio_unitario'] ?? 0);
+        $precio_costo = isset($cargo_data['precio_costo']) ? floatval($cargo_data['precio_costo']) : 0;
 
         if ($cantidad <= 0) throw new Exception("Cantidad debe ser > 0 en cargo #$index");
         if ($precio_unitario < 0) throw new Exception("Precio unitario inválido en cargo #$index");
 
         $id_inventario = isset($cargo_data['id_inventario']) ? intval($cargo_data['id_inventario']) : null;
+
+        // Costo: si es 0 y está vinculado a inventario, tomarlo del inventario
+        if ($id_inventario && $precio_costo <= 0) {
+            $stmtInvC = $conn->prepare("
+                SELECT COALESCE(NULLIF(i.precio_compra, 0), pi.unit_cost, 0) as costo
+                FROM inventario i
+                LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+                WHERE i.id_inventario = ? AND i.id_hospital = ?
+            ");
+            $stmtInvC->execute([$id_inventario, $id_hospital]);
+            $costRow = $stmtInvC->fetch(PDO::FETCH_ASSOC);
+            if ($costRow) $precio_costo = (float)$costRow['costo'];
+        }
 
         // Get id_encamamiento for this cirugía
         $stmtC = $conn->prepare("SELECT id_encamamiento, estado FROM cirugias WHERE id_cirugia = ? AND id_hospital = ?");
@@ -104,9 +119,9 @@ try {
         // Insert cargo
         $stmt = $conn->prepare("
             INSERT INTO cargos_hospitalarios
-            (id_cuenta, id_cirugia, tipo_cargo, descripcion, cantidad, precio_unitario,
+            (id_cuenta, id_cirugia, tipo_cargo, descripcion, cantidad, precio_unitario, precio_costo,
              fecha_cargo, registrado_por, referencia_id, referencia_tabla, id_hospital)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $id_cuenta,
@@ -115,6 +130,7 @@ try {
             $descripcion,
             $cantidad,
             $precio_unitario,
+            $precio_costo,
             $fecha_cargo,
             $registrado_por,
             $referencia_id,

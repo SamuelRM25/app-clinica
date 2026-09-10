@@ -1183,39 +1183,39 @@ $page_title = "Configuración del Sistema";
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="tab-pane fade" id="tarifas-laboratorio" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Costos de Laboratorios Externos</h5>
-                            <button class="action-btn primary btn-sm" onclick="saveLabCosts()">
-                                <i class="bi bi-save me-1"></i> Guardar Cambios
-                            </button>
-                        </div>
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-info-circle"></i>
-                            Configure el costo que paga a cada laboratorio externo por prueba.
-                            El precio de venta se edita desde el catálogo de pruebas en Laboratorio.
-                        </p>
-                        <div class="tarifa-table-wrap" data-tarifa-table>
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Código</th>
-                                        <th>Nombre de la Prueba</th>
-                                        <th>Categoría</th>
-                                        <th>Precio Venta (Q)</th>
-                                        <th>Costo Medialab (Q)</th>
-                                        <th>Costo La Esperanza (Q)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tarifa-laboratorio-body">
-                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
-                                </tbody>
-                            </table>
-                            <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
+                                <div class="tab-pane fade" id="tarifas-laboratorio" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Costos de Laboratorios Externos</h5>
+                                        <button class="action-btn primary btn-sm" onclick="saveLabCosts()">
+                                            <i class="bi bi-save me-1"></i> Guardar Cambios
+                                        </button>
+                                    </div>
+                                    <p class="text-muted small mb-3">
+                                        <i class="bi bi-info-circle"></i>
+                                        Configure el costo que paga a cada laboratorio externo por prueba.
+                                        El precio de venta se edita desde el catálogo de pruebas en Laboratorio.
+                                    </p>
+                                    <div class="tarifa-table-wrap" data-tarifa-table>
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Código</th>
+                                                    <th>Nombre de la Prueba</th>
+                                                    <th>Categoría</th>
+                                                    <th>Precio Venta (Q)</th>
+                                                    <th>Costo Medialab (Q)</th>
+                                                    <th>Costo La Esperanza (Q)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tarifa-laboratorio-body">
+                                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="tarifa-scroll-hint"><i class="bi bi-arrow-right-circle"></i> Deslice para ver más columnas</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1298,8 +1298,8 @@ $page_title = "Configuración del Sistema";
                             </div>
                             <div class="col-12" id="passwordField">
                                 <label class="form-label small fw-bold">Contraseña</label>
-                                <input type="password" name="password" class="form-control">
-                                <small class="text-muted">Dejar vacío para no cambiar (solo en edición)</small>
+                                <input type="password" name="password" id="userPassword" class="form-control">
+                                <small class="text-muted" id="passwordHelp">Dejar vacío para no cambiar (solo en edición)</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Rol</label>
@@ -1603,6 +1603,9 @@ $page_title = "Configuración del Sistema";
             document.getElementById('userForm').reset();
             document.getElementById('userId').value = '';
             document.getElementById('userModalTitle').innerText = 'Nuevo Usuario';
+            const passField = document.getElementById('userPassword');
+            passField.required = true;
+            document.getElementById('passwordHelp').innerText = 'Obligatoria. Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número.';
             userModal.show();
         }
 
@@ -1616,10 +1619,37 @@ $page_title = "Configuración del Sistema";
             document.getElementById('userPhone').value = user.telefono || '';
             document.getElementById('userEmail').value = user.email || '';
             document.getElementById('userModalTitle').innerText = 'Editar Usuario';
+            const passField = document.getElementById('userPassword');
+            passField.required = false;
+            document.getElementById('passwordHelp').innerText = 'Dejar vacío para no cambiar (solo en edición)';
             userModal.show();
         }
 
         async function saveUser() {
+            const isNewUser = !document.getElementById('userId').value;
+            const password = document.getElementById('userPassword').value;
+
+            if (isNewUser && !password) {
+                Swal.fire('Aviso', 'La contraseña es obligatoria para nuevos usuarios.', 'warning');
+                return;
+            }
+            if (password && password.length < 8) {
+                Swal.fire('Aviso', 'La contraseña debe tener al menos 8 caracteres.', 'warning');
+                return;
+            }
+            if (password && !/[A-Z]/.test(password)) {
+                Swal.fire('Aviso', 'La contraseña debe incluir al menos una letra mayúscula.', 'warning');
+                return;
+            }
+            if (password && !/[a-z]/.test(password)) {
+                Swal.fire('Aviso', 'La contraseña debe incluir al menos una letra minúscula.', 'warning');
+                return;
+            }
+            if (password && !/[0-9]/.test(password)) {
+                Swal.fire('Aviso', 'La contraseña debe incluir al menos un número.', 'warning');
+                return;
+            }
+
             const formData = new FormData(document.getElementById('userForm'));
             try {
                 const response = await fetch('api/save_user.php', {
@@ -2010,42 +2040,42 @@ $page_title = "Configuración del Sistema";
                     <td data-label="Consulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaNormal}"
                             data-medico="${medId}" data-tipo="consulta" data-field="precio_normal"
-                            placeholder="0.00">
+                            data-id="${c ? c.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Consulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${consultaInhabil}"
                             data-medico="${medId}" data-tipo="consulta" data-field="precio_inhabil"
-                            placeholder="0.00">
+                            data-id="${c ? c.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Costo Consulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoNormal}"
                             data-medico="${medId}" data-tipo="consulta" data-field="costo_normal"
-                            placeholder="0.00">
+                            data-id="${c ? c.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Costo Consulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${cCostoInhabil}"
                             data-medico="${medId}" data-tipo="consulta" data-field="costo_inhabil"
-                            placeholder="0.00">
+                            data-id="${c ? c.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Reconsulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsNormal}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_normal"
-                            placeholder="0.00">
+                            data-id="${r ? r.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Reconsulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${reconsInhabil}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="precio_inhabil"
-                            placeholder="0.00">
+                            data-id="${r ? r.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Costo Reconsulta Normal (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoNormal}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="costo_normal"
-                            placeholder="0.00">
+                            data-id="${r ? r.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Costo Reconsulta Inhábil (Q)">
                         <input type="number" step="0.01" class="form-control form-control-sm tarifa-input" value="${rCostoInhabil}"
                             data-medico="${medId}" data-tipo="reconsulta" data-field="costo_inhabil"
-                            placeholder="0.00">
+                            data-id="${r ? r.id_tarifa : ''}" placeholder="0.00">
                     </td>
                     <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${idTarifa || 0}, 'consulta')" title="Eliminar">
@@ -2073,10 +2103,10 @@ $page_title = "Configuración del Sistema";
                 </tr>`;
             } else {
                 body.innerHTML = `<tr>
-                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal"></td>
-                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil"></td>
-                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="${costNormal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal"></td>
-                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="${costInhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil"></td>
+                    <td data-label="Precio Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-normal" value="${electro.precio_normal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_normal" data-id="${electro.id_tarifa}"></td>
+                    <td data-label="Precio Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-inhabil" value="${electro.precio_inhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="precio_inhabil" data-id="${electro.id_tarifa}"></td>
+                    <td data-label="Costo Normal (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-normal" value="${costNormal}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_normal" data-id="${electro.id_tarifa}"></td>
+                    <td data-label="Costo Inhábil (Q)"><input type="number" step="0.01" class="form-control form-control-sm tarifa-input" id="electro-costo-inhabil" value="${costInhabil}" placeholder="0.00" data-tipo="electrocardiograma" data-field="costo_inhabil" data-id="${electro.id_tarifa}"></td>
                     <td data-label="Acciones" class="text-center">
                         <button class="btn btn-sm btn-primary" onclick="saveElectroTarifa()"><i class="bi bi-check"></i></button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteTarifa(${electro.id_tarifa}, 'electrocardiograma')"><i class="bi bi-trash"></i></button>
@@ -2406,7 +2436,7 @@ $page_title = "Configuración del Sistema";
                 if (res.success) {
                     Swal.fire('Éxito', res.message, 'success').then(() => {
                         tarifaModal.hide();
-                        loadTarifas();
+                        location.reload();
                     });
                 } else {
                     Swal.fire('Error', res.message, 'error');
@@ -2507,7 +2537,7 @@ $page_title = "Configuración del Sistema";
                 });
                 const res = await response.json();
                 if (res.success) {
-                    Swal.fire('Éxito', 'Tarifas guardadas correctamente', 'success');
+                    Swal.fire('Éxito', 'Tarifas guardadas correctamente', 'success').then(() => location.reload());
                 } else {
                     Swal.fire('Error', res.message, 'error');
                 }
@@ -2538,7 +2568,7 @@ $page_title = "Configuración del Sistema";
                     });
                     const res = await response.json();
                     if (res.success) {
-                        Swal.fire('Eliminado', res.message, 'success').then(() => loadTarifas());
+                        Swal.fire('Eliminado', res.message, 'success').then(() => location.reload());
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
@@ -2576,7 +2606,7 @@ $page_title = "Configuración del Sistema";
                 });
                 const res = await response.json();
                 if (res.success) {
-                    Swal.fire('Éxito', 'Tarifa actualizada', 'success').then(() => loadTarifas());
+                    Swal.fire('Éxito', 'Tarifa actualizada', 'success').then(() => location.reload());
                 } else {
                     Swal.fire('Error', res.message, 'error');
                 }
@@ -2597,6 +2627,7 @@ $page_title = "Configuración del Sistema";
         });
     </script>
     <?php output_keep_alive_script(); ?>
+    <?php if (function_exists('flash_toast')) flash_toast(); ?>
 </body>
 
 </html>

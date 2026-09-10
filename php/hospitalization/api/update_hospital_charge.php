@@ -50,6 +50,7 @@ try {
     $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
     $cantidad = isset($_POST['cantidad']) ? floatval($_POST['cantidad']) : 0;
     $precio_unitario = isset($_POST['precio_unitario']) ? floatval($_POST['precio_unitario']) : 0;
+    $precio_costo = isset($_POST['precio_costo']) ? floatval($_POST['precio_costo']) : 0;
 
     if ($id_cargo <= 0 || empty($descripcion) || $cantidad <= 0 || $precio_unitario < 0) {
         throw new Exception('Datos inválidos o incompletos');
@@ -77,10 +78,10 @@ try {
 
     $stmt_update = $conn->prepare("
         UPDATE cargos_hospitalarios
-        SET descripcion = ?, cantidad = ?, precio_unitario = ?
+        SET descripcion = ?, cantidad = ?, precio_unitario = ?, precio_costo = ?
         WHERE id_cargo = ? AND id_hospital = ?
     ");
-    $stmt_update->execute([$descripcion, $cantidad, $precio_unitario, $id_cargo, $id_hospital]);
+    $stmt_update->execute([$descripcion, $cantidad, $precio_unitario, $precio_costo, $id_cargo, $id_hospital]);
 
     // Fetch NEW values for audit
     $stmt_new = $conn->prepare("SELECT descripcion, cantidad, precio_unitario, tipo_cargo, subtotal FROM cargos_hospitalarios WHERE id_cargo = ?");

@@ -25,13 +25,15 @@ try {
     $conn = $database->getConnection();
 
     $stmt = $conn->prepare("
-        SELECT id_inventario, nom_medicamento, mol_medicamento, presentacion_med, 
-               stock_hospital, cantidad_med as stock_farmacia, precio_hospital, precio_venta
-        FROM inventario 
-        WHERE (nom_medicamento LIKE ? OR mol_medicamento LIKE ? OR codigo_barras LIKE ?) 
-        AND estado = 'Disponible'
-        AND stock_hospital > 0
-        AND id_hospital = ?
+        SELECT i.id_inventario, i.nom_medicamento, i.mol_medicamento, i.presentacion_med, 
+               i.stock_hospital, i.cantidad_med as stock_farmacia, i.precio_hospital, i.precio_venta,
+               COALESCE(NULLIF(i.precio_compra, 0), pi.unit_cost, 0) as precio_compra
+        FROM inventario i
+        LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+        WHERE (i.nom_medicamento LIKE ? OR i.mol_medicamento LIKE ? OR i.codigo_barras LIKE ?) 
+        AND i.estado = 'Disponible'
+        AND i.stock_hospital > 0
+        AND i.id_hospital = ?
         LIMIT 20
     ");
 

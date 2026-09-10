@@ -29,6 +29,7 @@ try {
     $descripcion = trim($_POST['descripcion'] ?? '');
     $cantidad = floatval($_POST['cantidad'] ?? 1);
     $precio_unitario = floatval($_POST['precio_unitario'] ?? 0);
+    $precio_costo = floatval($_POST['precio_costo'] ?? 0);
 
     if (!$id_cargo) throw new Exception('ID de cargo requerido');
     if ($descripcion === '') throw new Exception('Descripción requerida');
@@ -79,10 +80,10 @@ try {
     // Update cargo
     $stmtU = $conn->prepare("
         UPDATE cargos_hospitalarios
-        SET descripcion = ?, cantidad = ?, precio_unitario = ?
+        SET descripcion = ?, cantidad = ?, precio_unitario = ?, precio_costo = ?
         WHERE id_cargo = ? AND id_hospital = ?
     ");
-    $stmtU->execute([$descripcion, $cantidad, $precio_unitario, $id_cargo, $id_hospital]);
+    $stmtU->execute([$descripcion, $cantidad, $precio_unitario, $precio_costo, $id_cargo, $id_hospital]);
 
     // Sync cuenta
     $stmtSync = $conn->prepare("

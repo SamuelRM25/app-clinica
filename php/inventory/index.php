@@ -70,6 +70,11 @@ try {
     $stmt->execute([$today, $hosp_id]);
     $expired = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
+    // 5b. Items críticos (agotados O vencidos)
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE (cantidad_med = 0 OR (fecha_vencimiento IS NOT NULL AND fecha_vencimiento < ?)) AND id_hospital = ?");
+    $stmt->execute([$today, $hosp_id]);
+    $critical_items = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
+
     // 6. Items pendientes de recepción
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM inventario WHERE estado = 'Pendiente' AND id_hospital = ?");
     $stmt->execute([$hosp_id]);
@@ -587,6 +592,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="bi bi-box-arrow-in-down"></i>
                             Pendientes
                         </button>
+                        <button class="filter-tab" data-filter="critical">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Agotados y Vencidos
+                        </button>
                     </div>
                 </div>
             </div>
@@ -661,6 +670,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                         <button class="badge bg-danger d-flex align-items-center p-2 border-0" onclick="filterInventory('expired')" title="Filtrar vencidos">
                             <i class="bi bi-x-circle me-1"></i> Vencidos (<?php echo $expired; ?>)
+                        </button>
+                        <button class="badge bg-dark d-flex align-items-center p-2 border-0" onclick="filterInventory('critical')" title="Filtrar agotados y vencidos">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Agotados y Vencidos (<?php echo $critical_items; ?>)
                         </button>
                         <button class="badge bg-secondary d-flex align-items-center p-2 border-0" onclick="filterInventory('all')" title="Mostrar todos">
                             <i class="bi bi-list me-1"></i> Todos
@@ -1753,6 +1765,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 case 'pending':
                                     show = stockAttr === 'status-info';
                                     break;
+                                case 'critical':
+                                    show = stockAttr === 'status-danger' || expiryAttr === 'status-danger';
+                                    break;
                             }
                         }
 
@@ -2466,17 +2481,28 @@ document.addEventListener('DOMContentLoaded', function() {
         function filterInventory(filter) {
             const rows = document.querySelectorAll('#inventoryTable tbody tr');
             rows.forEach(row => {
-                const expiryClass = row.querySelector('.status-badge')?.className || '';
-                const isExpired = expiryClass.includes('status-danger') && !expiryClass.includes('status-good');
-                const isExpiring = expiryClass.includes('status-warning');
+                const stockAttr = row.getAttribute('data-stock');
+                const expiryAttr = row.getAttribute('data-expiry');
+                let show = false;
 
-                if (filter === 'all') {
-                    row.style.display = '';
-                } else if (filter === 'expiring') {
-                    row.style.display = isExpiring ? '' : 'none';
-                } else if (filter === 'expired') {
-                    row.style.display = isExpired ? '' : 'none';
+                switch (filter) {
+                    case 'all':
+                        show = true;
+                        break;
+                    case 'expiring':
+                        show = expiryAttr === 'status-warning';
+                        break;
+                    case 'expired':
+                        show = expiryAttr === 'status-danger';
+                        break;
+                    case 'critical':
+                        show = stockAttr === 'status-danger' || expiryAttr === 'status-danger';
+                        break;
+                    default:
+                        show = true;
                 }
+
+                row.style.display = show ? '' : 'none';
             });
         }
     </script>

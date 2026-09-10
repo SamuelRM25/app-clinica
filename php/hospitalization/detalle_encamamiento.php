@@ -142,8 +142,8 @@ try {
                 // Charge is missing for this night
                 $stmt_add_night = $conn->prepare("
                     INSERT INTO cargos_hospitalarios 
-                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
-                    VALUES (?, 'Habitación', ?, 1, ?, NOW(), ?, ?, ?)
+                    (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, precio_costo, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
+                    VALUES (?, 'Habitación', ?, 1, ?, 0, NOW(), ?, ?, ?)
                 ");
                 $sufijo_postop = $es_post_operatorio ? ' [Post-operatorio Q600]' : '';
                 $desc = "Habitación " . $encamamiento['numero_habitacion'] . " - Cama " . $encamamiento['numero_cama'] . " (Noche " . $date_str . ")" . $sufijo_postop;
@@ -913,6 +913,7 @@ output_keep_alive_script();
                                                                 <th>Descripción</th>
                                                                 <th>Cantidad</th>
                                                                 <th>Precio Unit.</th>
+                                                                <th>Costo</th>
                                                                 <th>Subtotal</th>
                                                                 <?php if (in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])): ?>
                                                                         <th>Acciones</th>
@@ -926,6 +927,7 @@ output_keep_alive_script();
                                                                         <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
                                                                         <td><?php echo number_format($cargo['cantidad'], 2); ?></td>
                                                                         <td>Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
+                                                                        <td>Q<?php echo number_format($cargo['precio_costo'] ?? 0, 2); ?></td>
                                                                         <td>Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
                                                                         <?php if (in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'])): ?>
                                                                                 <td>
@@ -988,11 +990,12 @@ output_keep_alive_script();
                                 <table class="receipt-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 15%;">Fecha</th>
+                                            <th style="width: 13%;">Fecha</th>
                                             <th>Descripción</th>
-                                            <th style="width: 10%; text-align: center;">Cant.</th>
-                                            <th style="width: 15%; text-align: right;">Precio U.</th>
-                                            <th style="width: 15%; text-align: right;">Subtotal</th>
+                                            <th style="width: 9%; text-align: center;">Cant.</th>
+                                            <th style="width: 13%; text-align: right;">Precio U.</th>
+                                            <th style="width: 13%; text-align: right;">Costo</th>
+                                            <th style="width: 13%; text-align: right;">Subtotal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1002,6 +1005,7 @@ output_keep_alive_script();
                                                     <td><?php echo htmlspecialchars($cargo['descripcion']); ?></td>
                                                     <td style="text-align: center;"><?php echo number_format($cargo['cantidad'] ?? 1, 0); ?></td>
                                                     <td style="text-align: right;">Q<?php echo number_format($cargo['precio_unitario'], 2); ?></td>
+                                                    <td style="text-align: right;">Q<?php echo number_format($cargo['precio_costo'] ?? 0, 2); ?></td>
                                                     <td style="text-align: right;">Q<?php echo number_format($cargo['subtotal'], 2); ?></td>
                                                 </tr>
                                         <?php endforeach; ?>
@@ -1217,10 +1221,11 @@ output_keep_alive_script();
                     <table class="table table-sm" id="batchCargoTable">
                         <thead>
                             <tr>
-                                <th style="width: 25%">Tipo</th>
-                                <th style="width: 45%">Descripción</th>
-                                <th style="width: 12%">Cant.</th>
-                                <th style="width: 13%">Precio</th>
+                                <th style="width: 20%">Tipo</th>
+                                <th style="width: 35%">Descripción</th>
+                                <th style="width: 9%">Cant.</th>
+                                <th style="width: 14%">Precio</th>
+                                <th style="width: 15%">Costo</th>
                                 <th style="width: 5%"></th>
                             </tr>
                         </thead>
@@ -1234,10 +1239,12 @@ output_keep_alive_script();
                                         <input type="text" class="form-control form-control-sm cargo-desc" name="descripcion[]" required placeholder="Buscar medicamento...">
                                         <div class="search-results-inline" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ddd; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
                                         <input type="hidden" class="cargo-id-inventario" name="id_inventario[]">
+                                        <input type="hidden" class="cargo-costo-src" name="costo_src[]">
                                     </div>
                                 </td>
                                 <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" required></td>
                                 <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" required></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-costo" name="precio_costo[]" value="0.00"></td>
                                 <td></td>
                             </tr>
                         </tbody>
@@ -1278,6 +1285,7 @@ output_keep_alive_script();
                         const desc = row.querySelector('[name="descripcion[]"]').value;
                         const cant = row.querySelector('[name="cantidad[]"]').value;
                         const price = row.querySelector('[name="precio_unitario[]"]').value;
+                        const costo = row.querySelector('[name="precio_costo[]"]').value;
                         const idInv = row.querySelector('.cargo-id-inventario').value;
 
                         if (desc && cant && price) {
@@ -1287,6 +1295,7 @@ output_keep_alive_script();
                                 descripcion: desc,
                                 cantidad: cant,
                                 precio_unitario: price,
+                                precio_costo: costo || 0,
                                 id_inventario: idInv
                             });
                         }
@@ -1304,6 +1313,7 @@ output_keep_alive_script();
                         formData.append(`cargos[${index}][descripcion]`, cargo.descripcion);
                         formData.append(`cargos[${index}][cantidad]`, cargo.cantidad);
                         formData.append(`cargos[${index}][precio_unitario]`, cargo.precio_unitario);
+                        formData.append(`cargos[${index}][precio_costo]`, cargo.precio_costo);
                         formData.append(`cargos[${index}][id_inventario]`, cargo.id_inventario);
                     });
 
@@ -1341,6 +1351,7 @@ output_keep_alive_script();
             const tipoSelect = row.querySelector('.cargo-tipo');
             const descInput = row.querySelector('.cargo-desc');
             const precioInput = row.querySelector('.cargo-precio');
+            const costoInput = row.querySelector('.cargo-costo');
             const cantidadInput = row.querySelector('.cargo-cantidad');
             const resultsDiv = row.querySelector('.search-results-inline');
 
@@ -1390,6 +1401,7 @@ output_keep_alive_script();
                                      data-name="${med.nom_medicamento}" 
                                      data-presentacion="${med.presentacion_med}"
                                      data-precio="${med.precio_hospital || 0}"
+                                     data-costo="${med.precio_compra || 0}"
                                      data-id="${med.id_inventario}">
                                     <div class="fw-bold small">${med.nom_medicamento}</div>
                                     <div class="text-muted" style="font-size:0.75rem;">${med.mol_medicamento} - ${med.presentacion_med}</div>
@@ -1397,6 +1409,7 @@ output_keep_alive_script();
                                         <span class="text-info">Hosp: ${med.stock_hospital || 0}</span>
                                         <span class="text-success">Farm: ${med.stock_farmacia || 0}</span>
                                         <span class="fw-bold">Q${parseFloat(med.precio_hospital || 0).toFixed(2)}</span>
+                                        <span class="text-muted">Costo: Q${parseFloat(med.precio_compra || 0).toFixed(2)}</span>
                                     </div>
                                 </div>
                             `;
@@ -1410,10 +1423,12 @@ output_keep_alive_script();
                                 const name = this.getAttribute('data-name');
                                 const presentacion = this.getAttribute('data-presentacion');
                                 const precio = this.getAttribute('data-precio');
+                                const costo = this.getAttribute('data-costo');
                                 const idInv = this.getAttribute('data-id');
 
                                 descInput.value = `${name} (${presentacion})`;
                                 precioInput.value = precio;
+                                if (costoInput) costoInput.value = costo || 0;
                                 row.querySelector('.cargo-id-inventario').value = idInv;
                                 resultsDiv.style.display = 'none';
                             });
@@ -1456,6 +1471,7 @@ output_keep_alive_script();
                 </td>
                 <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" required></td>
                 <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" required></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm cargo-costo" name="precio_costo[]" value="0.00"></td>
                 <td>
                     <button type="button" class="btn btn-link text-danger p-0 btn-remove-row">
                         <i class="bi bi-trash"></i>
@@ -1644,6 +1660,12 @@ output_keep_alive_script();
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Precio Unitario (Q)</label>
                             <input type="number" step="1" class="form-control" name="precio_unitario" value="${cargo.precio_unitario}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Costo (Q)</label>
+                            <input type="number" step="0.01" class="form-control" name="precio_costo" value="${cargo.precio_costo ?? 0}">
                         </div>
                     </div>
                 </form>

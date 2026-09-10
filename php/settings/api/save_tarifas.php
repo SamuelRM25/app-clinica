@@ -55,6 +55,9 @@ try {
             'old_data' => $oldData
         ]);
 
+        $_SESSION['message'] = 'Tarifa eliminada correctamente';
+        $_SESSION['message_type'] = 'success';
+
         echo json_encode(['success' => true, 'message' => 'Tarifa eliminada']);
         exit;
     }
@@ -119,6 +122,9 @@ try {
             ]
         ]);
 
+        $_SESSION['message'] = 'Tarifa creada correctamente';
+        $_SESSION['message_type'] = 'success';
+
         echo json_encode(['success' => true, 'message' => 'Tarifa creada', 'id_tarifa' => (int)$newId]);
         exit;
     }
@@ -179,6 +185,9 @@ try {
                 'costo_impreso_inhabil' => $costo_impreso_inhabil
             ]
         ]);
+
+        $_SESSION['message'] = 'Tarifa actualizada correctamente';
+        $_SESSION['message_type'] = 'success';
 
         echo json_encode(['success' => true, 'message' => 'Tarifa actualizada']);
         exit;
@@ -258,6 +267,9 @@ try {
                 'inserted' => $inserted,
             ]
         ]);
+
+        $_SESSION['message'] = 'Tarifas guardadas correctamente';
+        $_SESSION['message_type'] = 'success';
 
         ob_clean();
         echo json_encode(['success' => true, 'message' => 'Tarifas guardadas', 'updated' => $updated, 'inserted' => $inserted]);

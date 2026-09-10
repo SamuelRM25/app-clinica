@@ -293,7 +293,7 @@ try {
     // 5.b Laboratorio - costo (calculado por laboratorio_externo)
     $stmt_lab_cost = $conn->prepare("
         SELECT COALESCE(SUM(CASE
-            WHEN ol.laboratorio_externo = 'Medilab' THEN COALESCE(cp.precio_medilab, 0)
+            WHEN ol.laboratorio_externo = 'Medialab' THEN COALESCE(cp.precio_medilab, 0)
             WHEN ol.laboratorio_externo = 'La Esperanza' THEN COALESCE(cp.precio_la_esperanza, 0)
             ELSE 0
         END), 0) AS costo
@@ -793,6 +793,8 @@ try {
             DATE(ol.fecha_orden) as fecha,
             TIME(ol.fecha_orden) as hora,
             cp.precio,
+            cp.precio_medilab,
+            cp.precio_la_esperanza,
             ol.laboratorio_externo
         FROM ordenes_laboratorio ol
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
@@ -809,6 +811,14 @@ try {
     $grouped_labs = [];
     foreach ($labs_detail_data_raw as $lab) {
         $total_labs_report += $lab['precio'];
+
+        // Costo por laboratorio externo
+        $lab['costo'] = 0;
+        if (($lab['laboratorio_externo'] ?? '') === 'Medialab') {
+            $lab['costo'] = (float)($lab['precio_medilab'] ?? 0);
+        } elseif (($lab['laboratorio_externo'] ?? '') === 'La Esperanza') {
+            $lab['costo'] = (float)($lab['precio_la_esperanza'] ?? 0);
+        }
 
         $timestamp = strtotime($lab['fecha']);
         // Formatear mes en español
@@ -3399,6 +3409,7 @@ try {
                                                     <th>Hora</th>
                                                     <th>Laboratorio</th>
                                                     <th class="text-end">Precio</th>
+                                                    <th class="text-end">Costo</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -3427,6 +3438,9 @@ try {
                                                                 <span class="amount-badge income">
                                                                     Q<?php echo number_format($lab['precio'], 2); ?>
                                                                 </span>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <span class="text-muted">Q<?php echo number_format($lab['costo'] ?? 0, 2); ?></span>
                                                             </td>
                                                         </tr>
                                                 <?php endforeach; ?>

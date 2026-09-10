@@ -212,8 +212,8 @@ try {
 
             $stmt_cargo = $conn->prepare("
                 INSERT INTO cargos_hospitalarios 
-                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
-                VALUES (?, 'Habitación', ?, 1, ?, ?, ?, ?, ?)
+                (id_cuenta, tipo_cargo, descripcion, cantidad, precio_unitario, precio_costo, fecha_cargo, fecha_aplicacion, registrado_por, id_hospital)
+                VALUES (?, 'Habitación', ?, 1, ?, 0, ?, ?, ?, ?)
             ");
 
             $stmt_cargo->execute([

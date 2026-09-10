@@ -46,7 +46,8 @@ try {
 
     // Obtener pruebas de la orden
     $stmt = $conn->prepare("
-        SELECT op.*, cp.nombre_prueba, cp.codigo_prueba, cp.precio
+        SELECT op.*, cp.nombre_prueba, cp.codigo_prueba, cp.precio,
+               cp.precio_medilab, cp.precio_la_esperanza, ol.laboratorio_externo
         FROM orden_pruebas op
         JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
         JOIN catalogo_pruebas cp ON op.id_prueba = cp.id_prueba
@@ -190,14 +191,24 @@ try {
                                         <th>Prueba</th>
                                         <th>Estado</th>
                                         <th class="text-end">Precio</th>
+                                        <th class="text-end">Costo</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
                                     $total = 0;
+                                    $total_costo = 0;
+                                    $lab_externo = $orden['laboratorio_externo'] ?? '';
                                     foreach ($pruebas as $prueba):
                                         $precio = isset($prueba['precio']) ? $prueba['precio'] : 0;
                                         $total += $precio;
+                                        $costo = 0;
+                                        if ($lab_externo === 'Medialab') {
+                                            $costo = (float)($prueba['precio_medilab'] ?? 0);
+                                        } elseif ($lab_externo === 'La Esperanza') {
+                                            $costo = (float)($prueba['precio_la_esperanza'] ?? 0);
+                                        }
+                                        $total_costo += $costo;
                                         ?>
                                         <tr>
                                             <td><span
@@ -209,6 +220,8 @@ try {
                                             </td>
                                             <td class="text-end fw-medium"><?php echo 'Q' . number_format($precio, 2); ?>
                                             </td>
+                                            <td class="text-end"><?php echo 'Q' . number_format($costo, 2); ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -217,6 +230,9 @@ try {
                                         <td colspan="3" class="text-end fw-bold">TOTAL:</td>
                                         <td class="text-end fw-bold text-primary fs-5">
                                             <?php echo 'Q' . number_format($total, 2); ?>
+                                        </td>
+                                        <td class="text-end fw-bold text-primary fs-5">
+                                            <?php echo 'Q' . number_format($total_costo, 2); ?>
                                         </td>
                                     </tr>
                                 </tfoot>

@@ -52,6 +52,7 @@ try {
         LEFT JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
         WHERE (i.cantidad_med > 0 OR i.stock_hospital > 0)
           AND (i.estado IS NULL OR i.estado != 'Pendiente')
+          AND (i.fecha_vencimiento >= CURDATE() OR i.fecha_vencimiento IS NULL)
           AND i.id_hospital = ?
         ORDER BY i.nom_medicamento
     ");
@@ -993,8 +994,11 @@ try {
                                 <p class="mt-2 text-muted">Cargando historial...</p>
                             </div>
                             <div class="border-top px-4 py-3 d-flex justify-content-between align-items-center bg-light">
-                                <span class="fw-bold">Operaciones de Jornada:</span>
-                                <span class="fs-5 fw-bold text-primary" id="historyTotalSum">0</span>
+                                <span class="fw-bold">Total de Ventas del Período:</span>
+                                <div class="text-end">
+                                    <div class="fs-5 fw-bold text-primary" id="historyTotalSum">Q0.00</div>
+                                    <div class="small text-muted" id="historyTotalCount"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="detail-pane" role="tabpanel">
@@ -1761,14 +1765,71 @@ try {
                         return;
                     }
 
+                    const total = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+                    if (currentMode === 'transfer') {
+                        // Movimiento de stock (traslado): confirmar sin select de método
+                        Swal.fire({
+                            title: 'Confirmar Traslado',
+                            html: `<p>Se procesará un <strong>Traslado</strong> (movimiento de stock).</p>
+                                   <p class="mb-0">Total del carrito: <strong>Q${total.toFixed(2)}</strong></p>`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="bi bi-check-lg me-1"></i>Confirmar Traslado',
+                            cancelButtonText: 'Cancelar',
+                            confirmButtonColor: '#0d6efd'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                this.executeSale('Traslado', total);
+                            }
+                        });
+                        return;
+                    }
+
+                    // Recordatorio / confirmación del método de pago
+                    const paymentOptions = ['Efectivo', 'Tarjeta', 'Transferencia', 'Traslado'];
+                    const currentSelected = DOM.paymentMethod.value || 'Efectivo';
+                    const optionsHtml = paymentOptions
+                        .map(opt => `<option value="${opt}" ${opt === currentSelected ? 'selected' : ''}>${opt}</option>`)
+                        .join('');
+
+                    Swal.fire({
+                        title: 'Confirmar Venta',
+                        html: `<p>Total a cobrar: <strong>Q${total.toFixed(2)}</strong></p>
+                               <div class="text-start">
+                                   <label class="form-label fw-bold mb-1">Método de Pago</label>
+                                   <select class="form-select" id="swalPaymentMethod">${optionsHtml}</select>
+                               </div>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-check2-circle me-1"></i>Confirmar y Procesar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#198754',
+                        preConfirm: () => {
+                            const select = document.getElementById('swalPaymentMethod');
+                            return select ? select.value : currentSelected;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const selectedMethod = result.value || currentSelected;
+                            if (currentMode === 'transfer') {
+                                this.executeSale('Traslado', total);
+                            } else {
+                                this.executeSale(selectedMethod, total);
+                            }
+                        }
+                    });
+                }
+
+                async executeSale(tipoPago, total) {
                     const saleData = {
                         nombre_cliente: DOM.clientName.value.trim(),
                         nit_cliente: document.getElementById('clientNIT').value.trim() || 'C/F',
-                        tipo_pago: currentMode === 'transfer' ? 'Traslado' : DOM.paymentMethod.value,
+                        tipo_pago: tipoPago,
                         tipo_almacen: currentMode,
                         document_type: DOM.documentType ? DOM.documentType.value : '',
                         document_number: '',
-                        total: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
+                        total: total,
                         estado: currentMode === 'transfer' ? 'Pagado' : 'Pagado',
                         items: cartItems.map(item => ({
                             id_inventario: item.id,
@@ -2023,16 +2084,22 @@ try {
                                 tbody.appendChild(row);
                             });
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = data.sales.length.toString();
+                            if (totalEl) totalEl.textContent = 'Q' + totalJornada.toFixed(2);
+                            const countEl = document.getElementById('historyTotalCount');
+                            if (countEl) countEl.textContent = data.sales.length + ' operaciones';
                             console.log('[openHistory] rendered', data.sales.length, 'rows');
                         } else if (data.status === 'error') {
                             tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Error del servidor: ${data.message || 'Desconocido'}</td></tr>`;
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = '0';
+                            if (totalEl) totalEl.textContent = 'Q0.00';
+                            const countEl = document.getElementById('historyTotalCount');
+                            if (countEl) countEl.textContent = '0 operaciones';
                         } else {
                             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay registros en el período seleccionado.</td></tr>';
                             const totalEl = document.getElementById('historyTotalSum');
-                            if (totalEl) totalEl.textContent = '0';
+                            if (totalEl) totalEl.textContent = 'Q0.00';
+                            const countEl = document.getElementById('historyTotalCount');
+                            if (countEl) countEl.textContent = '0 operaciones';
                             console.log('[openHistory] no sales found for period');
                         }
                     } catch (error) {

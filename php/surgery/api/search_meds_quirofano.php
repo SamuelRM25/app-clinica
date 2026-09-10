@@ -15,18 +15,20 @@ try {
     $id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
     $q = trim($_GET['q'] ?? '');
 
-    $sql = "SELECT id_inventario, codigo_barras, nom_medicamento, presentacion_med,
-                   stock_quirofano, precio_venta, precio_hospital
-            FROM inventario
-            WHERE id_hospital = ? AND stock_quirofano > 0";
+    $sql = "SELECT i.id_inventario, i.codigo_barras, i.nom_medicamento, i.presentacion_med,
+                   i.stock_quirofano, i.precio_venta, i.precio_hospital, i.precio_quirofano,
+                   COALESCE(NULLIF(i.precio_compra, 0), pi.unit_cost, 0) as precio_compra
+            FROM inventario i
+            LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id
+            WHERE i.id_hospital = ? AND i.stock_quirofano > 0";
     $params = [$id_hospital];
 
     if (strlen($q) >= 1) {
-        $sql .= " AND (nom_medicamento LIKE ? OR codigo_barras LIKE ?)";
+        $sql .= " AND (i.nom_medicamento LIKE ? OR i.codigo_barras LIKE ?)";
         $params[] = "%$q%";
         $params[] = "%$q%";
     }
-    $sql .= " ORDER BY nom_medicamento ASC LIMIT 20";
+    $sql .= " ORDER BY i.nom_medicamento ASC LIMIT 20";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);

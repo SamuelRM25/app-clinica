@@ -74,7 +74,7 @@ try {
     if ($cirugia['id_encamamiento']) {
         $stmtCargos = $conn->prepare("
             SELECT ch.id_cargo, ch.tipo_cargo, ch.descripcion, ch.cantidad, ch.precio_unitario,
-                   ch.subtotal, ch.fecha_cargo, ch.cancelado, u.nombre AS registrado_nombre, u.apellido AS registrado_apellido
+                   ch.precio_costo, ch.subtotal, ch.fecha_cargo, ch.cancelado, u.nombre AS registrado_nombre, u.apellido AS registrado_apellido
             FROM cargos_hospitalarios ch
             LEFT JOIN usuarios u ON ch.registrado_por = u.idUsuario
             WHERE ch.id_cirugia = ? AND ch.id_hospital = ?
@@ -302,6 +302,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                             <th>Presentación</th>
                                             <th class="text-end">Cantidad</th>
                                             <th class="text-end">Precio Unit.</th>
+                                            <th class="text-end">Costo</th>
                                             <th class="text-end">Subtotal</th>
                                             <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
                                                 <th class="text-center">Acción</th>
@@ -315,6 +316,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                                 <td><?php echo htmlspecialchars($c['presentacion_med'] ?? '—'); ?></td>
                                                 <td class="text-end"><?php echo number_format($c['cantidad'], 2); ?></td>
                                                 <td class="text-end">Q<?php echo number_format($c['precio_unitario'], 2); ?></td>
+                                                <td class="text-end">Q<?php echo number_format($c['precio_costo'] ?? 0, 2); ?></td>
                                                 <td class="text-end fw-bold">Q<?php echo number_format($c['subtotal'], 2); ?></td>
                                                 <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
                                                     <td class="text-center">
@@ -328,7 +330,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                             </tr>
                                         <?php endforeach; ?>
                                         <tr class="table-light">
-                                            <td colspan="<?php echo in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '5' : '4'; ?>" class="text-end fw-bold">Total Consumos:</td>
+                                            <td colspan="<?php echo in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '6' : '5'; ?>" class="text-end fw-bold">Total Consumos:</td>
                                             <td class="text-end fw-bold text-primary">Q<?php echo number_format(array_sum(array_column($consumos, 'subtotal')), 2); ?></td>
                                         </tr>
                                     </tbody>
@@ -478,6 +480,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                                 <th>Descripción</th>
                                                 <th class="text-end">Cant.</th>
                                                 <th class="text-end">Precio Unit.</th>
+                                                <th class="text-end">Costo</th>
                                                 <th class="text-end">Subtotal</th>
                                                 <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
                                                     <th class="text-center">Acciones</th>
@@ -496,6 +499,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                                     </td>
                                                     <td class="text-end"><?= number_format($cg['cantidad'], 2) ?></td>
                                                     <td class="text-end">Q<?= number_format($cg['precio_unitario'], 2) ?></td>
+                                                    <td class="text-end">Q<?= number_format($cg['precio_costo'] ?? 0, 2) ?></td>
                                                     <td class="text-end fw-bold">Q<?= number_format($cg['subtotal'], 2) ?></td>
                                                     <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
                                                         <td class="text-center">
@@ -518,7 +522,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                                             }
                                             ?>
                                             <tr class="table-light">
-                                                <td colspan="<?= in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '5' : '4' ?>" class="text-end fw-bold">Total Cuenta:</td>
+                                                <td colspan="<?= in_array($cirugia['estado'], ['Programada', 'En_Curso'], true) ? '6' : '5' ?>" class="text-end fw-bold">Total Cuenta:</td>
                                                 <td class="text-end fw-bold text-primary">Q<?= number_format($subtotal_visible, 2) ?></td>
                                                 <?php if (in_array($cirugia['estado'], ['Programada', 'En_Curso'], true)): ?>
                                                     <td></td>
@@ -590,6 +594,16 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                         <label class="form-label">Cantidad *</label>
                         <input type="number" step="0.01" min="0.01" class="form-control" name="cantidad" id="cantidad" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio Unitario (Q) *</label>
+                        <input type="number" step="0.01" min="0" class="form-control" name="precio_unitario" id="consumo-precio" placeholder="0.00">
+                        <div class="form-text">Ingrese el precio manualmente. Si lo deja en 0, se tomará el precio del inventario de quirófano.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Costo (Q)</label>
+                        <div class="form-control bg-light" id="consumo-costo">—</div>
+                        <div class="form-text text-muted">Precio de compra del medicamento (referencia).</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -626,14 +640,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const json = await res.json();
                 if (json.success && json.data.length) {
                     medResults.innerHTML = json.data.map(m =>
-                        `<a href="javascript:void(0)" class="list-group-item list-group-item-action" data-id="${m.id_inventario}" data-name="${m.nom_medicamento}" data-stock="${m.stock_quirofano}">
-                            <strong>${m.nom_medicamento}</strong> · Stock: ${m.stock_quirofano} · Q${parseFloat(m.precio_hospital || m.precio_venta).toFixed(2)}
+                        `<a href="javascript:void(0)" class="list-group-item list-group-item-action" data-id="${m.id_inventario}" data-name="${m.nom_medicamento}" data-stock="${m.stock_quirofano}"
+                            data-precio="${m.precio_quirofano || m.precio_hospital || m.precio_venta || 0}" data-costo="${m.precio_compra || 0}">
+                            <strong>${m.nom_medicamento}</strong> · Stock: ${m.stock_quirofano}
+                            <div class="small text-muted">Precio Q${parseFloat(m.precio_quirofano || m.precio_hospital || m.precio_venta || 0).toFixed(2)} · Costo Q${parseFloat(m.precio_compra || 0).toFixed(2)}</div>
                         </a>`
                     ).join('');
                     medResults.querySelectorAll('a').forEach(a => {
                         a.addEventListener('click', () => {
                             document.getElementById('id_inventario').value = a.dataset.id;
                             document.getElementById('cantidad').max = a.dataset.stock;
+                            document.getElementById('consumo-precio').value = a.dataset.precio;
+                            document.getElementById('consumo-costo').textContent = 'Q' + parseFloat(a.dataset.costo).toFixed(2);
                             const div = document.getElementById('med-seleccionado');
                             div.textContent = '✓ ' + a.dataset.name + ' (Stock disponible: ' + a.dataset.stock + ')';
                             div.classList.remove('d-none');
@@ -653,6 +671,8 @@ function openConsumoModal() {
     document.getElementById('consumoForm').reset();
     document.getElementById('med-results').innerHTML = '';
     document.getElementById('med-seleccionado').classList.add('d-none');
+    document.getElementById('consumo-precio').value = '';
+    document.getElementById('consumo-costo').textContent = '—';
     consumoModal.show();
 }
 
@@ -751,11 +771,12 @@ async function openCargoCirugiaModal() {
             <table class="table table-sm" id="batchCargoCirugiaTable">
                 <thead>
                     <tr>
-                        <th style="width: 22%">Tipo</th>
-                        <th style="width: 43%">Descripción</th>
-                        <th style="width: 12%">Cant.</th>
-                        <th style="width: 13%">Precio</th>
-                        <th style="width: 10%"></th>
+                        <th style="width: 18%">Tipo</th>
+                        <th style="width: 34%">Descripción</th>
+                        <th style="width: 10%">Cant.</th>
+                        <th style="width: 14%">Precio</th>
+                        <th style="width: 16%">Costo</th>
+                        <th style="width: 8%"></th>
                     </tr>
                 </thead>
                 <tbody id="cargoCirugiaRows">
@@ -772,6 +793,7 @@ async function openCargoCirugiaModal() {
                         </td>
                         <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" min="0.01" required></td>
                         <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" min="0" required></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-costo" name="precio_costo[]" min="0" value="0.00"></td>
                         <td></td>
                     </tr>
                 </tbody>
@@ -809,6 +831,7 @@ async function openCargoCirugiaModal() {
                 const desc = row.querySelector('[name="descripcion[]"]').value.trim();
                 const cant = parseFloat(row.querySelector('[name="cantidad[]"]').value) || 0;
                 const price = parseFloat(row.querySelector('[name="precio_unitario[]"]').value) || 0;
+                const costo = parseFloat(row.querySelector('[name="precio_costo[]"]').value) || 0;
                 const idInv = parseInt(row.querySelector('.cargo-id-inventario').value) || 0;
 
                 if (tipo && desc && cant > 0 && price >= 0) {
@@ -818,6 +841,7 @@ async function openCargoCirugiaModal() {
                         descripcion: desc,
                         cantidad: cant,
                         precio_unitario: price,
+                        precio_costo: costo,
                         id_inventario: idInv || null
                     });
                 }
@@ -835,6 +859,7 @@ async function openCargoCirugiaModal() {
                 formData.append(`cargos[${index}][descripcion]`, cargo.descripcion);
                 formData.append(`cargos[${index}][cantidad]`, cargo.cantidad);
                 formData.append(`cargos[${index}][precio_unitario]`, cargo.precio_unitario);
+                formData.append(`cargos[${index}][precio_costo]`, cargo.precio_costo);
                 if (cargo.id_inventario) formData.append(`cargos[${index}][id_inventario]`, cargo.id_inventario);
             });
             formData.append('csrf_token', csrf);
@@ -864,6 +889,7 @@ function setupCargoCirugiaRow(row) {
     const tipoSelect = row.querySelector('.cargo-tipo');
     const descInput = row.querySelector('.cargo-desc');
     const precioInput = row.querySelector('.cargo-precio');
+    const costoInput = row.querySelector('.cargo-costo');
     const cantidadInput = row.querySelector('.cargo-cantidad');
     const resultsDiv = row.querySelector('.search-results-inline');
 
@@ -872,6 +898,7 @@ function setupCargoCirugiaRow(row) {
             descInput.placeholder = 'Buscar ' + this.value.toLowerCase() + '...';
             descInput.value = '';
             precioInput.value = '';
+            if (costoInput) costoInput.value = 0;
             row.querySelector('.cargo-id-inventario').value = '';
         } else {
             descInput.placeholder = 'Descripción del cargo';
@@ -912,12 +939,14 @@ function setupCargoCirugiaRow(row) {
                             <div class="search-result-item p-2" style="cursor:pointer; border-bottom:1px solid #eee;"
                                  data-name="${(med.nom_medicamento || '').replace(/"/g, '&quot;')}"
                                  data-precio="${parseFloat(precio).toFixed(2)}"
+                                 data-costo="${med.precio_compra || 0}"
                                  data-id="${med.id_inventario}">
                                 <div class="fw-bold small">${escapeHtml(med.nom_medicamento)}</div>
                                 <div class="text-muted" style="font-size:0.75rem;">${escapeHtml(med.presentacion_med || '')}</div>
                                 <div class="d-flex justify-content-between" style="font-size:0.75rem;">
                                     <span class="text-info">Quirófano: ${med.stock_quirofano || 0}</span>
                                     <span class="fw-bold">Q${parseFloat(precio).toFixed(2)}</span>
+                                    <span class="text-muted">Costo: Q${parseFloat(med.precio_compra || 0).toFixed(2)}</span>
                                 </div>
                             </div>
                         `;
@@ -929,10 +958,12 @@ function setupCargoCirugiaRow(row) {
                         item.addEventListener('click', function () {
                             const name = this.getAttribute('data-name');
                             const precio = this.getAttribute('data-precio');
+                            const costo = this.getAttribute('data-costo');
                             const idInv = this.getAttribute('data-id');
 
                             descInput.value = name;
                             precioInput.value = precio;
+                            if (costoInput) costoInput.value = costo || 0;
                             row.querySelector('.cargo-id-inventario').value = idInv;
                             resultsDiv.style.display = 'none';
                         });
@@ -965,6 +996,7 @@ function addCargoCirugiaRow() {
         </td>
         <td><input type="number" step="0.01" class="form-control form-control-sm cargo-cantidad" name="cantidad[]" value="1" min="0.01" required></td>
         <td><input type="number" step="0.01" class="form-control form-control-sm cargo-precio" name="precio_unitario[]" min="0" required></td>
+        <td><input type="number" step="0.01" class="form-control form-control-sm cargo-costo" name="precio_costo[]" min="0" value="0.00"></td>
         <td>
             <button type="button" class="btn btn-link text-danger p-0 btn-remove-row">
                 <i class="bi bi-trash"></i>
@@ -995,6 +1027,12 @@ async function editCargoCirugia(cargo) {
                         <input id="edit-precio" type="number" step="0.01" min="0" class="form-control" value="${cargo.precio_unitario}">
                     </div>
                 </div>
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Costo (Q)</label>
+                        <input id="edit-costo" type="number" step="0.01" min="0" class="form-control" value="${cargo.precio_costo ?? 0}">
+                    </div>
+                </div>
             </div>
         `,
         showCancelButton: true,
@@ -1004,10 +1042,11 @@ async function editCargoCirugia(cargo) {
             const desc = document.getElementById('edit-desc').value.trim();
             const cant = parseFloat(document.getElementById('edit-cant').value) || 0;
             const precio = parseFloat(document.getElementById('edit-precio').value) || 0;
+            const costo = parseFloat(document.getElementById('edit-costo').value) || 0;
             if (!desc) { Swal.showValidationMessage('Descripción requerida'); return false; }
             if (cant <= 0) { Swal.showValidationMessage('Cantidad debe ser > 0'); return false; }
             if (precio < 0) { Swal.showValidationMessage('Precio inválido'); return false; }
-            return { desc, cant, precio };
+            return { desc, cant, precio, costo };
         }
     });
 
@@ -1017,6 +1056,7 @@ async function editCargoCirugia(cargo) {
     fd.append('descripcion', formValues.desc);
     fd.append('cantidad', formValues.cant);
     fd.append('precio_unitario', formValues.precio);
+    fd.append('precio_costo', formValues.costo);
     fd.append('csrf_token', csrf);
 
     try {

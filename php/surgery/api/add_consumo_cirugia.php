@@ -22,6 +22,7 @@ $user_id = (int)($_SESSION['user_id'] ?? 0);
 $id_cirugia = (int)($_POST['id_cirugia'] ?? 0);
 $id_inventario = (int)($_POST['id_inventario'] ?? 0);
 $cantidad = (float)($_POST['cantidad'] ?? 0);
+$precio_manual = (float)($_POST['precio_unitario'] ?? 0);
 
 if (!$id_cirugia || !$id_inventario || $cantidad <= 0) {
     echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
@@ -42,7 +43,7 @@ try {
     }
 
     // Verificar inventario
-    $stmtI = $conn->prepare("SELECT id_inventario, nom_medicamento, stock_quirofano, precio_hospital, precio_venta FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
+    $stmtI = $conn->prepare("SELECT id_inventario, nom_medicamento, stock_quirofano, precio_hospital, precio_venta, precio_quirofano, COALESCE(NULLIF(precio_compra, 0), 0) as precio_compra FROM inventario WHERE id_inventario = ? AND id_hospital = ?");
     $stmtI->execute([$id_inventario, $id_hospital]);
     $inv = $stmtI->fetch(PDO::FETCH_ASSOC);
     if (!$inv) throw new Exception('Medicamento no encontrado');
@@ -50,7 +51,13 @@ try {
         throw new Exception('Stock insuficiente en Quirófano. Disponible: ' . (float)$inv['stock_quirofano']);
     }
 
-    $precio_unitario = (float)($inv['precio_hospital'] ?? $inv['precio_venta'] ?? 0);
+    // Precio unitario: usa el valor manual enviado, o cae al precio del inventario
+    if ($precio_manual > 0) {
+        $precio_unitario = $precio_manual;
+    } else {
+        $precio_unitario = (float)($inv['precio_quirofano'] ?? $inv['precio_hospital'] ?? $inv['precio_venta'] ?? 0);
+    }
+    $precio_costo = (float)($inv['precio_compra'] ?? 0);
     $subtotal = $precio_unitario * $cantidad;
 
     $conn->beginTransaction();
@@ -63,8 +70,8 @@ try {
     }
 
     // Insert en cirugia_consumos
-    $stmtC2 = $conn->prepare("INSERT INTO cirugia_consumos (id_cirugia, id_inventario, cantidad, precio_unitario, subtotal, id_hospital) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmtC2->execute([$id_cirugia, $id_inventario, $cantidad, $precio_unitario, $subtotal, $id_hospital]);
+    $stmtC2 = $conn->prepare("INSERT INTO cirugia_consumos (id_cirugia, id_inventario, cantidad, precio_unitario, precio_costo, subtotal, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmtC2->execute([$id_cirugia, $id_inventario, $cantidad, $precio_unitario, $precio_costo, $subtotal, $id_hospital]);
 
     $conn->commit();
 

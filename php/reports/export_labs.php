@@ -54,6 +54,8 @@ try {
             DATE(ol.fecha_orden) as fecha,
             TIME(ol.fecha_orden) as hora,
             cp.precio,
+            cp.precio_medilab,
+            cp.precio_la_esperanza,
             ol.laboratorio_externo
         FROM ordenes_laboratorio ol
         JOIN orden_pruebas op ON ol.id_orden = op.id_orden
@@ -68,9 +70,18 @@ try {
     $labs_detail_data = $stmt_labs_detail->fetchAll(PDO::FETCH_ASSOC);
 
     $total_labs_report = 0;
-    foreach ($labs_detail_data as $lab) {
+    $total_costo_report = 0;
+    foreach ($labs_detail_data as &$lab) {
         $total_labs_report += $lab['precio'];
+        $lab['costo'] = 0;
+        if (($lab['laboratorio_externo'] ?? '') === 'Medialab') {
+            $lab['costo'] = (float)($lab['precio_medilab'] ?? 0);
+        } elseif (($lab['laboratorio_externo'] ?? '') === 'La Esperanza') {
+            $lab['costo'] = (float)($lab['precio_la_esperanza'] ?? 0);
+        }
+        $total_costo_report += $lab['costo'];
     }
+    unset($lab);
 
     // ============ PREPARAR DATOS PARA EXPORTACIÓN ============
 
@@ -82,7 +93,7 @@ try {
         fputcsv($output, ['Reporte de Laboratorios Detallado']);
         fputcsv($output, ['Periodo:', $start_date . ' al ' . $end_date]);
         fputcsv($output, []);
-        fputcsv($output, ['Paciente', 'Examen (Prueba)', 'Fecha', 'Hora', 'Laboratorio', 'Precio (Q)']);
+        fputcsv($output, ['Paciente', 'Examen (Prueba)', 'Fecha', 'Hora', 'Laboratorio', 'Precio (Q)', 'Costo (Q)']);
 
         foreach ($labs_detail_data as $lab) {
             fputcsv($output, [
@@ -91,12 +102,13 @@ try {
                 date('d/m/Y', strtotime($lab['fecha'])),
                 date('h:i A', strtotime($lab['hora'])),
                 $lab['laboratorio_externo'] ?? '',
-                number_format($lab['precio'], 2)
+                number_format($lab['precio'], 2),
+                number_format($lab['costo'] ?? 0, 2)
             ]);
         }
 
         fputcsv($output, []);
-        fputcsv($output, ['Total General', '', '', '', '', number_format($total_labs_report, 2)]);
+        fputcsv($output, ['Total General', '', '', '', '', number_format($total_labs_report, 2), number_format($total_costo_report, 2)]);
 
         fclose($output);
         exit;
@@ -110,8 +122,8 @@ try {
 
         echo "<style>th { background-color: #f2f2f2; text-align: left; } .text-right { text-align: right; }</style>";
         echo "<table border='1' cellpadding='5' cellspacing='0'>";
-        echo "<tr><th colspan='6'><h1 style='margin:0;'>Reporte Detallado de Laboratorios</h1></th></tr>";
-        echo "<tr><td colspan='6'><b>Período:</b> " . date('d/m/Y', strtotime($start_date)) . " al " . date('d/m/Y', strtotime($end_date)) . "</td></tr>";
+        echo "<tr><th colspan='7'><h1 style='margin:0;'>Reporte Detallado de Laboratorios</h1></th></tr>";
+        echo "<tr><td colspan='7'><b>Período:</b> " . date('d/m/Y', strtotime($start_date)) . " al " . date('d/m/Y', strtotime($end_date)) . "</td></tr>";
         echo "<tr></tr>";
 
         echo "<tr>
@@ -121,10 +133,11 @@ try {
                 <th>Hora</th>
                 <th>Laboratorio</th>
                 <th class='text-right'>Precio (Q)</th>
+                <th class='text-right'>Costo (Q)</th>
               </tr>";
 
         if (empty($labs_detail_data)) {
-            echo "<tr><td colspan='6' align='center'>No se encontraron registros en este período.</td></tr>";
+            echo "<tr><td colspan='7' align='center'>No se encontraron registros en este período.</td></tr>";
         } else {
             foreach ($labs_detail_data as $lab) {
                 echo "<tr>";
@@ -134,11 +147,12 @@ try {
                 echo "<td>" . date('h:i A', strtotime($lab['hora'])) . "</td>";
                 echo "<td>" . htmlspecialchars($lab['laboratorio_externo'] ?? '—') . "</td>";
                 echo "<td class='text-right'>Q" . number_format($lab['precio'], 2) . "</td>";
+                echo "<td class='text-right'>Q" . number_format($lab['costo'] ?? 0, 2) . "</td>";
                 echo "</tr>";
             }
         }
 
-        echo "<tr><td colspan='5' align='right'><b>TOTAL GENERADO:</b></td><td class='text-right'><b>Q" . number_format($total_labs_report, 2) . "</b></td></tr>";
+        echo "<tr><td colspan='5' align='right'><b>TOTAL GENERADO:</b></td><td class='text-right'><b>Q" . number_format($total_labs_report, 2) . "</b></td><td class='text-right'><b>Q" . number_format($total_costo_report, 2) . "</b></td></tr>";
         echo "</table>";
         exit;
     }
