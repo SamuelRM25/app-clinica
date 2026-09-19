@@ -95,6 +95,19 @@ try {
     $total_value = $result_val['total_valor_compra'] ?? 0;
     $total_value_venta = $result_val['total_valor_venta'] ?? 0;
 
+    // 8. Pérdida por medicamentos vencidos (con stock): suma de cantidad × precio de compra
+    $stmt = $conn->prepare("
+        SELECT SUM(i.cantidad_med * COALESCE(NULLIF(i.precio_compra, 0), p.unit_cost, 0)) as total_perdida
+        FROM inventario i
+        LEFT JOIN purchase_items p ON i.id_purchase_item = p.id
+        WHERE i.id_hospital = ?
+          AND i.cantidad_med > 0
+          AND i.fecha_vencimiento IS NOT NULL
+          AND i.fecha_vencimiento < CURDATE()
+    ");
+    $stmt->execute([$hosp_id]);
+    $total_perdida = floatval($stmt->fetchColumn() ?: 0);
+
     $total_appointments = 0;
     $active_hospitalizations = 0;
     $pending_purchases = $pending_receipt;
@@ -135,7 +148,7 @@ try {
     // ============ INVENTARIO COMPLETO ============
 
     // Obtener todos los medicamentos para la tabla
-    $stmt = $conn->prepare("SELECT *, (CASE WHEN cantidad_med > 0 THEN 0 ELSE 1 END) AS stock_order FROM inventario WHERE id_hospital = ? ORDER BY stock_order ASC, fecha_vencimiento ASC");
+    $stmt = $conn->prepare("SELECT i.*, (CASE WHEN i.cantidad_med > 0 THEN 0 ELSE 1 END) AS stock_order, COALESCE(NULLIF(i.precio_compra, 0), pi.unit_cost, 0) AS costo_compra FROM inventario i LEFT JOIN purchase_items pi ON i.id_purchase_item = pi.id WHERE i.id_hospital = ? ORDER BY stock_order ASC, i.fecha_vencimiento ASC");
     $stmt->execute([$hosp_id]);
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -585,8 +598,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             Por Vencer
                         </button>
                         <button class="filter-tab" data-filter="expired">
-                            <i class="bi bi-calendar-x"></i>
-                            Vencidos
+                            <i class="bi bi-graph-down-arrow"></i>
+                            Pérdida
                         </button>
                         <button class="filter-tab" data-filter="pending">
                             <i class="bi bi-box-arrow-in-down"></i>
@@ -668,8 +681,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="badge bg-warning text-dark d-flex align-items-center p-2 border-0" onclick="filterInventory('expiring')" title="Filtrar próximos a vencer">
                             <i class="bi bi-clock me-1"></i> Próximos a vencer (<?php echo $expiring_soon; ?>)
                         </button>
-                        <button class="badge bg-danger d-flex align-items-center p-2 border-0" onclick="filterInventory('expired')" title="Filtrar vencidos">
-                            <i class="bi bi-x-circle me-1"></i> Vencidos (<?php echo $expired; ?>)
+                        <button class="badge bg-danger d-flex align-items-center p-2 border-0" onclick="filterInventory('expired')" title="Pérdida por medicamentos vencidos con stock">
+                            <i class="bi bi-graph-down-arrow me-1"></i> Pérdida (<?php echo $expired; ?> · Q<?php echo number_format($total_perdida, 2); ?>)
                         </button>
                         <button class="badge bg-dark d-flex align-items-center p-2 border-0" onclick="filterInventory('critical')" title="Filtrar agotados y vencidos">
                             <i class="bi bi-exclamation-triangle me-1"></i> Agotados y Vencidos (<?php echo $critical_items; ?>)
@@ -691,6 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <th>Precios (Q)</th>
                                         <th>Stock (Unds)</th>
                                         <th>Vencimiento</th>
+                                        <th class="perdida-col d-none">Pérdida (Q)</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -817,6 +831,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                                             </div>
                                                             <span class="status-badge <?php echo $expiry_class; ?>">
                                                                 <?php echo $expiry_text; ?>
+                                                            </span>
+                                                    <?php else: ?>
+                                                            <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="perdida-col d-none">
+                                                    <?php if ($expiry_class === 'status-danger' && (float)$item['cantidad_med'] > 0): ?>
+                                                            <span class="fw-bold text-danger">
+                                                                Q<?php echo number_format((float)$item['cantidad_med'] * (float)($item['costo_compra'] ?? 0), 2); ?>
                                                             </span>
                                                     <?php else: ?>
                                                             <span class="text-muted">-</span>
@@ -1779,6 +1802,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         row.style.display = show ? '' : 'none';
                     });
+
+                    // Columna Pérdida visible solo bajo el filtro 'expired'
+                    const perdidaCols = document.querySelectorAll('.perdida-col');
+                    perdidaCols.forEach(c => c.classList.toggle('d-none', this.currentFilter !== 'expired'));
                 }
 
                 loadMedicineData(id) {
@@ -2504,6 +2531,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 row.style.display = show ? '' : 'none';
             });
+
+            // Columna Pérdida visible solo bajo el filtro 'expired'
+            const perdidaCols = document.querySelectorAll('.perdida-col');
+            perdidaCols.forEach(c => c.classList.toggle('d-none', filter !== 'expired'));
         }
     </script>
     <?php flash_toast(); ?>

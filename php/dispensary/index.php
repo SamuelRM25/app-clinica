@@ -52,7 +52,6 @@ try {
         LEFT JOIN purchase_headers ph ON pi.purchase_header_id = ph.id
         WHERE (i.cantidad_med > 0 OR i.stock_hospital > 0)
           AND (i.estado IS NULL OR i.estado != 'Pendiente')
-          AND (i.fecha_vencimiento >= CURDATE() OR i.fecha_vencimiento IS NULL)
           AND i.id_hospital = ?
         ORDER BY i.nom_medicamento
     ");
@@ -1391,15 +1390,22 @@ try {
                     }
 
                     const term = searchTerm.toLowerCase();
+                    // Stock efectivo según el modo actual (igual que el mostrado en resultados)
+                    const getStockForMode = (item) => {
+                        if (currentMode === 'hospital') return Number(item.stock_hospital) || 0;
+                        return Number(item.disponible) || 0;
+                    };
                     const results = currentInventory.filter(item =>
-                        (item.nom_medicamento || '').toLowerCase().includes(term) ||
+                        ((item.nom_medicamento || '').toLowerCase().includes(term) ||
                         (item.mol_medicamento || '').toLowerCase().includes(term) ||
-                        (item.codigo_barras || '').toLowerCase().includes(term)
+                        (item.codigo_barras || '').toLowerCase().includes(term)) &&
+                        getStockForMode(item) > 0
                     );
 
-                    // Check for exact barcode match
+                    // Check for exact barcode match (solo si tiene stock en el modo actual)
                     const exactBarcodeMatch = currentInventory.find(item =>
-                        item.codigo_barras && item.codigo_barras.toLowerCase() === term
+                        item.codigo_barras && item.codigo_barras.toLowerCase() === term &&
+                        getStockForMode(item) > 0
                     );
 
                     if (exactBarcodeMatch) {
@@ -1447,7 +1453,7 @@ try {
                                                 <i class="bi bi-capsule fs-4"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark">${item.nom_medicamento}</div>
+                                                <div class="fw-bold text-dark">${item.nom_medicamento}${daysToExpiry < 0 ? ' <span class="badge bg-danger">Vencido</span>' : ''}</div>
                                                 <div class="small text-muted">${item.mol_medicamento} • ${item.presentacion_med}</div>
                                                 <div class="${stockClass} small fw-bold mt-1">
                                                     <i class="bi bi-box-seam me-1"></i> ${stockAvailable} disponibles
@@ -1465,7 +1471,7 @@ try {
                                     </div>
                                     <div class="col-2 text-end">
                                         <div class="small text-muted">Vence</div>
-                                        <div class="fw-bold ${daysToExpiry < 90 ? 'text-warning' : 'text-success'}">${expiryDate}</div>
+                                        <div class="fw-bold ${daysToExpiry < 0 ? 'text-danger' : (daysToExpiry < 90 ? 'text-warning' : 'text-success')}">${expiryDate}</div>
                                     </div>
                                 </div>
                             `;
