@@ -131,6 +131,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
     <!-- Estilos de Personalización Propia y Premium para Ventas -->
     <style>
@@ -1390,6 +1391,7 @@ try {
     `;
         document.head.appendChild(style);
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

@@ -122,6 +122,7 @@ try {
 
     <!-- CSS COMPLETAMENTE IDÉNTICO AL DASHBOARD (NO CAMBIAR NADA) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 </head>
 
@@ -638,6 +639,7 @@ try {
             document.head.appendChild(style);
         })();
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

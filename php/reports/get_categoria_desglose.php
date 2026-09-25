@@ -65,6 +65,23 @@ $queries['consultas'] = [
                AND t.id_medico <=> c.id_doctor
               WHERE c.fecha_consulta BETWEEN ? AND ?
                 AND c.id_hospital = ?
+                AND (c.tipo_consulta IS NULL OR c.tipo_consulta <> 'Prociegos')
+              ORDER BY c.fecha_consulta DESC",
+    'params' => [$start, $end, $id_hospital],
+];
+
+$queries['prociegos'] = [
+    'sql' => "SELECT
+                DATE(c.fecha_consulta) AS fecha,
+                CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                CONCAT('Cobro Prociegos (#', c.in_cobro, ')') AS descripcion,
+                c.cantidad_consulta AS monto,
+                0 AS costo
+              FROM cobros c
+              JOIN pacientes p ON c.paciente_cobro = p.id_paciente
+              WHERE c.fecha_consulta BETWEEN ? AND ?
+                AND c.id_hospital = ?
+                AND c.tipo_consulta = 'Prociegos'
               ORDER BY c.fecha_consulta DESC",
     'params' => [$start, $end, $id_hospital],
 ];
@@ -314,7 +331,7 @@ try {
 
     $total_monto = 0;
     $total_costo = 0;
-    $has_costo = !in_array($categoria, ['gasto_general', 'consulta_medica', 'pago_comisiones_medicos', 'gastos_otros', 'pago_proveedores', 'pago_traslado']);
+    $has_costo = !in_array($categoria, ['gasto_general', 'consulta_medica', 'pago_comisiones_medicos', 'gastos_otros', 'pago_proveedores', 'pago_traslado', 'prociegos']);
 
     foreach ($rows as &$row) {
         $row['monto']  = (float)($row['monto'] ?? 0);

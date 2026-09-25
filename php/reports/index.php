@@ -107,6 +107,23 @@ try {
     $stmt_pagos_traslado->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_pagos_traslado = (float)($stmt_pagos_traslado->fetch(PDO::FETCH_ASSOC)['total_traslados'] ?? 0);
 
+    // 2d. Detalle de Pagos por Traslado (pestaña Traslados)
+    $stmt_traslados_detalle = $conn->prepare("
+        SELECT
+            pp.payment_date AS fecha,
+            ph.provider_name AS proveedor,
+            CONCAT(ph.document_type, ' ', COALESCE(ph.document_number, ''), ' (#', ph.id, ') — ', pp.payment_method) AS descripcion,
+            pp.amount AS monto
+        FROM purchase_payments pp
+        JOIN purchase_headers ph ON pp.purchase_header_id = ph.id
+        WHERE pp.payment_date BETWEEN ? AND ?
+          AND pp.id_hospital = ?
+          AND pp.payment_method = 'Traslado'
+        ORDER BY pp.payment_date DESC, pp.created_at DESC
+    ");
+    $stmt_traslados_detalle->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
+    $traslados_detalle = $stmt_traslados_detalle->fetchAll(PDO::FETCH_ASSOC);
+
     // 2b. Gastos por categoría
     $stmt_gastos_general = $conn->prepare("SELECT COALESCE(SUM(total), 0) as total FROM gastos WHERE fecha BETWEEN ? AND ? AND id_hospital = ? AND categoria = 'Gasto General'");
     $stmt_gastos_general->execute([$start_datetime, $end_datetime, $id_hospital]);
@@ -336,10 +353,15 @@ try {
 
     $total_exams_revenue = $total_laboratory + $total_ultrasound + $total_xray;
 
-    // 6. Cobros de consultas
-    $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ?");
+    // 6. Cobros de consultas (excluye Prociegos, que se reporta por separado)
+    $stmt_billings = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ? AND (tipo_consulta IS NULL OR tipo_consulta <> 'Prociegos')");
     $stmt_billings->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
     $total_billings = $stmt_billings->fetchColumn() ?: 0;
+
+    // 6.a Cobros Prociegos (tipo de cobro especial)
+    $stmt_prociegos = $conn->prepare("SELECT SUM(cantidad_consulta) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ? AND tipo_consulta = 'Prociegos'");
+    $stmt_prociegos->execute([$fecha_inicio, $fecha_fin, $id_hospital]);
+    $total_prociegos = $stmt_prociegos->fetchColumn() ?: 0;
 
     // 6.b Hospitalizaciones (Cuentas de encamamientos dados de alta)
     $stmt_hosp = $conn->prepare("
@@ -371,12 +393,13 @@ try {
 
     // 7. Ingresos brutos totales
     $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound
-        + $total_xray + $total_electro + $total_billings + $total_hospitalization;
+        + $total_xray + $total_electro + $total_billings + $total_prociegos + $total_hospitalization;
 
     // Mapeo de categoria -> (revenue, cost) ya calculados
     $ingresos_categorias = [
         ['label' => 'Ventas Farmacia', 'categoria' => 'farmacia', 'icon' => 'bi-capsule', 'badge' => 'charge-farmacia', 'monto' => (float) $sales_revenue, 'costo' => (float) $sales_cost],
         ['label' => 'Consultas Médicas', 'categoria' => 'consultas', 'icon' => 'bi-stethoscope', 'badge' => 'charge-consulta', 'monto' => (float) $total_billings, 'costo' => (float) $category_profit['consultations']['cost']],
+        ['label' => 'Prociegos', 'categoria' => 'prociegos', 'icon' => 'bi-people-fill', 'badge' => 'charge-consulta', 'monto' => (float) $total_prociegos, 'costo' => 0],
         ['label' => 'Laboratorio', 'categoria' => 'laboratorio', 'icon' => 'bi-droplet-half', 'badge' => 'charge-laboratorio', 'monto' => $total_laboratory, 'costo' => $laboratory_cost],
         ['label' => 'Ultrasonido', 'categoria' => 'ultrasonido', 'icon' => 'bi-soundwave', 'badge' => 'charge-ultrasonido', 'monto' => $total_ultrasound, 'costo' => (float) $category_profit['ultrasonidos']['cost']],
         ['label' => 'Rayos X', 'categoria' => 'rayos_x', 'icon' => 'bi-radioactive', 'badge' => 'charge-rayos-x', 'monto' => $total_xray, 'costo' => (float) $category_profit['rayos_x']['cost']],
@@ -396,7 +419,6 @@ try {
 
     $egresos_categorias = [
         ['label' => 'Pago a Proveedores', 'categoria' => 'pago_proveedores', 'icon' => 'bi-cart-plus', 'monto' => (float) $total_purchases_meds],
-        ['label' => 'Pago por Traslado', 'categoria' => 'pago_traslado', 'icon' => 'bi-arrow-left-right', 'monto' => $total_pagos_traslado],
         ['label' => 'Gasto General', 'categoria' => 'gasto_general', 'icon' => 'bi-wallet2', 'monto' => $total_gasto_general],
         ['label' => 'Consulta Médica', 'categoria' => 'consulta_medica', 'icon' => 'bi-clipboard-pulse', 'monto' => $total_consulta_medica],
         ['label' => 'Pago Comisiones Médicos', 'categoria' => 'pago_comisiones_medicos', 'icon' => 'bi-people-fill', 'monto' => $total_pago_comisiones],
@@ -2475,6 +2497,9 @@ try {
                     <button class="reports-tab-btn" data-tab="labs">
                         <i class="bi bi-droplet-half"></i> Auditoría de Labs
                     </button>
+                    <button class="reports-tab-btn" data-tab="traslados">
+                        <i class="bi bi-arrow-left-right"></i> Traslados
+                    </button>
                     <?php if ($can_view_transfers): ?>
                             <button class="reports-tab-btn" data-tab="transfers">
                                 <i class="bi bi-arrow-left-right"></i> Dispensario
@@ -3458,6 +3483,62 @@ try {
                                 <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
+                </div>
+            </div>
+
+            <!-- TAB: TRASLADOS (Pago por Traslados) -->
+            <div id="tab-traslados" class="tab-content">
+                <div class="content-section animate-in">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="bi bi-arrow-left-right section-title-icon"
+                                style="color: var(--color-danger);"></i>
+                            Pago por Traslados
+                        </h3>
+                        <span class="amount-badge expense">
+                            Total: Q<?php echo number_format($total_pagos_traslado, 2); ?>
+                        </span>
+                    </div>
+
+                    <?php if (!empty($traslados_detalle)): ?>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Proveedor</th>
+                                            <th>Documento — Método</th>
+                                            <th class="text-end">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($traslados_detalle as $traslado): ?>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($traslado['fecha']))); ?></td>
+                                                    <td><?php echo htmlspecialchars($traslado['proveedor']); ?></td>
+                                                    <td><?php echo htmlspecialchars($traslado['descripcion']); ?></td>
+                                                    <td class="text-end fw-bold text-danger">
+                                                        Q<?php echo number_format((float)$traslado['monto'], 2); ?>
+                                                    </td>
+                                                </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold">Total Traslados:</td>
+                                            <td class="text-end fw-bold text-danger">
+                                                Q<?php echo number_format($total_pagos_traslado, 2); ?>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                    <?php else: ?>
+                            <div class="empty-state text-center py-4">
+                                <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                                <p class="mb-0">No se encontraron traslados en este período.</p>
+                            </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

@@ -190,6 +190,7 @@ output_keep_alive_script();
     <!-- SweetAlert2 -->
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 
     <style>
@@ -2538,6 +2539,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     </script>
     <?php flash_toast(); ?>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

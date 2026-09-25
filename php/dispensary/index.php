@@ -129,6 +129,7 @@ try {
 
     <!-- CSS Crítico (incrustado - mismo que dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
     <style>
         :root {
@@ -2211,6 +2212,7 @@ try {
             });
         })();
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

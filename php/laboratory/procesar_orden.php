@@ -124,6 +124,7 @@ try {
 
     <!-- CSS Crítico (mismo que el dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
 </head>
 
@@ -891,6 +892,7 @@ try {
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script defer src="../../assets/js/security.js"></script>
     <?php output_keep_alive_script(); ?>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

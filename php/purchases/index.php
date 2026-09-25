@@ -182,9 +182,91 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <!-- Overlay global anti-multiclick -->
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
     <!-- Estilos para pestaña Contabilidad -->
     <style>
+        /* Acordeón de proveedores en Pagos Pendientes */
+        .provider-accordion {
+            background: var(--color-card, #ffffff);
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 10px);
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .provider-accordion[open] {
+            box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.08));
+            border-color: rgba(var(--color-primary-rgb, 59, 130, 246), 0.4);
+        }
+        .provider-summary {
+            cursor: pointer;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            list-style: none;
+            transition: background 0.15s ease;
+        }
+        .provider-summary::-webkit-details-marker { display: none; }
+        .provider-summary:hover { background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.04); }
+        .provider-summary__main {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+        }
+        .provider-summary__toggle {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            transition: transform 0.2s ease;
+            color: var(--color-text-secondary, #64748b);
+        }
+        .provider-accordion[open] .provider-summary__toggle { transform: rotate(90deg); }
+        .provider-summary__name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--color-text, #0f172a);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .provider-summary__amount {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .provider-summary__amount-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary, #64748b);
+            font-weight: 600;
+        }
+        .provider-summary__amount-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--color-danger, #dc2626);
+        }
+        .provider-summary__detail {
+            padding: 0 1.25rem 1.25rem 1.25rem;
+            border-top: 1px solid var(--color-border, #e2e8f0);
+            background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.02);
+        }
+        .provider-summary__detail .appointments-table {
+            margin-top: 1rem;
+            background: var(--color-card, #ffffff);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        [data-theme="dark"] .provider-accordion { background: #1e293b; border-color: rgba(255,255,255,0.06); }
+        [data-theme="dark"] .provider-summary__detail { background: rgba(255,255,255,0.02); }
+
         /* Filtros de período */
         .accounting-filters .btn-group .btn {
             font-size: 0.85rem;
@@ -543,9 +625,6 @@ try {
                 <button class="tab-btn" data-tab="top-providers">
                     <i class="bi bi-building me-2"></i>Proveedores
                 </button>
-                <button class="tab-btn" data-tab="gastos">
-                    <i class="bi bi-wallet2 me-2"></i>Gastos
-                </button>
             </div>
 
             <!-- Pestaña: Compras Recientes -->
@@ -804,81 +883,143 @@ try {
                     </div>
 
                     <?php
-                    // Obtener compras pendientes
+                    // Obtener compras pendientes (detalle por compra)
                     try {
-                        $stmt_pending = $conn->prepare("SELECT ph.*, 
+                        $stmt_pending = $conn->prepare("SELECT ph.*,
                                (ph.total_amount - COALESCE(ph.paid_amount, 0)) as balance
-                               FROM purchase_headers ph 
+                               FROM purchase_headers ph
                                WHERE (ph.total_amount - COALESCE(ph.paid_amount, 0)) > 0
                                AND ph.id_hospital = ?
-                               ORDER BY ph.purchase_date ASC");
+                               ORDER BY ph.provider_name ASC, ph.purchase_date ASC");
                         $stmt_pending->execute([$id_hospital]);
                         $pending_purchases = $stmt_pending->fetchAll(PDO::FETCH_ASSOC);
                     } catch (Exception $e) {
                         $pending_purchases = [];
                     }
+
+                    // Agrupar por proveedor (sumas)
+                    $provider_groups = [];
+                    foreach ($pending_purchases as $p) {
+                        $key = $p['provider_name'];
+                        if (!isset($provider_groups[$key])) {
+                            $provider_groups[$key] = [
+                                'provider_name'  => $key,
+                                'num_compras'    => 0,
+                                'total_general'  => 0.0,
+                                'total_pagado'   => 0.0,
+                                'total_saldo'    => 0.0,
+                                'compra_mas_antigua' => $p['purchase_date'],
+                                'dias_mas_antiguo'   => (int)floor((time() - strtotime($p['purchase_date'])) / 86400),
+                                'detalle'        => [],
+                            ];
+                        }
+                        $balance = (float)$p['balance'];
+                        $paid = (float)$p['total_amount'] - $balance;
+                        $provider_groups[$key]['num_compras']++;
+                        $provider_groups[$key]['total_general'] += (float)$p['total_amount'];
+                        $provider_groups[$key]['total_pagado']  += $paid;
+                        $provider_groups[$key]['total_saldo']   += $balance;
+                        $dias = (int)floor((time() - strtotime($p['purchase_date'])) / 86400);
+                        if ($dias < $provider_groups[$key]['dias_mas_antiguo']) {
+                            $provider_groups[$key]['dias_mas_antiguo']   = $dias;
+                            $provider_groups[$key]['compra_mas_antigua'] = $p['purchase_date'];
+                        }
+                        $provider_groups[$key]['detalle'][] = $p;
+                    }
+                    // Ordenar por saldo descendente (mayor adeudo primero)
+                    usort($provider_groups, function ($a, $b) {
+                        return $b['total_saldo'] <=> $a['total_saldo'];
+                    });
                     ?>
 
-                    <?php if (count($pending_purchases) > 0): ?>
-                            <div class="table-responsive">
-                                <table class="appointments-table" id="tablePending">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Proveedor</th>
-                                            <th>Documento</th>
-                                            <th>Total</th>
-                                            <th>Pagado</th>
-                                            <th>Saldo</th>
-                                            <th>Días</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($pending_purchases as $purchase): ?>
-                                                <?php
-                                                $balance = $purchase['balance'];
-                                                $paid = $purchase['total_amount'] - $balance;
-                                                $purchase_date = new DateTime($purchase['purchase_date']);
-                                                $today = new DateTime();
-                                                $days_diff = $today->diff($purchase_date)->days;
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
-                                                    <td class="fw-bold"><?php echo htmlspecialchars($purchase['provider_name']); ?></td>
-                                                    <td>
-                                                        <span class="badge badge-secondary">
-                                                            <?php echo htmlspecialchars($purchase['document_type']); ?>
-                                                            <?php echo $purchase['document_number'] ? '#' . $purchase['document_number'] : ''; ?>
-                                                        </span>
-                                                    </td>
-                                                    <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
-                                                    <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
-                                                    <td class="fw-bold text-danger">Q<?php echo number_format($balance, 2); ?></td>
-                                                    <td>
-                                                        <span
-                                                            class="badge <?php echo $days_diff > 30 ? 'badge-danger' : ($days_diff > 15 ? 'badge-warning' : 'badge-info'); ?>">
-                                                            <?php echo $days_diff; ?> días
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div class="action-buttons">
-                                                            <a href="#" class="btn-icon edit" title="Registrar pago"
-                                                                onclick="openPaymentModal(<?php echo $purchase['id']; ?>)">
-                                                                <i class="bi bi-cash-coin"></i>
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                    <?php if (count($provider_groups) > 0): ?>
+                            <div id="providerGroupsContainer">
+                                <?php foreach ($provider_groups as $idx => $prov):
+                                    $days       = (int)$prov['dias_mas_antiguo'];
+                                    $days_class = $days > 30 ? 'bg-danger' : ($days > 15 ? 'bg-warning text-dark' : 'bg-info');
+                                    $safe_id    = 'prov-' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $prov['provider_name']);
+                                    ?>
+                                    <details class="provider-accordion" data-provider="<?php echo htmlspecialchars($prov['provider_name']); ?>" <?php echo $idx === 0 ? 'open' : ''; ?>>
+                                        <summary class="provider-summary">
+                                            <div class="provider-summary__main">
+                                                <div class="provider-summary__toggle">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </div>
+                                                <div class="provider-summary__name">
+                                                    <i class="bi bi-building me-2 text-primary"></i>
+                                                    <?php echo htmlspecialchars($prov['provider_name']); ?>
+                                                </div>
+                                                <span class="badge bg-secondary ms-2">
+                                                    <?php echo (int)$prov['num_compras']; ?> compra<?php echo $prov['num_compras'] != 1 ? 's' : ''; ?>
+                                                </span>
+                                                <span class="badge <?php echo $days_class; ?> ms-2">
+                                                    <i class="bi bi-clock-history me-1"></i><?php echo $days; ?> días
+                                                </span>
+                                            </div>
+                                            <div class="provider-summary__amount">
+                                                <div class="provider-summary__amount-label">Pendiente</div>
+                                                <div class="provider-summary__amount-value">Q<?php echo number_format($prov['total_saldo'], 2); ?></div>
+                                            </div>
+                                        </summary>
+
+                                        <div class="provider-summary__detail">
+                                            <table class="appointments-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Documento</th>
+                                                        <th>Total</th>
+                                                        <th>Pagado</th>
+                                                        <th>Saldo</th>
+                                                        <th>Días</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($prov['detalle'] as $purchase):
+                                                        $balance  = (float)$purchase['balance'];
+                                                        $paid     = (float)$purchase['total_amount'] - $balance;
+                                                        $days_d   = (int)floor((time() - strtotime($purchase['purchase_date'])) / 86400);
+                                                        $days_d_class = $days_d > 30 ? 'bg-danger' : ($days_d > 15 ? 'bg-warning text-dark' : 'bg-info');
+                                                        ?>
+                                                        <tr>
+                                                            <td><?php echo date('d/m/Y', strtotime($purchase['purchase_date'])); ?></td>
+                                                            <td>
+                                                                <span class="badge badge-secondary">
+                                                                    <?php echo htmlspecialchars($purchase['document_type']); ?>
+                                                                    <?php echo $purchase['document_number'] ? '#' . htmlspecialchars($purchase['document_number']) : ''; ?>
+                                                                </span>
+                                                            </td>
+                                                            <td class="fw-bold">Q<?php echo number_format($purchase['total_amount'], 2); ?></td>
+                                                            <td class="text-success">Q<?php echo number_format($paid, 2); ?></td>
+                                                            <td class="fw-bold text-danger">Q<?php echo number_format($balance, 2); ?></td>
+                                                            <td>
+                                                                <span class="badge <?php echo $days_d_class; ?>">
+                                                                    <?php echo $days_d; ?> días
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div class="action-buttons">
+                                                                    <a href="#" class="btn-icon edit" title="Registrar pago"
+                                                                        onclick="openPaymentModal(<?php echo (int)$purchase['id']; ?>)">
+                                                                        <i class="bi bi-cash-coin"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </details>
+                                <?php endforeach; ?>
                             </div>
                             <div class="mt-3 text-center">
                                 <p class="text-muted mb-2">
                                     Total pendiente: <strong
                                         class="text-danger">Q<?php echo number_format($total_balance, 2); ?></strong>
                                     en <strong><?php echo $pending_count; ?></strong> compras
+                                    <span class="ms-2 text-muted">— agrupado en <strong><?php echo count($provider_groups); ?></strong> proveedor<?php echo count($provider_groups) != 1 ? 'es' : ''; ?></span>
                                 </p>
                             </div>
                     <?php else: ?>
@@ -1066,178 +1207,7 @@ try {
                 </div>
             </div>
 
-            <!-- Pestaña: Gastos -->
-            <div class="tab-content" id="gastos-tab">
-                <section class="appointments-section animate-in">
-                    <div class="section-header">
-                        <h3 class="section-title">
-                            <i class="bi bi-wallet2 section-title-icon" style="color:var(--color-danger);"></i>
-                            Gastos Generales del Hospital
-                        </h3>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <div class="search-box">
-                                <i class="bi bi-calendar-range search-icon"></i>
-                                <input type="month" id="gastosMonth" class="form-control form-control-sm"
-                                    value="<?php echo date('Y-m'); ?>"
-                                    onchange="loadGastos()"
-                                    style="padding-left:2.25rem;max-width:200px;">
-                            </div>
-                            <button class="action-btn" onclick="showNewGastoModal()">
-                                <i class="bi bi-plus-lg me-2"></i>Nuevo Gasto
-                            </button>
-                            <button class="action-btn action-btn-outline" onclick="showDeletedGastos()">
-                                <i class="bi bi-archive me-2"></i>Ver Eliminados
-                            </button>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="appointments-table" id="gastosTable">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Descripción</th>
-                                    <th>Categoría</th>
-                                    <th>Cant.</th>
-                                    <th class="text-end">Subtotal</th>
-                                    <th class="text-end">Total</th>
-                                    <th>Registrado por</th>
-                                    <th style="width:50px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="gastosLoadingRow">
-                                    <td colspan="8" class="text-center text-muted py-4">
-                                        <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando gastos...
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-<td colspan="5" class="text-end fw-bold">Total Gastos:</td>
-                                <td class="fw-bold text-danger" id="gastosTotalFooter">Q0.00</td>
-                                <td colspan="2"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </section>
-            </div>
         </main>
-    </div>
-
-    <!-- Modal para nuevo gasto -->
-    <div class="custom-modal-overlay" id="newGastoModal">
-        <div class="custom-modal" style="max-width:600px;">
-            <div class="custom-modal-header">
-                <h5 class="custom-modal-title">
-                    <i class="bi bi-wallet2 text-danger me-2"></i>
-                    Registrar Nuevo Gasto
-                </h5>
-                <button type="button" class="custom-modal-close"
-                    onclick="document.getElementById('newGastoModal').classList.remove('active')">&times;</button>
-            </div>
-            <div class="custom-modal-body">
-                <form id="gastoForm">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">Descripción</label>
-                            <textarea class="form-control" id="gasto_descripcion" rows="2"
-                                placeholder="Ej. Insumos para baños, materiales de limpieza, etc." required></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Categoría</label>
-                            <select class="form-select" id="gasto_categoria" required onchange="onCategoriaChange()">
-                                <option value="Gasto General">Gasto General</option>
-                                <option value="Consulta Médica">Consulta Médica</option>
-                                <option value="Pago Comisiones Médicos">Pago Comisiones Médicos</option>
-                                <option value="Otra">Otra (especificar)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6" id="gasto_categoria_otra_wrap" style="display:none">
-                            <label class="form-label">Especificar categoría</label>
-                            <input type="text" class="form-control" id="gasto_categoria_otra" maxlength="100" placeholder="Ej: Servicios básicos">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Fecha</label>
-                            <input type="date" class="form-control" id="gasto_fecha"
-                                value="<?php echo date('Y-m-d'); ?>" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Cantidad</label>
-                            <input type="number" class="form-control" id="gasto_cantidad" min="1" value="1"
-                                onchange="calcularGastoTotal()" onkeyup="calcularGastoTotal()">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Subtotal (Q)</label>
-                            <input type="number" class="form-control" id="gasto_subtotal" min="0" step="0.01"
-                                onchange="calcularGastoTotal()" onkeyup="calcularGastoTotal()">
-                        </div>
-                        <div class="col-md-4 offset-md-8">
-                            <label class="form-label fw-bold">Total (Q)</label>
-                            <input type="number" class="form-control" id="gasto_total" min="0" step="0.01" readonly
-                                style="font-weight:700;background:var(--color-surface);">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="custom-modal-footer">
-                <button type="button" class="action-btn secondary"
-                    onclick="document.getElementById('newGastoModal').classList.remove('active')">Cancelar</button>
-                <button type="button" class="action-btn primary" id="saveGastoBtn" onclick="saveGasto()">
-                    <i class="bi bi-check-lg me-2"></i>Guardar Gasto
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de gastos eliminados -->
-    <div class="custom-modal-overlay" id="deletedGastosModal">
-        <div class="custom-modal modal-lg">
-            <div class="custom-modal-header">
-                <h5 class="custom-modal-title">
-                    <i class="bi bi-archive text-secondary me-2"></i>
-                    Gastos Eliminados
-                </h5>
-                <button type="button" class="custom-modal-close"
-                    onclick="this.closest('.custom-modal-overlay').classList.remove('active')">&times;</button>
-            </div>
-            <div class="custom-modal-body">
-                <p class="text-muted mb-3">Estos gastos se eliminarán definitivamente al final del mes.</p>
-                <div class="table-responsive">
-                    <table class="appointments-table" id="deletedGastosTable">
-                        <thead>
-                            <tr>
-                                <th>Fecha eliminación</th>
-                                <th>Descripción</th>
-                                <th>Categoría</th>
-                                <th>Cant.</th>
-                                <th class="text-end">Total</th>
-                                <th>Eliminado por</th>
-                                <th>Motivo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot class="table-light">
-                            <tr>
-                                <td colspan="4" class="text-end fw-bold">Total Eliminados:</td>
-                                <td class="fw-bold text-danger" id="deletedGastosTotalFooter">Q0.00</td>
-                                <td colspan="2"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-            <div class="custom-modal-footer">
-                <button type="button" class="action-btn secondary"
-                    onclick="document.getElementById('deletedGastosModal').classList.remove('active')">Cerrar</button>
-            </div>
-        </div>
     </div>
 
     <!-- Modal para nueva compra -->
@@ -1628,11 +1598,6 @@ try {
                     // Guardar pestaña activa
                     localStorage.setItem('purchases-active-tab', tabId);
 
-                    // Auto-cargar gastos cuando se active esa pestaña
-                    if (tabId === 'gastos' && typeof window.loadGastos === 'function') {
-                        setTimeout(window.loadGastos, 100);
-                    }
-
                     // Auto-cargar contabilidad cuando se active esa pestaña
                     if (tabId === 'accounting' && typeof window.loadContabilidad === 'function') {
                         setTimeout(window.loadContabilidad, 100);
@@ -1723,11 +1688,12 @@ try {
                     if (searchPending) {
                         searchPending.addEventListener('input', function () {
                             const searchTerm = this.value.toLowerCase();
-                            const rows = document.querySelectorAll('#tablePending tbody tr');
+                            const cards = document.querySelectorAll('#providerGroupsContainer .provider-accordion');
 
-                            rows.forEach(row => {
-                                const text = row.textContent.toLowerCase();
-                                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                            cards.forEach(card => {
+                                const providerName = (card.getAttribute('data-provider') || '').toLowerCase();
+                                const show = !searchTerm || providerName.includes(searchTerm);
+                                card.style.display = show ? '' : 'none';
                             });
                         });
                     }
@@ -2646,283 +2612,6 @@ try {
             }
 
             // ==========================================================================
-            // FUNCIONES DE GASTOS
-            // ==========================================================================
-
-            window.loadGastos = function () {
-                const monthEl = document.getElementById('gastosMonth');
-                const month = monthEl ? monthEl.value : '<?php echo date('Y-m'); ?>';
-                const start = month + '-01';
-                const parts = month.split('-');
-                const lastDay = new Date(parseInt(parts[0]), parseInt(parts[1]), 0).getDate();
-                const end = month + '-' + String(lastDay).padStart(2, '0');
-
-                const tbody = document.querySelector('#gastosTable tbody');
-                if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando gastos...</td></tr>';
-
-                fetch('get_gastos.php?fecha_inicio=' + encodeURIComponent(start) + '&fecha_fin=' + encodeURIComponent(end))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (!data.success) {
-tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
-                        return;
-                        }
-                        renderGastosTable(data.rows || []);
-                    })
-                    .catch(function(err) {
-                        console.error('Error loading gastos:', err);
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
-                    });
-            };
-
-            window.escapeHtml = function (text) {
-                if (!text) return '';
-                var div = document.createElement('div');
-                div.appendChild(document.createTextNode(text));
-                return div.innerHTML;
-            };
-
-            function renderGastosTable(rows) {
-                const tbody = document.querySelector('#gastosTable tbody');
-                const footer = document.getElementById('gastosTotalFooter');
-                if (!tbody) return;
-
-                if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay gastos registrados en este mes</td></tr>';
-                    if (footer) footer.textContent = 'Q0.00';
-                    return;
-                }
-
-                let html = '';
-                let totalGeneral = 0;
-                rows.forEach(function(g) {
-                    totalGeneral += g.total;
-                    const categoriaLabel = g.categoria === 'Otra' && g.categoria_otra
-                        ? 'Otra: ' + escapeHtml(g.categoria_otra)
-                        : escapeHtml(g.categoria || 'Gasto General');
-                    html += '<tr>' +
-                        '<td>' + g.fecha + '</td>' +
-                        '<td>' + escapeHtml(g.descripcion) + '</td>' +
-                        '<td><span class="badge bg-secondary">' + categoriaLabel + '</span></td>' +
-                        '<td class="text-center">' + g.cantidad + '</td>' +
-                        '<td class="text-end">Q' + Number(g.subtotal).toFixed(2) + '</td>' +
-                        '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
-                        '<td>' + escapeHtml(g.registrado_por || '—') + '</td>' +
-                        '<td class="text-center">' +
-                        '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="deleteGasto(' + g.id + ')" title="Eliminar gasto">' +
-                        '<i class="bi bi-trash"></i></button></td>' +
-                        '</tr>';
-                });
-                tbody.innerHTML = html;
-                if (footer) footer.textContent = 'Q' + totalGeneral.toFixed(2);
-            }
-
-            window.showNewGastoModal = function () {
-                document.getElementById('gasto_descripcion').value = '';
-                document.getElementById('gasto_categoria').value = 'Gasto General';
-                document.getElementById('gasto_categoria_otra').value = '';
-                document.getElementById('gasto_categoria_otra_wrap').style.display = 'none';
-                document.getElementById('gasto_fecha').value = '<?php echo date('Y-m-d'); ?>';
-                document.getElementById('gasto_cantidad').value = '1';
-                document.getElementById('gasto_subtotal').value = '';
-                document.getElementById('gasto_total').value = '0.00';
-                document.getElementById('newGastoModal').classList.add('active');
-                document.getElementById('gasto_descripcion').focus();
-            };
-
-            window.onCategoriaChange = function () {
-                const sel = document.getElementById('gasto_categoria');
-                const wrap = document.getElementById('gasto_categoria_otra_wrap');
-                const otraInput = document.getElementById('gasto_categoria_otra');
-                if (sel.value === 'Otra') {
-                    wrap.style.display = '';
-                    otraInput.required = true;
-                } else {
-                    wrap.style.display = 'none';
-                    otraInput.required = false;
-                    otraInput.value = '';
-                }
-            };
-
-            window.calcularGastoTotal = function () {
-                const cant = parseFloat(document.getElementById('gasto_cantidad').value) || 0;
-                const sub = parseFloat(document.getElementById('gasto_subtotal').value) || 0;
-                document.getElementById('gasto_total').value = (cant * sub).toFixed(2);
-            };
-
-            window.saveGasto = function () {
-                const descripcion = document.getElementById('gasto_descripcion').value.trim();
-                const categoria = document.getElementById('gasto_categoria').value;
-                const categoriaOtra = document.getElementById('gasto_categoria_otra').value.trim();
-                const fecha = document.getElementById('gasto_fecha').value;
-                const cantidad = parseInt(document.getElementById('gasto_cantidad').value) || 1;
-                const subtotal = parseFloat(document.getElementById('gasto_subtotal').value) || 0;
-                const total = parseFloat(document.getElementById('gasto_total').value) || (cantidad * subtotal);
-
-                if (!descripcion) {
-                    Swal.fire({ title: 'Descripción requerida', text: 'Por favor ingrese una descripción del gasto', icon: 'warning', confirmButtonText: 'Entendido' });
-                    return;
-                }
-                if (subtotal <= 0) {
-                    Swal.fire({ title: 'Subtotal inválido', text: 'El subtotal debe ser mayor a 0', icon: 'warning', confirmButtonText: 'Entendido' });
-                    return;
-                }
-                if (categoria === 'Otra' && !categoriaOtra) {
-                    Swal.fire({ title: 'Categoría requerida', text: 'Debe especificar el nombre de la categoría personalizada', icon: 'warning', confirmButtonText: 'Entendido' });
-                    return;
-                }
-
-                const btn = document.getElementById('saveGastoBtn');
-                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Guardando...'; }
-
-                const payload = {
-                    descripcion: descripcion,
-                    categoria: categoria,
-                    categoria_otra: categoria === 'Otra' ? categoriaOtra : '',
-                    cantidad: cantidad,
-                    subtotal: subtotal,
-                    total: total,
-                    fecha: fecha
-                };
-
-                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                const csrfToken = csrfMeta ? csrfMeta.content : '';
-                fetch('save_gasto.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.success) {
-                        document.getElementById('newGastoModal').classList.remove('active');
-                        Swal.fire({ title: 'Gasto Registrado', text: 'El gasto se ha registrado correctamente', icon: 'success', timer: 1500, showConfirmButton: false });
-                        loadGastos();
-                    } else {
-                        Swal.fire({ title: 'Error', text: data.message || 'Error al guardar el gasto', icon: 'error', confirmButtonText: 'Entendido' });
-                    }
-                })
-                .catch(function(err) {
-                    console.error('Error:', err);
-                    Swal.fire({ title: 'Error de conexión', text: 'Ocurrió un error al procesar la solicitud', icon: 'error', confirmButtonText: 'Entendido' });
-                })
-                .finally(function() {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Guardar Gasto'; }
-                });
-            };
-
-            window.deleteGasto = function (id) {
-                Swal.fire({
-                    title: 'Eliminar gasto',
-                    html: '<p class="text-muted mb-3">Esta acción moverá el gasto a la papelera. Los gastos eliminados se borran definitivamente al final de cada mes.</p>',
-                    input: 'textarea',
-                    inputLabel: 'Motivo de eliminación',
-                    inputPlaceholder: 'Describa por qué elimina este gasto...',
-                    inputAttributes: { required: true },
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: '<i class="bi bi-trash me-1"></i>Eliminar',
-                    cancelButtonText: 'Cancelar',
-                    preConfirm: function(motivo) {
-                        if (!motivo || !motivo.trim()) {
-                            Swal.showValidationMessage('Debe ingresar un motivo');
-                            return false;
-                        }
-                        return motivo.trim();
-                    }
-                }).then(function(result) {
-                    if (!result.isConfirmed || !result.value) return;
-                    const motivo = result.value;
-                    const csrfMeta2 = document.querySelector('meta[name="csrf-token"]');
-                    const csrfToken2 = csrfMeta2 ? csrfMeta2.content : '';
-                    fetch('delete_gasto.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken2 },
-                        body: JSON.stringify({ id: id, motivo: motivo })
-                    })
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data.success) {
-                            Swal.fire({ title: 'Eliminado', text: 'El gasto se movió a la papelera', icon: 'success', timer: 1500, showConfirmButton: false });
-                            loadGastos();
-                        } else {
-                            Swal.fire({ title: 'Error', text: data.message || 'Error al eliminar', icon: 'error', confirmButtonText: 'Entendido' });
-                        }
-                    })
-                    .catch(function(err) {
-                        console.error('Error:', err);
-                        Swal.fire({ title: 'Error de conexión', icon: 'error', confirmButtonText: 'Entendido' });
-                    });
-                });
-            };
-
-            // ==========================================================================
-            // FUNCIONES DE GASTOS ELIMINADOS
-            // ==========================================================================
-
-            window.showDeletedGastos = function () {
-                document.getElementById('deletedGastosModal').classList.add('active');
-                loadDeletedGastos();
-            };
-
-            window.loadDeletedGastos = function () {
-                const tbody = document.querySelector('#deletedGastosTable tbody');
-                if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...</td></tr>';
-
-                const now = new Date();
-                const start = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
-                const end = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0');
-
-                fetch('get_gastos_eliminados.php?fecha_inicio=' + encodeURIComponent(start) + '&fecha_fin=' + encodeURIComponent(end))
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (!data.success) {
-                            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">' + (data.message || 'Error al cargar') + '</td></tr>';
-                            return;
-                        }
-                        renderDeletedGastosTable(data.rows || []);
-                    })
-                    .catch(function(err) {
-                        console.error('Error loading deleted gastos:', err);
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + (err.message || 'Error de conexión') + '</td></tr>';
-                    });
-            };
-
-            function renderDeletedGastosTable(rows) {
-                const tbody = document.querySelector('#deletedGastosTable tbody');
-                const footer = document.getElementById('deletedGastosTotalFooter');
-                if (!tbody) return;
-
-                if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-check-circle me-2 text-success"></i>No hay gastos eliminados este mes</td></tr>';
-                    if (footer) footer.textContent = 'Q0.00';
-                    return;
-                }
-
-                let html = '';
-                let totalGeneral = 0;
-                rows.forEach(function(g) {
-                    totalGeneral += g.total;
-                    const categoriaLabel = g.categoria === 'Otra' && g.categoria_otra
-                        ? 'Otra: ' + escapeHtml(g.categoria_otra)
-                        : escapeHtml(g.categoria || 'Gasto General');
-                    html += '<tr>' +
-                        '<td>' + g.fecha_eliminacion + '</td>' +
-                        '<td>' + escapeHtml(g.descripcion) + '</td>' +
-                        '<td><span class="badge bg-secondary">' + categoriaLabel + '</span></td>' +
-                        '<td class="text-center">' + g.cantidad + '</td>' +
-                        '<td class="text-end fw-bold text-danger">Q' + Number(g.total).toFixed(2) + '</td>' +
-                        '<td>' + escapeHtml(g.eliminado_por_nombre || '—') + '</td>' +
-                        '<td><span class="text-muted fst-italic small">' + escapeHtml(g.motivo_eliminacion) + '</span></td>' +
-                        '</tr>';
-                });
-                tbody.innerHTML = html;
-                if (footer) footer.textContent = 'Q' + totalGeneral.toFixed(2);
-            }
-
-            // ==========================================================================
             // INICIALIZACIÓN DE LA APLICACIÓN
             // ==========================================================================
             document.addEventListener('DOMContentLoaded', () => {
@@ -3140,6 +2829,9 @@ tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">' + 
         }
 
     </script>
+
+    <!-- Overlay global anti-multiclick -->
+    <script src="../../assets/js/processing-overlay.js"></script>
 
     <!-- Inyectar script de mantenimiento de sesión activo (Global) -->
     <?php output_keep_alive_script(); ?>

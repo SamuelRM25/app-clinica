@@ -138,6 +138,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -1395,5 +1396,6 @@ async function previewAsignacion() {
     }
 }
 </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 </html>

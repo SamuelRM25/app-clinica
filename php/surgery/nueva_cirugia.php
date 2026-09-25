@@ -43,6 +43,7 @@ $page_title = "Nueva Cirugía";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="../../assets/css/style.css?v=4">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=4">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -255,5 +256,6 @@ function escapeHtmlAttr(str) {
     return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 </html>

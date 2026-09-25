@@ -42,6 +42,7 @@ $page_title = "Salas Quirúrgicas";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -242,5 +243,6 @@ async function deleteSala(id) {
     }
 }
 </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 </html>

@@ -135,6 +135,7 @@ try {
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
 
     <style>
@@ -1351,6 +1352,7 @@ try {
     <!-- Bootstrap JS (para modales y collapse) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <?php flash_toast(); ?>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

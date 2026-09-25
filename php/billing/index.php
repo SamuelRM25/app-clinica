@@ -66,7 +66,12 @@ try {
     $union_sql = "
         SELECT 'cobro' AS fuente, c.in_cobro AS id_registro,
             CONCAT(p.nombre, ' ', p.apellido) AS nombre_paciente,
-            CASE WHEN COALESCE(c.tipo_consulta, '') = 'Reconsulta' THEN 'Reconsulta' ELSE 'Consulta' END AS tipo_cobro,
+            CASE
+                WHEN c.tipo_consulta = 'Reconsulta' THEN 'Reconsulta'
+                WHEN c.tipo_consulta = 'Prociegos' THEN 'Prociegos'
+                WHEN COALESCE(c.tipo_consulta, '') = '' THEN 'Consulta'
+                ELSE 'Consulta'
+            END AS tipo_cobro,
             COALESCE(c.tipo_consulta, 'Consulta') AS detalle,
             c.cantidad_consulta AS monto, COALESCE(c.tipo_pago, 'Efectivo') AS tipo_pago, c.fecha_consulta AS fecha
         FROM cobros c
@@ -217,6 +222,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
 </head>
 
@@ -1464,6 +1470,7 @@ try {
 
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

@@ -72,6 +72,7 @@ try {
 
     <!-- CSS Crítico (mismo que index.php) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -977,6 +978,7 @@ try {
         // Cargar SweetAlert2 al iniciar
         document.addEventListener('DOMContentLoaded', loadSweetAlert);
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

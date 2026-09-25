@@ -55,8 +55,12 @@ try {
 
     if (empty($paciente_id)) {
         $parts = explode(' ', $paciente_nombre, 2);
-        $nombre = $parts[0];
-        $apellido = isset($parts[1]) ? $parts[1] : '';
+        $nombre = trim($parts[0] ?? '');
+        $apellido = trim($parts[1] ?? '');
+
+        if ($nombre === '') {
+            throw new Exception('Nombre de paciente inválido');
+        }
 
         // Check if patient already exists before creating
         $checkStmt = $conn->prepare("SELECT id_paciente FROM pacientes WHERE nombre = ? AND apellido = ? AND id_hospital = ?");
@@ -66,7 +70,9 @@ try {
         if ($existing) {
             $paciente_id = $existing['id_paciente'];
         } else {
-            $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_registro, id_hospital) VALUES (?, ?, NOW(), ?)");
+            // Pacientes.fecha_nacimiento y genero son NOT NULL sin DEFAULT; usamos placeholders seguros
+            // que pueden corregirse luego desde el módulo de Pacientes si se requiere.
+            $stmtP = $conn->prepare("INSERT INTO pacientes (nombre, apellido, fecha_nacimiento, genero, fecha_registro, id_hospital) VALUES (?, ?, '1900-01-01', 'Masculino', NOW(), ?)");
             $stmtP->execute([$nombre, $apellido, $id_hospital]);
             $paciente_id = $conn->lastInsertId();
         }

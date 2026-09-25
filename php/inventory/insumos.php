@@ -52,6 +52,7 @@ $page_title = "Gestión de Insumos - logo";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 </head>
 
@@ -220,6 +221,7 @@ $page_title = "Gestión de Insumos - logo";
     </script>
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script defer src="../../assets/js/security.js"></script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

@@ -84,6 +84,7 @@ try {
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -1278,6 +1279,7 @@ try {
         document.head.appendChild(style);
     </script>
     <?php output_keep_alive_script(); ?>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

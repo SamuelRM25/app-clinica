@@ -118,6 +118,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
 
     <!-- CSS Crítico (incrustado para máxima velocidad) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 
 </head>
 
@@ -599,6 +600,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
     `;
         document.head.appendChild(printStyles);
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

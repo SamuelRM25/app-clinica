@@ -309,6 +309,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=20250602">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/pwa-install.css?v=1">
     <!-- Responsive fixes for mobile -->
@@ -852,6 +853,19 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Compras')">
                                 <i class="bi bi-cart nav-icon"></i>
                                 <span class="nav-text">Compras</span>
+                            </a>
+                    <?php endif; ?>
+                </li>
+                <li class="nav-item">
+                    <?php if (is_module_active('purchases')): ?>
+                            <a href="../expenses/index.php" class="nav-link">
+                                <i class="bi bi-wallet2 nav-icon"></i>
+                                <span class="nav-text">Gastos</span>
+                            </a>
+                    <?php else: ?>
+                            <a href="javascript:void(0)" class="nav-link locked" onclick="lockedModule('Gestión de Gastos')">
+                                <i class="bi bi-wallet2 nav-icon"></i>
+                                <span class="nav-text">Gastos</span>
                             </a>
                     <?php endif; ?>
                 </li>
@@ -1558,7 +1572,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         body { padding: 20px; font-family: -apple-system, sans-serif; }
                         @media print { body { padding: 0; } }
                     </style>
-                    </head><body>${printContents}</body></html>
+                    </head><body>${printContents}
+</body></html>
                 `);
                 win.document.close();
                 setTimeout(() => { win.print(); }, 400);
@@ -1875,6 +1890,18 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 </div>
                                 <div class="stat-icon success">
                                     <i class="bi bi-cash-coin"></i>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="#" class="stat-card" data-bs-toggle="modal" data-bs-target="#prociegosBillingModal"
+                            style="text-decoration: none; border-left: 4px solid var(--color-info);">
+                            <div class="stat-header mb-0">
+                                <div>
+                                    <div class="stat-title text-info fw-bold">Prociegos</div>
+                                    <div class="stat-value" style="font-size: 1.25rem;">Registrar Cobro</div>
+                                </div>
+                                <div class="stat-icon info">
+                                    <i class="bi bi-people-fill"></i>
                                 </div>
                             </div>
                         </a>
@@ -2604,6 +2631,62 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
         </div>
     </div>
 
+    <!-- Modal para cobro Prociegos -->
+    <div class="modal fade" id="prociegosBillingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-premium modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-people-fill me-2"></i>
+                        Nuevo Cobro — Prociegos
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="prociegosBillingForm">
+                        <input type="hidden" name="tipo_consulta" value="Prociegos">
+                        <input type="hidden" name="tipo_pago" value="Efectivo">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha</label>
+                            <input type="date" class="form-control border-info text-info fw-bold"
+                                id="prociegos_fecha" name="prociegos_fecha"
+                                value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente</label>
+                            <input type="text" name="paciente_nombre" class="form-control"
+                                id="prociegos_paciente_input"
+                                placeholder="Escriba el nombre del paciente (se crea automáticamente si no existe)" required autocomplete="off">
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Si el paciente no está registrado, se creará automáticamente al guardar.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Cantidad (Q)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-info text-white border-0">Q</span>
+                                <input type="number" class="form-control border-info text-info fw-bold"
+                                    id="prociegos_cantidad" name="cantidad" min="0" step="0.01"
+                                    placeholder="0.00" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-info text-white px-4" id="saveProciegosBtn">
+                        <i class="bi bi-check-lg me-1"></i>Guardar Cobro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para Nueva Orden de Laboratorio -->
     <div class="modal fade" id="newLabOrderModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-premium modal-dialog-centered">
@@ -3148,6 +3231,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     this.setupLabOrderHandlers();
                     this.setupXrayHandlers();
                     this.setupUltrasoundHandlers();
+                    this.setupProciegosHandler();
                     this.setupAnimations();
                 }
 
@@ -3309,6 +3393,78 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                             }
                         });
                     }
+                }
+
+                setupProciegosHandler() {
+                    const saveBtn = document.getElementById('saveProciegosBtn');
+                    if (!saveBtn) return;
+
+                    saveBtn.addEventListener('click', async () => {
+                        if (saveBtn.disabled) return;
+                        const form = document.getElementById('prociegosBillingForm');
+                        const patientInput = document.getElementById('prociegos_paciente_input');
+
+                        if (!form || !patientInput) return;
+
+                        const val = patientInput.value.trim();
+                        if (!val) {
+                            Swal.fire('Aviso', 'Ingrese el nombre del paciente', 'warning');
+                            return;
+                        }
+
+                        if (!form.checkValidity()) {
+                            form.reportValidity();
+                            return;
+                        }
+
+                        const originalText = saveBtn.innerHTML;
+                        saveBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Guardando...';
+                        saveBtn.disabled = true;
+
+                        try {
+                            // Componer fecha_consulta a partir del input fecha + hora actual
+                            const fechaEl = document.getElementById('prociegos_fecha');
+                            const fechaBase = fechaEl && fechaEl.value ? fechaEl.value : '';
+                            const now = new Date();
+                            const hh = String(now.getHours()).padStart(2, '0');
+                            const mm = String(now.getMinutes()).padStart(2, '0');
+                            const ss = String(now.getSeconds()).padStart(2, '0');
+                            const fechaCompleta = fechaBase + ' ' + hh + ':' + mm + ':' + ss;
+
+                            // Construir payload: solo paciente_nombre (sin id) → save_billing.php crea el paciente si no existe
+                            const params = new URLSearchParams();
+                            params.append('paciente_nombre', val);
+                            params.append('cantidad', document.getElementById('prociegos_cantidad').value);
+                            params.append('fecha_consulta', fechaCompleta);
+                            params.append('tipo_consulta', 'Prociegos');
+                            params.append('tipo_pago', 'Efectivo');
+                            params.append('csrf_token', (document.querySelector('meta[name="csrf-token"]') || {}).content || '');
+
+                            const response = await apiPost('../billing/save_billing.php', params);
+                            const result = await response.json();
+                            if (result.status === 'success') {
+                                Swal.fire({
+                                    title: 'Éxito',
+                                    text: 'Cobro Prociegos guardado correctamente',
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    if (result.id_cobro) {
+                                        window.open(`../billing/print_billing.php?id=${result.id_cobro}`, '_blank');
+                                    }
+                                    location.reload();
+                                });
+                            } else {
+                                throw new Error(result.message);
+                            }
+                        } catch (error) {
+                            Swal.fire('Error', error.message || 'Error de conexión', 'error');
+                        } finally {
+                            saveBtn.innerHTML = originalText;
+                            saveBtn.disabled = false;
+                        }
+                    });
                 }
 
                 setupElectroHandlers() {
@@ -4868,6 +5024,9 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
 
     <!-- PWA Install Prompt + Service Worker -->
     <script src="../../assets/js/install-prompt.js?v=1"></script>
+
+    <!-- Overlay global anti-multiclick -->
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

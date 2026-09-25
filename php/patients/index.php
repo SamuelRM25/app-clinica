@@ -132,6 +132,7 @@ try {
 
     <!-- CSS Crítico (mismo que el dashboard) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 
     <style>
@@ -1377,6 +1378,7 @@ try {
     <?php output_keep_alive_script(); ?>
     <?php flash_toast(); ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

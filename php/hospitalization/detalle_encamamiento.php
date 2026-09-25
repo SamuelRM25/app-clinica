@@ -250,6 +250,7 @@ output_keep_alive_script();
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 
     <style>
@@ -1746,6 +1747,7 @@ output_keep_alive_script();
             window.print();
         }
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

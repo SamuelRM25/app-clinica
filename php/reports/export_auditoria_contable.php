@@ -54,9 +54,13 @@ try {
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_procedures = (float)$stmt->fetchColumn();
 
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(cantidad_consulta), 0) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ?");
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(cantidad_consulta), 0) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ? AND (tipo_consulta IS NULL OR tipo_consulta <> 'Prociegos')");
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_billings = (float)$stmt->fetchColumn();
+
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(cantidad_consulta), 0) FROM cobros WHERE fecha_consulta BETWEEN ? AND ? AND id_hospital = ? AND tipo_consulta = 'Prociegos'");
+    $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
+    $total_prociegos = (float)$stmt->fetchColumn();
 
     // Hospitalización (sólo dados de alta)
     $stmt = $conn->prepare("SELECT COALESCE(SUM(total_general), 0) FROM cuenta_hospitalaria ch JOIN encamamientos e ON ch.id_encamamiento = e.id_encamamiento WHERE e.fecha_alta BETWEEN ? AND ? AND e.id_hospital = ?");
@@ -86,7 +90,7 @@ try {
     $stmt->execute([$start_datetime, $end_datetime, $id_hospital]);
     $total_electro = (float)$stmt->fetchColumn();
 
-    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound + $total_xray + $total_electro + $total_billings + $total_hospitalization;
+    $total_gross_revenue = $total_sales_meds + $total_procedures + $total_laboratory + $total_ultrasound + $total_xray + $total_electro + $total_billings + $total_prociegos + $total_hospitalization;
 
     // === EGRESOS ===
     $stmt = $conn->prepare("SELECT COALESCE(SUM(pp.amount), 0) FROM purchase_payments pp JOIN purchase_headers ph ON pp.purchase_header_id = ph.id WHERE pp.payment_date BETWEEN ? AND ? AND pp.id_hospital = ? AND pp.payment_method != 'Traslado'");
@@ -300,6 +304,7 @@ try {
     $ingresos_cat = [
         ['Ventas Farmacia', $total_sales_meds],
         ['Consultas Médicas', $total_billings],
+        ['Prociegos', $total_prociegos],
         ['Laboratorio', $total_laboratory],
         ['Ultrasonido', $total_ultrasound],
         ['Rayos X', $total_xray],
@@ -310,7 +315,6 @@ try {
 
     $egresos_cat = [
         ['Pago a Proveedores', $total_purchases_meds],
-        ['Pago por Traslado', $total_pagos_traslado],
         ['Gasto General', $total_gasto_general],
         ['Consulta Médica', $total_consulta_medica],
         ['Pago Comisiones Médicos', $total_pago_comisiones],

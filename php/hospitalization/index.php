@@ -178,6 +178,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 
     <style>
@@ -979,6 +980,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Herrera Saenz";
 
         console.log('Hospitalización Dashboard - logo v3.0');
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

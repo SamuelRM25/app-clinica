@@ -89,6 +89,7 @@ try {
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
 </head>
 
 <body>
@@ -284,6 +285,7 @@ try {
             myModal.show();
         }
     </script>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>

@@ -88,6 +88,7 @@ $page_title = "Configuración del Sistema";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <?php include '../../includes/theme_head.php'; ?>
 
     <!-- Seguridad y Protección de Código -->
@@ -2628,6 +2629,7 @@ $page_title = "Configuración del Sistema";
     </script>
     <?php output_keep_alive_script(); ?>
     <?php if (function_exists('flash_toast')) flash_toast(); ?>
+    <script src="../../assets/js/processing-overlay.js"></script>
 </body>
 
 </html>
