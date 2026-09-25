@@ -1956,7 +1956,8 @@ try {
                 fetch('save_purchase.php', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify(payload)
                 })
@@ -2417,6 +2418,7 @@ try {
             window.submitPayment = function () {
                 const form = document.getElementById('paymentForm');
                 const formData = new FormData(form);
+                formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
 
                 // Validar monto
                 const amount = parseFloat(formData.get('amount'));

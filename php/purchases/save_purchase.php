@@ -22,8 +22,8 @@ try {
     // Get JSON input
     $data = json_decode(file_get_contents('php://input'), true);
 
-    // CSRF validation for JSON requests
-    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    // CSRF validation — accept token from header OR JSON body (estándar para todos los endpoints)
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $data['csrf_token'] ?? '';
     if (empty($csrfHeader) || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
         throw new Exception('Token CSRF inválido');
     }
