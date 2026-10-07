@@ -79,7 +79,7 @@ $hora_formateada = $fecha->format('H:i');
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2>Centro Médico Herrera Saenz</h2>
+            <h2>Centro Médico Dr. Roberto Morales</h2>
             <div class="clinic-info">
                 <p>7a Av 7-25 Zona 1 HH</p>
                 <p>Tel: (+502) 5214-8836</p>

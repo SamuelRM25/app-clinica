@@ -1,5 +1,5 @@
 <?php
-// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico Herrera Saenz
+// historial_procedimientos.php - Historial de Procedimientos Menores - Centro Médico Dr. Roberto Morales
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -19,7 +19,7 @@ date_default_timezone_set('America/Guatemala');
 verify_session();
 
 // Título de la página
-$page_title = "Historial de Procedimientos - Centro Médico Herrera Saenz";
+$page_title = "Historial de Procedimientos - Centro Médico Dr. Roberto Morales";
 
 // Configuración de paginación
 $limit = 20; // Registros por página
@@ -86,7 +86,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico Herrera Saenz">
+    <meta name="description" content="Historial de Procedimientos Menores - Centro Médico Dr. Roberto Morales">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -120,7 +120,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -436,7 +436,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Historial de Procedimientos Reingenierizado - Centro Médico Herrera Saenz
+        // Historial de Procedimientos Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';
@@ -731,7 +731,7 @@ try {
                     // Crear contenido del reporte
                     const reportContent = `
                     Reporte de Procedimientos Menores
-                    Centro Médico Herrera Saenz
+                    Centro Médico Dr. Roberto Morales
                     Fecha: ${date}
                     ========================================
                     

@@ -23,7 +23,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Configuración inicial
-$page_title = "Login - Centro Médico Herrera Saenz";
+$page_title = "Login - Centro Médico Dr. Roberto Morales";
 date_default_timezone_set('America/Guatemala');
 ?>
 <!DOCTYPE html>
@@ -397,7 +397,7 @@ date_default_timezone_set('America/Guatemala');
             <div class="logo-section">
                 <img src="assets/img/logo.png" alt="logo" class="logo-img" width="40" height="40">
                 <div class="login-header">
-                    <h1>Centro Médico Herrera Saenz</h1>
+                    <h1>Centro Médico Dr. Roberto Morales</h1>
                     <p>Gestión Clínica Inteligente</p>
                 </div>
             </div>
@@ -469,7 +469,7 @@ date_default_timezone_set('America/Guatemala');
     <!-- JavaScript para funcionalidades -->
     <script>
         // Sistema de Gestión Médica - JavaScript
-        // Centro Médico Herrera Saenz
+        // Centro Médico Dr. Roberto Morales
 
         // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function () {
@@ -640,7 +640,7 @@ date_default_timezone_set('America/Guatemala');
             });
 
             // Mostrar mensaje de bienvenida
-            console.log('Sistema de Gestión Médica - Centro Médico Herrera Saenz');
+            console.log('Sistema de Gestión Médica - Centro Médico Dr. Roberto Morales');
             console.log('Versión 2.0 - Diseño Minimalista con Modo Nocturno');
         });
     </script>

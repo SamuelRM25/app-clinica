@@ -1,5 +1,5 @@
 <?php
-// export_jornada.php - Reporte de Jornada - Centro Médico Herrera Saenz
+// export_jornada.php - Reporte de Jornada - Centro Médico Dr. Roberto Morales
 // Versión 4.0 - Integrado al Diseño del Dashboard Principal
 session_start();
 require_once '../../config/database.php';
@@ -167,7 +167,7 @@ try {
     $wa_url = "https://wa.me/50239029076?text=" . urlencode($wa_text);
 
     // Título de la página
-    $page_title = "Reporte de Jornada - $date - Centro Médico Herrera Saenz";
+    $page_title = "Reporte de Jornada - $date - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     error_log('Error en reports/export_jornada.php: ' . $e->getMessage());
@@ -180,7 +180,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Jornada - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Reporte de Jornada - Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -335,7 +335,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -485,7 +485,7 @@ try {
 
                 <!-- Información de generación -->
                 <div class="generation-info">
-                    Generado automáticamente por Centro Médico Herrera Saenz Management System -
+                    Generado automáticamente por Centro Médico Dr. Roberto Morales Management System -
                     <?php echo date('d/m/Y H:i'); ?>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 <?php
-// index.php - Módulo de Cobros - Centro Médico Herrera Saenz
+// index.php - Módulo de Cobros - Centro Médico Dr. Roberto Morales
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -161,7 +161,7 @@ try {
     $cobros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Cobros - Centro Médico Herrera Saenz";
+    $page_title = "Cobros - Centro Médico Dr. Roberto Morales";
 
     // Obtener estadísticas rápidas
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM cobros WHERE DATE(fecha_consulta) = CURDATE() AND id_hospital = ?");
@@ -195,7 +195,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Cobros - Centro Médico Herrera Saenz - Sistema de gestión de cobros médicos">
+    <meta name="description" content="Módulo de Cobros - Centro Médico Dr. Roberto Morales - Sistema de gestión de cobros médicos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
     <?php if (($user_type ?? '') === 'admin'): ?>
@@ -237,7 +237,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -734,7 +734,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Cobros Reingenierizado - Centro Médico Herrera Saenz
+        // Módulo de Cobros Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';

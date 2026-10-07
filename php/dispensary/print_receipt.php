@@ -1,5 +1,5 @@
 <?php
-// inventory/print_receipt.php - Recibo de Venta - Centro Médico Herrera Saenz
+// inventory/print_receipt.php - Recibo de Venta - Centro Médico Dr. Roberto Morales
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -75,7 +75,7 @@ try {
     $month_sales = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico Herrera Saenz";
+    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     error_log('Error en dispensary/print_receipt.php: ' . $e->getMessage());
@@ -93,7 +93,7 @@ $hora_formateada = $fecha->format('H:i');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Recibo de venta del Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Recibo de venta del Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -113,7 +113,7 @@ $hora_formateada = $fecha->format('H:i');
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">Centro Médico Herrera Saenz</h2>
+            <h2 class="fw-bold">Centro Médico Dr. Roberto Morales</h2>
             <div class="clinic-info">
                 <p>7a Av 7-25 Zona 1 HH</p>
                 <p>Tel: (+502) 5214-8836</p>

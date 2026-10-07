@@ -1,5 +1,5 @@
 <?php
-// print_receipt.php - Recibo de Cobro - Centro Médico Herrera Saenz
+// print_receipt.php - Recibo de Cobro - Centro Médico Dr. Roberto Morales
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Título de la página
-$page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . " - Centro Médico Herrera Saenz";
+$page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . " - Centro Médico Dr. Roberto Morales";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -124,7 +124,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Recibo de Cobro - Centro Médico Herrera Saenz - Comprobante de pago médico">
+    <meta name="description" content="Recibo de Cobro - Centro Médico Dr. Roberto Morales - Comprobante de pago médico">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -162,7 +162,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -217,7 +217,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                 <!-- Encabezado de la clínica -->
                 <header class="receipt-header">
                     <div class="logo-section">
-                        <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="clinic-logo" width="40"
+                        <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="clinic-logo" width="40"
                             height="40">
                     </div>
                     <div class="clinic-info">
@@ -280,7 +280,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                         <strong>Información Importante:</strong><br>
                         Este recibo es un comprobante de pago por servicios médicos prestados.
                         Para cualquier aclaración, favor de presentar este documento original.
-                        Documento generado por Centro Médico Herrera Saenz Management System.
+                        Documento generado por Centro Médico Dr. Roberto Morales Management System.
                     </div>
                     <div class="thank-you">
                         <h4 style="margin: 0; font-size: 16px;">¡Gracias por su preferencia!</h4>
@@ -293,7 +293,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Recibo de Cobro Reingenierizado - Centro Médico Herrera Saenz
+        // Recibo de Cobro Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';

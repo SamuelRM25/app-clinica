@@ -1,7 +1,7 @@
 /**
  * install-prompt.js
  * PWA Install Prompt + Service Worker Registration
- * Centro Médico Herrera Saenz
+ * Centro Médico Dr. Roberto Morales
  */
 (function () {
     'use strict';

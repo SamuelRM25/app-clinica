@@ -1,5 +1,5 @@
 <?php
-// index.php - Calendario de Citas - Centro Médico Herrera Saenz
+// index.php - Calendario de Citas - Centro Médico Dr. Roberto Morales
 // Versión: 4.0 - Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -47,7 +47,7 @@ try {
     $today_appointments = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Calendario de Citas - Centro Médico Herrera Saenz";
+    $page_title = "Calendario de Citas - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -61,7 +61,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calendario de Citas del Centro Médico Herrera Saenz - Sistema de gestión de agenda médica">
+    <meta name="description" content="Calendario de Citas del Centro Médico Dr. Roberto Morales - Sistema de gestión de agenda médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
 
@@ -180,7 +180,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -312,7 +312,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico Dr. Roberto Morales
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -586,7 +586,7 @@ try {
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
     <script>
-        // Calendario de Citas Reingenierizado - Centro Médico Herrera Saenz
+        // Calendario de Citas Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';
