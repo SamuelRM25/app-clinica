@@ -386,7 +386,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 font-size: 0.85rem;
             }
             .brand-logo {
-                height: 28px;
+                height: 48px;
+                width: auto;
+                max-width: 220px;
             }
             .shift-cut-btn-container {
                 position: static !important;
@@ -970,8 +972,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40" height="40" fetchpriority="high"
-                        height="40">
+                    <img src="../../assets/img/logo_full.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" fetchpriority="high">
                 </div>
 
                 <!-- Controles -->
