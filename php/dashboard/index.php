@@ -276,7 +276,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 
     <!-- PWA -->
     <link rel="manifest" href="../../manifest.json">
@@ -286,7 +286,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CMHS">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="../../assets/img/icon-192.png">
+    <link rel="apple-touch-icon" href="../../assets/img/logo.png">
 
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print"
@@ -970,7 +970,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/herrerasaenz.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40" fetchpriority="high"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40" fetchpriority="high"
                         height="40">
                 </div>
 

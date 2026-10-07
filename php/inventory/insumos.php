@@ -47,7 +47,7 @@ $page_title = "Gestión de Insumos - logo";
     <title>
         <?php echo htmlspecialchars($page_title); ?>
     </title>
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

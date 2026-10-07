@@ -96,7 +96,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Comprobante de Laboratorio #<?php echo $id; ?></title>
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="stylesheet" href="../../assets/css/print_thermal.css">
     <style>
         @page { size: 80mm auto; margin: 0; }

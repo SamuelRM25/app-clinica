@@ -79,7 +79,7 @@ try {
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <!-- Google Fonts -->
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
