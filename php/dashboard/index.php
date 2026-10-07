@@ -385,10 +385,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 height: 32px;
                 font-size: 0.85rem;
             }
-            .brand-logo {
-                height: 80px;
+.brand-logo {
+                height: 112px;
                 width: auto;
-                max-width: 320px;
+                max-width: 380px;
             }
             .shift-cut-btn-container {
                 position: static !important;
