@@ -13,61 +13,61 @@
   "categories": ["medical", "productivity", "business"],
   "icons": [
     {
-      "src": "/assets/img/icon-72.png",
+      "src": "/assets/img/logo.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-96.png",
+      "src": "/assets/img/logo.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-128.png",
+      "src": "/assets/img/logo.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-144.png",
+      "src": "/assets/img/logo.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-152.png",
+      "src": "/assets/img/logo.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-192.png",
+      "src": "/assets/img/logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-192-maskable.png",
+      "src": "/assets/img/logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/img/icon-384.png",
+      "src": "/assets/img/logo.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-512.png",
+      "src": "/assets/img/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-512-maskable.png",
+      "src": "/assets/img/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -80,7 +80,7 @@
       "description": "Crear nueva orden de laboratorio",
       "url": "/php/laboratory/crear_orden.php",
       "icons": [
-        { "src": "/assets/img/icon-192.png", "sizes": "192x192" }
+        { "src": "/assets/img/logo.png", "sizes": "192x192" }
       ]
     },
     {
@@ -89,7 +89,7 @@
       "description": "Registrar nuevo cobro",
       "url": "/php/billing/index.php",
       "icons": [
-        { "src": "/assets/img/icon-192.png", "sizes": "192x192" }
+        { "src": "/assets/img/logo.png", "sizes": "192x192" }
       ]
     }
   ]

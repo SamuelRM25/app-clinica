@@ -18,7 +18,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 
@@ -79,7 +79,7 @@ $page_title = "Buscar Paciente - Laboratorio";
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/logo.png" alt="logo" class="brand-logo" width="40" height="40">
                 <div class="header-controls">
                     <div class="theme-toggle">
                         <button id="themeSwitch" class="theme-btn">

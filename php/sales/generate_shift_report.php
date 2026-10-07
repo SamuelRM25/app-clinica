@@ -106,7 +106,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Herrera Saenz";
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <link

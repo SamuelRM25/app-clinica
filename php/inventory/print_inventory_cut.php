@@ -110,7 +110,7 @@ try {
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title>Corte de Inventario Físico - <?php echo date('d/m/Y'); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -399,7 +399,7 @@ try {
         <header class="dashboard-header no-print">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">

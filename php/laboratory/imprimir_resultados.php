@@ -291,7 +291,7 @@ try {
                 <p><i class="bi bi-geo-alt"></i> Amatitlán, Guatemala | <i class="bi bi-telephone"></i> 6633-XXXX</p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 60px; margin-bottom: 10px;" width="60"
+                <img src="../../assets/img/logo.png" alt="logo" style="height: 60px; margin-bottom: 10px;" width="60"
                     height="60">
                 <h2>INFORME DE RESULTADOS</h2>
                 <p>Orden #<?php echo $orden['numero_orden']; ?></p>

@@ -36,7 +36,7 @@ date_default_timezone_set('America/Guatemala');
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
@@ -395,7 +395,7 @@ date_default_timezone_set('America/Guatemala');
     <main class="login-container">
         <div class="login-card animate-up">
             <div class="logo-section">
-                <img src="assets/img/cmhs.png" alt="logo" class="logo-img" width="40" height="40">
+                <img src="assets/img/logo.png" alt="logo" class="logo-img" width="40" height="40">
                 <div class="login-header">
                     <h1>Centro Médico Herrera Saenz</h1>
                     <p>Gestión Clínica Inteligente</p>

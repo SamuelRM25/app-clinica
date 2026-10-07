@@ -82,7 +82,7 @@ $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgic
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo $page_title; ?></title>
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=optional" rel="stylesheet">
@@ -100,7 +100,7 @@ $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgic
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
                     <div>
                         <h2 class="mb-0" style="font-size: 1.25rem;">Quirófano</h2>
                         <small class="text-muted">Gestión de cirugías y procedimientos quirúrgicos</small>

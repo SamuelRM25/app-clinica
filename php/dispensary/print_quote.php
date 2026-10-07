@@ -96,7 +96,7 @@ $hora_formateada = $fecha->format('H:i');
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->

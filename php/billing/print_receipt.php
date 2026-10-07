@@ -128,7 +128,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <link
@@ -162,7 +162,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -217,7 +217,7 @@ $page_title = "Recibo de Cobro #" . str_pad($id_cobro, 5, '0', STR_PAD_LEFT) . "
                 <!-- Encabezado de la clínica -->
                 <header class="receipt-header">
                     <div class="logo-section">
-                        <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="clinic-logo" width="40"
+                        <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="clinic-logo" width="40"
                             height="40">
                     </div>
                     <div class="clinic-info">

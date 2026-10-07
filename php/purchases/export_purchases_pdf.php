@@ -260,7 +260,7 @@ try {
                 <p><i class="bi bi-person"></i> Generado por: <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
+                <img src="../../assets/img/logo.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
                     height="50">
                 <h2>HISTORIAL DE COMPRAS</h2>
                 <p><?php echo date('d/m/Y H:i'); ?></p>

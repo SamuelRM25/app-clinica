@@ -114,7 +114,7 @@ try {
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -414,7 +414,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
                         height="40">
                 </div>
 
