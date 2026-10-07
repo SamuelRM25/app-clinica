@@ -14,9 +14,9 @@ const CACHE_NAME = 'clinicapp-v1.0.3';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
-    '/assets/img/logo.png',
-    '/assets/img/logo.png',
-    '/assets/img/logo.png',
+    '/assets/img/logo_full.png',
+    '/assets/img/logo_full.png',
+    '/assets/img/logo_full.png',
     '/assets/css/global_dashboard.css',
     '/assets/css/print_thermal.css',
     '/assets/js/install-prompt.js'
