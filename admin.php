@@ -3,6 +3,7 @@
  * index.php - Panel de Super Administrador
  */
 session_start();
+ob_start(); // Iniciar output buffering para poder limpiar output no deseado en APIs
 
 require_once __DIR__ . '/includes/functions.php';
 
@@ -105,8 +106,9 @@ if ($logged_in) {
       // ── MANEJO DE ACCIONES API (POST/GET) ──────────────────────────────
       $action = $_POST['action'] ?? $_GET['action'] ?? null;
       if ($action) {
+        ob_clean(); // Limpiar cualquier output previo antes de enviar JSON
         header('Content-Type: application/json');
-        ob_clean(); // Limpiar cualquier output previo
+        header('Cache-Control: no-cache');
 
         // CSRF validation for state-changing actions
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -219,8 +221,8 @@ if ($logged_in) {
               $sort = in_array($sort, $allowed_sorts) ? $sort : 'id_hospital';
               $order = in_array($order, ['ASC', 'DESC']) ? $order : 'ASC';
 
-              $where = ['1=1'];
-              $params = [$id_hospital];
+              $where = [];
+              $params = [];
 
               if ($search) {
                 $where[] = '(nombre LIKE ? OR codigo_hospital LIKE ?)';
@@ -232,8 +234,7 @@ if ($logged_in) {
                 $where[] = 'estado_suscripcion = ?';
                 $params[] = $status_filter;
               }
-
-              $where_sql = implode(' AND ', $where);
+              $where_sql = !empty($where) ? implode(' AND ', $where) : '1=1';
               $offset = ($page - 1) * $per_page;
 
               $count_sql = "SELECT COUNT(*) FROM hospitales WHERE $where_sql";
@@ -241,9 +242,9 @@ if ($logged_in) {
               $stmt->execute($params);
               $total = (int)$stmt->fetchColumn();
 
-              $data_sql = "SELECT * FROM hospitales WHERE $where_sql ORDER BY $sort $order LIMIT ? OFFSET ?";
+              $data_sql = "SELECT * FROM hospitales WHERE $where_sql ORDER BY $sort $order LIMIT " . (int)$per_page . " OFFSET " . (int)$offset;
               $stmt = $conn->prepare($data_sql);
-              $params_data = array_merge($params, [$per_page, $offset]);
+              $params_data = $params;
               $stmt->execute($params_data);
               $hospitals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -314,9 +315,9 @@ if ($logged_in) {
               $stmt->execute($params);
               $total = (int)$stmt->fetchColumn();
 
-              $data_sql = "SELECT * FROM usuarios WHERE $where_sql ORDER BY $sort $order LIMIT ? OFFSET ?";
+              $data_sql = "SELECT * FROM usuarios WHERE $where_sql ORDER BY $sort $order LIMIT " . (int)$per_page . " OFFSET " . (int)$offset;
               $stmt = $conn->prepare($data_sql);
-              $params_data = array_merge($params, [$per_page, $offset]);
+              $params_data = $params;
               $stmt->execute($params_data);
               $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -379,7 +380,7 @@ $module_labels = [
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
-  <script defer src="assets/js/security.js"></script>
+  
   <?php include 'includes/theme_head.php'; ?>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
