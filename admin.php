@@ -205,6 +205,139 @@ if ($logged_in) {
             // Luego borrar hospital
             $conn->prepare("DELETE FROM hospitales WHERE id_hospital = ?")->execute([$id_h]);
             echo json_encode(['status' => 'success', 'message' => 'Hospital eliminado']);
+          } elseif ($action === 'get_hospitals_paged') {
+            header('Content-Type: application/json');
+            try {
+              $page = max(1, (int)($_GET['page'] ?? 1));
+              $per_page = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
+              $search = trim($_GET['search'] ?? '');
+              $sort = $_GET['sort'] ?? 'id_hospital';
+              $order = strtoupper($_GET['order'] ?? 'ASC');
+              $status_filter = $_GET['status'] ?? '';
+
+              $allowed_sorts = ['id_hospital', 'nombre', 'codigo_hospital', 'estado_suscripcion', 'tipo_suscripcion', 'fecha_creacion'];
+              $sort = in_array($sort, $allowed_sorts) ? $sort : 'id_hospital';
+              $order = in_array($order, ['ASC', 'DESC']) ? $order : 'ASC';
+
+              $where = ['1=1'];
+              $params = [$id_hospital];
+
+              if ($search) {
+                $where[] = '(nombre LIKE ? OR codigo_hospital LIKE ?)';
+                $search_term = "%$search%";
+                $params[] = $search_term;
+                $params[] = $search_term;
+              }
+              if ($status_filter) {
+                $where[] = 'estado_suscripcion = ?';
+                $params[] = $status_filter;
+              }
+
+              $where_sql = implode(' AND ', $where);
+              $offset = ($page - 1) * $per_page;
+
+              $count_sql = "SELECT COUNT(*) FROM hospitales WHERE $where_sql";
+              $stmt = $conn->prepare($count_sql);
+              $stmt->execute($params);
+              $total = (int)$stmt->fetchColumn();
+
+              $data_sql = "SELECT * FROM hospitales WHERE $where_sql ORDER BY $sort $order LIMIT ? OFFSET ?";
+              $stmt = $conn->prepare($data_sql);
+              $params_data = array_merge($params, [$per_page, $offset]);
+              $stmt->execute($params_data);
+              $hospitals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+              foreach ($hospitals as &$h) {
+                $h['modulos_activos'] = json_decode($h['modulos_activos'], true) ?: ['core'];
+              }
+
+              echo json_encode([
+                'status' => 'success',
+                'data' => $hospitals,
+                'pagination' => [
+                  'page' => $page,
+                  'per_page' => $per_page,
+                  'total' => $total,
+                  'total_pages' => ceil($total / $per_page),
+                  'sort' => $sort,
+                  'order' => $order,
+                  'search' => $search
+                ]
+              ]);
+            } catch (Exception $e) {
+              error_log("API Error get_hospitals_paged: " . $e->getMessage());
+              echo json_encode(['status' => 'error', 'message' => 'Error al cargar hospitales']);
+            }
+            exit;
+          } elseif ($action === 'get_users_paged') {
+            header('Content-Type: application/json');
+            $id_h = (int)($_GET['id_hospital'] ?? 0);
+            if (!$id_h) {
+              echo json_encode(['status' => 'error', 'message' => 'Hospital requerido']);
+              exit;
+            }
+            try {
+              $page = max(1, (int)($_GET['page'] ?? 1));
+              $per_page = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
+              $search = trim($_GET['search'] ?? '');
+              $sort = $_GET['sort'] ?? 'idUsuario';
+              $order = strtoupper($_GET['order'] ?? 'ASC');
+              $type_filter = $_GET['type'] ?? '';
+              $status_filter = $_GET['status'] ?? '';
+
+              $allowed_sorts = ['idUsuario', 'usuario', 'nombre', 'apellido', 'tipoUsuario', 'especialidad', 'email'];
+              $sort = in_array($sort, $allowed_sorts) ? $sort : 'idUsuario';
+              $order = in_array($order, ['ASC', 'DESC']) ? $order : 'ASC';
+
+              $where = ['id_hospital = ?'];
+              $params = [$id_hospital];
+
+              if ($search) {
+                $where[] = '(usuario LIKE ? OR nombre LIKE ? OR apellido LIKE ? OR email LIKE ?)';
+                $st = "%$search%";
+                $params[] = $st; $params[] = $st; $params[] = $st; $params[] = $st;
+              }
+              if ($type_filter) {
+                $where[] = 'tipoUsuario = ?';
+                $params[] = $type_filter;
+              }
+              if ($status_filter) {
+                $where[] = 'activo = ?';
+                $params[] = ($status_filter === 'activo' ? 1 : 0);
+              }
+
+              $where_sql = implode(' AND ', $where);
+              $offset = ($page - 1) * $per_page;
+
+              $count_sql = "SELECT COUNT(*) FROM usuarios WHERE $where_sql";
+              $stmt = $conn->prepare($count_sql);
+              $stmt->execute($params);
+              $total = (int)$stmt->fetchColumn();
+
+              $data_sql = "SELECT * FROM usuarios WHERE $where_sql ORDER BY $sort $order LIMIT ? OFFSET ?";
+              $stmt = $conn->prepare($data_sql);
+              $params_data = array_merge($params, [$per_page, $offset]);
+              $stmt->execute($params_data);
+              $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+              echo json_encode([
+                'status' => 'success',
+                'data' => $users,
+                'pagination' => [
+                  'page' => $page,
+                  'per_page' => $per_page,
+                  'total' => $total,
+                  'total_pages' => ceil($total / $per_page),
+                  'sort' => $sort,
+                  'order' => $order,
+                  'search' => $search
+                ]
+              ]);
+            } catch (Exception $e) {
+              error_log("API Error get_users_paged: " . $e->getMessage());
+              echo json_encode(['status' => 'error', 'message' => 'Error al cargar usuarios']);
+            }
+            exit;
           }
         } catch (Exception $e) {
           error_log("ADMIN API Error: " . $e->getMessage());
@@ -668,6 +801,40 @@ $module_labels = [
       table thead th, table tbody td { padding:0.5rem 0.6rem; font-size:0.75rem; }
       .section-hdr h2 { font-size:1.1rem; }
     }
+
+    /* ── TABLE TOOLBAR ── */
+    .table-toolbar {
+      display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      gap:1rem; margin-bottom:1rem; padding:0.75rem 1rem;
+      background:var(--color-surface); border:1px solid var(--color-border);
+      border-radius:var(--s-radius);
+    }
+    .toolbar-left { display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; flex:1; }
+    .toolbar-right { display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; }
+    .search-box { position:relative; flex:1; max-width:300px; }
+    .search-box .search-icon { position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:var(--color-text-secondary); }
+    .search-box input { padding-left:2.25rem; width:100%; }
+
+    /* ── PAGINATION BAR ── */
+    .pagination-bar {
+      display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      gap:1rem; margin-top:1rem; padding:0.75rem 1rem;
+      background:var(--color-surface); border:1px solid var(--color-border);
+      border-radius:var(--s-radius);
+    }
+    .pagination-info { font-size:0.8rem; color:var(--color-text-secondary); }
+    .pagination { display:flex; gap:0.25rem; align-items:center; }
+    .pagination button { min-width:36px; height:36px; padding:0 0.5rem; font-size:0.8rem; }
+    .pagination .page-item.active button { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+    .pagination .ellipsis { padding:0 0.5rem; color:var(--color-text-secondary); }
+
+    /* ── SORTABLE HEADERS ── */
+    .sortable { cursor:pointer; user-select:none; white-space:nowrap; transition:color 0.15s; }
+    .sortable:hover { color:var(--color-primary); }
+    .sortable i { font-size:0.65rem; margin-left:0.25rem; opacity:0.4; transition:opacity 0.15s; }
+    .sortable:hover i { opacity:1; }
+    .sortable.asc i::before { content:'\f541'; } /* bi-arrow-up */
+    .sortable.desc i::before { content:'\f545'; } /* bi-arrow-down */
   </style>
 </head>
 
@@ -848,73 +1015,57 @@ $module_labels = [
       </div>
 
       <?php if ($db_error): ?>
-        <div class="alert alert-red"><?php echo htmlspecialchars($db_error); ?></div>
+      <div class="alert alert-red"><?php echo htmlspecialchars($db_error); ?></div>
       <?php elseif (empty($hospitales)): ?>
-        <div class="empty"><i class="bi bi-building"></i><p>No hay hospitales registrados aún.</p></div>
+      <div class="empty"><i class="bi bi-building"></i><p>No hay hospitales registrados aún.</p></div>
       <?php else: ?>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Suscripción</th><th>Acciones</th></tr>
-          </thead>
-          <tbody>
-            <?php foreach ($hospitales as $h): ?>
-            <tr>
-              <td><?php echo $h['id_hospital']; ?></td>
-              <td><strong><?php echo htmlspecialchars($h['nombre']); ?></strong></td>
-              <td><?php echo htmlspecialchars($h['correo'] ?? '-'); ?></td>
-              <td><?php echo htmlspecialchars($h['telefono'] ?? '-'); ?></td>
-              <td>
-                <?php $st = $h['estado_suscripcion'] ?? 'Inactivo';
-                $bc = match($st){'Activo'=>'badge-green','Vencido'=>'badge-red','Pendiente'=>'badge-yellow',default=>'badge-gray'}; ?>
-                <span class="badge <?php echo $bc; ?>"><?php echo $st; ?></span>
-              </td>
-              <td>
-                <div class="act-group">
-                  <button class="btn btn-ghost btn-xs" title="Editar" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>,<?php echo htmlspecialchars(json_encode($h),ENT_QUOTES); ?>)'><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-success btn-xs" title="Suscripción" onclick="openSubscription(<?php echo $h['id_hospital']; ?>)"><i class="bi bi-credit-card"></i></button>
-                  <button class="btn btn-ghost btn-xs" title="Dispensarios" onclick="window.location.href='php/dispensary/index.php?hospital_id=<?php echo $h['id_hospital']; ?>'"><i class="bi bi-shop"></i></button>
-                  <button class="btn btn-warning btn-xs" title="Historial" onclick="openHistory(<?php echo $h['id_hospital']; ?>,'<?php echo htmlspecialchars($h['nombre'],ENT_QUOTES); ?>')"><i class="bi bi-clock-history"></i></button>
-                  <button class="btn btn-danger btn-xs" title="Eliminar" onclick="deleteHospital(<?php echo $h['id_hospital']; ?>,'<?php echo htmlspecialchars($h['nombre'],ENT_QUOTES); ?>')"><i class="bi bi-trash"></i></button>
-                </div>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+      <!-- Toolbar: búsqueda, filtros, paginación -->
+      <div class="table-toolbar anim d1">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="hospSearch" placeholder="Buscar hospital..." oninput="debounce(loadHospitals, 300)()">
+          </div>
+          <select id="hospStatusFilter" onchange="loadHospitals()" class="form-select form-select-sm" style="width:auto;min-width:160px">
+            <option value="">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+            <option value="Vencido">Vencido</option>
+            <option value="Prueba">Prueba</option>
+          </select>
+          <select id="hospPerPage" onchange="loadHospitals()" class="form-select form-select-sm" style="width:auto;min-width:100px">
+            <option value="10">10 por pág.</option>
+            <option value="25" selected>25 por pág.</option>
+            <option value="50">50 por pág.</option>
+            <option value="100">100 por pág.</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <span class="pagination-info" id="hospPaginationInfo"></span>
+          <div class="pagination" id="hospPagination"></div>
+        </div>
       </div>
 
-      <div style="margin-top:1.5rem"></div>
-
       <div class="table-wrap">
-        <table>
+        <table id="hospitalsTable">
           <thead>
-            <tr><th>Hospital</th><th>Código</th><th>Suscripción</th><th>Vencimiento</th><th>Módulos</th><th>Acciones</th></tr>
-          </thead>
-          <tbody>
-            <?php foreach ($hospitales as $h): ?>
             <tr>
-              <td><strong><?php echo htmlspecialchars($h['nombre']); ?></strong></td>
-              <td style="font-family:monospace;font-size:0.8rem;color:var(--color-primary)"><?php echo htmlspecialchars($h['codigo_hospital'] ?? ''); ?></td>
-              <td>
-                <?php $c = match($h['estado_suscripcion']){'Activo'=>'badge-green','Vencido'=>'badge-red','Inactivo'=>'badge-red',default=>'badge-gray'}; ?>
-                <span class="badge <?php echo $c; ?>"><?php echo htmlspecialchars($h['estado_suscripcion']); ?></span>
-                <span class="badge badge-gray"><?php echo htmlspecialchars($h['tipo_suscripcion'] ?? '—'); ?></span>
-              </td>
-              <td style="font-size:0.8rem"><?php echo ($h['tipo_suscripcion']==='De por vida') ? '♾ Permanente' : htmlspecialchars($h['fecha_vencimiento'] ?? '—'); ?></td>
-              <td><?php foreach($h['modulos_activos'] as $m): ?><span class="badge-mod on"><?php echo htmlspecialchars($module_labels[$m]??$m); ?></span><?php endforeach; ?></td>
-              <td>
-                <div class="act-group">
-                  <button class="btn btn-ghost btn-xs" onclick='openEditHospital(<?php echo $h["id_hospital"]; ?>,<?php echo htmlspecialchars(json_encode($h),ENT_QUOTES); ?>)' title="Editar"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-success btn-xs" onclick="openCreateUser(<?php echo $h['id_hospital']; ?>,'<?php echo htmlspecialchars($h['nombre']); ?>')" title="Crear Usuario"><i class="bi bi-person-plus"></i></button>
-                  <button class="btn btn-ghost btn-xs" onclick="viewUsers(<?php echo $h['id_hospital']; ?>,'<?php echo htmlspecialchars($h['nombre']); ?>')" title="Ver Usuarios"><i class="bi bi-people"></i></button>
-                  <button class="btn btn-danger btn-xs" onclick="deleteHospital(<?php echo $h['id_hospital']; ?>,'<?php echo htmlspecialchars($h['nombre']); ?>')" title="Eliminar"><i class="bi bi-trash"></i></button>
-                </div>
-              </td>
+              <th class="sortable" data-sort="id_hospital">ID <i class="bi bi-arrow-down-up"></i></th>
+              <th class="sortable" data-sort="nombre">Nombre <i class="bi bi-arrow-down-up"></i></th>
+              <th class="sortable" data-sort="codigo_hospital">Código <i class="bi bi-arrow-down-up"></i></th>
+              <th class="sortable" data-sort="estado_suscripcion">Suscripción <i class="bi bi-arrow-down-up"></i></th>
+              <th class="sortable" data-sort="tipo_suscripcion">Tipo <i class="bi bi-arrow-down-up"></i></th>
+              <th style="width:180px">Acciones</th>
             </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            <tbody id="hospitalsTbody">
+              <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...</td></tr>
+            </tbody>
+          </table>
+      </div>
+
+      <div class="pagination-bar">
+        <span class="pagination-info" id="hospPaginationInfoBottom"></span>
+        <div class="pagination" id="hospPaginationBottom"></div>
       </div>
       <?php endif; ?>
     </div>
@@ -1425,9 +1576,173 @@ $module_labels = [
           });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // ── DEBOUNCE HELPER ──────────────────────────────────────────────────────
+      function debounce(fn, delay) {
+        let timer;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+      }
+
+      // ── HOSPITALES: CARGA PAGINADA ─────────────────────────────────────────
+      let hospCurrentPage = 1;
+      let hospCurrentSort = 'id_hospital';
+      let hospCurrentOrder = 'ASC';
+
+      async function loadHospitals(page = 1) {
+        hospCurrentPage = page;
+        const search = document.getElementById('hospSearch')?.value?.trim() || '';
+        const status = document.getElementById('hospStatusFilter')?.value || '';
+        const perPage = parseInt(document.getElementById('hospPerPage')?.value) || 25;
+
+        const params = new URLSearchParams({
+          action: 'get_hospitals_paged',
+          page: hospCurrentPage,
+          per_page: perPage,
+          search: search,
+          sort: hospCurrentSort,
+          order: hospCurrentOrder,
+          status: status
+        });
+
+        try {
+          const response = await fetch(location.pathname + '?' + params.toString());
+          const data = await response.json();
+
+          if (data.status === 'success') {
+            renderHospitalsTable(data.data);
+            renderPagination('hosp', data.pagination);
+          } else {
+            Swal.fire('Error', data.message, 'error');
+          }
+        } catch (e) {
+          console.error('Error loading hospitals:', e);
+          document.getElementById('hospitalsTbody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Error al cargar hospitales</td></tr>';
+        }
+      }
+
+      function renderHospitalsTable(hospitals) {
+        const tbody = document.getElementById('hospitalsTbody');
+        if (!tbody) return;
+
+        if (!hospitals || hospitals.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay hospitales</td></tr>';
+          return;
+        }
+
+        const badgeClass = (st) => {
+          return { 'Activo':'badge-green', 'Vencido':'badge-red', 'Pendiente':'badge-yellow', 'Inactivo':'badge-red' }[st] || 'badge-gray';
+        };
+
+        tbody.innerHTML = hospitals.map(h => {
+          const st = h.estado_suscripcion || 'Inactivo';
+          return `
+            <tr>
+              <td>${h.id_hospital}</td>
+              <td><strong>${escapeHtml(h.nombre)}</strong></td>
+              <td style="font-family:monospace;font-size:0.8rem;color:var(--color-primary)">${escapeHtml(h.codigo_hospital || '')}</td>
+              <td><span class="badge ${badgeClass(st)}">${escapeHtml(st)}</span></td>
+              <td>${escapeHtml(h.tipo_suscripcion || '-')}</td>
+              <td>
+                <div class="act-group">
+                  <button class="btn btn-ghost btn-xs" title="Editar" onclick='openEditHospital(${h.id_hospital},${JSON.stringify(h)})'><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-success btn-xs" title="Suscripción" onclick="openSubscription(${h.id_hospital})"><i class="bi bi-credit-card"></i></button>
+                  <button class="btn btn-ghost btn-xs" title="Dispensarios" onclick="window.location.href='php/dispensary/index.php?hospital_id=${h.id_hospital}'"><i class="bi bi-shop"></i></button>
+                  <button class="btn btn-warning btn-xs" title="Historial" onclick="openHistory(${h.id_hospital},'${escapeHtml(h.nombre)}')"><i class="bi bi-clock-history"></i></button>
+                  <button class="btn btn-danger btn-xs" title="Eliminar" onclick="deleteHospital(${h.id_hospital},'${escapeHtml(h.nombre)}')"><i class="bi bi-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function renderPagination(prefix, pagination) {
+        const total = pagination.total;
+        const page = pagination.page;
+        const totalPages = pagination.total_pages;
+        const perPage = pagination.per_page;
+        const start = (page - 1) * perPage + 1;
+        const end = Math.min(page * perPage, total);
+
+        const info = total > 0 ? `Mostrando ${start}–${end} de ${total}` : 'Sin resultados';
+        const infoEl = document.getElementById(prefix + 'PaginationInfo');
+        const infoElBottom = document.getElementById(prefix + 'PaginationInfoBottom');
+        if (infoEl) infoEl.textContent = info;
+        if (infoElBottom) infoElBottom.textContent = info;
+
+        let html = '';
+        if (totalPages > 1) {
+          const startPage = Math.max(1, page - 2);
+          const endPage = Math.min(totalPages, page + 2);
+
+          if (page > 1) {
+            html += `<button class="btn btn-ghost btn-sm" onclick="loadHospitals(${page - 1})" title="Anterior"><i class="bi bi-chevron-left"></i></button>`;
+          }
+
+          if (startPage > 1) {
+            html += `<button class="btn btn-ghost btn-sm" onclick="loadHospitals(1)">1</button>`;
+            if (startPage > 2) html += `<span class="ellipsis">…</span>`;
+          }
+
+          for (let p = startPage; p <= endPage; p++) {
+            const active = p === page ? 'page-item active' : 'page-item';
+            html += `<button class="btn btn-ghost btn-sm ${active}" onclick="loadHospitals(${p})">${p}</button>`;
+          }
+
+          if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<span class="ellipsis">…</span>`;
+            html += `<button class="btn btn-ghost btn-sm" onclick="loadHospitals(${totalPages})">${totalPages}</button>`;
+          }
+
+          if (page < totalPages) {
+            html += `<button class="btn btn-ghost btn-sm" onclick="loadHospitals(${page + 1})" title="Siguiente"><i class="bi bi-chevron-right"></i></button>`;
+          }
+        }
+
+        const pagEl = document.getElementById(prefix + 'Pagination');
+        const pagElBottom = document.getElementById(prefix + 'PaginationBottom');
+        if (pagEl) pagEl.innerHTML = html;
+        if (pagElBottom) pagElBottom.innerHTML = html;
+      }
+
+      function setupSortableHeaders(tableId) {
+        document.querySelectorAll('#' + tableId + ' th.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+            const sort = th.dataset.sort;
+            if (hospCurrentSort === sort) {
+              hospCurrentOrder = hospCurrentOrder === 'ASC' ? 'DESC' : 'ASC';
+            } else {
+              hospCurrentSort = sort;
+              hospCurrentOrder = 'ASC';
+            }
+            document.querySelectorAll('#' + tableId + ' th.sortable').forEach(t => {
+              t.classList.remove('asc', 'desc');
+              t.querySelector('i').className = 'bi bi-arrow-down-up';
+            });
+            th.classList.add(hospCurrentOrder === 'ASC' ? 'asc' : 'desc');
+            th.querySelector('i').className = 'bi bi-arrow-up';
+            loadHospitals(1);
+          });
+        });
+      }
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
           initBarChart();
           initAreaChart();
+
+          if (document.getElementById('hospitalsTable')) {
+            loadHospitals();
+            setupSortableHeaders('hospitalsTable');
+          }
         });
       </script>
     <?php endif; ?>
