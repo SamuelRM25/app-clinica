@@ -1056,7 +1056,7 @@ $module_labels = [
               <th class="sortable" data-sort="codigo_hospital">Código <i class="bi bi-arrow-down-up"></i></th>
               <th class="sortable" data-sort="estado_suscripcion">Suscripción <i class="bi bi-arrow-down-up"></i></th>
               <th class="sortable" data-sort="tipo_suscripcion">Tipo <i class="bi bi-arrow-down-up"></i></th>
-              <th style="width:180px">Acciones</th>
+              <th style="width:240px">Acciones</th>
             </tr>
             <tbody id="hospitalsTbody">
               <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-arrow-clockwise spin me-2"></i>Cargando...</td></tr>
@@ -1638,10 +1638,11 @@ $module_labels = [
 
         tbody.innerHTML = hospitals.map(h => {
           const st = h.estado_suscripcion || 'Inactivo';
+          const hospName = escapeHtml(h.nombre);
           return `
             <tr>
               <td>${h.id_hospital}</td>
-              <td><strong>${escapeHtml(h.nombre)}</strong></td>
+              <td><strong>${hospName}</strong></td>
               <td style="font-family:monospace;font-size:0.8rem;color:var(--color-primary)">${escapeHtml(h.codigo_hospital || '')}</td>
               <td><span class="badge ${badgeClass(st)}">${escapeHtml(st)}</span></td>
               <td>${escapeHtml(h.tipo_suscripcion || '-')}</td>
@@ -1650,8 +1651,12 @@ $module_labels = [
                   <button class="btn btn-ghost btn-xs" title="Editar" onclick='openEditHospital(${h.id_hospital},${JSON.stringify(h)})'><i class="bi bi-pencil"></i></button>
                   <button class="btn btn-success btn-xs" title="Suscripción" onclick="openSubscription(${h.id_hospital})"><i class="bi bi-credit-card"></i></button>
                   <button class="btn btn-ghost btn-xs" title="Dispensarios" onclick="window.location.href='php/dispensary/index.php?hospital_id=${h.id_hospital}'"><i class="bi bi-shop"></i></button>
-                  <button class="btn btn-warning btn-xs" title="Historial" onclick="openHistory(${h.id_hospital},'${escapeHtml(h.nombre)}')"><i class="bi bi-clock-history"></i></button>
-                  <button class="btn btn-danger btn-xs" title="Eliminar" onclick="deleteHospital(${h.id_hospital},'${escapeHtml(h.nombre)}')"><i class="bi bi-trash"></i></button>
+                  <button class="btn btn-warning btn-xs" title="Historial" onclick="openHistory(${h.id_hospital},'${hospName}')"><i class="bi bi-clock-history"></i></button>
+                  <button class="btn btn-danger btn-xs" title="Eliminar" onclick="deleteHospital(${h.id_hospital},'${hospName}')"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="act-group" style="margin-top:0.35rem">
+                  <button class="btn btn-success btn-xs" title="Crear Usuario" onclick="openCreateUser(${h.id_hospital},'${hospName}')"><i class="bi bi-person-plus me-1"></i>Crear Usuario</button>
+                  <button class="btn btn-ghost btn-xs" title="Ver Usuarios" onclick="viewUsers(${h.id_hospital},'${hospName}')"><i class="bi bi-people me-1"></i>Ver Usuarios</button>
                 </div>
               </td>
             </tr>
