@@ -29,12 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 
-    // Rate limiting: max 3 attempts per 60 seconds
-    if (!isset($_SESSION['login_attempts'])) {
-        $_SESSION['login_attempts'] = 0;
-        $_SESSION['login_attempt_time'] = 0;
+    // Rate limiting: max 3 attempts per 60 seconds (por usuario)
+    if (!isset($_SESSION['login_attempts_by_user']) || !is_array($_SESSION['login_attempts_by_user'])) {
+        $_SESSION['login_attempts_by_user'] = [];
     }
-    if ($_SESSION['login_attempts'] >= 3 && time() - $_SESSION['login_attempt_time'] < 60) {
+    if (!isset($_SESSION['login_attempt_time'])) {
+        $_SESSION['login_attempt_time'] = time();
+    }
+    $attempts = $_SESSION['login_attempts_by_user'][$usuario] ?? 0;
+    if ($attempts >= 3 && time() - $_SESSION['login_attempt_time'] < 60) {
         header("Location: ../../index.php?error=2");
         exit;
     }
@@ -65,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Bloquear login de usuarios desactivados (soft delete)
         if (isset($user['activo']) && (int)$user['activo'] === 0) {
             error_log("LOGIN DEBUG: User is inactive: " . $usuario);
-            $_SESSION['login_attempts'][$usuario] = ($_SESSION['login_attempts'][$usuario] ?? 0) + 1;
+            $_SESSION['login_attempts_by_user'][$usuario] = ($_SESSION['login_attempts_by_user'][$usuario] ?? 0) + 1;
             header("Location: login.php?error=usuario_inactivo");
             exit;
         }
@@ -119,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['tipoUsuario'] = $user['tipoUsuario'];
         $_SESSION['usuario'] = $user['usuario'];
         $_SESSION['es_creador'] = !empty($user['es_creador']);
-        $_SESSION['login_attempts'] = 0;
+        $_SESSION['login_attempts_by_user'] = [];
 
         audit_log_auth('login_exitoso', 'Usuario: ' . $user['usuario'] . ' - Hospital ID: ' . $user['id_hospital']);
 
@@ -129,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-    $_SESSION['login_attempts']++;
+    $_SESSION['login_attempts_by_user'][$usuario] = ($_SESSION['login_attempts_by_user'][$usuario] ?? 0) + 1;
     $_SESSION['login_attempt_time'] = time();
     audit_log_auth('login_fallido', 'Usuario intentado: ' . ($_POST['usuario'] ?? 'unknown'), 'error');
     error_log("LOGIN DEBUG: Login failed. Redirecting back to index.php?error=1");
