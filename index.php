@@ -397,7 +397,7 @@ date_default_timezone_set('America/Guatemala');
             <div class="logo-section">
                 <img src="assets/img/logo.png" alt="logo" class="logo-img" width="40" height="40">
                 <div class="login-header">
-                    <h1>Centro Médico Dr. Roberto Morales</h1>
+                    <h1>Centro Médico Dr.Roberto Morales</h1>
                     <p>Gestión Clínica Inteligente</p>
                 </div>
             </div>
