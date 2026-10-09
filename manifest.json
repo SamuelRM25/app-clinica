@@ -1,7 +1,7 @@
 {
   "name": "ClinicApp",
   "short_name": "ClinicApp",
-  "description": "Sistema de Gestión Médica - ClinicApp",
+  "description": "Sistema de Gesti\u00f3n M\u00e9dica - ClinicApp",
   "start_url": "/php/dashboard/index.php",
   "scope": "/",
   "display": "standalone",
@@ -10,64 +10,68 @@
   "theme_color": "#0d6efd",
   "lang": "es-GT",
   "dir": "ltr",
-  "categories": ["medical", "productivity", "business"],
+  "categories": [
+    "medical",
+    "productivity",
+    "business"
+  ],
   "icons": [
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/logo.png",
+      "src": "/assets/img/logo_full.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -80,7 +84,10 @@
       "description": "Crear nueva orden de laboratorio",
       "url": "/php/laboratory/crear_orden.php",
       "icons": [
-        { "src": "/assets/img/logo.png", "sizes": "192x192" }
+        {
+          "src": "/assets/img/logo_full.png",
+          "sizes": "192x192"
+        }
       ]
     },
     {
@@ -89,7 +96,10 @@
       "description": "Registrar nuevo cobro",
       "url": "/php/billing/index.php",
       "icons": [
-        { "src": "/assets/img/logo.png", "sizes": "192x192" }
+        {
+          "src": "/assets/img/logo_full.png",
+          "sizes": "192x192"
+        }
       ]
     }
   ]

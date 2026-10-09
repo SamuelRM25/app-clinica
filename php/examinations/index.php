@@ -1,5 +1,5 @@
 <?php
-// index.php - Registro de Exámenes - Centro Médico Herrera Saenz
+// index.php - Registro de Exámenes - Centro Médico Dr. Roberto Morales
 // Versión: 4.5 - Estilo Dashboard Principal con Estadísticas
 session_start();
 
@@ -90,7 +90,7 @@ try {
     $patients = $stmt_patients->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Registro de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Registro de Exámenes - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -105,7 +105,7 @@ try {
     <!-- META TAGS IDÉNTICOS AL DASHBOARD -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Registro de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Registro de Exámenes - Centro Médico Dr. Roberto Morales">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -142,7 +142,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -396,7 +396,7 @@ try {
         <div class="mt-3">
             <p class="text-muted mb-2">Total acumulado en sistema: <strong><?php echo $total_exams; ?></strong> exámenes
             </p>
-            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Herrera Saenz</p>
+            <p class="text-muted mb-0">Sistema de registro de exámenes - Centro Médico Dr. Roberto Morales</p>
         </div>
     </div>
     </main>
@@ -409,7 +409,7 @@ try {
     <script>
         /**
          * Registro de Exámenes v4.5 - Reingenierizado
-         * Centro Médico Herrera Saenz
+         * Centro Médico Dr. Roberto Morales
          */
         'use strict';
 

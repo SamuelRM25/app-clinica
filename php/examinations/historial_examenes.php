@@ -1,5 +1,5 @@
 <?php
-// historial_examenes.php - Historial de Exámenes - Centro Médico Herrera Saenz
+// historial_examenes.php - Historial de Exámenes - Centro Médico Dr. Roberto Morales
 // Versión: 4.0 - Estilo Dashboard Principal
 session_start();
 
@@ -30,7 +30,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Historial de Exámenes - Centro Médico Herrera Saenz";
+    $page_title = "Historial de Exámenes - Centro Médico Dr. Roberto Morales";
 
     // Configuración de paginación
     $limit = 20; // Registros por página
@@ -74,7 +74,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Historial de Exámenes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Historial de Exámenes - Centro Médico Dr. Roberto Morales">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -108,7 +108,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -158,7 +158,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico Dr. Roberto Morales
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -376,7 +376,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';
@@ -710,7 +710,7 @@ try {
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(22);
                     doc.setFont('helvetica', 'bold');
-                    doc.text("Centro Médico Herrera Saenz", 105, 18, { align: 'center' });
+                    doc.text("Centro Médico Dr. Roberto Morales", 105, 18, { align: 'center' });
 
                     doc.setFontSize(14);
                     doc.setFont('helvetica', 'normal');

@@ -256,7 +256,7 @@ try {
         <div class="header">
             <img src="../../assets/img/logo.png" class="logo" alt="logo" onerror="this.style.display='none'">
             <div class="header-text">
-                <h1>Centro Médico Herrera Saenz</h1>
+                <h1>Centro Médico Dr. Roberto Morales</h1>
                 <p>Corte de Jornada - Dispensario</p>
             </div>
         </div>
@@ -339,7 +339,7 @@ try {
     </div>
 
     <div class="footer">
-        Sistema de Gestión Médica - Centro Médico Herrera Saenz
+        Sistema de Gestión Médica - Centro Médico Dr. Roberto Morales
     </div>
     </div>
 

@@ -1,5 +1,5 @@
 <?php
-// settings/index.php - Configuración del Sistema Modernizada - Centro Médico Herrera Saenz
+// settings/index.php - Configuración del Sistema Modernizada - Centro Médico Dr. Roberto Morales
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 start_app_session();
@@ -28,7 +28,7 @@ try {
     $stmt = $conn->prepare("SELECT * FROM configuracion_sistema WHERE id_hospital = ? LIMIT 1");
     $stmt->execute([$id_hospital]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-        'nombre_clinica' => 'Centro Médico Herrera Saenz',
+        'nombre_clinica' => 'Centro Médico Dr. Roberto Morales',
         'direccion' => 'Ciudad de Guatemala',
         'telefono' => '5214-8836',
         'email' => 'info@herrerasaenz.com',

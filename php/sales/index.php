@@ -1,5 +1,5 @@
 <?php
-// sales/index.php - Módulo de Ventas - Centro Médico Herrera Saenz
+// sales/index.php - Módulo de Ventas - Centro Médico Dr. Roberto Morales
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 
@@ -86,7 +86,7 @@ try {
     $pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['pendientes'] ?? 0;
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico Herrera Saenz";
+    $page_title = "Ventas - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -107,7 +107,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas - Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -468,7 +468,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -804,7 +804,7 @@ try {
                 <!-- Contenido Premium de Factura -->
                 <div id="drawer-content" class="invoice-wrapper" style="display: none;">
                     <div class="invoice-header text-center">
-                        <div class="invoice-brand">Centro Médico Herrera Saenz</div>
+                        <div class="invoice-brand">Centro Médico Dr. Roberto Morales</div>
                         <div class="text-muted small">Servicios de Salud Premium</div>
                         <div class="invoice-no mt-2" id="drawer-sale-no">#VTA-00000</div>
                     </div>
@@ -897,7 +897,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Ventas Reingenierizado - Centro Médico Herrera Saenz
+        // Módulo de Ventas Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';

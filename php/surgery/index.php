@@ -1,5 +1,5 @@
 <?php
-// surgery/index.php - Dashboard de Quirófano - Centro Médico Herrera Saenz
+// surgery/index.php - Dashboard de Quirófano - Centro Médico Dr. Roberto Morales
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
@@ -69,7 +69,7 @@ $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgic
     $stmt_cirugias->execute([$id_hospital]);
     $cirugias = $stmt_cirugias->fetchAll(PDO::FETCH_ASSOC);
 
-    $page_title = "Quirófano - Centro Médico Herrera Saenz";
+    $page_title = "Quirófano - Centro Médico Dr. Roberto Morales";
 } catch (Exception $e) {
     error_log('Error en surgery/index.php: ' . $e->getMessage());
     die("Error al cargar Quirófano.");
@@ -100,7 +100,7 @@ $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgic
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40" height="40">
                     <div>
                         <h2 class="mb-0" style="font-size: 1.25rem;">Quirófano</h2>
                         <small class="text-muted">Gestión de cirugías y procedimientos quirúrgicos</small>

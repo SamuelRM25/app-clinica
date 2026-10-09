@@ -963,7 +963,7 @@ output_keep_alive_script();
     <div id="receipt-print-container" style="display: none;">
         <div class="receipt-header">
             <img src="../../assets/img/logo.png" alt="logo" class="receipt-logo" width="40" height="40">
-            <div class="receipt-title">Centro Médico Herrera Saenz</div>
+            <div class="receipt-title">Centro Médico Dr. Roberto Morales</div>
             <div>Estado de Cuenta Hospitalaria</div>
         </div>
 
@@ -1032,7 +1032,7 @@ output_keep_alive_script();
         <?php endif; ?>
 
         <div class="receipt-footer">
-            <p>Gracias por confiar en Centro Médico Herrera Saenz</p>
+            <p>Gracias por confiar en Centro Médico Dr. Roberto Morales</p>
             <p>Este documento es un estado de cuenta informativo.</p>
         </div>
     </div>

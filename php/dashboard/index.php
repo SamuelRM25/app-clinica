@@ -1,5 +1,5 @@
 <?php
-// dashboard.php - Dashboard Centro Médico Herrera Saenz
+// dashboard.php - Dashboard Centro Médico Dr. Roberto Morales
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
@@ -199,7 +199,7 @@ try {
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Dashboard - Centro Médico Herrera Saenz";
+    $page_title = "Dashboard - Centro Médico Dr. Roberto Morales";
 
     // ============ WIDGET SETTINGS ============
     $hospital_id = $_SESSION['id_hospital'] ?? 1;
@@ -272,7 +272,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard del Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Dashboard del Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -385,8 +385,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 height: 32px;
                 font-size: 0.85rem;
             }
-            .brand-logo {
-                height: 28px;
+.brand-logo {
+                height: 112px !important;
+                width: auto !important;
+                max-width: 380px !important;
             }
             .shift-cut-btn-container {
                 position: static !important;
@@ -970,8 +972,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40" height="40" fetchpriority="high"
-                        height="40">
+                    <img src="../../assets/img/logo_full.png?v=20241007" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" fetchpriority="high">
                 </div>
 
                 <!-- Controles -->
@@ -1869,7 +1870,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         <p class="text-muted mb-0 greeting-meta">
                             <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
                             <i class="bi bi-clock mx-2"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
-                            <i class="bi bi-building mx-2"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building mx-2"></i> Centro Médico Dr. Roberto Morales
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -2914,7 +2915,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';

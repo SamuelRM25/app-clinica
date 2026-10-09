@@ -1,6 +1,6 @@
 <?php
 // inventory/index.php - Módulo de Inventario Reingenierizado
-// Centro Médico Herrera Saenz - Sistema de Gestión Médica
+// Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica
 // Versión: 4.0 - Mismo diseño que Dashboard Principal
 
 session_start();
@@ -153,7 +153,7 @@ try {
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Inventario - Centro Médico Herrera Saenz";
+    $page_title = "Inventario - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -169,7 +169,7 @@ output_keep_alive_script();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Inventario - Centro Médico Herrera Saenz - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Inventario - Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -1468,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Inventario Reingenierizado - Centro Médico Herrera Saenz
+        // Módulo de Inventario Reingenierizado - Centro Médico Dr. Roberto Morales
 
         (function () {
             'use strict';

@@ -1,5 +1,5 @@
 <?php
-// expenses/index.php - Módulo de Gastos del Centro Médico Herrera Saenz
+// expenses/index.php - Módulo de Gastos del Centro Médico Dr. Roberto Morales
 // Extraído del módulo de Compras (pestaña Gastos) manteniendo la funcionalidad original
 session_start();
 
@@ -41,7 +41,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Gastos - Centro Médico Herrera Saenz";
+    $page_title = "Gastos - Centro Médico Dr. Roberto Morales";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -56,7 +56,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Gastos - Centro Médico Herrera Saenz - Gestión de gastos generales del hospital">
+        content="Módulo de Gastos - Centro Médico Dr. Roberto Morales - Gestión de gastos generales del hospital">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
@@ -106,7 +106,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 

@@ -34,7 +34,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Gestión de Pacientes - Centro Médico Herrera Saenz";
+    $page_title = "Gestión de Pacientes - Centro Médico Dr. Roberto Morales";
 
     // Obtener parámetros de ordenamiento
     $sort = $_GET['sort'] ?? 'name';
@@ -113,7 +113,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gestión de Pacientes - Centro Médico Herrera Saenz">
+    <meta name="description" content="Gestión de Pacientes - Centro Médico Dr. Roberto Morales">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
@@ -318,7 +318,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Herrera Saenz" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -376,7 +376,7 @@ try {
                             <span class="mx-2">•</span>
                             <i class="bi bi-clock me-1"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
                             <span class="mx-2">•</span>
-                            <i class="bi bi-building me-1"></i> Centro Médico Herrera Saenz
+                            <i class="bi bi-building me-1"></i> Centro Médico Dr. Roberto Morales
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -911,7 +911,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Herrera Saenz
+        // Dashboard Reingenierizado - Centro Médico Dr. Roberto Morales
         (function () {
             'use strict';
 

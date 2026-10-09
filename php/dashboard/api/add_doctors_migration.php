@@ -59,7 +59,7 @@ try {
                 $doc['apellido'],
                 $doc['tipoUsuario'],
                 $doc['especialidad'],
-                'Centro Médico Herrera Saenz',
+                'Centro Médico Dr. Roberto Morales',
                 '0000',
                 $doc['usuario'] . '@logo.com',
                 $id_hospital

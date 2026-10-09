@@ -58,7 +58,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Compras - Centro Médico Herrera Saenz</title>
+    <title>Reporte de Compras - Centro Médico Dr. Roberto Morales</title>
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -255,7 +255,7 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico Herrera Saenz</h1>
+                <h1>Centro Médico Dr. Roberto Morales</h1>
                 <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
                 <p><i class="bi bi-person"></i> Generado por: <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
             </div>
@@ -313,7 +313,7 @@ try {
         <?php endforeach; ?>
 
         <footer class="report-footer">
-            <p>Documento oficial de control de compras - Centro Médico Herrera Saenz</p>
+            <p>Documento oficial de control de compras - Centro Médico Dr. Roberto Morales</p>
             <p>Generado el <?php echo date('d/m/Y H:i:s'); ?> - CMS v4.0</p>
         </footer>
     </div>
