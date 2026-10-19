@@ -37,7 +37,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Inventario - Centro Médico Herrera Saenz</title>
+    <title>Reporte de Inventario - Centro Médico Dr. Roberto Morales</title>
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -202,12 +202,12 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico Herrera Saenz</h1>
+                <h1>Centro Médico Dr. Roberto Morales</h1>
                 <p>Excelencia en Servicios de Salud | Amatitlán, Guatemala</p>
                 <p><i class="bi bi-person"></i> Generado por: <?php echo $_SESSION['nombre']; ?></p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
+                <img src="../../assets/img/logo.png" alt="logo" style="height: 50px; margin-bottom: 8px;" width="50"
                     height="50">
                 <h2>REPORTE DE EXISTENCIAS</h2>
                 <p><?php echo date('d/m/Y H:i'); ?></p>
@@ -257,7 +257,7 @@ try {
         </table>
 
         <footer class="report-footer">
-            <p>Documento oficial de control de inventario - Centro Médico Herrera Saenz</p>
+            <p>Documento oficial de control de inventario - Centro Médico Dr. Roberto Morales</p>
             <p>Página 1 de 1 - Generado el <?php echo date('d/m/Y H:i:s'); ?></p>
         </footer>
     </div>

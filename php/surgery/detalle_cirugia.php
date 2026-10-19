@@ -131,7 +131,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=optional" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
@@ -146,7 +146,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
     <header class="dashboard-header">
         <div class="header-content">
             <div class="brand-container">
-                <img src="../../assets/img/cmhs.png" alt="CMHS" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/logo.png" alt="CMHS" class="brand-logo" width="40" height="40">
                 <div>
                     <h2 class="mb-0" style="font-size: 1.25rem;"><?php echo $page_title; ?></h2>
                     <small class="text-muted"><?php echo htmlspecialchars($cirugia['paciente']); ?></small>

@@ -1,5 +1,5 @@
 <?php
-// settings/index.php - Configuración del Sistema Modernizada - Centro Médico Herrera Saenz
+// settings/index.php - Configuración del Sistema Modernizada - Centro Médico Dr. Roberto Morales
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 start_app_session();
@@ -28,11 +28,11 @@ try {
     $stmt = $conn->prepare("SELECT * FROM configuracion_sistema WHERE id_hospital = ? LIMIT 1");
     $stmt->execute([$id_hospital]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-        'nombre_clinica' => 'Centro Médico Herrera Saenz',
+        'nombre_clinica' => 'Centro Médico Dr. Roberto Morales',
         'direccion' => 'Ciudad de Guatemala',
         'telefono' => '5214-8836',
         'email' => 'info@herrerasaenz.com',
-        'logo_path' => '../../assets/img/cmhs.png'
+        'logo_path' => '../../assets/img/logo.png'
     ];
 
     // Obtener lista de usuarios
@@ -82,7 +82,7 @@ $page_title = "Configuración del Sistema";
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
 
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -343,7 +343,7 @@ $page_title = "Configuración del Sistema";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="logo" class="brand-logo" width="40" height="40">
                 </div>
 
                 <div class="header-controls">

@@ -374,7 +374,7 @@ try {
 <!-- ============== PÁGINA 1: PORTADA ============== -->
 <div class="header">
     <h1><i class="bi bi-shield-check"></i> AUDITORÍA CONTABLE</h1>
-    <div class="subtitle">Centro Médico Herrera Saenz</div>
+    <div class="subtitle">Centro Médico Dr. Roberto Morales</div>
     <div class="subtitle">Período: <strong><?= $start_date ?></strong> al <strong><?= $end_date ?></strong></div>
     <div class="meta">
         Generado: <?= $today ?> &nbsp; | &nbsp;
@@ -640,7 +640,7 @@ try {
 </table>
 
 <div class="footer">
-    <p><strong>Sistema CMHS — Centro Médico Herrera Saenz</strong></p>
+    <p><strong>Sistema CMHS — Centro Médico Dr. Roberto Morales</strong></p>
     <p>Documento generado el <?= $today ?> | Hash de verificación: <code><?= $hash ?></code></p>
     <p>Este documento es un reporte interno de auditoría. La información proviene de las tablas del sistema y queda registrada en <code>audit_log</code>.</p>
 </div>

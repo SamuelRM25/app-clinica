@@ -97,7 +97,7 @@ include_once '../../includes/header.php';
     <div class="sidebar-glass p-3 d-flex flex-column">
         <div class="brand-section">
             <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
-                <img src="../../assets/img/cmhs.png" alt="logo" width="40" height="40"
+                <img src="../../assets/img/logo.png" alt="logo" width="40" height="40"
                     style="height: 40px; margin-right: 15px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
             </div>
         </div>

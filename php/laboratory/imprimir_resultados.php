@@ -285,13 +285,13 @@ try {
     <div class="report-page">
         <header class="report-header-premium">
             <div class="hospital-brand">
-                <h1>Centro Médico Herrera Saenz</h1>
+                <h1>Centro Médico Dr. Roberto Morales</h1>
                 <p>Excelencia en Servicios de Salud</p>
                 <p>Laboratorio Clínico Automatizado</p>
                 <p><i class="bi bi-geo-alt"></i> Amatitlán, Guatemala | <i class="bi bi-telephone"></i> 6633-XXXX</p>
             </div>
             <div class="report-title">
-                <img src="../../assets/img/cmhs.png" alt="logo" style="height: 60px; margin-bottom: 10px;" width="60"
+                <img src="../../assets/img/logo.png" alt="logo" style="height: 60px; margin-bottom: 10px;" width="60"
                     height="60">
                 <h2>INFORME DE RESULTADOS</h2>
                 <p>Orden #<?php echo $orden['numero_orden']; ?></p>
@@ -424,7 +424,7 @@ try {
         <footer class="report-footer">
             <p>La interpretación de estos resultados debe ser realizada exclusivamente por un médico colegiado activo.
             </p>
-            <p><strong>Centro Médico Herrera Saenz</strong> - Tecnología al servicio de su salud.</p>
+            <p><strong>Centro Médico Dr. Roberto Morales</strong> - Tecnología al servicio de su salud.</p>
         </footer>
     </div>
 </body>

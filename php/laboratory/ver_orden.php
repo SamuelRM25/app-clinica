@@ -92,7 +92,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>
@@ -103,7 +103,7 @@ try {
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/cmhs.png" alt="logo" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="logo" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <a href="index.php" class="action-btn secondary">

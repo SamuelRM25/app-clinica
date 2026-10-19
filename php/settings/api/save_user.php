@@ -63,7 +63,7 @@ try {
 
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO usuarios (usuario, password, nombre, apellido, tipoUsuario, especialidad, clinica, telefono, email, id_hospital) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, 'Centro Médico Herrera Saenz', $telefono, $email, $id_hospital]);
+        $stmt->execute([$usuario, $hashed_password, $nombre, $apellido, $tipoUsuario, $especialidad, 'Centro Médico Dr. Roberto Morales', $telefono, $email, $id_hospital]);
         $newId = $conn->lastInsertId();
 
         audit_log('create', 'users', "Usuario creado: $usuario ($nombre $apellido)", [

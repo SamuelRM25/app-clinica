@@ -77,7 +77,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corte de Jornada - Dispensario</title>
-    <link rel="icon" type="image/png" href="../../assets/img/cmhs.png">
+    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         @page { size: letter; margin: 1cm; }
@@ -254,9 +254,9 @@ try {
         </div>
 
         <div class="header">
-            <img src="../../assets/img/cmhs.png" class="logo" alt="logo" onerror="this.style.display='none'">
+            <img src="../../assets/img/logo.png" class="logo" alt="logo" onerror="this.style.display='none'">
             <div class="header-text">
-                <h1>Centro Médico Herrera Saenz</h1>
+                <h1>Centro Médico Dr. Roberto Morales</h1>
                 <p>Corte de Jornada - Dispensario</p>
             </div>
         </div>
@@ -339,7 +339,7 @@ try {
     </div>
 
     <div class="footer">
-        Sistema de Gestión Médica - Centro Médico Herrera Saenz
+        Sistema de Gestión Médica - Centro Médico Dr. Roberto Morales
     </div>
     </div>
 

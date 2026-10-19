@@ -51,7 +51,7 @@ try {
     $fecha_formateada = $fecha_consulta->format('d/m/Y');
 
     // Información de la clínica
-    $clinica_nombre = "Centro Médico Herrera Sáenz";
+    $clinica_nombre = "Centro Médico Dr. Roberto Morales";
     $clinica_direccion = "Ciudad de Guatemala, Guatemala";
     $clinica_telefono = "(+502) 4195-8112";
 
@@ -67,7 +67,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro Médico Herrera Sáenz</title>
+    <title>Receta Médica - <?php echo htmlspecialchars($receta['nombre'] . ' ' . $receta['apellido']); ?> - Centro Médico Dr. Roberto Morales</title>
 
     <!-- Google Fonts -->
 <!-- Bootstrap Icons -->
