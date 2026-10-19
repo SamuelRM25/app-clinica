@@ -1,5 +1,5 @@
 <?php
-// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro Médico Dr. Roberto Morales
+// hospitalization/index.php - Dashboard Principal de Encamamiento - Centro de Pruebas
 session_start();
 
 // Verificar sesión activa
@@ -148,7 +148,7 @@ try {
     die("Error: " . 'Error del servidor.');
 }
 
-$page_title = "Gestión de Hospitalización - Centro Médico Dr. Roberto Morales";
+$page_title = "Gestión de Hospitalización - Centro de Pruebas";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -499,7 +499,7 @@ $page_title = "Gestión de Hospitalización - Centro Médico Dr. Roberto Morales
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro de Pruebas" class="brand-logo" width="40"
                         height="40">
                 </div>
 

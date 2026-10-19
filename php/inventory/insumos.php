@@ -1,6 +1,6 @@
 <?php
 // inventory/insumos.php - Módulo de Insumos
-// Centro Médico Dr. Roberto Morales
+// Centro de Pruebas
 
 session_start();
 

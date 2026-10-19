@@ -1,5 +1,5 @@
 <?php
-// purchases/index.php - Módulo de Compras del Centro Médico Dr. Roberto Morales
+// purchases/index.php - Módulo de Compras del Centro de Pruebas
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -143,7 +143,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Compras - Centro Médico Dr. Roberto Morales";
+    $page_title = "Compras - Centro de Pruebas";
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -158,7 +158,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Compras - Centro Médico Dr. Roberto Morales - Gestión de compras de medicamentos e insumos">
+        content="Módulo de Compras - Centro de Pruebas - Gestión de compras de medicamentos e insumos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
@@ -456,7 +456,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro de Pruebas" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -1479,7 +1479,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Compras Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Módulo de Compras Reingenierizado - Centro de Pruebas
 
         (function () {
             'use strict';

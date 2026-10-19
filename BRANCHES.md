@@ -79,9 +79,10 @@ git rebase Base  # reescribe historial (cuidado si ya se desplegó)
 
 | Hospital | Código | Rama | Subdominio |
 |----------|--------|------|------------|
-| Centro Médico Herrera Saenz | CMHS | `hospital/cmhs` | `cmhs.clinicapp.gt` |
-| Centro Médico Dr. Roberto Morales | CMRM | `hospital/cmrm` | `cmrm.clinicapp.gt` |
+| Centro de Pruebas (sistema genérico) | RS1 | `Base` (default branch) | `pruebas.clinicapp.gt` |
 
+> **Nota:** Las ramas `hospital/cmhs` y `hospital/cmrm` se mantienen como legacy solo para consulta.
+> Para un nuevo hospital: `git checkout -b hospital/<codigo> Base`, asignar `.active-hospital=<codigo>`, aplicar personalizaciones y desplegar en su subdominio.
 ## 🔧 Notas técnicas
 
 - Archivo `.active-hospital`: contiene el código del hospital activo en la rama actual

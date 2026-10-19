@@ -1,7 +1,7 @@
 /**
  * install-prompt.js
  * PWA Install Prompt + Service Worker Registration
- * Centro Médico Dr. Roberto Morales
+ * Centro de Pruebas
  */
 (function () {
     'use strict';

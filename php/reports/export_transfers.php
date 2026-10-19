@@ -1,5 +1,5 @@
 <?php
-// export_transfers.php - Reporte de Traslados (Restringido) - Centro Médico Dr. Roberto Morales
+// export_transfers.php - Reporte de Traslados (Restringido) - Centro de Pruebas
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';

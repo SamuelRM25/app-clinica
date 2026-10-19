@@ -154,7 +154,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
+                    <img src="../../assets/img/logo.png" alt="Centro de Pruebas" class="brand-logo" width="40"
                         height="40">
                 </div>
 
@@ -218,7 +218,7 @@ try {
             <!-- Datos de Reporte en Card -->
             <div class="card animate-in delay-1 p-4 mb-4">
                 <div class="header text-center mb-4">
-                    <h4 class="fw-bold">Centro Médico</h4>
+                    <h4 class="fw-bold">Centro de Pruebas</h4>
                     <h5 class="text-muted">Reporte de Insumos Descargados</h5>
                     <p class="mb-0"><strong>Fecha:</strong> <?php echo date('d/m/Y', strtotime($date)); ?></p>
                     <p class="mb-0"><strong>Jornada:</strong> <?php echo $shift_name; ?></p>

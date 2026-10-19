@@ -1,5 +1,5 @@
 <?php
-// export_sales.php - Reporte de Rentabilidad - Centro Médico Dr. Roberto Morales
+// export_sales.php - Reporte de Rentabilidad - Centro de Pruebas
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -173,7 +173,7 @@ try {
         </div>
 
         <div class="header">
-            <h1>Centro Médico Dr. Roberto Morales</h1>
+            <h1>Centro de Pruebas</h1>
             <h2>Reporte de Rentabilidad en Farmacia</h2>
             <p>Periodo:
                 <?php echo date('d/m/Y', strtotime($start_date)); ?> al

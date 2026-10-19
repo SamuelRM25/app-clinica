@@ -121,7 +121,7 @@ try {
 <body>
     <div class="receipt-container">
         <div class="receipt-header">
-            <h2>Centro Médico Dr. Roberto Morales</h2>
+            <h2>Centro de Pruebas</h2>
             <div class="subtitle">Comprobante de Laboratorio</div>
         </div>
 

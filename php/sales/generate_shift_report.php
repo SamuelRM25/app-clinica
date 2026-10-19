@@ -1,5 +1,5 @@
 <?php
-// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morales
+// sales/generate_shift_report.php - Reporte de Ventas por Jornada - Centro de Pruebas
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 require_once '../../config/database.php';
@@ -94,7 +94,7 @@ $user_name = $_SESSION['nombre'];
 $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
 // Título de la página
-$page_title = "Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morales";
+$page_title = "Reporte de Ventas por Jornada - Centro de Pruebas";
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -102,7 +102,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morale
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morales">
+    <meta name="description" content="Reporte de Ventas por Jornada - Centro de Pruebas">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -142,7 +142,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morale
     <div class="report-container">
         <!-- Encabezado -->
         <div class="report-header animate-in">
-            <h1 class="clinic-name">Centro Médico Dr. Roberto Morales</h1>
+            <h1 class="clinic-name">Centro de Pruebas</h1>
             <h2 class="report-title">Reporte de Ventas por Jornada</h2>
             <div class="period-info">
                 <i class="bi bi-calendar-range"></i>
@@ -393,7 +393,7 @@ $page_title = "Reporte de Ventas por Jornada - Centro Médico Dr. Roberto Morale
                 <?php echo htmlspecialchars($user_specialty); ?>
             </p>
             <p class="text-muted">
-                Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica v4.0
+                Centro de Pruebas - Sistema de Gestión Médica v4.0
             </p>
         </div>
     </div>

@@ -1,5 +1,5 @@
 <?php
-// dashboard.php - Dashboard Centro Médico Dr. Roberto Morales
+// dashboard.php - Dashboard Centro de Pruebas
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
@@ -199,7 +199,7 @@ try {
     $hospitalized_patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Dashboard - Centro Médico Dr. Roberto Morales";
+    $page_title = "Dashboard - Centro de Pruebas";
 
     // ============ WIDGET SETTINGS ============
     $hospital_id = $_SESSION['id_hospital'] ?? 1;
@@ -272,7 +272,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard del Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
+    <meta name="description" content="Dashboard del Centro de Pruebas - Sistema de gestión médica">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
@@ -972,7 +972,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_full.png?v=20241007" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" fetchpriority="high">
+                    <img src="../../assets/img/logo_full.png?v=20241007" alt="Centro de Pruebas" class="brand-logo" fetchpriority="high">
                 </div>
 
                 <!-- Controles -->
@@ -1870,7 +1870,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         <p class="text-muted mb-0 greeting-meta">
                             <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
                             <i class="bi bi-clock mx-2"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
-                            <i class="bi bi-building mx-2"></i> Centro Médico Dr. Roberto Morales
+                            <i class="bi bi-building mx-2"></i> Centro de Pruebas
                         </p>
                     </div>
                     <div class="d-none d-md-block">
@@ -2915,7 +2915,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Dashboard Reingenierizado - Centro de Pruebas
 
         (function () {
             'use strict';

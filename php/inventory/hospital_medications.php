@@ -1,6 +1,6 @@
 <?php
 // inventory/hospital_medications.php - Módulo de Inventario Reingenierizado
-// Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica
+// Centro de Pruebas - Sistema de Gestión Médica
 
 session_start();
 

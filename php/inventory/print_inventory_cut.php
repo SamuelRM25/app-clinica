@@ -1,6 +1,6 @@
 <?php
 // print_inventory_cut.php - Corte de Inventario Físico Interactivo
-// Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica
+// Centro de Pruebas - Sistema de Gestión Médica
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -399,7 +399,7 @@ try {
         <header class="dashboard-header no-print">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo.png" alt="Centro de Pruebas" class="brand-logo" width="40" height="40">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">
@@ -498,7 +498,7 @@ try {
             <!-- Table -->
             <div class="card animate-in delay-1 p-4 mb-4">
                 <div class="header text-center mb-4">
-                    <h4 class="fw-bold">Centro Médico</h4>
+                    <h4 class="fw-bold">Centro de Pruebas</h4>
                     <h5 class="text-muted">Hoja de Conteo Físico</h5>
                     <p class="mb-0"><strong>Fecha:</strong> <?php echo date('d/m/Y H:i A'); ?></p>
                 </div>
