@@ -82,7 +82,7 @@ $page_title = "Configuración del Sistema";
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
 
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -343,7 +343,7 @@ $page_title = "Configuración del Sistema";
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="logo" class="brand-logo" width="40" height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Clínica Médica Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <div class="header-controls">
@@ -562,6 +562,22 @@ $page_title = "Configuración del Sistema";
                             <div class="row g-3" id="themeGrid">
                                 <?php
                                 $themes = [
+                                    // --- MARCA ---
+                                    [
+                                        'id' => 'cmrm',
+                                        'name' => 'CMRM (marca)',
+                                        'tag' => 'Predeterminado',
+                                        'primary' => '#283251',
+                                        'bg' => '#ffffff',
+                                        'surface' => '#f7f7f4',
+                                        'text' => '#1c2236',
+                                        'radius' => '0.5rem',
+                                        'shadow' => '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        'font' => 'Inter',
+                                        'preview_bar' => '#283251',
+                                        'preview_bg' => '#f7f7f4',
+                                        'preview_accent' => '#e2bf63'
+                                    ],
                                     // --- CLÁSICOS ---
                                     [
                                         'id' => 'blue',
@@ -1718,7 +1734,24 @@ $page_title = "Configuración del Sistema";
             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Color actualizado', showConfirmButton: false, timer: 1500 });
         }
 
+        // Tema de marca: quitar personalizaciones y volver a los colores del CSS (con modo oscuro)
+        function resetBrandTheme(silent) {
+            const root = document.documentElement;
+            ['--color-primary', '--color-primary-rgb', '--color-bg', '--color-surface', '--color-text',
+             '--radius-md', '--radius-lg', '--radius-xl', '--shadow-md',
+             '--color-primary-day', '--color-primary-night'].forEach(v => root.style.removeProperty(v));
+            localStorage.removeItem('custom-full-theme');
+            localStorage.removeItem('custom-primary-color');
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+            const card = document.querySelector('.theme-card[data-theme-id="cmrm"]');
+            if (card) card.classList.add('active');
+            const badge = document.getElementById('activeThemeBadge');
+            if (badge) badge.textContent = '✓ CMRM (marca)';
+            if (!silent) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tema de marca aplicado', showConfirmButton: false, timer: 2000 });
+        }
+
         function applyFullTheme(t) {
+            if (t && t.id === 'cmrm') { resetBrandTheme(); return; }
             const root = document.documentElement;
             root.style.setProperty('--color-primary', t.primary);
             root.style.setProperty('--color-bg', t.bg);
@@ -1762,6 +1795,7 @@ $page_title = "Configuración del Sistema";
             } else {
                 const color = localStorage.getItem('custom-primary-color');
                 if (color) updateAppTheme(color);
+                else resetBrandTheme(true);
             }
         });
 

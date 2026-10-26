@@ -1,4 +1,19 @@
 <?php
+// ── Diagnóstico: cualquier error grave del login queda registrado en logs/login_errors.log
+// (carpeta protegida con .htaccess). Así un HTTP 500 nunca queda "mudo".
+function login_log_error(string $msg): void {
+    $dir = __DIR__ . '/../../logs';
+    if (!is_dir($dir)) { @mkdir($dir, 0750, true); }
+    @file_put_contents($dir . '/login_errors.log', '[' . date('Y-m-d H:i:s') . '] ' . $msg . PHP_EOL, FILE_APPEND | LOCK_EX);
+    error_log('LOGIN ERROR: ' . $msg);
+}
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        login_log_error("FATAL {$e['message']} en {$e['file']}:{$e['line']} (PHP " . PHP_VERSION . ")");
+    }
+});
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
@@ -69,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    try {
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -169,5 +185,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("LOGIN DEBUG: Login failed. Redirecting back to index.php?error=1");
     header("Location: ../../index.php?error=1");
     exit();
+
+    } catch (Throwable $e) {
+        login_log_error(get_class($e) . ': ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine()
+            . ($e->getPrevious() ? ' | causa: ' . $e->getPrevious()->getMessage() : '') . ' (PHP ' . PHP_VERSION . ')');
+        header("Location: ../../index.php?error=servidor");
+        exit();
+    }
 }
 ?>

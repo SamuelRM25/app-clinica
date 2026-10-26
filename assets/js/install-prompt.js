@@ -227,7 +227,7 @@
                 </div>
             `,
             confirmButtonText: 'Entendido',
-            confirmButtonColor: '#0d6efd',
+            confirmButtonColor: '#283251',
             width: 500
         });
     }
@@ -244,7 +244,7 @@
                 <p>Tu navegador no soporta instalación de apps web.</p>
                 <p class="mb-0">Te recomendamos usar <strong>Chrome</strong> o <strong>Edge</strong> en Android/Desktop, o <strong>Safari</strong> en iOS.</p>
             `,
-            confirmButtonColor: '#0d6efd'
+            confirmButtonColor: '#283251'
         });
     }
 

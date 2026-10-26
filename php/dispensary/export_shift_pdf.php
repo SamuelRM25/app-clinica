@@ -77,7 +77,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corte de Jornada - Dispensario</title>
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         @page { size: letter; margin: 1cm; }
@@ -101,7 +101,7 @@ try {
             display: flex;
             align-items: center;
             gap: 20px;
-            border-bottom: 3px solid #0d6efd;
+            border-bottom: 3px solid #283251;
             padding-bottom: 20px;
             margin-bottom: 24px;
         }
@@ -114,7 +114,7 @@ try {
         .header-text h1 {
             font-size: 1.5rem;
             margin: 0 0 4px 0;
-            color: #0d6efd;
+            color: #283251;
             font-weight: 700;
         }
         .header-text p {
@@ -125,7 +125,7 @@ try {
         .meta {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-left: 4px solid #0d6efd;
+            border-left: 4px solid #283251;
             border-radius: 8px;
             padding: 16px 20px;
             margin-bottom: 24px;
@@ -150,7 +150,7 @@ try {
             margin-bottom: 24px;
             font-size: 0.9rem;
         }
-        thead { background: #0d6efd; color: #fff; }
+        thead { background: #283251; color: #fff; }
         th {
             padding: 12px 14px;
             text-align: left;
@@ -179,12 +179,12 @@ try {
         .badge-transferencia { background: #fef3c7; color: #92400e; }
         .badge-seguro { background: #ede9fe; color: #5b21b6; }
         .total-box {
-            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            background: linear-gradient(135deg, #283251 0%, #1b2440 100%);
             color: #fff;
             border-radius: 10px;
             padding: 24px;
             margin-top: 24px;
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+            box-shadow: 0 4px 12px rgba(40, 50, 81, 0.2);
         }
         .total-row {
             display: flex;
@@ -224,8 +224,8 @@ try {
             font-weight: 500;
             transition: all 0.2s;
         }
-        .no-print .btn-print { background: #0d6efd; color: #fff; }
-        .no-print .btn-print:hover { background: #0a58ca; transform: translateY(-1px); }
+        .no-print .btn-print { background: #283251; color: #fff; }
+        .no-print .btn-print:hover { background: #1b2440; transform: translateY(-1px); }
         .no-print .btn-close { background: #e2e8f0; color: #475569; }
         .no-print .btn-close:hover { background: #cbd5e1; }
         .footer {

@@ -203,7 +203,7 @@ try {
     <?php endif; ?>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <!-- Bootstrap Icons -->
@@ -237,8 +237,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
-                        height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1146,7 +1145,7 @@ try {
                                     showCancelButton: true,
                                     confirmButtonText: 'Validar',
                                     cancelButtonText: 'Cancelar',
-                                    confirmButtonColor: '#0d6efd'
+                                    confirmButtonColor: '#283251'
                                 });
                                 if (!codeResult.isConfirmed) return;
                                 if (codeResult.value !== AUTH_CODE_FROM_META) {
@@ -1339,7 +1338,7 @@ try {
         .billing-table-wrap { padding: 0; width: 100%; }
         .billing-table { width: 100%; table-layout: auto; }
         .billing-table thead th {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
             color: #fff; font-size: 0.7rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.06em;
             padding: 0.9rem 1rem; border: none;
@@ -1347,17 +1346,17 @@ try {
         .billing-table tbody tr {
             border-bottom: 1px solid #f0f2f5; transition: background 0.15s;
         }
-        .billing-table tbody tr:hover { background: rgba(37,99,235,0.03); }
+        .billing-table tbody tr:hover { background: rgba(var(--color-primary-rgb),0.03); }
         .billing-table tbody td { padding: 0.85rem 1rem; vertical-align: middle; font-size: 0.85rem; border: none; }
 
         /* Patient cell */
         .patient-cell { display: flex; align-items: center; gap: 0.75rem; }
         .patient-avatar {
             width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-            background: linear-gradient(135deg, #2563eb, #8b5cf6);
+            background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
             color: #fff; font-weight: 700; font-size: 0.8rem;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+            box-shadow: 0 2px 8px rgba(var(--color-primary-rgb),0.25);
         }
         .patient-name { font-weight: 700; font-size: 0.92rem; color: #1a1d23; line-height: 1.2; }
         .charge-detail-text { font-size: 0.72rem; color: #6b7280; display: block; margin-top: 1px; }
@@ -1367,8 +1366,8 @@ try {
             display: inline-flex; align-items: center; gap: 0.3rem;
             padding: 0.3rem 0.7rem; border-radius: 50px; font-size: 0.72rem; font-weight: 700;
         }
-        .charge-type-badge.consulta { background: rgba(37,99,235,0.1); color: #2563eb; }
-        .charge-type-badge.reconsulta { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .charge-type-badge.consulta { background: rgba(var(--color-primary-rgb),0.1); color: var(--color-primary); }
+        .charge-type-badge.reconsulta { background: rgba(var(--color-primary-rgb),0.1); color: var(--color-primary); }
         .charge-type-badge.farmacia { background: rgba(16,185,129,0.1); color: #10b981; }
         .charge-type-badge.laboratorio { background: rgba(6,182,212,0.1); color: #06b6d4; }
         .charge-type-badge.procedimiento { background: rgba(245,158,11,0.1); color: #f59e0b; }
@@ -1381,7 +1380,7 @@ try {
             display: inline-flex; align-items: center; gap: 0.3rem;
             padding: 0.25rem 0.6rem; border-radius: 8px;
             font-size: 0.72rem; font-weight: 600;
-            background: rgba(37,99,235,0.07); color: #2563eb;
+            background: rgba(var(--color-primary-rgb),0.07); color: var(--color-primary);
         }
 
         /* Monto */
@@ -1411,13 +1410,13 @@ try {
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s; font-size: 0.85rem;
         }
-        .btn-icon:hover { background: rgba(37,99,235,0.08); color: #2563eb; border-color: #2563eb; }
+        .btn-icon:hover { background: rgba(var(--color-primary-rgb),0.08); color: var(--color-primary); border-color: var(--color-primary); }
         .btn-icon.print:hover { background: rgba(16,185,129,0.08); color: #10b981; border-color: #10b981; }
         .btn-icon.delete:hover { background: rgba(220,53,69,0.08); color: #dc3545; border-color: #dc3545; }
 
         /* Zebra striping */
         .billing-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.015); }
-        .billing-table tbody tr:nth-child(even):hover { background: rgba(37,99,235,0.04); }
+        .billing-table tbody tr:nth-child(even):hover { background: rgba(var(--color-primary-rgb),0.04); }
 
         .billing-registry__table-card { border-radius: 14px; overflow: hidden; padding: 0; border: none; }
 
@@ -1430,8 +1429,8 @@ try {
             background: #fff; color: #6b7280; cursor: pointer; text-decoration: none;
             transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
-        .billing-btn-chip:hover { background: #f0f4ff; color: #2563eb; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.15); }
-        .billing-btn-chip.active { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .billing-btn-chip:hover { background: #f0f4ff; color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 2px 8px rgba(var(--color-primary-rgb),0.15); }
+        .billing-btn-chip.active { background: linear-gradient(135deg,var(--color-primary),var(--color-primary-dark)); color: #fff; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(var(--color-primary-rgb),0.3); }
 
         /* ── Pagination ── */
         .billing-registry__footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem 0 0; }
@@ -1446,8 +1445,8 @@ try {
             border: 1px solid #e9ecef; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
             transition: all 0.2s;
         }
-        .billing-pagination__item a:hover { background: #f0f4ff; color: #2563eb; border-color: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.15); }
-        .billing-pagination__item.active a { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .billing-pagination__item a:hover { background: #f0f4ff; color: var(--color-primary); border-color: var(--color-primary); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--color-primary-rgb),0.15); }
+        .billing-pagination__item.active a { background: linear-gradient(135deg,var(--color-primary),var(--color-primary-dark)); color: #fff; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(var(--color-primary-rgb),0.3); }
         .billing-pagination__item.disabled > span { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Modal */

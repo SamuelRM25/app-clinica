@@ -138,7 +138,7 @@ function apply_hospital_theme() {
     echo "<script>document.body.classList.add('theme-{$tema}');</script>\n";
     echo "<style>
         :root {
-            --color-primary: var(--color-primary, #7c90db);
+            --color-primary: var(--color-primary);
             --primary: var(--color-primary);
             --color-bg: var(--color-bg, #f8fafc);
             --color-surface: var(--color-surface, #ffffff);

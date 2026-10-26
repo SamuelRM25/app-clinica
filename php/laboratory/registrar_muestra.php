@@ -43,7 +43,7 @@ try {
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <?php include '../../includes/theme_head.php'; ?>
@@ -98,8 +98,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
-                        height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -242,7 +241,7 @@ try {
                 showCancelButton: true,
                 confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Confirmar Recepción',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: 'var(--color-primary, #6366f1)',
+                confirmButtonColor: 'var(--color-primary, #283251)',
                 customClass: {
                     popup: 'border-0 rounded-4 shadow-lg bg-card',
                     confirmButton: 'action-btn px-4 py-2',

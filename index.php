@@ -23,627 +23,510 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Configuración inicial
-$page_title = "Login - Centro Médico Dr. Roberto Morales";
+$page_title = "Iniciar sesión · Clínica Médica Dr. Roberto Morales";
 date_default_timezone_set('America/Guatemala');
+
+// Mensaje de error (si viene de login.php o de una sesión cerrada)
+$error_msg = null;
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case '2':                $error_msg = 'Demasiados intentos. Espere 60 segundos e intente de nuevo.'; break;
+        case 'usuario_inactivo': $error_msg = 'Usuario desactivado. Contacte al administrador.'; break;
+        case 'sesion_expirada':
+        case 'session_expired':  $error_msg = 'Su sesión expiró. Ingrese de nuevo para continuar.'; break;
+        case 'servidor':         $error_msg = 'No se pudo completar el ingreso por un problema del servidor. Intente de nuevo en unos minutos.'; break;
+        case 'session_invalid':  $error_msg = 'Su sesión no es válida. Ingrese de nuevo.'; break;
+        default:                 $error_msg = 'Usuario o contraseña incorrectos.';
+    }
+} elseif (isset($_GET['err']) && $_GET['err'] === 'security') {
+    $error_msg = 'Por seguridad se cerró la sesión. Ingrese de nuevo.';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
+    <meta name="theme-color" content="#1b2440">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
-    <!-- logo -->
-    <link rel="icon" type="image/png" href="assets/img/logo.png">
+    <link rel="icon" type="image/png" href="assets/img/favicon-cmrm.png">
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon-cmrm.png">
+    <link rel="manifest" href="manifest.json">
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-        media="print" onload="this.media='all'">
+    <!-- Aplicar modo claro/oscuro antes de pintar (misma preferencia que el resto del sistema) -->
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('dashboard-theme') || localStorage.getItem('theme'); } catch (e) {}
+            if (t !== 'dark') t = 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <style>
+        /* ── Paleta CMRM (tomada del logo) ───────────────────────── */
         :root {
-            --color-primary: #6366f1;
-            --color-primary-dark: #4f46e5;
-            --color-bg: #f8fafc;
-            --color-surface: #ffffff;
-            --color-text: #1e293b;
-            --color-text-muted: #64748b;
-            --color-border: #e2e8f0;
-            --shadow-premium: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --navy-950: #0e1424;
+            --navy-900: #141b30;
+            --navy-800: #1b2440;
+            --navy-700: #283251;
+            --navy-600: #3a4670;
+            --gold-300: #ecd48a;
+            --gold-400: #e2bf63;
+            --gold-500: #c9a24f;
+            --gold-600: #a8783a;
+
+            --bg: #ffffff;
+            --surface: #f7f7f4;
+            --text: #1c2236;
+            --muted: #6b7183;
+            --border: #e4e3dd;
+            --input-bg: #ffffff;
+            --primary: var(--navy-700);
+            --primary-hover: var(--navy-800);
+            --ring: rgba(40, 50, 81, .16);
+            --danger: #b42318;
+            --danger-bg: #fef3f2;
+            --danger-border: #fecdca;
         }
 
         [data-theme="dark"] {
-            --color-primary: #818cf8;
-            --color-primary-dark: #6366f1;
-            --color-bg: #0f172a;
-            --color-surface: #1e293b;
-            --color-text: #f1f5f9;
-            --color-text-muted: #94a3b8;
-            --color-border: #334155;
+            --bg: #0e1424;
+            --surface: #141b30;
+            --text: #eef0f6;
+            --muted: #98a0b8;
+            --border: #27304a;
+            --input-bg: #141b30;
+            --primary: #c9a24f;
+            --primary-hover: #b98f42;
+            --ring: rgba(201, 162, 79, .22);
+            --danger: #fda29b;
+            --danger-bg: rgba(180, 35, 24, .14);
+            --danger-border: rgba(253, 162, 155, .25);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body { height: 100%; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--color-bg);
-            color: var(--color-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color .25s ease, color .25s ease;
+        }
+
+        .auth {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 100dvh;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        /* ── Panel de marca (solo escritorio) ────────────────────── */
+        .brand-panel {
+            display: none;
+            position: relative;
             overflow: hidden;
-            position: relative;
+            color: #fff;
+            background:
+                radial-gradient(120% 90% at 15% 10%, rgba(201, 162, 79, .14) 0%, rgba(201, 162, 79, 0) 55%),
+                radial-gradient(90% 80% at 100% 100%, #283251 0%, rgba(40, 50, 81, 0) 60%),
+                linear-gradient(160deg, #1b2440 0%, #141b30 100%);
         }
 
-        /* Animated Background */
-        .background-blob {
+        /* Anillos dorados muy sutiles, eco del círculo del monograma */
+        .brand-panel::before,
+        .brand-panel::after {
+            content: "";
             position: absolute;
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-            filter: blur(80px);
             border-radius: 50%;
-            z-index: -1;
-            animation: blob-float 20s infinite alternate;
+            border: 1px solid rgba(226, 191, 99, .14);
+            pointer-events: none;
         }
+        .brand-panel::before { width: 720px; height: 720px; right: -320px; bottom: -300px; }
+        .brand-panel::after  { width: 980px; height: 980px; right: -450px; bottom: -430px; border-color: rgba(226, 191, 99, .07); }
 
-        .blob-1 {
-            top: -100px;
-            right: -100px;
-        }
-
-        .blob-2 {
-            bottom: -100px;
-            left: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes blob-float {
-            0% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 420px;
-            padding: 2rem;
-            z-index: 10;
-        }
-
-        .login-card {
-            background: var(--color-surface);
-            border-radius: 1.5rem;
-            padding: 2.5rem;
-            box-shadow: var(--shadow-premium);
-            border: 1px solid var(--color-border);
-            backdrop-filter: blur(10px);
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .logo-section {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .logo-img {
-            width: 80px;
-            height: auto;
-            margin-bottom: 1rem;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-        }
-
-        .login-header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, var(--color-primary), #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .login-header p {
-            color: var(--color-text-muted);
-            font-size: 0.95rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
+        .brand-inner {
             position: relative;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--color-text-muted);
-        }
-
-        .input-wrapper {
-            position: relative;
+            z-index: 1;
+            height: 100%;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3.5rem 4rem;
         }
 
-        .input-icon {
-            position: absolute;
-            left: 1rem;
-            color: var(--color-text-muted);
-            font-size: 1.1rem;
-        }
+        .brand-mark { width: 148px; height: auto; display: block; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .25)); }
 
-        .form-input {
-            width: 100%;
-            padding: 0.75rem 1rem 0.75rem 2.75rem;
-            background: var(--color-bg);
-            border: 1px solid var(--color-border);
-            border-radius: 0.75rem;
-            color: var(--color-text);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 0.875rem;
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            border-radius: 0.75rem;
-            font-size: 1rem;
+        .brand-copy { max-width: 26rem; }
+        .brand-rule { width: 48px; height: 2px; background: linear-gradient(90deg, var(--gold-400), var(--gold-600)); border-radius: 2px; margin-bottom: 1.5rem; }
+        .brand-copy h2 {
+            font-size: 2rem;
+            line-height: 1.2;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            letter-spacing: -.02em;
+            margin-bottom: .9rem;
+        }
+        .brand-copy h2 span { color: var(--gold-400); }
+        .brand-copy p { color: rgba(255, 255, 255, .68); font-size: 1rem; line-height: 1.6; }
+
+        .brand-foot { font-size: .8rem; color: rgba(255, 255, 255, .45); letter-spacing: .02em; }
+
+        /* ── Panel del formulario ────────────────────────────────── */
+        .form-panel {
+            position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
+            padding: 5rem 1.25rem 2rem;
         }
 
-        .login-btn:hover {
-            background: var(--color-primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        .form-wrap {
+            width: 100%;
+            max-width: 400px;
+            animation: rise .5s cubic-bezier(.2, .8, .2, 1) both;
         }
 
-        .login-footer {
-            margin-top: 2rem;
-            text-align: center;
-            font-size: 0.875rem;
-            color: var(--color-text-muted);
+        .logo {
+            display: block;
+            width: 100%;
+            max-width: 380px;
+            height: auto;
+            margin: 0 auto 3rem;
         }
+        .logo-dark { display: none; }
+        [data-theme="dark"] .logo-light { display: none; }
+        [data-theme="dark"] .logo-dark { display: block; }
 
-        .error-message {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
+        .form-head { margin-bottom: 1.75rem; }
+        .form-head h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -.015em; margin-bottom: .35rem; }
+        .form-head p { color: var(--muted); font-size: .95rem; }
+
+        .alert {
             display: flex;
+            gap: .6rem;
+            align-items: flex-start;
+            padding: .8rem .95rem;
+            margin-bottom: 1.25rem;
+            border-radius: 10px;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger);
+            font-size: .875rem;
+            line-height: 1.45;
+        }
+        .alert i { font-size: 1rem; line-height: 1.3; }
+        .alert[hidden] { display: none; }
+
+        .field { margin-bottom: 1.1rem; }
+        .field label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 500;
+            margin-bottom: .45rem;
+            color: var(--text);
+        }
+        .control { position: relative; }
+        .control > i {
+            position: absolute;
+            left: .95rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 1.05rem;
+            pointer-events: none;
+            transition: color .15s ease;
+        }
+        .control input {
+            width: 100%;
+            height: 48px;
+            padding: 0 1rem 0 2.75rem;
+            font: inherit;
+            font-size: .95rem;
+            color: var(--text);
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .control input::placeholder { color: var(--muted); opacity: .7; }
+        .control input:hover { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+        .control input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
+        .control:focus-within > i { color: var(--primary); }
+        .control input.has-toggle { padding-right: 3rem; }
+
+        .toggle-pass {
+            position: absolute;
+            right: .35rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: grid;
+            place-items: center;
+        }
+        .toggle-pass:hover { color: var(--text); background: var(--surface); }
+        .toggle-pass:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+        .caps {
+            display: none;
+            margin-top: .45rem;
+            font-size: .8rem;
+            color: var(--gold-600);
+        }
+        [data-theme="dark"] .caps { color: var(--gold-400); }
+        .caps.show { display: flex; gap: .35rem; align-items: center; }
+
+        .submit {
+            width: 100%;
+            height: 50px;
+            margin-top: .9rem;
+            border: 0;
+            border-radius: 10px;
+            background: var(--primary);
+            color: #fff;
+            font: inherit;
+            font-weight: 600;
+            font-size: .95rem;
+            letter-spacing: .01em;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            gap: .55rem;
+            box-shadow: 0 1px 2px rgba(20, 27, 48, .12), 0 8px 20px -8px rgba(20, 27, 48, .45);
+            transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
         }
+        [data-theme="dark"] .submit { color: var(--navy-900); box-shadow: 0 8px 20px -10px rgba(201, 162, 79, .55); }
+        .submit:hover { background: var(--primary-hover); }
+        .submit:active { transform: translateY(1px); }
+        .submit:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--ring); }
+        .submit .bi-arrow-right { transition: transform .15s ease; }
+        .submit:hover .bi-arrow-right { transform: translateX(3px); }
+        .submit[disabled] { opacity: .85; cursor: progress; }
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+        .submit.loading .spinner { display: inline-block; }
+        .submit.loading .bi-arrow-right { display: none; }
 
-        /* Animations */
-        .animate-up {
-            animation: slide-up 0.6s ease-out forwards;
-            opacity: 0;
-            transform: translateY(20px);
+        .form-foot {
+            margin-top: 2.5rem;
+            text-align: center;
+            font-size: .78rem;
+            color: var(--muted);
         }
-
-        @keyframes slide-up {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .delay-1 {
-            animation-delay: 0.1s;
-        }
-
-        .delay-2 {
-            animation-delay: 0.2s;
-        }
-
-        /* Theme Toggle */
-        .theme-toggle {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 100;
-        }
+        .form-foot .dot { margin: 0 .4rem; opacity: .5; }
 
         .theme-btn {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--color-text);
-            font-size: 1.2rem;
-            box-shadow: var(--shadow-premium);
-            transition: all 0.3s ease;
-        }
-
-        .theme-btn:hover {
-            transform: rotate(15deg) scale(1.1);
-        }
-
-        /* Theme toggle display rules */
-        [data-theme="light"] .sun-icon {
-            display: block;
-        }
-
-        [data-theme="light"] .moon-icon {
-            display: none;
-        }
-
-        [data-theme="dark"] .sun-icon {
-            display: none;
-        }
-
-        [data-theme="dark"] .moon-icon {
-            display: block;
-        }
-
-        /* Password Toggle */
-        .password-toggle {
             position: absolute;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--color-text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            padding: 0;
-            transition: color 0.2s ease;
-            z-index: 5;
-        }
-
-        .password-toggle:hover {
-            color: var(--color-primary);
-        }
-
-        .password-toggle:focus {
-            outline: none;
-        }
-
-        /* Loading Indicator */
-        .loading-indicator {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: var(--color-primary);
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--muted);
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            font-size: 1.05rem;
+            transition: color .15s ease, border-color .15s ease, transform .3s ease;
+        }
+        .theme-btn:hover { color: var(--text); border-color: var(--muted); }
+        .theme-btn .bi-sun { display: none; }
+        [data-theme="dark"] .theme-btn .bi-sun { display: inline; }
+        [data-theme="dark"] .theme-btn .bi-moon-stars { display: none; }
+
+        @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (min-width: 960px) {
+            .auth { grid-template-columns: minmax(420px, 44%) 1fr; }
+            .brand-panel { display: block; }
+            .form-panel { padding: 3rem 2rem; }
         }
 
-        .error-icon {
-            width: 1.25rem;
-            height: 1.25rem;
-            flex-shrink: 0;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+        @media (max-width: 959px) {
+            .form-panel::before {
+                content: "";
+                position: absolute;
+                inset: 0 0 auto 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--navy-700), var(--gold-500), var(--navy-700));
             }
+        }
+
+        @media (max-width: 480px) {
+            .logo { max-width: 310px; margin-bottom: 2.25rem; }
+            .form-head h1 { font-size: 1.35rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
 
 <body>
-    <div class="background-blob blob-1"></div>
-    <div class="background-blob blob-2"></div>
+    <div class="auth">
+        <!-- Panel de marca -->
+        <aside class="brand-panel" aria-hidden="true">
+            <div class="brand-inner">
+                <img src="assets/img/monogram_cmrm.svg" alt="" class="brand-mark">
 
-    <div class="theme-toggle">
-        <button id="themeSwitch" class="theme-btn">
-            <i class="bi bi-sun sun-icon"></i>
-            <i class="bi bi-moon moon-icon"></i>
-        </button>
+                <div class="brand-copy">
+                    <div class="brand-rule"></div>
+                    <h2>Sistema de<br><span>Gestión Clínica</span></h2>
+                    <p>Pacientes, citas, laboratorio, farmacia, encamamiento y cobros en un solo lugar.</p>
+                </div>
+
+                <div class="brand-foot"><i class="bi bi-shield-lock"></i>&nbsp; Acceso exclusivo para personal autorizado</div>
+            </div>
+        </aside>
+
+        <!-- Formulario -->
+        <main class="form-panel">
+            <button type="button" id="themeSwitch" class="theme-btn" aria-label="Cambiar modo claro u oscuro" title="Modo claro / oscuro">
+                <i class="bi bi-moon-stars"></i>
+                <i class="bi bi-sun"></i>
+            </button>
+
+            <div class="form-wrap">
+                <img src="assets/img/logo_cmrm.svg" alt="Clínica Médica Dr. Roberto Morales" class="logo logo-light" width="380" height="91">
+                <img src="assets/img/logo_cmrm_dark.svg" alt="Clínica Médica Dr. Roberto Morales" class="logo logo-dark" width="380" height="91">
+
+                <div class="form-head">
+                    <h1>Iniciar sesión</h1>
+                    <p>Ingrese sus credenciales para continuar.</p>
+                </div>
+
+                <div class="alert" id="formAlert" role="alert" <?php echo $error_msg ? '' : 'hidden'; ?>>
+                    <i class="bi bi-exclamation-circle"></i>
+                    <span id="formAlertText"><?php echo $error_msg ? htmlspecialchars($error_msg) : ''; ?></span>
+                </div>
+
+                <form id="loginForm" action="php/auth/login.php" method="POST" novalidate>
+                    <?php echo csrf_field(); ?>
+
+                    <div class="field">
+                        <label for="usuario">Usuario</label>
+                        <div class="control">
+                            <i class="bi bi-person"></i>
+                            <input type="text" id="usuario" name="usuario" placeholder="Su nombre de usuario"
+                                autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Contraseña</label>
+                        <div class="control">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" id="password" name="password" class="has-toggle" placeholder="••••••••"
+                                autocomplete="current-password" required>
+                            <button type="button" class="toggle-pass" id="togglePass" aria-label="Mostrar contraseña" aria-pressed="false">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="caps" id="capsWarn"><i class="bi bi-capslock"></i> Bloq Mayús está activado</div>
+                    </div>
+
+                    <button type="submit" id="loginButton" class="submit">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <span class="label">Ingresar</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+
+                <p class="form-foot">© <?php echo date('Y'); ?> Clínica Médica Dr. Roberto Morales<span class="dot">·</span>RS Solutions</p>
+            </div>
+        </main>
     </div>
 
-    <main class="login-container">
-        <div class="login-card animate-up">
-            <div class="logo-section">
-                <img src="assets/img/logo.png" alt="logo" class="logo-img" width="40" height="40">
-                <div class="login-header">
-                    <h1>Centro Médico Dr.Roberto Morales</h1>
-                    <p>Gestión Clínica Inteligente</p>
-                </div>
-            </div>
-
-            <form id="loginForm" action="php/auth/login.php" method="POST">
-                <?php echo csrf_field(); ?>
-                <?php if (isset($_GET['error'])): ?>
-                    <div class="error-message">
-                        <i class="bi bi-exclamation-circle"></i>
-                        <span><?php
-                            $err = $_GET['error'];
-                            if ($err === '2') echo 'Demasiados intentos. Espere 60 segundos.';
-                            elseif ($err === 'usuario_inactivo') echo 'Usuario desactivado. Contacte al administrador.';
-                            elseif ($err === 'sesion_expirada') echo 'Sesión expirada. Se ha renovado automáticamente. Intente de nuevo.';
-                            else echo 'Usuario o contraseña incorrectos.';
-                        ?></span>
-                    </div>
-                <?php endif; ?>
-
-                <div class="form-group animate-up delay-1">
-                    <label class="form-label" for="usuario">Usuario</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-person input-icon"></i>
-                        <input type="text" id="usuario" name="usuario" class="form-input"
-                            placeholder="Nombre de usuario" required>
-                    </div>
-                </div>
-
-                <div class="form-group animate-up delay-1">
-                    <label class="form-label" for="password">Contraseña</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-lock input-icon"></i>
-                        <input type="password" id="password" name="password" class="form-input"
-                            style="padding-right: 2.75rem;" placeholder="••••••••" required>
-                        <button type="button" class="password-toggle">
-                            <svg class="eye-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <button type="submit" id="loginButton" class="login-btn animate-up delay-2">
-                    <span>Entrar al Sistema</span>
-                    <i class="bi bi-arrow-right"></i>
-                </button>
-
-            </form>
-
-            <!-- Información adicional -->
-            <div class="card-footer">
-                <p class="copyright">© <?php echo date('Y'); ?> RS SOLUTIONS</p>
-            </div>
-        </div>
-
-        <!-- Indicador de carga sutil -->
-        <div class="loading-indicator" id="loadingIndicator">
-            <div class="spinner"></div>
-        </div>
-    </main>
-
-    <!-- Estilos CSS integrados para mejor rendimiento -->
-    <link rel="stylesheet" href="assets/css/global_dashboard.css" media="print" onload="this.media='all'">
-    <noscript>
-        <link rel="stylesheet" href="assets/css/global_dashboard.css">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    </noscript>
-
-    <!-- JavaScript para funcionalidades -->
     <script>
-        // Sistema de Gestión Médica - JavaScript
-        // Centro Médico Dr. Roberto Morales
+        (function () {
+            var root = document.documentElement;
+            var form = document.getElementById('loginForm');
+            var btn = document.getElementById('loginButton');
+            var user = document.getElementById('usuario');
+            var pass = document.getElementById('password');
+            var toggle = document.getElementById('togglePass');
+            var caps = document.getElementById('capsWarn');
+            var alertBox = document.getElementById('formAlert');
+            var alertText = document.getElementById('formAlertText');
 
-        // Esperar a que el DOM esté completamente cargado
-        document.addEventListener('DOMContentLoaded', function () {
-            // Referencias a elementos del DOM
-            const loginForm = document.getElementById('loginForm');
-            const loginButton = document.getElementById('loginButton');
-            const themeSwitch = document.getElementById('themeSwitch');
-            const passwordToggle = document.querySelector('.password-toggle');
-            const passwordInput = document.getElementById('password');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-
-            // Verificar tema guardado en localStorage o preferencia del sistema
-            function initializeTheme() {
-                const savedTheme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                // Aplicar tema guardado o detectar preferencia del sistema
-                if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                }
-            }
-
-            // Cambiar entre modo claro y oscuro
-            function toggleTheme() {
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
-                // Aplicar nuevo tema
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-
-                // Agregar animación sutil
-                document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
-
-                // Pequeña animación en el botón de tema
-                themeSwitch.style.transform = 'rotate(180deg)';
-                setTimeout(() => {
-                    themeSwitch.style.transform = 'rotate(0)';
-                }, 300);
-            }
-
-            // Mostrar/ocultar contraseña
-            function togglePasswordVisibility() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-
-                // Cambiar icono del botón
-                const eyeIcon = passwordToggle.querySelector('.eye-icon');
-                if (type === 'text') {
-                    eyeIcon.innerHTML = '<path d="M12 6.5c2.76 0 5 2.24 5 5 0 .51-.1 1-.24 1.46l3.06 3.06c1.39-1.23 2.49-2.77 3.18-4.53C21.27 7.11 17 4.5 12 4.5c-1.27 0-2.49.2-3.64.57l2.17 2.17c.46-.14.95-.24 1.47-.24zM2.71 3.16c-.39.39-.39 1.02 0 1.41l1.97 1.97C3.06 7.83 1.77 9.53 1 11.5 2.73 15.89 7 18.5 12 18.5c1.52 0 2.97-.3 4.31-.82l2.72 2.72c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L4.13 3.16c-.39-.39-1.03-.39-1.42 0zM12 16.5c-2.76 0-5-2.24-5-5 0-.77.18-1.5.49-2.14l1.57 1.57c-.03.18-.06.37-.06.57 0 1.66 1.34 3 3 3 .2 0 .38-.03.57-.07L14.14 16c-.64.32-1.37.5-2.14.5zm2.97-5.33c-.15-1.4-1.25-2.5-2.65-2.5-.7 0-1.34.28-1.81.73l1.22 1.22c.2-.06.41-.1.63-.1 1.1 0 2 .9 2 2 0 .22-.04.43-.09.63l1.22 1.22c.45-.47.73-1.12.73-1.81 0-1.4-1.1-2.5-2.5-2.5z"/>';
-                } else {
-                    eyeIcon.innerHTML = '<path d="M12,4.5C7,4.5,2.73,7.61,1,12c1.73,4.39,6,7.5,11,7.5s9.27-3.11,11-7.5C21.27,7.61,17,4.5,12,4.5z M12,17c-2.76,0-5-2.24-5-5 s2.24-5,5-5s5,2.24,5,5S14.76,17,12,17z M12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3s3-1.34,3-3S13.66,9,12,9z"/>';
-                }
-            }
-
-            // Manejar envío del formulario
-            function handleFormSubmit(event) {
-                event.preventDefault();
-
-                // Validar campos
-                const usuario = document.getElementById('usuario').value.trim();
-                const password = document.getElementById('password').value.trim();
-
-                if (!usuario || !password) {
-                    showError('Por favor, complete todos los campos');
-                    return;
-                }
-
-                // Mostrar indicador de carga
-                showLoading();
-
-                // Deshabilitar botón
-                loginButton.classList.add('loading');
-                loginButton.disabled = true;
-
-                // Simular envío del formulario (en producción esto se haría con fetch/AJAX)
-                setTimeout(() => {
-                    // En un sistema real, aquí se enviarían los datos al servidor
-                    // Por ahora, solo enviaremos el formulario de manera tradicional
-                    loginForm.submit();
-                }, 1000);
-            }
-
-            // Mostrar indicador de carga
-            function showLoading() {
-                loadingIndicator.style.display = 'flex';
-            }
-
-            // Ocultar indicador de carga
-            function hideLoading() {
-                loadingIndicator.style.display = 'none';
-            }
-
-            // Mostrar mensaje de error personalizado
-            function showError(message) {
-                // Crear elemento de error si no existe
-                let errorElement = document.querySelector('.error-message');
-                if (!errorElement) {
-                    errorElement = document.createElement('div');
-                    errorElement.className = 'error-message';
-                    errorElement.setAttribute('role', 'alert');
-
-                    const errorIcon = document.createElement('svg');
-                    errorIcon.className = 'error-icon';
-                    errorIcon.setAttribute('viewBox', '0 0 24 24');
-                    errorIcon.setAttribute('fill', 'currentColor');
-                    errorIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>';
-
-                    const errorText = document.createElement('span');
-
-                    errorElement.appendChild(errorIcon);
-                    errorElement.appendChild(errorText);
-
-                    // Insertar antes del botón de submit
-                    const submitBtn = document.querySelector('.login-btn');
-                    submitBtn.parentElement.parentElement.insertBefore(errorElement, submitBtn.parentElement);
-                }
-
-                // Actualizar mensaje y mostrar
-                errorElement.querySelector('span').textContent = message;
-                errorElement.style.display = 'flex';
-
-                // Ocultar después de 5 segundos
-                setTimeout(() => {
-                    errorElement.style.display = 'none';
-                }, 5000);
-            }
-
-            // Inicializar tema
-            initializeTheme();
-
-            // Asignar event listeners
-            themeSwitch.addEventListener('click', toggleTheme);
-            passwordToggle.addEventListener('click', togglePasswordVisibility);
-            loginForm.addEventListener('submit', handleFormSubmit);
-
-            // Agregar validación en tiempo real
-            const inputs = document.querySelectorAll('.form-input');
-            inputs.forEach(input => {
-                input.addEventListener('blur', function () {
-                    if (this.value.trim()) {
-                        this.classList.add('filled');
-                    } else {
-                        this.classList.remove('filled');
-                    }
-                });
-
-                // Animar etiqueta al enfocar
-                input.addEventListener('focus', function () {
-                    this.parentElement.classList.add('focused');
-                });
-
-                input.addEventListener('blur', function () {
-                    if (!this.value.trim()) {
-                        this.parentElement.classList.remove('focused');
-                    }
-                });
+            // Modo claro / oscuro (se guarda igual que en el resto del sistema)
+            document.getElementById('themeSwitch').addEventListener('click', function () {
+                var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                try { localStorage.setItem('dashboard-theme', next); } catch (e) {}
             });
 
-            // Permitir enviar formulario con Enter
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter' && (event.target.matches('#usuario') || event.target.matches('#password'))) {
-                    event.preventDefault();
-                    loginForm.dispatchEvent(new Event('submit'));
-                }
+            // Mostrar / ocultar contraseña
+            toggle.addEventListener('click', function () {
+                var show = pass.type === 'password';
+                pass.type = show ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', show ? 'true' : 'false');
+                toggle.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                toggle.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+                pass.focus();
             });
 
-            // Mostrar mensaje de bienvenida
-            console.log('Sistema de Gestión Médica - Centro Médico Dr. Roberto Morales');
-            console.log('Versión 2.0 - Diseño Minimalista con Modo Nocturno');
-        });
+            // Aviso de Bloq Mayús
+            function checkCaps(e) {
+                if (e.getModifierState) caps.classList.toggle('show', e.getModifierState('CapsLock'));
+            }
+            pass.addEventListener('keydown', checkCaps);
+            pass.addEventListener('keyup', checkCaps);
+            pass.addEventListener('blur', function () { caps.classList.remove('show'); });
+
+            function showError(msg, field) {
+                alertText.textContent = msg;
+                alertBox.hidden = false;
+                if (field) field.focus();
+            }
+
+            // Envío: validar y mostrar estado de carga (sin retrasos artificiales)
+            form.addEventListener('submit', function (e) {
+                if (!user.value.trim()) { e.preventDefault(); showError('Ingrese su usuario.', user); return; }
+                if (!pass.value) { e.preventDefault(); showError('Ingrese su contraseña.', pass); return; }
+                btn.disabled = true;
+                btn.classList.add('loading');
+                btn.querySelector('.label').textContent = 'Ingresando…';
+            });
+
+            // Si el navegador restaura la página desde caché (botón Atrás), reactivar el botón
+            window.addEventListener('pageshow', function () {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btn.querySelector('.label').textContent = 'Ingresar';
+            });
+        })();
     </script>
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script defer src="assets/js/security.js"></script>

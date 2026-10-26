@@ -53,11 +53,11 @@
     border-radius: 50%;
     background: conic-gradient(
         from 0deg,
-        #3b82f6 0%,
+        var(--color-primary) 0%,
         #06b6d4 25%,
         #10b981 50%,
-        #3b82f6 75%,
-        #3b82f6 100%
+        var(--color-primary) 75%,
+        var(--color-primary) 100%
     );
     -webkit-mask: radial-gradient(circle, transparent 18px, #000 19px);
             mask: radial-gradient(circle, transparent 18px, #000 19px);
@@ -70,7 +70,7 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 70%, rgba(59, 130, 246, 0.15));
+    background: conic-gradient(from 0deg, transparent 70%, rgba(var(--color-primary-rgb), 0.15));
     animation: processing-overlay-spin 1.6s linear infinite;
 }
 

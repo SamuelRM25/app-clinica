@@ -13,30 +13,30 @@
 
 :root {
     --color-bg-day: #ffffff;
-    --color-surface-day: #f8f9fa;
+    --color-surface-day: #f7f7f4;
     --color-card-day: #ffffff;
-    --color-text-day: #1a1a1a;
-    --color-text-secondary-day: #6c757d;
-    --color-border-day: #e9ecef;
-    --color-primary-day: #0d6efd;
+    --color-text-day: #1c2236;
+    --color-text-secondary-day: #6b7183;
+    --color-border-day: #e7e5df;
+    --color-primary-day: #283251;
     --color-secondary-day: #6c757d;
     --color-success-day: #198754;
     --color-warning-day: #ffc107;
     --color-danger-day: #dc3545;
     --color-info-day: #0dcaf0;
-    --color-bg-night: #0f172a;
-    --color-surface-night: #1e293b;
-    --color-card-night: #1e293b;
-    --color-text-night: #e2e8f0;
-    --color-text-secondary-night: #94a3b8;
-    --color-border-night: #2d3748;
-    --color-primary-night: #3b82f6;
+    --color-bg-night: #0e1424;
+    --color-surface-night: #161e33;
+    --color-card-night: #161e33;
+    --color-text-night: #e9ecf4;
+    --color-text-secondary-night: #98a0b8;
+    --color-border-night: #27304a;
+    --color-primary-night: #6476ad;
     --color-secondary-night: #64748b;
     --color-success-night: #10b981;
     --color-warning-night: #f59e0b;
     --color-danger-night: #ef4444;
     --color-info-night: #06b6d4;
-    --color-primary-rgb: 13, 110, 253;
+    --color-primary-rgb: 40, 50, 81;
     --color-success-rgb: 25, 135, 84;
     --color-warning-rgb: 255, 193, 7;
     --color-danger-rgb: 220, 53, 69;
@@ -71,8 +71,25 @@
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 100px;
     --color-text-muted: #6c757d;
-    --color-primary-dark: #0a58ca;
-    --color-border-focus: rgba(13, 110, 253, 0.4);
+    --color-primary-dark: #1b2440;
+    --color-border-focus: rgba(40, 50, 81, 0.35);
+
+    /* ── Marca CMRM (colores tomados del logo) ── */
+    --cmrm-navy-950: #0e1424;
+    --cmrm-navy-900: #141b30;
+    --cmrm-navy-800: #1b2440;
+    --cmrm-navy-700: #283251;
+    --cmrm-navy-600: #3a4670;
+    --cmrm-gold-300: #ecd48a;
+    --cmrm-gold-400: #e2bf63;
+    --cmrm-gold-500: #c9a24f;
+    --cmrm-gold-600: #a8783a;
+    --color-accent: var(--cmrm-gold-500);
+    --color-accent-light: var(--cmrm-gold-400);
+    --color-accent-dark: var(--cmrm-gold-600);
+    --color-accent-rgb: 201, 162, 79;
+    --gradient-brand: linear-gradient(135deg, #283251 0%, #1b2440 100%);
+    --gradient-gold: linear-gradient(135deg, #e2bf63 0%, #c9a24f 55%, #a8783a 100%);
 }
 
 * {
@@ -128,14 +145,16 @@ body {
     --color-warning: var(--color-warning-night);
     --color-danger: var(--color-danger-night);
     --color-info: var(--color-info-night);
-    --color-primary-rgb: 59, 130, 246;
+    --color-primary-rgb: 100, 118, 173;
+    --color-primary-dark: #55669b;
+    --color-border-focus: rgba(100, 118, 173, 0.45);
     --color-success-rgb: 16, 185, 129;
     --color-warning-rgb: 245, 158, 11;
     --color-danger-rgb: 239, 68, 68;
     --color-info-rgb: 6, 182, 212;
-    --color-card-rgb: 30, 41, 59;
-    --marble-color-1: rgba(15, 23, 42, 0.95);
-    --marble-color-2: rgba(30, 41, 59, 0.8);
+    --color-card-rgb: 22, 30, 51;
+    --marble-color-1: rgba(14, 20, 36, 0.95);
+    --marble-color-2: rgba(22, 30, 51, 0.8);
 }
 
 .marble-effect {
@@ -450,7 +469,7 @@ aside.sidebar~.dashboard-container {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 55%, var(--color-accent) 140%);
     color: white;
     display: flex;
     align-items: center;
@@ -540,8 +559,9 @@ aside.sidebar~.dashboard-container {
 }
 
 .brand-logo {
-    height: 40px;
+    height: 52px;
     width: auto;
+    max-width: 280px;
     object-fit: contain;
 }
 
@@ -631,7 +651,7 @@ aside.sidebar~.dashboard-container {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 55%, var(--color-accent) 140%);
     color: white;
     display: flex;
     align-items: center;
@@ -760,7 +780,7 @@ aside.sidebar~.dashboard-container {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 55%, var(--color-accent) 140%);
     color: white;
     display: flex;
     align-items: center;
@@ -2666,7 +2686,7 @@ aside.sidebar~.dashboard-container {
 }
 
 [data-theme="dark"] .tab-btn.active {
-    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.45);
+    box-shadow: 0 2px 12px rgba(var(--color-primary-rgb), 0.45);
 }
 
 [data-theme="dark"] .search-box input {
@@ -2677,7 +2697,7 @@ aside.sidebar~.dashboard-container {
 
 [data-theme="dark"] .search-box input:focus {
     border-color: var(--color-primary-night);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
 }
 
 .badge {
@@ -3355,7 +3375,7 @@ textarea.form-control {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 55%, var(--color-accent) 140%);
     color: white;
     display: flex;
     align-items: center;
@@ -4085,7 +4105,7 @@ textarea.form-control {
     font-size: 0.85rem;
     color: white;
     flex-shrink: 0;
-    background: linear-gradient(135deg, var(--color-primary), #3b82f6);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
 }
 
 .patient-info .patient-name {
@@ -4315,7 +4335,7 @@ textarea.form-control {
     font-weight: 700;
     font-size: 0.85rem;
     color: white;
-    background: linear-gradient(135deg, var(--color-primary), #3b82f6);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     flex-shrink: 0;
 }
 
@@ -4435,7 +4455,7 @@ textarea.form-control {
 }
 
 .tests-search-bar .tests-search-input:focus {
-    border-color: var(--color-primary, #2563eb);
+    border-color: var(--color-primary);
     background: var(--color-surface, #fff);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     outline: none;
@@ -4509,7 +4529,7 @@ textarea.form-control {
     align-items: center;
     justify-content: center;
     background: var(--color-primary-light, #dbeafe);
-    color: var(--color-primary, #2563eb);
+    color: var(--color-primary);
     font-size: 0.9rem;
     flex-shrink: 0;
 }
@@ -4536,7 +4556,7 @@ textarea.form-control {
 
 .category-select-all {
     font-size: 0.75rem;
-    color: var(--color-primary, #2563eb);
+    color: var(--color-primary);
     cursor: pointer;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
@@ -4614,7 +4634,7 @@ textarea.form-control {
 }
 
 .test-card.selected {
-    border-color: var(--color-primary, #2563eb);
+    border-color: var(--color-primary);
     background: linear-gradient(135deg, var(--color-primary-light, #dbeafe), #eff6ff);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
@@ -4634,8 +4654,8 @@ textarea.form-control {
 }
 
 .test-card.selected .test-checkbox {
-    border-color: var(--color-primary, #2563eb);
-    background: var(--color-primary, #2563eb);
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 }
 
@@ -4701,7 +4721,7 @@ textarea.form-control {
 
 .order-summary-header .selected-badge {
     font-size: 0.75rem;
-    background: var(--color-primary, #2563eb);
+    background: var(--color-primary);
     color: #fff;
     padding: 0.2rem 0.6rem;
     border-radius: 20px;
@@ -4734,7 +4754,7 @@ textarea.form-control {
     padding: 0.75rem;
     border: none;
     border-radius: var(--radius-md, 10px);
-    background: linear-gradient(135deg, var(--color-primary, #2563eb), #1d4ed8);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: #fff;
     font-weight: 600;
     font-size: 0.95rem;
@@ -4844,14 +4864,14 @@ textarea.form-control {
 }
 
 .category-pill:hover {
-    border-color: var(--color-primary, #2563eb);
-    color: var(--color-primary, #2563eb);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
     background: var(--color-primary-light, #eff6ff);
 }
 
 .category-pill.active {
-    border-color: var(--color-primary, #2563eb);
-    background: var(--color-primary, #2563eb);
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 }
 
@@ -4864,4 +4884,122 @@ textarea.form-control {
     .selected-tests-list {
         max-height: 200px;
     }
+}
+
+/* ==========================================================================
+   MARCA CMRM — Bootstrap y componentes comunes con la paleta del logo
+   (selectores con "html" para ganar a bootstrap.min.css, que carga después)
+   ========================================================================== */
+html:root,
+html[data-theme="light"] {
+    --bs-primary: #283251;
+    --bs-primary-rgb: 40, 50, 81;
+    --bs-link-color: #283251;
+    --bs-link-color-rgb: 40, 50, 81;
+    --bs-link-hover-color: #1b2440;
+    --bs-link-hover-color-rgb: 27, 36, 64;
+    --bs-primary-text-emphasis: #1b2440;
+    --bs-primary-bg-subtle: #e9ebf2;
+    --bs-primary-border-subtle: #c3c8d8;
+    --bs-focus-ring-color: rgba(40, 50, 81, 0.25);
+}
+
+html[data-theme="dark"] {
+    --bs-primary: #6476ad;
+    --bs-primary-rgb: 100, 118, 173;
+    --bs-link-color: #9aaad6;
+    --bs-link-color-rgb: 154, 170, 214;
+    --bs-link-hover-color: #c3cdea;
+    --bs-link-hover-color-rgb: 195, 205, 234;
+    --bs-primary-text-emphasis: #c3cdea;
+    --bs-primary-bg-subtle: rgba(100, 118, 173, 0.15);
+    --bs-primary-border-subtle: rgba(100, 118, 173, 0.35);
+    --bs-focus-ring-color: rgba(100, 118, 173, 0.35);
+}
+
+html .btn-primary {
+    --bs-btn-bg: var(--color-primary);
+    --bs-btn-border-color: var(--color-primary);
+    --bs-btn-hover-bg: var(--color-primary-dark);
+    --bs-btn-hover-border-color: var(--color-primary-dark);
+    --bs-btn-active-bg: var(--color-primary-dark);
+    --bs-btn-active-border-color: var(--color-primary-dark);
+    --bs-btn-disabled-bg: var(--color-primary);
+    --bs-btn-disabled-border-color: var(--color-primary);
+    --bs-btn-focus-shadow-rgb: var(--color-primary-rgb);
+}
+
+html .btn-outline-primary {
+    --bs-btn-color: var(--color-primary);
+    --bs-btn-border-color: var(--color-primary);
+    --bs-btn-hover-bg: var(--color-primary);
+    --bs-btn-hover-border-color: var(--color-primary);
+    --bs-btn-active-bg: var(--color-primary-dark);
+    --bs-btn-active-border-color: var(--color-primary-dark);
+    --bs-btn-disabled-color: var(--color-primary);
+    --bs-btn-disabled-border-color: var(--color-primary);
+    --bs-btn-focus-shadow-rgb: var(--color-primary-rgb);
+}
+
+html[data-theme="dark"] .btn-outline-primary { --bs-btn-color: #9aaad6; }
+
+/* Botón dorado de acento (opcional: class="btn btn-accent") */
+html .btn-accent {
+    --bs-btn-color: #141b30;
+    --bs-btn-bg: var(--cmrm-gold-500);
+    --bs-btn-border-color: var(--cmrm-gold-500);
+    --bs-btn-hover-color: #141b30;
+    --bs-btn-hover-bg: var(--cmrm-gold-400);
+    --bs-btn-hover-border-color: var(--cmrm-gold-400);
+    --bs-btn-active-color: #141b30;
+    --bs-btn-active-bg: var(--cmrm-gold-600);
+    --bs-btn-active-border-color: var(--cmrm-gold-600);
+}
+
+html .form-control:focus,
+html .form-select:focus {
+    border-color: rgba(var(--color-primary-rgb), 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-primary-rgb), 0.15);
+}
+
+html .form-check-input:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+html .form-check-input:focus {
+    border-color: rgba(var(--color-primary-rgb), 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-primary-rgb), 0.15);
+}
+
+html .nav-pills .nav-link.active,
+html .nav-pills .show > .nav-link {
+    background-color: var(--color-primary);
+}
+
+html .page-link { color: var(--color-primary); }
+html .active > .page-link,
+html .page-link.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+html .progress-bar { background-color: var(--color-primary); }
+
+/* Bootstrap 5.3.0 trae el azul fijo en .text-bg-primary */
+html .text-bg-primary {
+    color: #fff !important;
+    background-color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1)) !important;
+}
+
+.text-accent { color: var(--color-accent-dark) !important; }
+[data-theme="dark"] .text-accent { color: var(--color-accent-light) !important; }
+.bg-accent { background-color: var(--color-accent) !important; }
+.border-accent { border-color: var(--color-accent) !important; }
+
+::selection { background: rgba(var(--color-accent-rgb), 0.3); }
+
+/* Logo: versión clara/oscura según el modo */
+[data-theme="dark"] img.brand-logo[src*="logo_cmrm.svg"] {
+    content: url("../img/logo_cmrm_dark.svg");
 }

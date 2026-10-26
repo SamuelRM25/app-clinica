@@ -244,7 +244,7 @@ output_keep_alive_script();
         <?php echo htmlspecialchars($encamamiento['nombre_paciente'] . ' ' . $encamamiento['apellido_paciente']); ?>
     </title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -512,7 +512,7 @@ output_keep_alive_script();
     <header class="dashboard-header">
         <div class="header-content">
             <div class="brand-container">
-                <img src="../../assets/img/logo.png" alt="logo" class="brand-logo" width="40" height="40">
+                <img src="../../assets/img/logo_cmrm.svg" alt="Clínica Médica Dr. Roberto Morales" class="brand-logo">
             </div>
             <div class="header-controls">
                 <a href="index.php" class="action-btn secondary">
@@ -1118,7 +1118,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#283251',
                 preConfirm: () => {
                     const form = document.getElementById('signosForm');
                     const formData = new FormData(form);
@@ -1180,7 +1180,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#283251',
                 preConfirm: () => {
                     const form = document.getElementById('evolucionForm');
                     const formData = new FormData(form);
@@ -1270,7 +1270,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar Cargos',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#283251',
                 didOpen: () => {
                     setupCargoRows();
 
@@ -1674,7 +1674,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Actualizar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#283251',
                 preConfirm: () => {
                     const form = document.getElementById('editCargoForm');
                     const formData = new FormData(form);

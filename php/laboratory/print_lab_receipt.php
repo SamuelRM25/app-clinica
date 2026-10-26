@@ -96,7 +96,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Comprobante de Laboratorio #<?php echo $id; ?></title>
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="../../assets/css/print_thermal.css">
     <style>
         @page { size: 80mm auto; margin: 0; }
@@ -173,7 +173,7 @@ try {
         </div>
 
         <div class="no-print" style="text-align: center; margin-top: 12px;">
-            <button onclick="window.print()" style="padding: 8px 16px; background: #0d6efd; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Imprimir</button>
+            <button onclick="window.print()" style="padding: 8px 16px; background: #283251; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Imprimir</button>
             <button onclick="window.close()" style="padding: 8px 16px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;">Cerrar</button>
         </div>
     </div>

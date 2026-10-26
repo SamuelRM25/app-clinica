@@ -114,7 +114,7 @@ try {
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -173,8 +173,8 @@ try {
         }
 
         .patient-meta span {
-            background: rgba(13, 110, 253, 0.08);
-            color: #0d6efd;
+            background: rgba(var(--color-primary-rgb), 0.08);
+            color: var(--color-primary);
             padding: 0.3rem 0.8rem;
             border-radius: 50px;
             font-size: 0.85rem;
@@ -257,11 +257,11 @@ try {
         }
 
         .section-title-icon {
-            color: #0d6efd;
+            color: var(--color-primary);
         }
 
         .action-btn {
-            background: #0d6efd;
+            background: var(--color-primary);
             color: white;
             border: none;
             padding: 0.6rem 1.2rem;
@@ -289,7 +289,7 @@ try {
         }
 
         .consultation-card:hover {
-            border-color: rgba(13, 110, 253, 0.25);
+            border-color: rgba(var(--color-primary-rgb), 0.25);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
         }
 
@@ -308,8 +308,8 @@ try {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            background: rgba(13, 110, 253, 0.08);
-            color: #0d6efd;
+            background: rgba(var(--color-primary-rgb), 0.08);
+            color: var(--color-primary);
             padding: 0.4rem 0.8rem;
             border-radius: 8px;
             font-weight: 700;
@@ -372,7 +372,7 @@ try {
             background: #ffffff;
             border-radius: 8px;
             border: 1px solid rgba(0, 0, 0, 0.04);
-            border-left: 4px solid #0d6efd;
+            border-left: 4px solid var(--color-primary);
             padding: 1rem;
             margin-bottom: 1.25rem;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.005);
@@ -381,7 +381,7 @@ try {
         .section-title-small {
             font-size: 0.85rem;
             font-weight: 700;
-            color: #0d6efd;
+            color: var(--color-primary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 0.5rem;
@@ -414,8 +414,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
-                        height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <!-- Controles -->

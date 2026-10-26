@@ -31,7 +31,7 @@ if (!$patientData || !$existingPatientId) {
 
     <!-- Google Fonts -->
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
 
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
 </head>

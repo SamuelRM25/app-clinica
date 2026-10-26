@@ -10,6 +10,16 @@
 (function () {
     const root = document.documentElement;
 
+    // Migración de marca (una sola vez por navegador): descartar temas guardados
+    // antes de la paleta CMRM para que se vean los colores del logo.
+    try {
+        if (localStorage.getItem('brand-version') !== 'cmrm-1') {
+            localStorage.removeItem('custom-full-theme');
+            localStorage.removeItem('custom-primary-color');
+            localStorage.setItem('brand-version', 'cmrm-1');
+        }
+    } catch (e) { }
+
     // ── 1. Aplicar modo claro/oscuro ──────────────────────────────────────────
     const mode = localStorage.getItem('dashboard-theme') || 'light';
     root.setAttribute('data-theme', mode);

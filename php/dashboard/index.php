@@ -276,17 +276,17 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
 
     <!-- PWA -->
     <link rel="manifest" href="../../manifest.json">
     <meta name="pwa-base" content="<?php echo htmlspecialchars($pwa_base_path); ?>">
-    <meta name="theme-color" content="#0d6efd">
+    <meta name="theme-color" content="#283251">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CMHS">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="../../assets/img/logo.png">
+    <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon-cmrm.png">
 
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print"
@@ -386,9 +386,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 font-size: 0.85rem;
             }
 .brand-logo {
-                height: 112px !important;
+                height: 44px !important;
                 width: auto !important;
-                max-width: 380px !important;
+                max-width: 240px !important;
             }
             .shift-cut-btn-container {
                 position: static !important;
@@ -972,7 +972,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_full.png?v=20241007" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" fetchpriority="high">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" fetchpriority="high">
                 </div>
 
                 <!-- Controles -->
@@ -1021,7 +1021,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
             <!-- Botón Corte de Turno + Historial -->
                 <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
                     <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
-                        style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #0d6efd); color: #fff;"
+                        style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #283251); color: #fff;"
                         onclick="openHistoryModal()">
                         <i class="bi bi-clock-history me-2"></i>
                         Historial
@@ -4739,7 +4739,7 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
                 showCancelButton: true,
                 confirmButtonText: 'Contactar Ventas',
                 cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#0d6efd'
+                confirmButtonColor: '#283251'
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.open('https://wa.me/tu_numero_whatsapp', '_blank');

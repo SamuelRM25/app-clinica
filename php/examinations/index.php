@@ -110,7 +110,7 @@ try {
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo Y FUENTES IDÉNTICAS -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
     <!-- Choices.js (para búsqueda en selects) -->
@@ -142,8 +142,7 @@ try {
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
-                        height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <!-- Controles -->

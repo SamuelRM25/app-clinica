@@ -68,6 +68,16 @@
 // Theme and Global Settings Manager
 (function() {
     // 1. Theme Configuration
+    // Migración de marca (una sola vez por navegador): descartar temas guardados
+    // antes de la paleta CMRM para que se vean los colores del logo.
+    try {
+        if (localStorage.getItem('brand-version') !== 'cmrm-1') {
+            localStorage.removeItem('custom-full-theme');
+            localStorage.removeItem('custom-primary-color');
+            localStorage.setItem('brand-version', 'cmrm-1');
+        }
+    } catch (e) { }
+
     const applyTheme = () => {
         const theme = localStorage.getItem('dashboard-theme') || 'light';
         document.documentElement.setAttribute('data-theme', theme);

@@ -61,7 +61,7 @@ try {
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <!-- Bootstrap Icons -->
@@ -106,8 +106,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo.png" alt="Centro Médico Dr. Roberto Morales" class="brand-logo" width="40"
-                        height="40">
+                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
