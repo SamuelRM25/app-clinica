@@ -43,10 +43,7 @@ function get_hospital_config($conn, $hospital_id = null) {
         if (isset($_SESSION['id_hospital']) && $_SESSION['id_hospital'] != $hospital['id_hospital']) {
             error_log("SECURITY DESTROY: session id_hospital (" . $_SESSION['id_hospital'] . ") != hospital id (" . $hospital['id_hospital'] . ")");
             session_destroy();
-            $project_root_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-                . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-                . '/GitHub/app-clinica/index.php';
-            header("Location: " . $project_root_url . "?err=security");
+            header("Location: " . app_url('index.php') . "?err=security");
             exit;
         }
 

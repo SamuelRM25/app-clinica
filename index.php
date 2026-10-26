@@ -410,6 +410,7 @@ date_default_timezone_set('America/Guatemala');
                         <span><?php
                             $err = $_GET['error'];
                             if ($err === '2') echo 'Demasiados intentos. Espere 60 segundos.';
+                            elseif ($err === 'usuario_inactivo') echo 'Usuario desactivado. Contacte al administrador.';
                             elseif ($err === 'sesion_expirada') echo 'Sesión expirada. Se ha renovado automáticamente. Intente de nuevo.';
                             else echo 'Usuario o contraseña incorrectos.';
                         ?></span>

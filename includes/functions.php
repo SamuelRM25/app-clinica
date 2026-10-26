@@ -175,6 +175,29 @@ function billing_print_url($fuente, $id_registro) {
  * Starts a session with consistent settings across the entire application.
  * Use at the beginning of every PHP script that requires authentication.
  */
+/**
+ * Ruta base del proyecto según dónde se ejecuta el script.
+ * Ej: /GitHub/app-clinica/php/x/y.php → /GitHub/app-clinica/   |   /php/x/y.php → /
+ * Funciona igual en XAMPP local y en el subdominio de Hostinger.
+ */
+function app_base_path(): string {
+    $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+    $pos = strpos($dir . '/', '/php/');
+    $base = ($pos !== false) ? substr($dir, 0, $pos) : rtrim($dir, '/');
+    return $base . '/';
+}
+
+/**
+ * URL absoluta dentro del proyecto. Ej: app_url('index.php')
+ */
+function app_url(string $path = ''): string {
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ($_SERVER['SERVER_PORT'] ?? 80) == 443
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    return ($is_https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+        . app_base_path() . ltrim($path, '/');
+}
+
 function start_app_session(): void {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
@@ -264,13 +287,7 @@ function sanitize_input($data)
 
 function verify_session()
 {
-    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || ($_SERVER['SERVER_PORT'] ?? 80) == 443
-        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-    $base_path = '/';
-    $project_root_url = ($is_https ? 'https' : 'http')
-        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-        . $base_path . 'index.php';
+    $project_root_url = app_url('index.php');
 
     if (!isset($_SESSION['user_id'])) {
         header("Location: " . $project_root_url);

@@ -15,6 +15,8 @@
  *   hospital_id()  → devuelve el id_hospital de la sesión actual (int)
  */
 
+require_once __DIR__ . '/functions.php'; // app_url()
+
 if (!function_exists('check_module_access')) {
 
     /**
@@ -25,10 +27,7 @@ if (!function_exists('check_module_access')) {
     {
         // 1. Sesión activa
         if (!isset($_SESSION['user_id'])) {
-            $project_root_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-                . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-                . '/GitHub/app-clinica/index.php';
-            header('Location: ' . $project_root_url);
+            header('Location: ' . app_url('index.php'));
             exit;
         }
 
