@@ -1,0 +1,7 @@
+# Rama landing: solo la página de presentación de clinicapp.gt
+.DS_Store
+.env
+config/
+logs/
+vendor/
+*.log
