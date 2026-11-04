@@ -309,6 +309,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=20250602">
+    <link rel="stylesheet" href="../../assets/css/role_dashboards.css?v=1">
     <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/pwa-install.css?v=1">
@@ -678,6 +679,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 }
                 $is_restricted = !empty($allowed_modules);
                 ?>
+                <?php if (role_is_limited($user_type)): ?>
+                    <?php include __DIR__ . '/roles/_nav.php'; ?>
+                <?php else: ?>
                 
                 <li class="nav-item">
                     <a href="index.php" class="nav-link active">
@@ -949,6 +953,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </a>
                 </li>
                 <?php endif; ?>
+                <?php endif; /* fin menú general */ ?>
             </ul>
         </nav>
     </aside>    
@@ -1019,6 +1024,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                 </div>
             </div>
             <!-- Botón Corte de Turno + Historial -->
+            <?php if (!role_is_limited($user_type)): ?>
                 <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
                     <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
                         style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #283251); color: #fff;"
@@ -1026,13 +1032,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         <i class="bi bi-clock-history me-2"></i>
                         Historial
                     </button>
-            <?php if ($user_type === 'admin'): ?>
+                <?php if ($user_type === 'admin'): ?>
                     <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
                         style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
                         onclick="verifyShiftCode()">
                         <i class="bi bi-receipt-cutoff me-2"></i>
                         Corte de Turno
                     </button>
+                <?php endif; ?>
                 </div>
             <?php endif; ?>
         </header>
@@ -1842,6 +1849,9 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
         <!-- Contenido Principal -->
         <main class="main-content">
+            <?php if (role_is_limited($user_type) && is_file(__DIR__ . '/roles/' . $user_type . '.php')): ?>
+                <?php include __DIR__ . '/roles/' . $user_type . '.php'; ?>
+            <?php else: /* dashboard general (admin, user, doc) */ ?>
             <!-- Notificación de compras pendientes -->
             <?php if ($pending_purchases > 0 && $user_type === 'user'): ?>
                     <div class="alert-card mb-4 animate-in delay-1">
@@ -2528,6 +2538,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         </div>
                     </section>
             <?php endif; ?>
+            <?php endif; /* fin dashboard general */ ?>
         </main>
     </div>
 

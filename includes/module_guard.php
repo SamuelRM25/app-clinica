@@ -31,7 +31,15 @@ if (!function_exists('check_module_access')) {
             exit;
         }
 
-        // 2. Módulo activo (core siempre está permitido)
+        // 2. Roles con acceso limitado (laboratorio, quirófano, farmacia):
+        //    solo entran a sus propios módulos
+        $rol = $_SESSION['tipoUsuario'] ?? '';
+        if (function_exists('role_can_access') && !role_can_access($rol, $module_name)) {
+            header('Location: ../dashboard/index.php?acceso_denegado=1&modulo=' . urlencode($module_name));
+            exit;
+        }
+
+        // 3. Módulo activo (core siempre está permitido)
         if ($module_name === 'core') {
             return;
         }

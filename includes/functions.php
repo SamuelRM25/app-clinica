@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/roles.php'; // Tipos de usuario y permisos por módulo
 /**
  * Enhanced audit logging function that writes to both file and database.
  *

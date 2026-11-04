@@ -27,6 +27,10 @@ try {
     $nombre = $_POST['nombre'] ?? '';
     $apellido = $_POST['apellido'] ?? '';
     $tipoUsuario = $_POST['tipoUsuario'] ?? 'user';
+    if (!role_is_valid($tipoUsuario)) {
+        echo json_encode(['success' => false, 'message' => 'Tipo de usuario no válido']);
+        exit;
+    }
     $especialidad = $_POST['especialidad'] ?? '';
     $email = trim($_POST['email'] ?? '');
     if ($email === '') $email = null;

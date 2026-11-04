@@ -357,7 +357,7 @@ try {
                                     catálogo
                                 </a>
 
-                                <?php if ($user_type === 'user' || $user_type === 'admin' || $user_type === 'doc'): ?>
+                                <?php if (in_array($user_type, ['user', 'admin', 'doc', 'lab'], true)): ?>
                                         <a href="crear_orden.php" class="action-btn">
                                             <i class="bi bi-plus-lg"></i>
                                             Nueva Orden

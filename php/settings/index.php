@@ -474,6 +474,9 @@ $page_title = "Configuración del Sistema";
                                         <input class="form-check-input" type="checkbox" id="showInactiveUsers" <?php echo $show_inactive ? 'checked' : ''; ?> onchange="window.location.href='?show_inactive=' + (this.checked ? '1' : '0');">
                                         <label class="form-check-label small" for="showInactiveUsers">Mostrar inactivos</label>
                                     </div>
+                                    <a class="action-btn" href="roles_setup.php" title="Activa los tipos Laboratorio, Quirófano y Farmacia y crea los usuarios iniciales">
+                                        <i class="bi bi-people"></i> Roles y usuarios iniciales
+                                    </a>
                                     <button class="action-btn primary" onclick="openUserModal()">
                                         <i class="bi bi-person-plus"></i> Nuevo Usuario
                                     </button>
@@ -509,7 +512,7 @@ $page_title = "Configuración del Sistema";
                                                     <td>
                                                         <span
                                                             class="badge <?php echo $u['tipoUsuario'] === 'admin' ? 'bg-primary-subtle text-primary' : 'bg-light text-dark'; ?> border">
-                                                            <?php echo ucfirst($u['tipoUsuario']); ?>
+                                                            <?php echo htmlspecialchars(role_label($u['tipoUsuario'])); ?>
                                                         </span>
                                                     </td>
                                                     <td><?php echo htmlspecialchars($u['especialidad'] ?: 'N/A'); ?></td>
@@ -1321,9 +1324,9 @@ $page_title = "Configuración del Sistema";
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Rol</label>
                                 <select name="tipoUsuario" id="userRole" class="form-select" required>
-                                    <option value="user">Usuario Estándar</option>
-                                    <option value="doc">Médico</option>
-                                    <option value="admin">Administrador</option>
+                                    <?php foreach (APP_ROLES as $rol_val => $rol_txt): ?>
+                                        <option value="<?php echo $rol_val; ?>"><?php echo htmlspecialchars($rol_txt); ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-6">
