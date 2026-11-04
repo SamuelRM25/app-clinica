@@ -68,6 +68,16 @@
 // Theme and Global Settings Manager
 (function() {
     // 1. Theme Configuration
+    // Migración de marca (una sola vez por navegador): descartar temas guardados
+    // antes del rediseño para que se vea la paleta nueva.
+    try {
+        if (localStorage.getItem('brand-version') !== 'base-ecg-1') {
+            localStorage.removeItem('custom-full-theme');
+            localStorage.removeItem('custom-primary-color');
+            localStorage.setItem('brand-version', 'base-ecg-1');
+        }
+    } catch (e) { }
+
     const applyTheme = () => {
         const theme = localStorage.getItem('dashboard-theme') || 'light';
         document.documentElement.setAttribute('data-theme', theme);

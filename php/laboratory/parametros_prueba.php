@@ -763,7 +763,7 @@ try {
                             icon: 'error',
                             title: 'Error de validación',
                             text: message,
-                            confirmButtonColor: '#0d6efd'
+                            confirmButtonColor: '#0F6670'
                         });
                     });
                 }

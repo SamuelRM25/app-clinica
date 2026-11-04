@@ -1468,8 +1468,8 @@ try {
             color: #059669 !important;
         }
         .charge-hospitalizacion {
-            background: rgba(99, 102, 241, 0.1) !important;
-            color: #6366f1 !important;
+            background: rgba(var(--color-primary-rgb), 0.1) !important;
+            color: var(--color-primary) !important;
         }
 
         @media (max-width: 768px) {

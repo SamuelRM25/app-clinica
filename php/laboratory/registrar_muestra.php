@@ -242,7 +242,7 @@ try {
                 showCancelButton: true,
                 confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Confirmar Recepción',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: 'var(--color-primary, #6366f1)',
+                confirmButtonColor: 'var(--color-primary, #0F6670)',
                 customClass: {
                     popup: 'border-0 rounded-4 shadow-lg bg-card',
                     confirmButton: 'action-btn px-4 py-2',

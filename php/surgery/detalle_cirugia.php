@@ -1370,7 +1370,7 @@ async function previewAsignacion() {
                         </div>
                     </div>
                 </div>
-                <div class="border rounded p-3" style="background: rgba(13,110,253,.04);">
+                <div class="border rounded p-3" style="background: rgba(15, 102, 112,.04);">
                     <h6 class="mb-2"><i class="bi bi-cash-stack me-1"></i>Cargos post-operatorios a aplicar:</h6>
                     <div class="row">
                         <div class="col-md-6">

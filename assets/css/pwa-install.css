@@ -8,14 +8,14 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.55rem 1rem;
-    background: linear-gradient(135deg, #0d6efd, #0056b3);
+    background: linear-gradient(135deg, var(--color-primary), #0056b3);
     color: #fff;
     border: none;
     border-radius: 10px;
     font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
     transition: all 0.25s ease;
     white-space: nowrap;
     text-decoration: none;
@@ -25,7 +25,7 @@
 
 .install-app-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.45);
+    box-shadow: 0 6px 16px rgba(var(--color-primary-rgb), 0.45);
     background: linear-gradient(135deg, #0056b3, #003d80);
     color: #fff;
 }
@@ -49,37 +49,37 @@
 
 @keyframes pulseInstall {
     0%, 100% {
-        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+        box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
     }
     50% {
-        box-shadow: 0 2px 18px rgba(13, 110, 253, 0.55);
+        box-shadow: 0 2px 18px rgba(var(--color-primary-rgb), 0.55);
     }
 }
 
 /* Modo oscuro */
 [data-theme="dark"] .install-app-btn {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.4);
 }
 
 [data-theme="dark"] .install-app-btn:hover {
-    background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.55);
+    background: linear-gradient(135deg, var(--color-primary-dark), #1e3a8a);
+    box-shadow: 0 6px 16px rgba(var(--color-primary-rgb), 0.55);
 }
 
 /* Variante más sutil (sin animación) */
 .install-app-btn.subtle {
-    background: rgba(13, 110, 253, 0.1);
-    color: #0d6efd;
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
     box-shadow: none;
-    border: 1px solid rgba(13, 110, 253, 0.3);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.3);
     animation: none;
 }
 
 .install-app-btn.subtle:hover {
-    background: rgba(13, 110, 253, 0.2);
-    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
-    color: #0d6efd;
+    background: rgba(var(--color-primary-rgb), 0.2);
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
 }
 
 /* Responsive: en móvil solo ícono */
@@ -119,7 +119,7 @@
 .pwa-update-toast .pwa-toast-icon {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, #0d6efd, #0056b3);
+    background: linear-gradient(135deg, var(--color-primary), #0056b3);
     color: #fff;
     border-radius: 8px;
     display: flex;
@@ -164,7 +164,7 @@
 }
 
 .pwa-update-toast .pwa-toast-btn.primary {
-    background: #0d6efd;
+    background: var(--color-primary);
     color: #fff;
 }
 

@@ -242,7 +242,7 @@ try {
             z-index: 1000;
         }
         .action-btn {
-            background: #0d6efd;
+            background: #0F6670;
             color: #fff;
             border: none;
             padding: 12px 24px;
@@ -254,7 +254,7 @@ try {
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+            box-shadow: 0 4px 15px rgba(15, 102, 112, 0.3);
             transition: transform 0.2s, background 0.2s;
         }
         .action-btn:hover {

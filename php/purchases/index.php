@@ -323,7 +323,7 @@ try {
         }
         .accounting-kpi--info .accounting-kpi__icon {
             background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
+            color: var(--color-primary);
         }
         .accounting-kpi__body { flex: 1; min-width: 0; }
         .accounting-kpi__label {

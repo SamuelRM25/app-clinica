@@ -185,7 +185,7 @@ $page_title = "Gestión de Insumos - logo";
                 text: "Se rebajará el stock del inventario.",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#0d6efd',
+                confirmButtonColor: '#0F6670',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Sí, registrar'
             }).then((result) => {

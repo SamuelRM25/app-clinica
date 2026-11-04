@@ -701,7 +701,7 @@ try {
                     const doc = new jsPDF();
 
                     // Colores
-                    const primaryColor = [13, 110, 253]; // Azul primario
+                    const primaryColor = [15, 102, 112]; // Azul primario
 
                     // Encabezado
                     doc.setFillColor(...primaryColor);

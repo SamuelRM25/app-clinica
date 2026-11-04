@@ -603,7 +603,7 @@ try {
                                 title: '¡Éxito!',
                                 text: 'Paciente ingresado correctamente',
                                 icon: 'success',
-                                confirmButtonColor: '#7c90db'
+                                confirmButtonColor: '#0F6670'
                             }).then(() => {
                                 window.location.href = 'detalle_encamamiento.php?id=' + data.id_encamamiento;
                             });
@@ -612,7 +612,7 @@ try {
                                 title: 'Error',
                                 text: data.message || 'No se pudo ingresar el paciente',
                                 icon: 'error',
-                                confirmButtonColor: '#7c90db'
+                                confirmButtonColor: '#0F6670'
                             });
                             submitBtn.innerHTML = originalText;
                             submitBtn.disabled = false;
@@ -624,7 +624,7 @@ try {
                             title: 'Error',
                             text: 'Ocurrió un error al procesar la solicitud',
                             icon: 'error',
-                            confirmButtonColor: '#7c90db'
+                            confirmButtonColor: '#0F6670'
                         });
                         submitBtn.innerHTML = originalText;
                         submitBtn.disabled = false;

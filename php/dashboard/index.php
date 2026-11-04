@@ -276,17 +276,17 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/logo.png">
+    <link rel="icon" type="image/png" href="../../assets/img/favicon.png">
 
     <!-- PWA -->
     <link rel="manifest" href="../../manifest.json">
     <meta name="pwa-base" content="<?php echo htmlspecialchars($pwa_base_path); ?>">
-    <meta name="theme-color" content="#0d6efd">
+    <meta name="theme-color" content="#0F6670">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CMHS">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="../../assets/img/logo.png">
+    <link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
 
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" media="print"
@@ -306,6 +306,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <!-- Seguridad y Protección de Código -->
     <script defer src="../../assets/js/security.js"></script>
+    <script defer src="../../assets/js/ecg-strip.js"></script>
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=20250602">
@@ -972,7 +973,13 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
 
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_full.png?v=20241007" alt="Centro de Pruebas" class="brand-logo" fetchpriority="high">
+                    <a href="index.php" class="brand-lockup" aria-label="Centro de Pruebas, inicio">
+                        <img src="../../assets/img/mark-cp.svg" alt="" width="38" height="38">
+                        <span>
+                            <span class="brand-lockup__name d-block">Centro de Pruebas</span>
+                            <span class="brand-lockup__sub d-block">Gestión clínica</span>
+                        </span>
+                    </a>
                 </div>
 
                 <!-- Controles -->
@@ -1018,23 +1025,6 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </button>
                 </div>
             </div>
-            <!-- Botón Corte de Turno + Historial -->
-                <div class="shift-cut-btn-container" style="position: absolute; right: 2rem; bottom: -3.5rem; display: flex; gap: 0.5rem;">
-                    <button type="button" class="btn btn-info shadow-sm border-0 px-4 py-2 fw-bold"
-                        style="border-radius: 50px; background: linear-gradient(135deg, #0dcaf0, #0d6efd); color: #fff;"
-                        onclick="openHistoryModal()">
-                        <i class="bi bi-clock-history me-2"></i>
-                        Historial
-                    </button>
-            <?php if ($user_type === 'admin'): ?>
-                    <button type="button" class="btn btn-warning shadow-sm border-0 px-4 py-2 fw-bold"
-                        style="border-radius: 50px; background: linear-gradient(135deg, #ffc107, #ff9800); color: #fff;"
-                        onclick="verifyShiftCode()">
-                        <i class="bi bi-receipt-cutoff me-2"></i>
-                        Corte de Turno
-                    </button>
-                </div>
-            <?php endif; ?>
         </header>
 
         <!-- Modal Corte de Turno -->
@@ -1860,24 +1850,49 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     </div>
             <?php endif; ?>
 
-            <!-- Bienvenida personalizada -->
-            <div class="stat-card mb-4 animate-in">
-                <div class="stat-header">
+            <!-- Bienvenida: tira de ECG con fecha, hora y resumen del día -->
+            <?php
+            $dias_es  = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            $meses_es = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            $fecha_tira = $dias_es[(int) date('w')] . ' ' . date('d') . ' ' . $meses_es[(int) date('n') - 1] . ' ' . date('Y');
+            $citas_hoy = (int) ($today_appointments ?? 0);
+            ?>
+            <section class="ecg-hero" aria-label="Resumen del día">
+                <div class="ecg-hero__print">
+                    <b>Centro de Pruebas</b>
+                    <span><?php echo $fecha_tira; ?></span>
+                    <span id="current-time"><?php echo date('H:i'); ?></span>
+                    <span class="opt" aria-hidden="true">25 mm/s</span>
+                    <span class="opt" aria-hidden="true">10 mm/mV</span>
+                </div>
+                <div class="ecg-hero__body">
                     <div>
-                        <h2 id="greeting" class="stat-value" style="font-size: 1.75rem; margin-bottom: 0.5rem;">
-                            <span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?>
-                        </h2>
-                        <p class="text-muted mb-0 greeting-meta">
-                            <i class="bi bi-calendar-check me-1"></i> <?php echo date('d/m/Y'); ?>
-                            <i class="bi bi-clock mx-2"></i> <span id="current-time"><?php echo date('H:i'); ?></span>
-                            <i class="bi bi-building mx-2"></i> Centro de Pruebas
+                        <h2 id="greeting"><span id="greeting-text">Buenos días</span>, <?php echo htmlspecialchars($user_name); ?></h2>
+                        <p class="ecg-hero__summary">
+                            <?php if ($citas_hoy === 0): ?>
+                                No hay citas programadas para hoy.
+                            <?php elseif ($citas_hoy === 1): ?>
+                                Hay <strong>1 cita</strong> programada para hoy.
+                            <?php else: ?>
+                                Hay <strong><?php echo $citas_hoy; ?> citas</strong> programadas para hoy.
+                            <?php endif; ?>
                         </p>
                     </div>
-                    <div class="d-none d-md-block">
-                        <i class="bi bi-heart-pulse text-primary" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <div class="ecg-hero__actions">
+                        <button type="button" class="btn btn-light" onclick="openHistoryModal()">
+                            <i class="bi bi-clock-history"></i> Historial
+                        </button>
+                        <?php if ($user_type === 'admin'): ?>
+                        <button type="button" class="btn btn-primary" onclick="verifyShiftCode()">
+                            <i class="bi bi-receipt-cutoff"></i> Corte de turno
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
-            </div>
+                <div class="ecg-hero__lead">
+                    <div class="ecg-trace" data-ecg="once" data-beat="210" data-speed="520"></div>
+                </div>
+            </section>
 
             <!-- Acciones Rápidas -->
             <?php if ($user_type === 'user' || $user_type === 'admin' || $user_type === 'doc' && $show_quick_actions): ?>
@@ -4739,7 +4754,7 @@ document.addEventListener('DOMContentLoaded', loadTarifas);
                 showCancelButton: true,
                 confirmButtonText: 'Contactar Ventas',
                 cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#0d6efd'
+                confirmButtonColor: '#0F6670'
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.open('https://wa.me/tu_numero_whatsapp', '_blank');

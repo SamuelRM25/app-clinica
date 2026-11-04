@@ -562,6 +562,22 @@ $page_title = "Configuración del Sistema";
                             <div class="row g-3" id="themeGrid">
                                 <?php
                                 $themes = [
+                                    // --- MARCA ---
+                                    [
+                                        'id' => 'base',
+                                        'name' => 'Centro de Pruebas',
+                                        'tag' => 'Predeterminado',
+                                        'primary' => '#0F6670',
+                                        'bg' => '#F2F5F5',
+                                        'surface' => '#FFFFFF',
+                                        'text' => '#17242E',
+                                        'radius' => '0.625rem',
+                                        'shadow' => '0 1px 2px rgba(23,36,46,0.04)',
+                                        'font' => 'IBM Plex Sans',
+                                        'preview_bar' => '#0F6670',
+                                        'preview_bg' => '#FBF6F5',
+                                        'preview_accent' => '#F0CCC8'
+                                    ],
                                     // --- CLÁSICOS ---
                                     [
                                         'id' => 'blue',
@@ -1718,7 +1734,24 @@ $page_title = "Configuración del Sistema";
             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Color actualizado', showConfirmButton: false, timer: 1500 });
         }
 
+        // Tema de marca: quitar personalizaciones y volver a los colores del CSS (con modo oscuro)
+        function resetBrandTheme(silent) {
+            const root = document.documentElement;
+            ['--color-primary', '--color-primary-rgb', '--color-bg', '--color-surface', '--color-text',
+             '--radius-md', '--radius-lg', '--radius-xl', '--shadow-md',
+             '--color-primary-day', '--color-primary-night'].forEach(v => root.style.removeProperty(v));
+            localStorage.removeItem('custom-full-theme');
+            localStorage.removeItem('custom-primary-color');
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+            const card = document.querySelector('.theme-card[data-theme-id="base"]');
+            if (card) card.classList.add('active');
+            const badge = document.getElementById('activeThemeBadge');
+            if (badge) badge.textContent = '✓ Centro de Pruebas';
+            if (!silent) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tema de marca aplicado', showConfirmButton: false, timer: 2000 });
+        }
+
         function applyFullTheme(t) {
+            if (t && t.id === 'base') { resetBrandTheme(); return; }
             const root = document.documentElement;
             root.style.setProperty('--color-primary', t.primary);
             root.style.setProperty('--color-bg', t.bg);
@@ -1762,6 +1795,7 @@ $page_title = "Configuración del Sistema";
             } else {
                 const color = localStorage.getItem('custom-primary-color');
                 if (color) updateAppTheme(color);
+                else resetBrandTheme(true);
             }
         });
 

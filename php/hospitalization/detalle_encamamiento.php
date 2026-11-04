@@ -1118,7 +1118,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#0F6670',
                 preConfirm: () => {
                     const form = document.getElementById('signosForm');
                     const formData = new FormData(form);
@@ -1180,7 +1180,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#0F6670',
                 preConfirm: () => {
                     const form = document.getElementById('evolucionForm');
                     const formData = new FormData(form);
@@ -1270,7 +1270,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Guardar Cargos',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#0F6670',
                 didOpen: () => {
                     setupCargoRows();
 
@@ -1674,7 +1674,7 @@ output_keep_alive_script();
                 showCancelButton: true,
                 confirmButtonText: 'Actualizar',
                 cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7c90db',
+                confirmButtonColor: '#0F6670',
                 preConfirm: () => {
                     const form = document.getElementById('editCargoForm');
                     const formData = new FormData(form);

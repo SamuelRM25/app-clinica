@@ -843,7 +843,7 @@ try {
                     icon: 'error',
                     title: 'Error',
                     text: 'Debe seleccionar al menos una prueba',
-                    confirmButtonColor: '#0d6efd'
+                    confirmButtonColor: '#0F6670'
                 });
                 return;
             }
@@ -854,7 +854,7 @@ try {
                     icon: 'error',
                     title: 'Error',
                     text: 'Debe seleccionar un paciente',
-                    confirmButtonColor: '#0d6efd'
+                    confirmButtonColor: '#0F6670'
                 });
                 return;
             }
@@ -873,7 +873,7 @@ try {
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, generar orden',
-                confirmButtonColor: '#0d6efd',
+                confirmButtonColor: '#0F6670',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -896,7 +896,7 @@ try {
                                 icon: 'success',
                                 title: '¡Orden Generada!',
                                 text: 'Número de orden: ' + data.order_number,
-                                confirmButtonColor: '#0d6efd'
+                                confirmButtonColor: '#0F6670'
                             }).then(() => {
                                 if (data.redirect) {
                                     window.location.href = data.redirect;
@@ -909,7 +909,7 @@ try {
                                 icon: 'error',
                                 title: 'Error',
                                 text: data.message || 'Error al generar la orden',
-                                confirmButtonColor: '#0d6efd'
+                                confirmButtonColor: '#0F6670'
                             });
                         }
                     })
@@ -919,7 +919,7 @@ try {
                             icon: 'error',
                             title: 'Error',
                             text: 'Error de conexión',
-                            confirmButtonColor: '#0d6efd'
+                            confirmButtonColor: '#0F6670'
                         });
                     })
                     .finally(() => {

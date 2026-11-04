@@ -448,7 +448,7 @@ try {
             gap: 0.6rem;
             width: 100%;
             padding: 0.875rem 1.5rem;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark, #0a58ca));
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark, var(--color-primary-dark)));
             color: white;
             border: none;
             border-radius: var(--radius-md);
@@ -1784,7 +1784,7 @@ try {
                             showCancelButton: true,
                             confirmButtonText: '<i class="bi bi-check-lg me-1"></i>Confirmar Traslado',
                             cancelButtonText: 'Cancelar',
-                            confirmButtonColor: '#0d6efd'
+                            confirmButtonColor: '#0F6670'
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 this.executeSale('Traslado', total);
@@ -1874,7 +1874,7 @@ try {
                                     showCancelButton: true,
                                     confirmButtonText: '<i class="bi bi-credit-card me-1"></i>Baucher + Recibo',
                                     cancelButtonText: '<i class="bi bi-receipt me-1"></i>Solo Recibo',
-                                    confirmButtonColor: '#0d6efd',
+                                    confirmButtonColor: '#0F6670',
                                     cancelButtonColor: '#6c757d'
                                 }).then((result) => {
                                     window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');
@@ -1890,7 +1890,7 @@ try {
                                     text: 'Haga clic para imprimir el comprobante',
                                     showConfirmButton: true,
                                     confirmButtonText: '<i class="bi bi-printer me-1"></i>Imprimir Recibo',
-                                    confirmButtonColor: '#0d6efd'
+                                    confirmButtonColor: '#0F6670'
                                 }).then((result) => {
                                     if (result.isConfirmed) {
                                         window.open(`print_receipt.php?id=${data.id_venta}`, '_blank');

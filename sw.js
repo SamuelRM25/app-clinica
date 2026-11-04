@@ -9,14 +9,15 @@
  *  - Auto-actualización silenciosa: skipWaiting() + clients.claim() + postMessage
  */
 
-const CACHE_NAME = 'clinicapp-v1.0.3';
+const CACHE_NAME = 'clinicapp-base-v2.0.0';
 
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
-    '/assets/img/logo_full.png',
-    '/assets/img/logo_full.png',
-    '/assets/img/logo_full.png',
+    '/assets/img/mark-cp.svg',
+    '/assets/img/icon-192.png',
+    '/assets/img/icon-512.png',
+    '/assets/js/ecg-strip.js',
     '/assets/css/global_dashboard.css',
     '/assets/css/print_thermal.css',
     '/assets/js/install-prompt.js'
