@@ -6,7 +6,7 @@ require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
 
-if ($_SESSION['tipoUsuario'] !== 'admin') {
+if (!in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'lab'], true)) {
     echo json_encode(['success' => false, 'message' => 'Acceso denegado']);
     exit;
 }
@@ -106,6 +106,17 @@ try {
                 'notas' => $notas,
             ]
         ]);
+    }
+
+    // Plantilla de resultados (si ya está activada)
+    if (array_key_exists('id_plantilla', $_POST) && lab_tables_ready($conn)) {
+        $id_tpl = (int) $_POST['id_plantilla'];
+        if ($id_tpl) {
+            $chk = $conn->prepare("SELECT COUNT(*) FROM lab_plantillas WHERE id_plantilla = ? AND id_hospital = ?");
+            $chk->execute([$id_tpl, $id_hospital]);
+            if (!$chk->fetchColumn()) $id_tpl = 0;
+        }
+        $conn->prepare("UPDATE catalogo_pruebas SET id_plantilla = ? WHERE id_prueba = ? AND id_hospital = ?")->execute([$id_tpl ?: null, $id_prueba, $id_hospital]);
     }
 
     echo json_encode(['success' => true, 'message' => $message]);

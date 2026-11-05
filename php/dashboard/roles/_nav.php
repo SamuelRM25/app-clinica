@@ -9,7 +9,8 @@ $rd_menu = [
         ['module' => 'laboratory', 'href' => '../laboratory/index.php',             'icon' => 'bi-droplet-half',     'text' => 'Laboratorio'],
         ['module' => 'laboratory', 'href' => '../laboratory/registrar_muestra.php', 'icon' => 'bi-box-arrow-in-down', 'text' => 'Recibir muestras'],
         ['module' => 'laboratory', 'href' => '../almacen/index.php?area=laboratorio', 'icon' => 'bi-box-seam',      'text' => 'Almacén y compras'],
-        ['module' => 'laboratory', 'href' => '../laboratory/catalogo_pruebas.php',  'icon' => 'bi-list-check',       'text' => 'Insumos por prueba'],
+        ['module' => 'laboratory', 'href' => '../laboratory/catalogo_pruebas.php',  'icon' => 'bi-list-check',       'text' => 'Catálogo de pruebas'],
+        ['module' => 'laboratory', 'href' => '../laboratory/plantillas.php',        'icon' => 'bi-file-earmark-text', 'text' => 'Plantillas de resultados'],
     ],
     'qx' => [
         ['module' => 'surgery', 'href' => '../surgery/index.php',         'icon' => 'bi-heart-pulse',  'text' => 'Quirófano'],

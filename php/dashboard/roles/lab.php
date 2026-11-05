@@ -86,8 +86,9 @@ rd_hero($user_name, 'Laboratorio clínico', 'bi-droplet-half', $summary, [
             <ul class="rd-list">
                 <?php foreach ($cola as $o):
                     $tarde = $o['estado'] === 'Pendiente' && strtotime($o['fecha_orden']) <= strtotime('-2 days');
-                    if ($o['estado'] === 'Pendiente') { $act_href = '../laboratory/registrar_muestra.php'; $act_txt = 'Recibir muestra'; }
-                    else { $act_href = '../laboratory/procesar_orden.php?id=' . (int) $o['id_orden']; $act_txt = 'Procesar'; }
+                    $lab_tpl = lab_tables_ready($conn);
+                    if ($o['estado'] === 'Pendiente') { $act_href = $lab_tpl ? '../laboratory/resultados.php?id=' . (int) $o['id_orden'] : '../laboratory/registrar_muestra.php'; $act_txt = 'Recibir muestra'; }
+                    else { $act_href = ($lab_tpl ? '../laboratory/resultados.php?id=' : '../laboratory/procesar_orden.php?id=') . (int) $o['id_orden']; $act_txt = 'Registrar resultados'; }
                 ?>
                     <li class="rd-item<?php echo $tarde ? ' rd-item--late' : ''; ?>">
                         <span class="rd-avatar"><?php echo rd_e(rd_initials($o['paciente'])); ?></span>
@@ -125,7 +126,7 @@ rd_hero($user_name, 'Laboratorio clínico', 'bi-droplet-half', $summary, [
                                 <a class="rd-item__title" href="../laboratory/ver_orden.php?id=<?php echo (int) $o['id_orden']; ?>"><?php echo rd_e($o['paciente']); ?></a>
                                 <span class="rd-item__meta"><?php echo rd_e($o['numero_orden']); ?>, <?php echo rd_e(rd_ago($o['fecha_orden'])); ?></span>
                             </div>
-                            <a class="rd-icon-btn" href="../laboratory/imprimir_resultados.php?id=<?php echo (int) $o['id_orden']; ?>" title="Imprimir resultados" aria-label="Imprimir resultados de <?php echo rd_e($o['paciente']); ?>"><i class="bi bi-printer"></i></a>
+                            <a class="rd-icon-btn" href="../laboratory/<?php echo lab_tables_ready($conn) ? 'imprimir.php' : 'imprimir_resultados.php'; ?>?id=<?php echo (int) $o['id_orden']; ?>" target="_blank" title="Imprimir resultados" aria-label="Imprimir resultados de <?php echo rd_e($o['paciente']); ?>"><i class="bi bi-printer"></i></a>
                         </li>
                     <?php endforeach; ?>
                 </ul>

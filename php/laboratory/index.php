@@ -125,6 +125,15 @@ try {
     $stmt->execute([$two_days_ago, hospital_id()]);
     $ordenes_retrasadas = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
+    // Plantillas de resultados: ¿qué órdenes ya tienen resultados con plantilla?
+    $lab_listo = lab_tables_ready($conn);
+    $con_resultados = [];
+    if ($lab_listo) {
+        $stmt = $conn->prepare("SELECT DISTINCT id_orden FROM lab_resultados WHERE id_hospital = ?");
+        $stmt->execute([hospital_id()]);
+        $con_resultados = array_flip($stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     // 9. Conteo de órdenes del mes agrupadas por laboratorio externo
     $stmt = $conn->prepare("
         SELECT laboratorio_externo, COUNT(*) as total
@@ -356,6 +365,12 @@ try {
                                     <i class="bi bi-gear"></i>
                                     Catálogo
                                 </a>
+                                <?php if (in_array($user_type, ['admin', 'lab'], true)): ?>
+                                <a href="plantillas.php" class="action-btn secondary">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    Plantillas
+                                </a>
+                                <?php endif; ?>
                                 <?php if (in_array('laboratorio', area_allowed_for_user(), true)): ?>
                                 <a href="../almacen/index.php?area=laboratorio" class="action-btn secondary">
                                     <i class="bi bi-box-seam"></i>
@@ -477,10 +492,21 @@ try {
                                                         <td>
                                                             <div class="action-buttons">
                                                                 <?php if ($orden['estado'] === 'Validada' || $orden['estado'] === 'Completada'): ?>
+                                                                        <?php if (isset($con_resultados[$orden['id_orden']])): ?>
+                                                                        <a href="imprimir.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                            class="btn-icon pdf" title="Imprimir resultados" target="_blank">
+                                                                            <i class="bi bi-printer"></i>
+                                                                        </a>
+                                                                        <a href="resultados.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                            class="btn-icon process" title="Ver o corregir resultados">
+                                                                            <i class="bi bi-clipboard2-check"></i>
+                                                                        </a>
+                                                                        <?php else: ?>
                                                                         <a href="imprimir_resultados.php?id=<?php echo $orden['id_orden']; ?>"
                                                                             class="btn-icon pdf" title="Ver Resultados PDF" target="_blank">
                                                                             <i class="bi bi-file-earmark-pdf"></i>
                                                                         </a>
+                                                                        <?php endif; ?>
                                                                         <!-- Imprimir Ticket -->
                                                                         <a href="print_lab_receipt.php?id=<?php echo $orden['id_examen_realizado']; ?>"
                                                                             class="btn-icon bg-info text-white border-0" title="Imprimir Ticket"
@@ -493,6 +519,16 @@ try {
                                                                             onclick="iniciarDevolucion(<?php echo $orden['id_orden']; ?>)">
                                                                             <i class="bi bi-arrow-return-left"></i>
                                                                         </button>
+                                                                <?php elseif ($lab_listo && $orden['estado'] === 'Pendiente'): ?>
+                                                                        <button type="button" class="btn-icon bg-warning border-0" title="Marcar muestra recibida"
+                                                                            data-recibir="<?php echo (int) $orden['id_orden']; ?>">
+                                                                            <i class="bi bi-box-arrow-in-down"></i>
+                                                                        </button>
+                                                                <?php elseif ($lab_listo): ?>
+                                                                        <a href="resultados.php?id=<?php echo $orden['id_orden']; ?>"
+                                                                            class="btn-icon process" title="Registrar resultados">
+                                                                            <i class="bi bi-pencil-square"></i>
+                                                                        </a>
                                                                 <?php else: ?>
                                                                         <a href="procesar_orden.php?id=<?php echo $orden['id_orden']; ?>"
                                                                             class="btn-icon process" title="Procesar orden">
@@ -988,6 +1024,23 @@ try {
         }
     </script>
     <script src="../../assets/js/processing-overlay.js"></script>
+    <script>
+    // Marcar muestra recibida con un clic
+    document.addEventListener('click', async function (e) {
+        var b = e.target.closest('[data-recibir]');
+        if (!b) return;
+        b.disabled = true;
+        try {
+            var r = await fetch('api/resultados.php', { method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+                body: JSON.stringify({ action: 'recibir_muestra', id_orden: b.getAttribute('data-recibir') }) });
+            var j = await r.json();
+            if (!j.success) { b.disabled = false; return (window.Swal ? Swal.fire({ icon: 'error', title: 'No se pudo', text: j.message, confirmButtonColor: '#283251' }) : alert(j.message)); }
+            if (window.showProcessing) window.showProcessing('Muestra recibida', 'Actualizando…');
+            location.reload();
+        } catch (err) { b.disabled = false; alert('No hubo respuesta del servidor.'); }
+    });
+    </script>
 </body>
 
 </html>

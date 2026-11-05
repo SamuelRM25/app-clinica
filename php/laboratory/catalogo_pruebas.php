@@ -33,6 +33,15 @@ try {
     $stmt->execute([$id_hospital]);
     $catalogo = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Plantillas de resultados
+    $lab_listo = lab_tables_ready($conn);
+    $plantillas_lab = [];
+    if ($lab_listo) {
+        $stTpl = $conn->prepare("SELECT id_plantilla, nombre, hoja FROM lab_plantillas WHERE id_hospital = ? AND activo = 1 ORDER BY hoja, nombre");
+        $stTpl->execute([$id_hospital]);
+        foreach ($stTpl->fetchAll(PDO::FETCH_ASSOC) as $t) $plantillas_lab[(int) $t['id_plantilla']] = $t;
+    }
+
     // Insumos del almacén por prueba (se descuentan al crear la orden)
     $insumos_por_prueba = [];
     $almacen_listo = area_tables_ready($conn) && in_array('laboratorio', area_allowed_for_user(), true);
@@ -141,7 +150,8 @@ try {
             <!-- Banner de bienvenida -->
             <div class="welcome-banner animate-in">
                 <h1>catálogo de Pruebas</h1>
-                <p><?php echo $es_admin ? 'Administre las pruebas disponibles en el laboratorio' : 'Defina qué insumos del almacén usa cada prueba. Se descuentan solos al crear la orden.'; ?></p>
+                <p>Pruebas, precios, plantilla de resultados e insumos de cada prueba.</p>
+                <?php if ($lab_listo): ?><a href="plantillas.php" class="action-btn secondary mt-2" style="display:inline-flex"><i class="bi bi-file-earmark-text"></i> Plantillas de resultados</a><?php endif; ?>
             </div>
 
             <!-- Estadísticas del catálogo -->
@@ -209,7 +219,7 @@ try {
                         <i class="bi bi-clipboard-plus section-title-icon"></i>
                         Todas las Pruebas
                     </h3>
-                    <?php if ($es_admin): ?>
+                    <?php if ($es_admin || $es_lab): ?>
                     <button class="action-btn" onclick="openTestModal()">
                         <i class="bi bi-plus-lg"></i>
                         Agregar Nueva Prueba
@@ -252,7 +262,12 @@ try {
                                                     <div>
                                                         <div class="test-price">Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?></div>
                                                         <div class="test-params">
+                                                            <?php if ($lab_listo): $tp = $plantillas_lab[(int) ($prueba['id_plantilla'] ?? 0)] ?? null; ?>
+                                                                <?php if ($tp): ?><a href="plantilla_editor.php?id=<?php echo (int) $tp['id_plantilla']; ?>" title="Editar plantilla"><i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($tp['nombre']); ?></a>
+                                                                <?php else: ?><span style="color:#a8783a;font-weight:600">Sin plantilla</span><?php endif; ?>
+                                                            <?php else: ?>
                                                             <?php echo $prueba['num_parametros']; ?> parámetros
+                                                            <?php endif; ?>
                                                             <?php if ($almacen_listo): $ni = $insumos_por_prueba[(int) $prueba['id_prueba']] ?? 0; ?>
                                                                 · <span style="<?php echo $ni ? '' : 'color:#a8783a;font-weight:600'; ?>"><?php echo $ni ? $ni . ($ni === 1 ? ' insumo' : ' insumos') : 'sin insumos'; ?></span>
                                                             <?php endif; ?>
@@ -266,11 +281,13 @@ try {
                                                             <i class="bi bi-box-seam"></i>
                                                         </button>
                                                         <?php endif; ?>
-                                                        <?php if ($es_admin): ?>
+                                                        <?php if ($es_admin && !$lab_listo): ?>
                                                         <button class="btn-icon manage" title="Gestionar parámetros"
                                                             onclick="manageParameters(<?php echo $prueba['id_prueba']; ?>)">
                                                             <i class="bi bi-list-check"></i>
                                                         </button>
+                                                        <?php endif; ?>
+                                                        <?php if ($es_admin || $es_lab): ?>
                                                         <button class="btn-icon edit" title="Editar prueba"
                                                             onclick="editTest(<?php echo htmlspecialchars(json_encode($prueba)); ?>)">
                                                             <i class="bi bi-pencil"></i>
@@ -289,7 +306,7 @@ try {
                             </div>
                             <h4 class="text-muted mb-2">No hay pruebas registradas</h4>
                             <p class="text-muted mb-3">Comience agregando la primera prueba al catálogo</p>
-                            <?php if ($es_admin): ?>
+                            <?php if ($es_admin || $es_lab): ?>
                             <button class="action-btn" onclick="openTestModal()">
                                 <i class="bi bi-plus-lg"></i>
                                 Agregar Primera Prueba
@@ -385,6 +402,19 @@ try {
                                         name="tiempo_procesamiento_horas" placeholder="24" value="24">
                                 </div>
                             </div>
+                            <?php if ($lab_listo): ?>
+                            <div class="mb-3">
+                                <label for="id_plantilla" class="form-label"><i class="bi bi-file-earmark-text"></i> Plantilla de resultados</label>
+                                <select class="form-select" id="id_plantilla" name="id_plantilla">
+                                    <option value="">— Sin plantilla —</option>
+                                    <?php $hojaAnt = null; foreach ($plantillas_lab as $tp):
+                                        if ($tp['hoja'] !== $hojaAnt) { if ($hojaAnt !== null) echo '</optgroup>'; $hojaAnt = $tp['hoja']; echo '<optgroup label="' . htmlspecialchars($tp['hoja'] ?: 'Sin hoja') . '">'; } ?>
+                                        <option value="<?php echo (int) $tp['id_plantilla']; ?>"><?php echo htmlspecialchars($tp['nombre']); ?></option>
+                                    <?php endforeach; if ($hojaAnt !== null) echo '</optgroup>'; ?>
+                                </select>
+                                <small class="text-muted">Es la hoja con la que se registran e imprimen los resultados. <a href="plantilla_editor.php" target="_blank">Crear una nueva</a></small>
+                            </div>
+                            <?php endif; ?>
 
                             <div class="alert alert-info d-flex align-items-center" role="alert">
                                 <i class="bi bi-info-circle me-2"></i>
@@ -581,6 +611,7 @@ try {
                 document.getElementById('precio_la_esperanza').value = data.precio_la_esperanza || '0';
                 document.getElementById('muestra_requerida').value = data.muestra_requerida || '';
                 document.getElementById('tiempo_procesamiento_horas').value = data.tiempo_procesamiento_horas || '24';
+                if (document.getElementById('id_plantilla')) document.getElementById('id_plantilla').value = data.id_plantilla || '';
             } else {
                 // Create mode
                 modalTitle.textContent = 'Nueva Prueba de Laboratorio';
@@ -622,13 +653,10 @@ try {
                         const modal = bootstrap.Modal.getInstance(document.getElementById('testModal'));
                         modal.hide();
 
-                        // Show success message
-                        alert('✓ ' + data.message);
-
-                        // Reload page
+                        if (window.showProcessing) window.showProcessing(data.message, 'Actualizando…');
                         location.reload();
                     } else {
-                        alert('✗ Error: ' + data.message);
+                        (window.Swal ? Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: data.message, confirmButtonColor: '#283251' }) : alert(data.message));
                     }
                 })
                 .catch(error => {

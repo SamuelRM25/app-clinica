@@ -12,8 +12,8 @@ date_default_timezone_set('America/Guatemala');
 
 verify_session();
 
-// Only admins can manage the catalog
-if ($_SESSION['tipoUsuario'] !== 'admin') {
+// Historia clínica: administradores y médicos
+if (!in_array($_SESSION['tipoUsuario'] ?? '', ['admin', 'doc'], true)) {
     header("Location: index.php");
     exit;
 }
@@ -83,6 +83,35 @@ try {
     $stmtLab->execute([$patient_id, $id_hospital]);
     $lab_results = $stmtLab->fetchAll(PDO::FETCH_ASSOC);
 
+    // Resultados con plantilla (finalizados o en proceso), agrupados por orden y por hoja
+    $lab_ordenes = [];
+    if (lab_tables_ready($conn)) {
+        $stmtLR = $conn->prepare("
+            SELECT ol.id_orden, ol.numero_orden, ol.fecha_orden, ol.estado, cp.nombre_prueba,
+                   lr.plantilla, lr.valores, lr.observaciones, lr.finalizado, lr.fecha_finalizado
+            FROM lab_resultados lr
+            JOIN ordenes_laboratorio ol ON ol.id_orden = lr.id_orden
+            JOIN orden_pruebas op ON op.id_orden_prueba = lr.id_orden_prueba
+            JOIN catalogo_pruebas cp ON cp.id_prueba = op.id_prueba
+            WHERE ol.id_paciente = ? AND ol.id_hospital = ? AND op.estado <> 'Devuelto'
+            ORDER BY ol.fecha_orden DESC, lr.id_orden_prueba
+        ");
+        $stmtLR->execute([$patient_id, $id_hospital]);
+        foreach ($stmtLR->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $id_o = (int) $r['id_orden'];
+            if (!isset($lab_ordenes[$id_o])) {
+                $lab_ordenes[$id_o] = ['numero' => $r['numero_orden'], 'fecha' => $r['fecha_finalizado'] ?: $r['fecha_orden'],
+                    'final' => in_array($r['estado'], ['Completada', 'Validada'], true), 'pruebas' => [], 'hojas' => []];
+            }
+            $tpl = lab_tpl_normalize($r['plantilla']);
+            $lab_ordenes[$id_o]['pruebas'][] = $r['nombre_prueba'];
+            $lab_ordenes[$id_o]['hojas'][$tpl['hoja'] ?: mb_strtoupper($r['nombre_prueba'])][] = [
+                'tpl' => $tpl, 'valores' => json_decode($r['valores'], true) ?: [], 'nombre' => $r['nombre_prueba'], 'obs' => $r['observaciones']];
+        }
+        // El médico solo ve resultados finalizados
+        $lab_ordenes = array_filter($lab_ordenes, fn($o) => $o['final']);
+    }
+
     // Calcular edad del paciente
     $edad = isset($patient['fecha_nacimiento']) ?
         (new DateTime())->diff(new DateTime($patient['fecha_nacimiento']))->y : 0;
@@ -135,6 +164,7 @@ try {
 
     <!-- CSS Crítico -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/lab_resultados.css?v=1">
     <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
 
@@ -543,6 +573,36 @@ try {
                         Nueva Consulta
                     </button>
                 </div>
+
+                <?php if (!empty($lab_ordenes)): ?>
+                    <div class="card mb-4 border-0 shadow-sm" style="border-radius: var(--radius-lg);">
+                        <div class="card-header bg-white py-3 border-0 d-flex align-items-center gap-2">
+                            <div class="icon-shape bg-info-subtle text-info rounded-3 p-2"><i class="bi bi-clipboard2-pulse fs-5"></i></div>
+                            <h5 class="mb-0 fw-bold text-dark">Resultados de laboratorio</h5>
+                            <span class="badge bg-primary bg-opacity-10 text-primary ms-auto"><?php echo count($lab_ordenes); ?></span>
+                        </div>
+                        <div class="card-body pt-0">
+                            <?php $primero = true; foreach ($lab_ordenes as $id_o => $lo): ?>
+                                <details class="hc-lab" <?php echo $primero ? 'open' : ''; ?>>
+                                    <summary>
+                                        <b>Lab #<?php echo htmlspecialchars($lo['numero']); ?></b>
+                                        <span class="text-muted small"><?php echo date('d/m/Y', strtotime($lo['fecha'])); ?></span>
+                                        <span class="small" style="flex:1;min-width:180px"><?php echo htmlspecialchars(implode(', ', array_unique($lo['pruebas']))); ?></span>
+                                        <a class="btn btn-sm btn-outline-primary" href="../laboratory/imprimir.php?id=<?php echo (int) $id_o; ?>" target="_blank" onclick="event.stopPropagation()">
+                                            <i class="bi bi-printer me-1"></i>Imprimir
+                                        </a>
+                                    </summary>
+                                    <div class="hc-lab__body lp-view">
+                                        <?php foreach ($lo['hojas'] as $hoja => $items): ?>
+                                            <div class="lp-hoja"><?php echo htmlspecialchars($hoja); ?></div>
+                                            <?php echo lab_render_print($items); ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                            <?php $primero = false; endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if (count($medical_records) > 0): ?>
                     <div class="medical-timeline">
