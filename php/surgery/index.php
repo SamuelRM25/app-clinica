@@ -172,6 +172,12 @@ $stmt_salas_disp = $conn->prepare("SELECT COUNT(*) as total FROM salas_quirurgic
                 <a href="salas.php" class="action-btn">
                     <i class="bi bi-door-open"></i> Gestionar Salas
                 </a>
+                <a href="plantillas.php" class="action-btn">
+                    <i class="bi bi-clipboard2-pulse"></i> Plantillas de operaciones
+                </a>
+                <a href="../almacen/index.php?area=quirofano" class="action-btn">
+                    <i class="bi bi-box-seam"></i> Almacén e insumos
+                </a>
             </div>
 
             <!-- Tabla de cirugías recientes -->

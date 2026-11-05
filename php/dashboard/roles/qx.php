@@ -43,7 +43,7 @@ if ($k_curso > 0) {
 rd_hero($user_name, 'Quirófano', 'bi-heart-pulse', $summary, [
     ['href' => '../surgery/nueva_cirugia.php', 'label' => 'Programar cirugía', 'icon' => 'bi-plus-lg', 'style' => 'primary'],
     ['href' => '../surgery/index.php', 'label' => 'Todas las cirugías', 'icon' => 'bi-list-ul', 'style' => 'ghost'],
-    ['href' => '../surgery/salas.php', 'label' => 'Salas', 'icon' => 'bi-door-open', 'style' => 'ghost'],
+    ['href' => '../almacen/index.php?area=quirofano', 'label' => 'Almacén', 'icon' => 'bi-box-seam', 'style' => 'ghost'],
 ]);
 ?>
 
@@ -93,6 +93,7 @@ rd_hero($user_name, 'Quirófano', 'bi-heart-pulse', $summary, [
     </section>
 
     <div class="rd-side">
+        <?php $rd_area = 'quirofano'; include __DIR__ . '/_almacen.php'; ?>
         <section class="rd-panel">
             <header class="rd-panel__head"><h3>Salas</h3><a href="../surgery/salas.php">Gestionar</a></header>
             <?php if (!$salas): ?>

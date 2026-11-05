@@ -192,6 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                // Descontar del almacén de Laboratorio los insumos de cada prueba
+                area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+
                 // 6. Handling Billing/Cargos
                 if ($id_encamamiento) {
                     $stmtCargo = $conn->prepare("

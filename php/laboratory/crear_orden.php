@@ -891,10 +891,14 @@ try {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            const avisos = data.avisos_almacen || [];
+                            const esc = (t) => { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
                             Swal.fire({
-                                icon: 'success',
+                                icon: avisos.length ? 'warning' : 'success',
                                 title: '¡Orden Generada!',
-                                text: 'Número de orden: ' + data.order_number,
+                                html: 'Número de orden: <b>' + esc(data.order_number) + '</b>' + (avisos.length
+                                    ? '<div style="text-align:left;margin-top:1rem;font-size:.9rem"><b>Revise el almacén de Laboratorio:</b><ul style="margin:.4rem 0 0;padding-left:1.2rem">' +
+                                      avisos.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : ''),
                                 confirmButtonColor: '#283251'
                             }).then(() => {
                                 if (data.redirect) {

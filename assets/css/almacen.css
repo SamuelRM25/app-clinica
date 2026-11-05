@@ -1,0 +1,288 @@
+/* ==========================================================================
+   Almacén por área (Laboratorio / Quirófano) — CMRM
+   Usa las variables de global_dashboard.css (azul marino + dorado).
+   ========================================================================== */
+
+.al-page { --al-radius: 14px; --al-line: var(--color-border); --al-soft: rgba(var(--color-primary-rgb), .06); padding-bottom: 4rem; }
+.al-page h1, .al-page h2 { letter-spacing: -.02em; }
+.al-muted { color: var(--color-text-secondary); }
+.al-ok { color: var(--color-success) !important; }
+.al-warn { color: #a8783a !important; }
+.al-bad { color: var(--color-danger) !important; }
+[data-theme="dark"] .al-warn { color: var(--cmrm-gold-300) !important; }
+.al-nowrap { white-space: nowrap; }
+
+/* ── Encabezado ─────────────────────────────────────────────── */
+.al-head {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.6rem 1.75rem;
+    margin-bottom: 1.25rem;
+    border-radius: 20px;
+    color: #fff;
+    background:
+        radial-gradient(110% 140% at 100% 0%, rgba(201, 162, 79, .3) 0%, rgba(201, 162, 79, 0) 45%),
+        var(--gradient-brand);
+    box-shadow: 0 18px 40px -26px rgba(20, 27, 48, .75);
+}
+.al-head::after {
+    /* Estantes del almacén: líneas finas al fondo */
+    content: "";
+    position: absolute;
+    inset: auto -10% -40% 45%;
+    height: 180%;
+    background: repeating-linear-gradient(180deg, transparent 0 34px, rgba(255, 255, 255, .05) 34px 36px);
+    transform: skewX(-18deg);
+    pointer-events: none;
+}
+.al-head > * { position: relative; z-index: 1; }
+.al-eyebrow { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--cmrm-gold-300); }
+.al-head h1 { margin: .2rem 0 .25rem; font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; color: #fff; }
+.al-head p { margin: 0; color: rgba(255, 255, 255, .72); }
+.al-head__side { display: flex; flex-direction: column; align-items: flex-end; gap: .75rem; }
+.al-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+
+.al-seg { display: inline-flex; padding: 3px; border-radius: 12px; background: rgba(255, 255, 255, .1); }
+.al-seg a { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .8rem; border-radius: 9px; color: rgba(255, 255, 255, .78); font-size: .86rem; font-weight: 600; text-decoration: none; }
+.al-seg a:hover { color: #fff; }
+.al-seg a.is-on { background: #fff; color: var(--cmrm-navy-700); }
+
+/* ── Botones ───────────────────────────────────────────────── */
+.al-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+    min-height: 42px; padding: 0 1rem; border-radius: 11px; border: 1px solid transparent;
+    font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none;
+    transition: background-color .15s, color .15s, border-color .15s, transform .1s;
+}
+.al-btn:active { transform: translateY(1px); }
+.al-btn--sm { min-height: 36px; padding: 0 .85rem; font-size: .85rem; border-radius: 10px; }
+.al-btn--primary { background: var(--cmrm-navy-700); color: #fff; }
+.al-btn--primary:hover { background: var(--cmrm-navy-800); color: #fff; }
+.al-head .al-btn--primary { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .22); }
+.al-head .al-btn--primary:hover { background: rgba(255, 255, 255, .2); }
+.al-btn--gold { background: var(--gradient-gold); color: #241a06; }
+.al-btn--gold:hover { filter: brightness(1.06); color: #241a06; }
+.al-btn--line { background: var(--color-card); color: var(--color-text); border-color: var(--al-line); }
+.al-btn--line:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.al-head .al-btn--line { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .3); }
+.al-head .al-btn--line:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+[data-theme="dark"] .al-btn--primary { background: var(--color-primary); }
+
+.al-icon {
+    display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
+    border: 1px solid var(--al-line); background: var(--color-card); color: var(--color-text-secondary);
+    cursor: pointer; text-decoration: none; transition: color .15s, border-color .15s, background-color .15s;
+}
+.al-icon:hover { color: var(--color-primary); border-color: rgba(var(--color-primary-rgb), .45); }
+.al-icon--ok:hover { color: var(--color-success); border-color: var(--color-success); }
+.al-icon--bad:hover { color: var(--color-danger); border-color: var(--color-danger); }
+
+/* ── Indicadores ───────────────────────────────────────────── */
+.al-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .9rem; margin-bottom: 1.25rem; }
+.al-kpi {
+    display: block; text-align: left; font: inherit; color: inherit;
+    padding: 1rem 1.1rem; border-radius: var(--al-radius); border: 1px solid var(--al-line);
+    background: var(--color-card); box-shadow: 0 1px 2px rgba(20, 27, 48, .04);
+}
+button.al-kpi { cursor: pointer; transition: border-color .15s, transform .15s; }
+button.al-kpi:hover { border-color: rgba(var(--color-primary-rgb), .4); transform: translateY(-1px); }
+.al-kpi span { display: block; font-size: .82rem; font-weight: 500; color: var(--color-text-secondary); }
+.al-kpi b { display: block; margin-top: .3rem; font-size: 1.65rem; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.al-kpi small { display: block; margin-top: .35rem; font-size: .78rem; color: var(--color-text-secondary); }
+.al-kpi--warn b { color: #a8783a; }
+.al-kpi--bad b { color: var(--color-danger); }
+.al-kpi--gold { border-color: rgba(var(--color-accent-rgb), .45); background: linear-gradient(180deg, rgba(var(--color-accent-rgb), .08), transparent 70%), var(--color-card); }
+[data-theme="dark"] .al-kpi--warn b { color: var(--cmrm-gold-300); }
+
+.al-alert {
+    display: flex; gap: .75rem; align-items: flex-start; padding: .9rem 1.1rem; margin-bottom: 1.1rem;
+    border-radius: 12px; background: rgba(var(--color-danger-rgb), .07); border: 1px solid rgba(var(--color-danger-rgb), .25);
+    color: var(--color-text); font-size: .92rem;
+}
+.al-alert > i { color: var(--color-danger); font-size: 1.2rem; }
+
+/* ── Pestañas ──────────────────────────────────────────────── */
+.al-tabs { display: flex; gap: .25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--al-line); overflow-x: auto; }
+.al-tabs button {
+    display: inline-flex; align-items: center; gap: .45rem; padding: .7rem 1rem; border: 0; background: none;
+    color: var(--color-text-secondary); font: inherit; font-weight: 600; font-size: .92rem; cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.al-tabs button:hover { color: var(--color-text); }
+.al-tabs button.is-on { color: var(--color-primary); border-bottom-color: var(--color-accent); }
+.al-tabs button span { min-width: 22px; padding: 0 .4rem; border-radius: 999px; background: var(--al-soft); font-size: .75rem; text-align: center; }
+.al-tab { display: none; }
+.al-tab.is-on { display: block; animation: alIn .2s ease; }
+@keyframes alIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── Barra de herramientas ─────────────────────────────────── */
+.al-toolbar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end; margin-bottom: 1rem; }
+.al-find { position: relative; flex: 1 1 240px; max-width: 360px; margin: 0; }
+.al-find i { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); }
+.al-find input { width: 100%; min-height: 40px; padding: 0 .9rem 0 2.35rem; border-radius: 10px; border: 1px solid var(--al-line); background: var(--color-card); color: var(--color-text); font: inherit; font-size: .92rem; }
+.al-find input:focus, .al-page .form-control:focus, .al-page .form-select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-border-focus); }
+.al-select { width: auto; min-height: 40px; border-radius: 10px; font-size: .9rem; }
+.al-chips { display: inline-flex; flex-wrap: wrap; gap: .3rem; }
+.al-chips button { border: 1px solid var(--al-line); background: var(--color-card); color: var(--color-text-secondary); font: inherit; font-size: .84rem; font-weight: 600; padding: .4rem .75rem; border-radius: 999px; cursor: pointer; }
+.al-chips button.is-on { background: var(--cmrm-navy-700); border-color: var(--cmrm-navy-700); color: #fff; }
+[data-theme="dark"] .al-chips button.is-on { background: var(--color-primary); border-color: var(--color-primary); }
+.al-field { display: flex; flex-direction: column; gap: .25rem; margin: 0; font-size: .8rem; font-weight: 600; color: var(--color-text-secondary); }
+.al-field .form-control, .al-field .form-select { min-height: 38px; font-size: .9rem; }
+.al-field--grow { flex: 1 1 200px; }
+
+.al-mini { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.al-mini span { display: block; font-size: .78rem; color: var(--color-text-secondary); }
+.al-mini b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+/* ── Tablas ────────────────────────────────────────────────── */
+.al-table-wrap { position: relative; overflow-x: auto; border: 1px solid var(--al-line); border-radius: var(--al-radius); background: var(--color-card); }
+.al-table { width: 100%; border-collapse: collapse; font-size: .9rem; color: var(--color-text); }
+.al-table th { padding: .75rem 1rem; text-align: left; font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--color-text-secondary); background: var(--al-soft); border-bottom: 1px solid var(--al-line); white-space: nowrap; }
+.al-table td { padding: .8rem 1rem; border-bottom: 1px solid var(--al-line); vertical-align: middle; }
+.al-table tbody tr:last-child td { border-bottom: 0; }
+.al-table tbody tr:hover td { background: rgba(var(--color-primary-rgb), .025); }
+.al-table--dense td { padding: .55rem .85rem; }
+.al-table--dense th { padding: .6rem .85rem; }
+.al-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.al-table .act { width: 1%; white-space: nowrap; }
+.al-table tfoot td { background: var(--al-soft); border-top: 1px solid var(--al-line); border-bottom: 0; }
+.al-name { font-weight: 600; }
+.al-sub { font-size: .79rem; color: var(--color-text-secondary); margin-top: .1rem; }
+.al-unit { font-size: .8rem; color: var(--color-text-secondary); }
+.al-row-actions { display: flex; gap: .35rem; justify-content: flex-end; }
+
+.al-stock { font-size: 1.05rem; font-weight: 700; }
+.al-stock--bajo { color: #a8783a; }
+.al-stock--agotado, .al-stock--negativo { color: var(--color-danger); }
+.al-stock--inactivo { color: var(--color-text-secondary); }
+[data-theme="dark"] .al-stock--bajo { color: var(--cmrm-gold-300); }
+.al-state { display: inline-block; margin-top: .2rem; padding: .05rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+.al-state--bajo { background: rgba(var(--color-accent-rgb), .16); color: #7a5418; }
+.al-state--agotado, .al-state--negativo { background: rgba(var(--color-danger-rgb), .1); color: var(--color-danger); }
+[data-theme="dark"] .al-state--bajo { color: var(--cmrm-gold-300); }
+
+.al-tag { display: inline-block; padding: .12rem .5rem; border-radius: 6px; font-size: .74rem; font-weight: 600; background: var(--al-soft); color: var(--color-primary); }
+.al-tag--farm { background: rgba(var(--color-info-rgb), .12); color: #0b7285; }
+.al-tag--new { background: rgba(var(--color-accent-rgb), .18); color: #7a5418; }
+[data-theme="dark"] .al-tag--farm { color: #67e8f9; }
+[data-theme="dark"] .al-tag--new { color: var(--cmrm-gold-300); }
+
+.al-pill { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .76rem; font-weight: 600; }
+.al-pill--ok { background: rgba(var(--color-success-rgb), .12); color: var(--color-success); }
+.al-pill--warn { background: rgba(var(--color-accent-rgb), .18); color: #7a5418; }
+.al-pill--bad { background: rgba(var(--color-danger-rgb), .1); color: var(--color-danger); }
+[data-theme="dark"] .al-pill--warn { color: var(--cmrm-gold-300); }
+
+.al-mov { display: inline-flex; align-items: center; gap: .3rem; padding: .12rem .55rem; border-radius: 999px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.al-mov::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.al-mov--in { background: rgba(var(--color-success-rgb), .1); color: var(--color-success); }
+.al-mov--out { background: rgba(var(--color-danger-rgb), .08); color: var(--color-danger); }
+.al-mov--adj { background: rgba(var(--color-accent-rgb), .15); color: #7a5418; }
+[data-theme="dark"] .al-mov--adj { color: var(--cmrm-gold-300); }
+
+.al-list { list-style: none; padding: 0; margin: 0; }
+.al-list li { display: flex; justify-content: space-between; padding: .45rem 0; border-bottom: 1px solid var(--al-line); }
+
+/* ── Paneles y vacíos ──────────────────────────────────────── */
+.al-panel { padding: 1.25rem; border: 1px solid var(--al-line); border-radius: var(--al-radius); background: var(--color-card); }
+.al-empty { text-align: center; padding: 2.75rem 1rem; color: var(--color-text-secondary); }
+.al-empty > i { display: block; font-size: 2rem; color: var(--color-accent); margin-bottom: .5rem; }
+.al-empty b { display: block; color: var(--color-text); font-size: 1.05rem; margin-bottom: .3rem; }
+.al-empty p { max-width: 460px; margin: 0 auto 1rem; }
+.al-install { text-align: center; padding: 3rem 1rem; }
+.al-install > i { font-size: 2.4rem; color: var(--color-accent); }
+.al-install h2 { font-size: 1.3rem; margin: .75rem 0 .4rem; }
+.al-install p { color: var(--color-text-secondary); max-width: 480px; margin: 0 auto 1.25rem; }
+
+/* ── Buscador con lista ────────────────────────────────────── */
+.al-search { position: relative; flex: 1; }
+.al-search__list {
+    position: absolute; z-index: 1080; left: 0; right: 0; top: calc(100% + 4px); max-height: 300px; overflow-y: auto;
+    padding: .3rem; border-radius: 12px; border: 1px solid var(--al-line, var(--color-border)); background: var(--color-card);
+    box-shadow: 0 18px 40px -18px rgba(20, 27, 48, .45);
+}
+.al-search__opt { display: flex; width: 100%; align-items: center; gap: .6rem; padding: .55rem .7rem; border: 0; border-radius: 8px; background: none; color: var(--color-text); font: inherit; text-align: left; cursor: pointer; }
+.al-search__opt:hover, .al-search__opt.is-active { background: rgba(var(--color-primary-rgb), .07); }
+.al-search__name { flex: 1; min-width: 0; font-weight: 500; }
+.al-search__name small { color: var(--color-text-secondary); font-weight: 400; }
+.al-search__stock { font-size: .8rem; color: var(--color-text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.al-search__stock.is-low { color: var(--color-danger); }
+.al-search__empty { padding: .7rem; color: var(--color-text-secondary); font-size: .88rem; }
+
+.al-buy-search, .al-receta__add { position: relative; display: flex; align-items: center; }
+.al-buy-search > i, .al-receta__add > i { position: absolute; left: .85rem; z-index: 2; color: var(--color-text-secondary); }
+.al-buy-search .form-control, .al-receta__add .form-control { padding-left: 2.3rem; min-height: 44px; }
+.al-buy-empty td { text-align: center; color: var(--color-text-secondary); padding: 1.4rem !important; }
+.al-inline { width: 90px; border: 0; border-bottom: 1px dashed var(--color-border); background: transparent; color: var(--color-text); font-size: .8rem; }
+
+/* ── Editor de insumos ─────────────────────────────────────── */
+.al-receta__rows { margin-top: .6rem; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; }
+.al-receta__row, .al-uso__row { display: flex; align-items: center; gap: .75rem; padding: .6rem .8rem; border-bottom: 1px solid var(--color-border); background: var(--color-card); }
+.al-receta__row:last-child, .al-uso__row:last-child { border-bottom: 0; }
+.al-receta__name, .al-uso__row > div:first-child { flex: 1; min-width: 0; font-weight: 600; color: var(--color-text); }
+.al-receta__name small, .al-uso__row small { display: block; font-weight: 400; font-size: .78rem; color: var(--color-text-secondary); }
+.al-receta__qty { display: flex; align-items: center; gap: .4rem; }
+.al-receta__qty input { width: 96px; text-align: right; }
+.al-receta__qty span { min-width: 52px; font-size: .82rem; color: var(--color-text-secondary); }
+.al-receta__empty { padding: 1.1rem; text-align: center; color: var(--color-text-secondary); font-size: .9rem; background: var(--color-card); }
+.al-uso { margin-top: .6rem; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; }
+
+/* ── Modales ───────────────────────────────────────────────── */
+.al-modal { border-radius: 18px; border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-text); }
+.al-modal .modal-header { border-bottom-color: var(--color-border); }
+.al-modal .modal-footer { border-top-color: var(--color-border); gap: .5rem; }
+.al-modal .modal-title { font-weight: 700; font-size: 1.1rem; }
+.al-modal .form-label { font-weight: 600; font-size: .86rem; }
+[data-theme="dark"] .al-modal .btn-close { filter: invert(1) grayscale(1) brightness(2); }
+
+/* ── Corte de inventario ───────────────────────────────────── */
+.al-corte-bar {
+    position: sticky; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;
+    margin-top: 1rem; padding: .9rem 1.1rem; border-radius: 14px; border: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-card) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 -12px 30px -22px rgba(20, 27, 48, .5);
+}
+.al-count { width: 110px; text-align: right; font-weight: 600; }
+.al-count.is-diff { border-color: var(--color-accent); background: rgba(var(--color-accent-rgb), .08); }
+.al-cat-row td { background: var(--al-soft) !important; font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--color-text-secondary); }
+.al-progress { height: 6px; width: 180px; border-radius: 999px; background: var(--al-soft); overflow: hidden; }
+.al-progress span { display: block; height: 100%; background: var(--gradient-gold); transition: width .2s; }
+
+/* ── Responsivo ────────────────────────────────────────────── */
+@media (max-width: 1100px) { .al-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+    .al-head { padding: 1.25rem; }
+    .al-head__side { align-items: stretch; width: 100%; }
+    .al-actions { justify-content: stretch; }
+    .al-actions .al-btn { flex: 1 1 auto; }
+    .al-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .al-find { max-width: none; }
+    .al-receta__qty input { width: 76px; }
+}
+
+@media print {
+    .dashboard-header, .al-head, .al-kpis, .al-tabs, .al-toolbar, .al-alert, .al-corte-bar, .marble-effect, .al-row-actions, .al-noprint { display: none !important; }
+    .al-tab { display: none !important; }
+    .al-tab.is-on { display: block !important; }
+    .al-table-wrap { border: 0; overflow: visible; }
+    .al-table { font-size: 11px; }
+    .al-table th, .al-table td { padding: 4px 6px; }
+    body { background: #fff !important; }
+}
+@media (prefers-reduced-motion: reduce) { .al-tab.is-on { animation: none; } button.al-kpi:hover { transform: none; } }
+
+/* Bootstrap: global_dashboard.css limita todos los modales a 500px */
+.modal-dialog.al-dialog.modal-lg { max-width: min(800px, calc(100% - 1rem)); }
+.modal-dialog.al-dialog.modal-xl { max-width: min(1140px, calc(100% - 1rem)); }
+@media (max-width: 575px) { .modal-dialog.al-dialog { margin: .5rem auto; } }
+
+/* Modo oscuro: ajustes de contraste */
+[data-theme="dark"] .al-head .al-btn--primary { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .22); }
+[data-theme="dark"] .al-head .al-btn--primary:hover { background: rgba(255, 255, 255, .2); }
+[data-theme="dark"] .al-tag { color: #b8c4e8; }
+.al-page .form-control::placeholder, .al-modal .form-control::placeholder, .al-find input::placeholder { color: var(--color-text-secondary); opacity: .85; }

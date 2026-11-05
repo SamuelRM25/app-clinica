@@ -46,9 +46,16 @@ try {
     }
 
     $placeholders = str_repeat('?,', count($pruebas_devueltas) - 1) . '?';
+
+    // Pruebas que aún no se procesaban: sus insumos regresan al almacén
+    $stmt_pend = $conn->prepare("SELECT op.id_orden_prueba FROM orden_pruebas op JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden
+                                 WHERE ol.id_hospital = ? AND op.id_orden = ? AND op.estado = 'Pendiente' AND op.id_orden_prueba IN ($placeholders)");
+    $stmt_pend->execute(array_merge([$id_hospital, $id_orden], $pruebas_devueltas));
+    $pruebas_sin_procesar = $stmt_pend->fetchAll(PDO::FETCH_COLUMN);
     $stmt_update_pruebas = $conn->prepare("UPDATE orden_pruebas op JOIN ordenes_laboratorio ol ON op.id_orden = ol.id_orden SET op.estado = 'Devuelto' WHERE ol.id_hospital = ? AND op.id_orden = ? AND op.id_orden_prueba IN ($placeholders)");
     $params = array_merge([$id_hospital, $id_orden], $pruebas_devueltas);
     $stmt_update_pruebas->execute($params);
+    area_devolver_pruebas_lab($conn, (int) $id_hospital, $pruebas_sin_procesar, $motivo);
 
     $stmt_devolucion = $conn->prepare("
         INSERT INTO examenes_realizados (id_paciente, id_doctor, examen, fecha, hora, cobro, idUsuario, id_hospital) 

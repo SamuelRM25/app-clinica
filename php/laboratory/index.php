@@ -354,8 +354,14 @@ try {
                             <div class="d-flex gap-2">
                                 <a href="catalogo_pruebas.php" class="action-btn secondary">
                                     <i class="bi bi-gear"></i>
-                                    catálogo
+                                    Catálogo
                                 </a>
+                                <?php if (in_array('laboratorio', area_allowed_for_user(), true)): ?>
+                                <a href="../almacen/index.php?area=laboratorio" class="action-btn secondary">
+                                    <i class="bi bi-box-seam"></i>
+                                    Almacén
+                                </a>
+                                <?php endif; ?>
 
                                 <?php if (in_array($user_type, ['user', 'admin', 'doc', 'lab'], true)): ?>
                                         <a href="crear_orden.php" class="action-btn">

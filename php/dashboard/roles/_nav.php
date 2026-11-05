@@ -8,11 +8,15 @@ $rd_menu = [
         ['module' => 'laboratory', 'href' => '../laboratory/crear_orden.php',       'icon' => 'bi-plus-circle',      'text' => 'Nueva orden'],
         ['module' => 'laboratory', 'href' => '../laboratory/index.php',             'icon' => 'bi-droplet-half',     'text' => 'Laboratorio'],
         ['module' => 'laboratory', 'href' => '../laboratory/registrar_muestra.php', 'icon' => 'bi-box-arrow-in-down', 'text' => 'Recibir muestras'],
+        ['module' => 'laboratory', 'href' => '../almacen/index.php?area=laboratorio', 'icon' => 'bi-box-seam',      'text' => 'Almacén y compras'],
+        ['module' => 'laboratory', 'href' => '../laboratory/catalogo_pruebas.php',  'icon' => 'bi-list-check',       'text' => 'Insumos por prueba'],
     ],
     'qx' => [
         ['module' => 'surgery', 'href' => '../surgery/index.php',         'icon' => 'bi-heart-pulse',  'text' => 'Quirófano'],
         ['module' => 'surgery', 'href' => '../surgery/nueva_cirugia.php', 'icon' => 'bi-plus-circle',  'text' => 'Programar cirugía'],
         ['module' => 'surgery', 'href' => '../surgery/salas.php',         'icon' => 'bi-door-open',    'text' => 'Salas'],
+        ['module' => 'surgery', 'href' => '../surgery/plantillas.php',    'icon' => 'bi-clipboard2-pulse', 'text' => 'Plantillas'],
+        ['module' => 'surgery', 'href' => '../almacen/index.php?area=quirofano', 'icon' => 'bi-box-seam', 'text' => 'Almacén y compras'],
     ],
     'farm' => [
         ['module' => 'pharmacy',  'href' => '../dispensary/index.php', 'icon' => 'bi-cart-plus', 'text' => 'Punto de venta'],

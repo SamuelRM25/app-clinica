@@ -23,8 +23,19 @@ try {
     $stmtSalas = $conn->prepare("SELECT id_sala, codigo, nombre, tipo FROM salas_quirurgicas WHERE id_hospital = ? AND estado != 'Mantenimiento' ORDER BY codigo");
     $stmtSalas->execute([$id_hospital]);
     $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
+
+    // Plantillas de operaciones y procedimientos (insumos que se descuentan)
+    $plantillas = [];
+    if (area_tables_ready($conn)) {
+        $stmtPl = $conn->prepare("SELECT p.id_plantilla, p.nombre, p.tipo, p.precio,
+                                         (SELECT COUNT(*) FROM area_recetas r WHERE r.id_hospital = p.id_hospital AND r.ref_tipo = 'plantilla' AND r.ref_id = p.id_plantilla) AS n_items
+                                  FROM qx_plantillas p WHERE p.id_hospital = ? AND p.activo = 1 ORDER BY p.tipo, p.nombre");
+        $stmtPl->execute([$id_hospital]);
+        $plantillas = $stmtPl->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (Exception $e) {
     $salas = [];
+    $plantillas = [];
     $error_msg = 'Error cargando datos: ' . htmlspecialchars($e->getMessage());
     error_log('nueva_cirugia.php: ' . $e->getMessage());
 }
@@ -44,6 +55,7 @@ $page_title = "Nueva Cirugía";
     <link rel="stylesheet" href="../../assets/css/style.css?v=4">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css?v=4">
     <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
+    <link rel="stylesheet" href="../../assets/css/almacen.css?v=1">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -64,7 +76,7 @@ $page_title = "Nueva Cirugía";
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle me-2"></i><?php echo $error_msg; ?>
                 <hr>
-                <small class="text-muted">Si está intentando crear salas o combos, primero hágalo desde Quirófano → Salas / Combos.</small>
+                <small class="text-muted">Si está intentando crear salas o plantillas, primero hágalo desde Quirófano → Salas / Plantillas.</small>
             </div>
         <?php endif; ?>
 
@@ -76,13 +88,6 @@ $page_title = "Nueva Cirugía";
             </div>
         <?php endif; ?>
 
-        <?php if (empty($combos)): ?>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                No hay combos registrados. Puede continuar sin combo e ingresar el cargo manualmente.
-                <a href="combos.php" class="btn btn-sm btn-info ms-2"><i class="bi bi-plus"></i> Crear Combo</a>
-            </div>
-        <?php endif; ?>
 
         <form id="cirugiaForm">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
@@ -144,6 +149,26 @@ $page_title = "Nueva Cirugía";
                             <label class="form-label">Anestesista <small class="text-muted">(escribir manualmente)</small></label>
                             <input type="text" name="anestesista_nombre" id="anestesista_nombre" class="form-control" placeholder="Dr. María López" maxlength="150">
                         </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="id_plantilla">Operación o procedimiento <small class="text-muted">(plantilla)</small></label>
+                            <select class="form-select" name="id_plantilla" id="id_plantilla">
+                                <option value="">— Sin plantilla (nada se descuenta solo) —</option>
+                                <?php $tipoAnt = null; foreach ($plantillas as $pl): if ($pl['tipo'] !== $tipoAnt): if ($tipoAnt !== null) echo '</optgroup>'; $tipoAnt = $pl['tipo']; ?>
+                                    <optgroup label="<?php echo $pl['tipo'] === 'Procedimiento' ? 'Procedimientos' : 'Cirugías'; ?>">
+                                <?php endif; ?>
+                                    <option value="<?php echo (int) $pl['id_plantilla']; ?>" data-precio="<?php echo (float) $pl['precio']; ?>" data-nombre="<?php echo htmlspecialchars($pl['nombre']); ?>">
+                                        <?php echo htmlspecialchars($pl['nombre']); ?><?php echo $pl['n_items'] ? ' · ' . (int) $pl['n_items'] . ' insumos' : ''; ?>
+                                    </option>
+                                <?php endforeach; if ($tipoAnt !== null) echo '</optgroup>'; ?>
+                            </select>
+                            <small class="text-muted"><?php echo $plantillas ? 'Al registrar, se descuentan sus insumos y medicamentos.' : 'Todavía no hay plantillas.'; ?> <a href="plantillas.php">Administrar plantillas</a></small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="cargo_total">Cargo de la operación (Q)</label>
+                            <input type="number" class="form-control" name="cargo_total" id="cargo_total" min="0" step="0.01" placeholder="0.00">
+                            <small class="text-muted">Se cobra al iniciar la cirugía.</small>
+                        </div>
+                        <div class="col-12" id="plantillaPreview" hidden></div>
                         <div class="col-md-12">
                             <label class="form-label">Procedimiento</label>
                             <textarea class="form-control" name="procedimiento" rows="2" placeholder="Descripción del procedimiento quirúrgico..."></textarea>
@@ -168,6 +193,7 @@ $page_title = "Nueva Cirugía";
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
 <script defer src="../../assets/js/security.js"></script>
+<script src="../../assets/js/almacen.js?v=1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Toggle paciente type
@@ -232,10 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('api/create_cirugia.php', { method: 'POST', body: fd, credentials: 'same-origin' });
             const json = await res.json();
             if (json.success) {
+                const avisos = json.avisos_almacen || [];
                 Swal.fire({
-                    icon: 'success',
+                    icon: avisos.length ? 'warning' : 'success',
                     title: 'Cirugía registrada',
-                    text: json.message,
+                    html: escapeHtml(json.message) + (avisos.length
+                        ? '<div style="text-align:left;margin-top:1rem;font-size:.9rem"><b>Revise el inventario:</b><ul style="margin:.4rem 0 0;padding-left:1.2rem">' +
+                          avisos.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul></div>' : ''),
                     confirmButtonText: 'Ir al detalle'
                 }).then(() => { window.location.href = 'detalle_cirugia.php?id=' + json.id_cirugia; });
             } else {
@@ -246,6 +275,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// Vista previa de lo que descuenta la plantilla
+(function () {
+    const sel = document.getElementById('id_plantilla');
+    const box = document.getElementById('plantillaPreview');
+    const cargo = document.getElementById('cargo_total');
+    const proc = document.querySelector('textarea[name="procedimiento"]');
+    if (!sel || !window.AL) return;
+    sel.addEventListener('change', async () => {
+        const opt = sel.options[sel.selectedIndex];
+        if (!sel.value) { box.hidden = true; return; }
+        if (opt.dataset.precio && parseFloat(opt.dataset.precio) > 0) cargo.value = parseFloat(opt.dataset.precio).toFixed(2);
+        if (proc && !proc.value.trim()) proc.value = opt.dataset.nombre;
+        box.hidden = false;
+        box.innerHTML = '<div class="text-muted small">Cargando insumos…</div>';
+        const r = await AL.api('plantilla', { id: sel.value }, 'GET');
+        if (!r.success) { box.innerHTML = '<div class="alert alert-warning mb-0">' + escapeHtml(r.message) + '</div>'; return; }
+        if (!r.items.length) { box.innerHTML = '<div class="alert alert-light border mb-0">Esta plantilla no tiene insumos. No se descontará nada.</div>'; return; }
+        box.innerHTML = '<div class="al-receta__rows">' + r.items.map(it => {
+            const falta = parseFloat(it.stock) < parseFloat(it.cantidad);
+            return '<div class="al-receta__row"><div class="al-receta__name">' + escapeHtml(it.nombre) +
+                (it.fuente === 'farmacia' ? ' <span class="al-tag al-tag--farm">Stock quirófano</span>' : ' <span class="al-tag">Almacén QX</span>') +
+                '<small>Hay ' + AL.qty(it.stock) + ' ' + escapeHtml(it.unidad) + '</small></div>' +
+                '<b class="' + (falta ? 'text-danger' : '') + '">' + AL.qty(it.cantidad) + ' ' + escapeHtml(it.unidad) + (falta ? ' <i class="bi bi-exclamation-triangle" title="No alcanza"></i>' : '') + '</b></div>';
+        }).join('') + '</div>' +
+        (r.items.some(it => parseFloat(it.stock) < parseFloat(it.cantidad))
+            ? '<div class="small text-danger mt-1"><i class="bi bi-exclamation-triangle"></i> Algunos no alcanzan. Los del almacén quedarán en negativo; los medicamentos que falten no se descuentan.</div>' : '');
+    });
+})();
 
 function escapeHtml(str) {
     const div = document.createElement('div');

@@ -112,6 +112,18 @@ try {
         // Liberar sala
         $stmtSala = $conn->prepare("UPDATE salas_quirurgicas SET estado = 'Disponible' WHERE id_sala = ? AND id_hospital = ?");
         $stmtSala->execute([$cirugia['id_sala'], $id_hospital]);
+
+        // Si nunca empezó, nada se usó: regresa al almacén y al stock quirófano lo que se descontó
+        if ($cirugia['estado'] === 'Programada') {
+            if (area_tables_ready($conn)) {
+                area_revertir_ref($conn, $id_hospital, 'cirugia', $id_cirugia, 'Cirugía cancelada antes de iniciar');
+            }
+            $stmtCons = $conn->prepare("SELECT id FROM cirugia_consumos WHERE id_cirugia = ? AND id_hospital = ?");
+            $stmtCons->execute([$id_cirugia, $id_hospital]);
+            foreach ($stmtCons->fetchAll(PDO::FETCH_COLUMN) as $id_consumo) {
+                revertirStockConsumoCirugia($conn, (int)$id_consumo, $id_hospital, $user_id, 'Cirugía cancelada antes de iniciar');
+            }
+        }
     }
 
     $conn->commit();

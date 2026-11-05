@@ -95,6 +95,10 @@ try {
         }
     }
 
+    // Insumos del almacén de Quirófano descontados para esta cirugía
+    $almacen_qx = area_tables_ready($conn) && in_array('quirofano', area_allowed_for_user(), true);
+    $insumos_almacen = $almacen_qx ? area_insumos_cirugia($conn, $id_hospital, $id_cirugia) : [];
+
     // Equipo
     $stmtEq = $conn->prepare("SELECT ce.*, u.nombre, u.apellido, u.especialidad FROM cirugia_equipo ce JOIN usuarios u ON ce.id_usuario = u.idUsuario WHERE ce.id_cirugia = ?");
     $stmtEq->execute([$id_cirugia]);
@@ -139,6 +143,7 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
+    <link rel="stylesheet" href="../../assets/css/almacen.css?v=1">
 </head>
 <body>
 <div class="marble-effect"></div>
@@ -341,6 +346,63 @@ if ($cirugia['fecha_nacimiento'] && $cirugia['fecha_nacimiento'] !== '1900-01-01
                     </div>
                 </div>
             </div>
+
+            <?php if ($almacen_qx): $editable_ins = in_array($cirugia['estado'], ['Programada', 'En_Curso'], true); ?>
+            <!-- Insumos del almacén de Quirófano -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-header bg-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Insumos del almacén de Quirófano</h5>
+                            <small class="text-muted">Material que salió del almacén para esta cirugía (no se cobra aparte).</small>
+                        </div>
+                        <?php if ($editable_ins): ?>
+                            <div class="al-buy-search" style="min-width:280px;max-width:380px;flex:1">
+                                <i class="bi bi-plus-lg"></i><input type="text" class="form-control form-control-sm" id="insBuscar" placeholder="Agregar insumo del almacén…" aria-label="Agregar insumo del almacén">
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (empty($insumos_almacen)): ?>
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">No han salido insumos del almacén para esta cirugía.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="data-table mb-0">
+                                    <thead><tr><th>Insumo</th><th class="text-end">Cantidad</th><th class="text-end">Costo unit.</th><th class="text-end">Costo</th><?php if ($editable_ins): ?><th class="text-center">Acción</th><?php endif; ?></tr></thead>
+                                    <tbody>
+                                        <?php $costo_ins = 0; foreach ($insumos_almacen as $ia): $costo_ins += $ia['cantidad'] * $ia['costo_unitario']; ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($ia['nombre']); ?></td>
+                                                <td class="text-end"><?php echo area_qty($ia['cantidad']); ?> <small class="text-muted"><?php echo htmlspecialchars($ia['unidad']); ?></small></td>
+                                                <td class="text-end">Q<?php echo number_format($ia['costo_unitario'], 2); ?></td>
+                                                <td class="text-end">Q<?php echo number_format($ia['cantidad'] * $ia['costo_unitario'], 2); ?></td>
+                                                <?php if ($editable_ins): ?>
+                                                    <td class="text-center">
+                                                        <button class="btn btn-sm btn-outline-danger" data-ins-devolver="<?php echo (int) $ia['id_item']; ?>"
+                                                                data-nombre="<?php echo htmlspecialchars($ia['nombre']); ?>" data-cant="<?php echo (float) $ia['cantidad']; ?>" data-unidad="<?php echo htmlspecialchars($ia['unidad']); ?>"
+                                                                title="Devolver al almacén" aria-label="Devolver <?php echo htmlspecialchars($ia['nombre']); ?> al almacén">
+                                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                                        </button>
+                                                    </td>
+                                                <?php endif; ?>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <tr class="table-light">
+                                            <td colspan="3" class="text-end fw-bold">Costo de insumos:</td>
+                                            <td class="text-end fw-bold">Q<?php echo number_format($costo_ins, 2); ?></td>
+                                            <?php if ($editable_ins): ?><td></td><?php endif; ?>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Descuentos -->
             <div class="col-12">
@@ -1397,5 +1459,36 @@ async function previewAsignacion() {
 }
 </script>
     <script src="../../assets/js/processing-overlay.js"></script>
+    <?php if ($almacen_qx && $editable_ins): ?>
+    <script src="../../assets/js/almacen.js?v=1"></script>
+    <script>
+    (function () {
+        var ID_CIR = <?php echo (int) $id_cirugia; ?>;
+        function done(r) {
+            if (!r.success) return Swal.fire({ icon: 'error', title: 'No se pudo', text: r.message, confirmButtonColor: '#283251' });
+            if (window.showProcessing) window.showProcessing(r.message, 'Actualizando…');
+            setTimeout(function () { location.reload(); }, 300);
+        }
+        AL.search(document.getElementById('insBuscar'), { area: 'quirofano', onPick: async function (it) {
+            var res = await Swal.fire({ title: AL.esc(it.nombre), input: 'number', inputValue: 1,
+                inputLabel: 'Cantidad a descontar (' + it.unidad + '). Hay ' + AL.qty(it.stock) + '.',
+                inputAttributes: { min: 0, step: 'any' }, showCancelButton: true, confirmButtonText: 'Descontar', cancelButtonText: 'Cancelar', confirmButtonColor: '#283251',
+                inputValidator: function (v) { if (!v || parseFloat(v) <= 0) return 'Escriba una cantidad mayor que cero'; } });
+            if (!res.isConfirmed) return;
+            done(await AL.api('cirugia_insumo_add', { id_cirugia: ID_CIR, id_item: it.id, cantidad: res.value }));
+        } });
+        document.addEventListener('click', async function (e) {
+            var b = e.target.closest('[data-ins-devolver]');
+            if (!b) return;
+            var res = await Swal.fire({ title: 'Devolver ' + AL.esc(b.getAttribute('data-nombre')), input: 'number', inputValue: b.getAttribute('data-cant'),
+                inputLabel: 'Cantidad que regresa al almacén (' + b.getAttribute('data-unidad') + ')',
+                inputAttributes: { min: 0, max: b.getAttribute('data-cant'), step: 'any' }, showCancelButton: true, confirmButtonText: 'Devolver', cancelButtonText: 'Cancelar', confirmButtonColor: '#283251',
+                inputValidator: function (v) { if (!v || parseFloat(v) <= 0) return 'Escriba una cantidad mayor que cero'; if (parseFloat(v) > parseFloat(b.getAttribute('data-cant'))) return 'No puede devolver más de lo que salió'; } });
+            if (!res.isConfirmed) return;
+            done(await AL.api('cirugia_insumo_devolver', { id_cirugia: ID_CIR, id_item: b.getAttribute('data-ins-devolver'), cantidad: res.value }));
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>

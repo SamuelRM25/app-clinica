@@ -63,6 +63,7 @@ rd_hero($user_name, 'Laboratorio clínico', 'bi-droplet-half', $summary, [
     ['href' => '../laboratory/crear_orden.php', 'label' => 'Nueva orden', 'icon' => 'bi-plus-lg', 'style' => 'primary'],
     ['href' => '../laboratory/registrar_muestra.php', 'label' => 'Recibir muestras', 'icon' => 'bi-box-arrow-in-down', 'style' => 'ghost'],
     ['href' => '../laboratory/index.php', 'label' => 'Todas las órdenes', 'icon' => 'bi-list-ul', 'style' => 'ghost'],
+    ['href' => '../almacen/index.php?area=laboratorio', 'label' => 'Almacén', 'icon' => 'bi-box-seam', 'style' => 'ghost'],
 ]);
 ?>
 
@@ -111,6 +112,7 @@ rd_hero($user_name, 'Laboratorio clínico', 'bi-droplet-half', $summary, [
     </section>
 
     <div class="rd-side">
+        <?php $rd_area = 'laboratorio'; include __DIR__ . '/_almacen.php'; ?>
         <section class="rd-panel">
             <header class="rd-panel__head"><h3>Resultados listos</h3></header>
             <?php if (!$listas): ?>

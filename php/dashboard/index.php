@@ -810,6 +810,16 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                     <?php endif; ?>
                 </li>
                 <?php endif; ?>
+
+                <!-- Almacén de Laboratorio y Quirófano -->
+                <?php if ($user_type === 'admin' && area_allowed_for_user()): ?>
+                <li class="nav-item">
+                    <a href="../almacen/index.php" class="nav-link">
+                        <i class="bi bi-boxes nav-icon"></i>
+                        <span class="nav-text">Almacén Lab / QX</span>
+                    </a>
+                </li>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <!-- Otros Módulos -->

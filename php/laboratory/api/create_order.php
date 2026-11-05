@@ -3,6 +3,7 @@ session_start();
 require_once '../../../config/database.php';
 require_once '../../../includes/functions.php';
 require_once '../../../includes/multitenant.php';
+require_once '../../../includes/module_guard.php'; // hospital_id()
 
 header('Content-Type: application/json');
 
@@ -98,6 +99,9 @@ try {
         }
     }
 
+    // Descontar del almacén de Laboratorio los insumos de cada prueba
+    $avisos_almacen = area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+
     if ($id_encamamiento) {
         $stmt_cargo = $conn->prepare("
             INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por, id_hospital)
@@ -126,6 +130,7 @@ try {
         'success' => true,
         'message' => 'Orden generada correctamente',
         'order_number' => $numero_orden,
+        'avisos_almacen' => $avisos_almacen,
         'redirect' => !$is_embedded ? '../index.php?success=1&order=' . $numero_orden : null
     ]);
     exit;

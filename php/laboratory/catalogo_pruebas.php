@@ -9,8 +9,10 @@ $id_hospital = (int) ($_SESSION['id_hospital'] ?? 0);
 
 verify_session();
 
-// Only admins can manage the catalog
-if ($_SESSION['tipoUsuario'] !== 'admin') {
+// Admin gestiona el catálogo; Laboratorio puede entrar solo para definir los insumos de cada prueba
+$es_admin = ($_SESSION['tipoUsuario'] ?? '') === 'admin';
+$es_lab = ($_SESSION['tipoUsuario'] ?? '') === 'lab';
+if (!$es_admin && !$es_lab) {
     header("Location: index.php");
     exit;
 }
@@ -30,6 +32,15 @@ try {
     ");
     $stmt->execute([$id_hospital]);
     $catalogo = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Insumos del almacén por prueba (se descuentan al crear la orden)
+    $insumos_por_prueba = [];
+    $almacen_listo = area_tables_ready($conn) && in_array('laboratorio', area_allowed_for_user(), true);
+    if ($almacen_listo) {
+        $stIns = $conn->prepare("SELECT ref_id, COUNT(*) AS n FROM area_recetas WHERE id_hospital = ? AND ref_tipo = 'prueba' GROUP BY ref_id");
+        $stIns->execute([$id_hospital]);
+        foreach ($stIns->fetchAll(PDO::FETCH_ASSOC) as $r) $insumos_por_prueba[(int) $r['ref_id']] = (int) $r['n'];
+    }
 
     // Group by category for the UI
     $pruebas_por_categoria = [];
@@ -73,6 +84,7 @@ try {
     <!-- CSS Crítico (mismo que index.php) -->
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/processing-overlay.css">
+    <link rel="stylesheet" href="../../assets/css/almacen.css?v=1">
 
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -111,7 +123,7 @@ try {
                         </div>
                         <div class="header-details">
                             <span class="header-name"><?php echo htmlspecialchars($_SESSION['nombre']); ?></span>
-                            <span class="header-role">Administrador de Laboratorio</span>
+                            <span class="header-role"><?php echo $es_admin ? 'Administrador de Laboratorio' : 'Laboratorio'; ?></span>
                         </div>
                     </div>
 
@@ -129,7 +141,7 @@ try {
             <!-- Banner de bienvenida -->
             <div class="welcome-banner animate-in">
                 <h1>catálogo de Pruebas</h1>
-                <p>Administre las pruebas disponibles en el laboratorio</p>
+                <p><?php echo $es_admin ? 'Administre las pruebas disponibles en el laboratorio' : 'Defina qué insumos del almacén usa cada prueba. Se descuentan solos al crear la orden.'; ?></p>
             </div>
 
             <!-- Estadísticas del catálogo -->
@@ -197,10 +209,12 @@ try {
                         <i class="bi bi-clipboard-plus section-title-icon"></i>
                         Todas las Pruebas
                     </h3>
+                    <?php if ($es_admin): ?>
                     <button class="action-btn" onclick="openTestModal()">
                         <i class="bi bi-plus-lg"></i>
                         Agregar Nueva Prueba
                     </button>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (count($catalogo) > 0): ?>
@@ -239,9 +253,20 @@ try {
                                                         <div class="test-price">Q<?php echo number_format($prueba['precio'] ?? 0, 2); ?></div>
                                                         <div class="test-params">
                                                             <?php echo $prueba['num_parametros']; ?> parámetros
+                                                            <?php if ($almacen_listo): $ni = $insumos_por_prueba[(int) $prueba['id_prueba']] ?? 0; ?>
+                                                                · <span style="<?php echo $ni ? '' : 'color:#a8783a;font-weight:600'; ?>"><?php echo $ni ? $ni . ($ni === 1 ? ' insumo' : ' insumos') : 'sin insumos'; ?></span>
+                                                            <?php endif; ?>
                                                         </div>
                                                     </div>
                                                     <div class="test-actions">
+                                                        <?php if ($almacen_listo): ?>
+                                                        <button class="btn-icon manage" title="Insumos que usa (almacén)"
+                                                            aria-label="Insumos de <?php echo htmlspecialchars($prueba['nombre_prueba']); ?>"
+                                                            data-insumos="<?php echo (int) $prueba['id_prueba']; ?>" data-nombre="<?php echo htmlspecialchars($prueba['nombre_prueba']); ?>">
+                                                            <i class="bi bi-box-seam"></i>
+                                                        </button>
+                                                        <?php endif; ?>
+                                                        <?php if ($es_admin): ?>
                                                         <button class="btn-icon manage" title="Gestionar parámetros"
                                                             onclick="manageParameters(<?php echo $prueba['id_prueba']; ?>)">
                                                             <i class="bi bi-list-check"></i>
@@ -250,6 +275,7 @@ try {
                                                             onclick="editTest(<?php echo htmlspecialchars(json_encode($prueba)); ?>)">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -263,10 +289,12 @@ try {
                             </div>
                             <h4 class="text-muted mb-2">No hay pruebas registradas</h4>
                             <p class="text-muted mb-3">Comience agregando la primera prueba al catálogo</p>
+                            <?php if ($es_admin): ?>
                             <button class="action-btn" onclick="openTestModal()">
                                 <i class="bi bi-plus-lg"></i>
                                 Agregar Primera Prueba
                             </button>
+                            <?php endif; ?>
                         </div>
                 <?php endif; ?>
             </section>
@@ -1038,6 +1066,52 @@ try {
     <script>window.ES_CREADOR = <?php echo isset($_SESSION['es_creador']) && $_SESSION['es_creador'] ? 'true' : 'false'; ?>;</script>
     <script defer src="../../assets/js/security.js"></script>
     <script src="../../assets/js/processing-overlay.js"></script>
+
+    <?php if ($almacen_listo): ?>
+    <!-- Insumos por prueba (almacén de Laboratorio) -->
+    <div class="modal fade" id="insumosModal" tabindex="-1" aria-labelledby="insumosTitle" aria-hidden="true">
+        <div class="modal-dialog al-dialog modal-lg modal-dialog-centered"><div class="modal-content al-modal">
+            <div class="modal-header"><h5 class="modal-title" id="insumosTitle">Insumos</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+            <div class="modal-body">
+                <p class="al-muted">Escriba cuánto se gasta en <b>una</b> prueba. Al crear una orden con esta prueba, se descuenta del almacén de Laboratorio.</p>
+                <div id="insumosEditor"></div>
+            </div>
+            <div class="modal-footer">
+                <a href="../almacen/index.php?area=laboratorio" class="al-btn al-btn--line me-auto"><i class="bi bi-box-seam"></i>Ir al almacén</a>
+                <button type="button" class="al-btn al-btn--line" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="al-btn al-btn--primary" id="btnInsumos"><i class="bi bi-check2"></i>Guardar insumos</button>
+            </div>
+        </div></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../assets/js/almacen.js?v=1"></script>
+    <script>
+    (function () {
+        var editor = null, idPrueba = null;
+        var modalEl = document.getElementById('insumosModal');
+        document.addEventListener('click', async function (e) {
+            var b = e.target.closest('[data-insumos]');
+            if (!b) return;
+            idPrueba = b.getAttribute('data-insumos');
+            document.getElementById('insumosTitle').innerHTML = '<i class="bi bi-box-seam me-2"></i>Insumos de ' + AL.esc(b.getAttribute('data-nombre'));
+            var box = document.getElementById('insumosEditor');
+            box.innerHTML = '<div class="al-muted">Cargando…</div>';
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            var r = await AL.api('receta', { ref_tipo: 'prueba', ref_id: idPrueba }, 'GET');
+            box.innerHTML = '';
+            editor = AL.Receta(box, { area: 'laboratorio', items: r.success ? r.items : [] });
+            setTimeout(function () { var i = box.querySelector('input'); if (i) i.focus(); }, 350);
+        });
+        document.getElementById('btnInsumos').addEventListener('click', async function () {
+            var r = await AL.api('save_receta', { ref_tipo: 'prueba', ref_id: idPrueba, items: editor.items() });
+            if (!r.success) return Swal.fire({ icon: 'error', title: 'No se pudo', text: r.message, confirmButtonColor: '#283251' });
+            bootstrap.Modal.getInstance(modalEl).hide();
+            if (window.showProcessing) window.showProcessing('Insumos guardados', 'Actualizando…');
+            setTimeout(function () { location.reload(); }, 300);
+        });
+    })();
+    </script>
+    <?php endif; ?>
 </body>
 
 </html>

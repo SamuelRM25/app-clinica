@@ -136,6 +136,9 @@ try {
         }
     }
 
+    // Descontar del almacén de Laboratorio los insumos de cada prueba
+    area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+
     // 5. Billing Integration (if hospitalized)
     if ($id_encamamiento) {
         $stmt_cargo = $conn->prepare("

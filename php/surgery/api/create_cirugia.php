@@ -72,12 +72,14 @@ try {
         }
     }
 
-    // Obtener precio del combo
-    $cargo_total = 0;
-    if ($id_combo) {
-        $stmtP = $conn->prepare("SELECT precio_total FROM cirugia_combos WHERE id_combo = ? AND id_hospital = ?");
-        $stmtP->execute([$id_combo, $id_hospital]);
-        $cargo_total = (float)($stmtP->fetch(PDO::FETCH_ASSOC)['precio_total'] ?? 0);
+    // Plantilla de operación / procedimiento (insumos y medicamentos que se descuentan)
+    $id_plantilla = (int)($data['id_plantilla'] ?? 0);
+    $plantilla = null;
+    if ($id_plantilla && area_tables_ready($conn)) {
+        $stmtPl = $conn->prepare("SELECT id_plantilla, nombre, tipo, precio FROM qx_plantillas WHERE id_plantilla = ? AND id_hospital = ? AND activo = 1");
+        $stmtPl->execute([$id_plantilla, $id_hospital]);
+        $plantilla = $stmtPl->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$plantilla) throw new Exception('La plantilla elegida ya no está disponible');
     }
 
     // Verificar sala disponible
@@ -92,6 +94,9 @@ try {
     $cirujano_nombre = trim($data['cirujano_nombre'] ?? '');
     $anestesista_nombre = trim($data['anestesista_nombre'] ?? '');
     $cargo_total = (float)($data['cargo_total'] ?? 0);
+    if ($cargo_total <= 0 && $plantilla) $cargo_total = (float)$plantilla['precio'];
+    $procedimiento = trim($data['procedimiento'] ?? '');
+    if ($procedimiento === '' && $plantilla) $procedimiento = $plantilla['nombre'];
     $stmt = $conn->prepare("
         INSERT INTO cirugias (
             numero_cirugia, id_paciente, id_sala, id_cirujano, cirujano_nombre, id_anestesista, anestesista_nombre,
@@ -110,13 +115,22 @@ try {
         $tipo_paciente,
         $tipo_paciente === 'Referido' ? trim($data['referido_nombre'] ?? '') : null,
         $tipo_paciente === 'Referido' ? trim($data['referido_apellido'] ?? '') : null,
-        trim($data['procedimiento'] ?? ''),
+        $procedimiento,
         !empty($data['fecha_programada']) ? date('Y-m-d H:i:s', strtotime($data['fecha_programada'])) : null,
         $cargo_total,
         $user_id,
         $id_hospital
     ]);
     $id_cirugia = (int)$conn->lastInsertId();
+
+    // Aplicar plantilla: descuenta insumos del almacén y medicamentos del stock quirófano
+    $avisos_almacen = [];
+    if ($plantilla) {
+        try {
+            $conn->prepare("UPDATE cirugias SET id_plantilla = ? WHERE id_cirugia = ?")->execute([$plantilla['id_plantilla'], $id_cirugia]);
+        } catch (Exception $e) { /* columna id_plantilla aún no instalada */ }
+        $avisos_almacen = area_aplicar_plantilla_cirugia($conn, $id_hospital, $id_cirugia, (int)$plantilla['id_plantilla'], $numero_cirugia);
+    }
 
     // Update sala → Ocupada
     $stmtUpd = $conn->prepare("UPDATE salas_quirurgicas SET estado = 'Ocupada' WHERE id_sala = ? AND id_hospital = ?");
@@ -146,6 +160,7 @@ try {
         'message' => "Cirugía $numero_cirugia registrada",
         'id_cirugia' => $id_cirugia,
         'numero_cirugia' => $numero_cirugia,
+        'avisos_almacen' => $avisos_almacen,
     ]);
 } catch (Exception $e) {
     if (isset($conn) && $conn->inTransaction()) $conn->rollBack();

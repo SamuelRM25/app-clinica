@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/roles.php'; // Tipos de usuario y permisos por módulo
+require_once __DIR__ . '/area_inventory.php'; // Almacén de Laboratorio y Quirófano
 /**
  * Enhanced audit logging function that writes to both file and database.
  *
