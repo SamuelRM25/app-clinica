@@ -21,8 +21,14 @@ $nombre = $_POST['nombre'] ?? '';
 $codigo = $_POST['codigo'] ?? '';
 $categoria = $_POST['categoria'] ?? '';
 $precio = (float) ($_POST['precio'] ?? 0);
-$precio_medilab = (float) ($_POST['precio_medilab'] ?? 0);
-$precio_la_esperanza = (float) ($_POST['precio_la_esperanza'] ?? 0);
+// Costo externo: un solo costo por prueba. Se guarda en las dos columnas anteriores
+// (precio_medilab y precio_la_esperanza) para que los reportes de costo sigan funcionando.
+if (isset($_POST['costo_externo'])) {
+    $precio_medilab = $precio_la_esperanza = max(0, (float) $_POST['costo_externo']);
+} else {
+    $precio_medilab = (float) ($_POST['precio_medilab'] ?? 0);
+    $precio_la_esperanza = (float) ($_POST['precio_la_esperanza'] ?? 0);
+}
 $muestra = $_POST['muestra_requerida'] ?? ''; // Fixed mapping
 $tiempo = (int) ($_POST['tiempo_procesamiento_horas'] ?? 0); // Fixed mapping
 $notas = $_POST['descripcion'] ?? ''; // Map description to notas

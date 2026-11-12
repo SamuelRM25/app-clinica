@@ -805,6 +805,8 @@ try {
     }
 
     $labs_where .= " AND ol.id_hospital = ?";
+    // Órdenes "Externo": el pago fue para otro laboratorio, no son venta de la clínica
+    if (lab_externo_cols($conn)) $labs_where .= " AND COALESCE(ol.es_externo, 0) = 0";
     $labs_params[] = $id_hospital;
 
     $stmt_labs_detail = $conn->prepare("

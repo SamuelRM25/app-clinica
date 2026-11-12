@@ -11,11 +11,47 @@ require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/multitenant.php';
 
+$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
+$externo = isset($_GET['orden']);
+
+if ($externo) {
+    // Ticket de orden Externo: el cobro no se guardó, los datos vienen de la orden
+    try {
+        $conn = (new Database())->getConnection();
+        if (!lab_externo_cols($conn)) die('Orden no encontrada');
+        $stmt = $conn->prepare("SELECT ol.id_orden, ol.numero_orden, ol.fecha_orden, ol.externo_detalle,
+                                       CONCAT(p.nombre, ' ', p.apellido) AS paciente,
+                                       TRIM(CONCAT(COALESCE(u.nombre, ''), ' ', COALESCE(u.apellido, ''))) AS doctor
+                                FROM ordenes_laboratorio ol
+                                JOIN pacientes p ON p.id_paciente = ol.id_paciente
+                                LEFT JOIN usuarios u ON u.idUsuario = ol.id_doctor
+                                WHERE ol.id_orden = ? AND ol.id_hospital = ? AND ol.es_externo = 1");
+        $stmt->execute([(int) $_GET['orden'], $id_hospital]);
+        $ord = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$ord) die('Orden no encontrada');
+        $det = json_decode($ord['externo_detalle'] ?? '', true) ?: ['items' => [], 'total' => 0, 'tipo_pago' => 'Efectivo'];
+        $id = (int) $ord['id_orden'];
+        $paciente_nombre = $ord['paciente'];
+        $fecha = new DateTime($ord['fecha_orden']);
+        $fecha_formateada = $fecha->format('d/m/Y');
+        $hora_formateada = $fecha->format('H:i');
+        $lineas_cobro = array_map(fn($it) => ['tipo_examen' => $it['nombre'], 'cobro' => $it['precio']], $det['items']);
+        $monto = (float) $det['total'];
+        $tipo_pago = $det['tipo_pago'] ?: 'Efectivo';
+        $tipo_examen = 'Laboratorio externo';
+        $doctor = trim($ord['doctor']) ? 'Dr(a). ' . trim($ord['doctor']) : 'N/A';
+        $user_name = ($det['usuario'] ?? '') ?: ($_SESSION['nombre'] ?? 'Sistema');
+        $numero_orden = $ord['numero_orden'];
+    } catch (Exception $e) {
+        error_log('Error en print_lab_receipt.php (externo): ' . $e->getMessage());
+        die('Error al generar el comprobante');
+    }
+} else {
+
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("ID inválido");
 }
 $id = (int) $_GET['id'];
-$id_hospital = (int)($_SESSION['id_hospital'] ?? 0);
 
 try {
     $database = new Database();
@@ -90,6 +126,7 @@ try {
     error_log('Error en print_lab_receipt.php: ' . $e->getMessage());
     die('Error al generar el comprobante');
 }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -122,11 +159,15 @@ try {
     <div class="receipt-container">
         <div class="receipt-header">
             <h2>Centro Médico Dr. Roberto Morales</h2>
-            <div class="subtitle">Comprobante de Laboratorio</div>
+            <div class="subtitle"><?php echo $externo ? 'Comprobante de Laboratorio Externo' : 'Comprobante de Laboratorio'; ?></div>
         </div>
 
         <div class="receipt-section">
+            <?php if ($externo): ?>
+            <div class="row"><span class="label">Orden:</span><span class="value"><?php echo htmlspecialchars($numero_orden); ?></span></div>
+            <?php else: ?>
             <div class="row"><span class="label">Recibo #:</span><span class="value"><?php echo str_pad($id, 6, '0', STR_PAD_LEFT); ?></span></div>
+            <?php endif; ?>
             <div class="row"><span class="label">Fecha:</span><span class="value"><?php echo $fecha_formateada; ?></span></div>
             <div class="row"><span class="label">Hora:</span><span class="value"><?php echo $hora_formateada; ?></span></div>
         </div>
@@ -167,6 +208,9 @@ try {
 
         <div class="divider"></div>
 
+        <?php if ($externo): ?>
+        <div class="footer-note" style="color:#000;font-weight:700">Pago para laboratorio externo</div>
+        <?php endif; ?>
         <div class="footer-note">
             Comprobante generado el <?php echo date('d/m/Y H:i'); ?><br>
             Atendido por: <?php echo htmlspecialchars($user_name); ?>

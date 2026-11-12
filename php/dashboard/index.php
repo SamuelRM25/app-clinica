@@ -2866,8 +2866,8 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="fw-bold text-uppercase">Total a Pagar:</span>
                                         <button type="button" class="btn btn-sm btn-outline-warning" id="toggleEPSBtn"
-                                            title="Activar modo EPS (Editar precios)">
-                                            <i class="bi bi-pencil-square"></i> EPS
+                                            title="Externo: el pago es para otro laboratorio. Se imprime el ticket, pero el cobro no se guarda.">
+                                            <i class="bi bi-building"></i> Externo
                                         </button>
                                     </div>
                                     <span class="fs-3 fw-bold text-primary" id="orderTotal">Q0.00</span>
@@ -2913,7 +2913,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 <i class="bi bi-printer fs-5"></i>
                                 <span class="fw-bold">Generar Orden</span>
                             </button>
-                            <p class="text-center small text-muted mt-2">
+                            <p class="text-center small text-muted mt-2" id="labCobroNota">
                                 <i class="bi bi-shield-check me-1"></i> Se generará cobro automático
                             </p>
                         </div>
@@ -3613,6 +3613,10 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                         epsBtn.classList.toggle('active', isEPSMode);
                         epsBtn.classList.toggle('btn-warning', isEPSMode);
                         epsBtn.classList.toggle('btn-outline-warning', !isEPSMode);
+                        const nota = document.getElementById('labCobroNota');
+                        if (nota) nota.innerHTML = isEPSMode
+                            ? '<i class="bi bi-building me-1"></i> <b>Externo:</b> se imprime el ticket, pero el cobro no se guarda'
+                            : '<i class="bi bi-shield-check me-1"></i> Se generará cobro automático';
                         updateSummary();
                     };
 
@@ -3677,7 +3681,7 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 pruebas: pruebas,
                                 tipo_pago: document.querySelector('input[name="order_tipo_pago"]:checked')?.value || 'Efectivo',
                                 laboratorio_externo: labExtSel.value,
-                                is_eps: isEPSMode,
+                                es_externo: isEPSMode ? 1 : 0,
                                 custom_prices: {}
                             };
 
@@ -3699,12 +3703,14 @@ $shift_auth_code = getenv('SHIFT_AUTH_CODE') ?: getenv('AUTH_CODE') ?: 'logo';
                                 if (result.status === 'success') {
                                     Swal.fire({
                                         title: '¡Orden Creada!',
-                                        text: 'La orden y el cobro se han generado correctamente.',
+                                        text: result.externo ? 'Orden externa creada. El cobro no se guardó; se imprime el ticket.' : 'La orden y el cobro se han generado correctamente.',
                                         icon: 'success',
                                         showConfirmButton: false,
                                         timer: 1500
                                     }).then(() => {
-                                        if (result.id_pago) {
+                                        if (result.externo && result.id_orden) {
+                                            window.open(`../laboratory/print_lab_receipt.php?orden=${result.id_orden}`, '_blank');
+                                        } else if (result.id_pago) {
                                             const printUrl = `../laboratory/print_lab_receipt.php?id=${result.id_pago}`;
                                             window.open(printUrl, '_blank');
                                         } else if (result.id_orden) {

@@ -76,6 +76,19 @@ try {
 
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .externo-box { border: 1px dashed var(--color-border); border-radius: 12px; padding: .6rem; }
+        .externo-toggle { width: 100%; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: .6rem; align-items: center; text-align: left;
+            border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-text); border-radius: 10px; padding: .55rem .8rem; cursor: pointer; font: inherit; }
+        .externo-toggle i { grid-row: 1 / 3; font-size: 1.3rem; color: #a8783a; }
+        .externo-toggle span { font-weight: 700; }
+        .externo-toggle small { color: var(--color-text-secondary); font-size: .78rem; }
+        .externo-toggle:hover { border-color: #c9a24f; }
+        .externo-toggle.is-on { background: linear-gradient(135deg, #e2bf63 0%, #c9a24f 100%); border-color: #c9a24f; color: #241a06; }
+        .externo-toggle.is-on i, .externo-toggle.is-on small { color: #241a06; }
+        .externo-opts { margin-top: .6rem; font-size: .85rem; color: var(--color-text); }
+        .externo-opts p { color: var(--color-text-secondary); }
+    </style>
 </head>
 
 <body>
@@ -335,9 +348,25 @@ try {
                                 placeholder="Observaciones adicionales..."></textarea>
                         </div>
 
+                        <!-- Externo: el pago es para otro laboratorio (no se guarda cobro, sí ticket) -->
+                        <div class="externo-box mt-3" id="externoBox">
+                            <button type="button" class="externo-toggle" id="externoBtn" aria-pressed="false">
+                                <i class="bi bi-building"></i>
+                                <span>Externo</span>
+                                <small>El pago es para otro laboratorio</small>
+                            </button>
+                            <div class="externo-opts" id="externoOpts" hidden>
+                                <p class="mb-2"><i class="bi bi-info-circle"></i> Se crea la orden y se imprime el ticket, pero el cobro <b>no</b> se guarda. Puede cambiar los precios en el resumen.</p>
+                                <label class="form-label mb-1" for="externoPago">Método de pago (para el ticket)</label>
+                                <select class="form-select form-select-sm" id="externoPago">
+                                    <option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <button type="submit" class="order-submit-btn mt-3">
                             <i class="bi bi-file-earmark-check"></i>
-                            Generar Orden de Laboratorio
+                            <span class="submit-label">Generar Orden de Laboratorio</span>
                         </button>
 
                         <div class="text-center mt-2">
@@ -349,28 +378,6 @@ try {
                     </div>
                         </div>
 
-                        <div class="order-total">
-                            <span>Total:</span>
-                            <span id="orderTotal" class="order-total-amount">Q0.00</span>
-                        </div>
-
-                        <div class="form-group mt-4">
-                            <label class="form-label">Observaciones</label>
-                            <textarea name="observaciones" class="form-control" rows="3"
-                                placeholder="Observaciones adicionales..."></textarea>
-                        </div>
-
-                        <button type="submit" class="action-btn w-100 mt-4 py-3">
-                            <i class="bi bi-file-earmark-check"></i>
-                            Generar Orden de Laboratorio
-                        </button>
-
-                        <div class="text-center mt-3">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle"></i>
-                                La orden será creada en estado "Pendiente"
-                            </small>
-                        </div>
                     </div>
                 </div>
             </form>
@@ -778,6 +785,27 @@ try {
             updateOrderSummary();
         }
 
+        // ── Externo: sin cobro guardado, con ticket ──
+        var esExterno = false;
+        var precioExterno = {};
+        function setExterno(on) {
+            esExterno = on;
+            const btn = document.getElementById('externoBtn');
+            btn.classList.toggle('is-on', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            document.getElementById('externoOpts').hidden = !on;
+            document.querySelectorAll('#orderForm .submit-label').forEach(l => l.textContent = on ? 'Generar orden externa y ticket' : 'Generar Orden de Laboratorio');
+            updateOrderSummary();
+        }
+        document.getElementById('externoBtn')?.addEventListener('click', () => setExterno(!esExterno));
+        document.getElementById('selectedTestsList')?.addEventListener('input', (e) => {
+            if (!e.target.classList.contains('externo-precio')) return;
+            precioExterno[e.target.dataset.id] = parseFloat(e.target.value) || 0;
+            let total = 0;
+            selectedTests.forEach(t => { total += precioExterno[t.id_prueba] !== undefined ? precioExterno[t.id_prueba] : t.precio; });
+            document.getElementById('orderTotal').textContent = `Q${total.toFixed(2)}`;
+        });
+
         function updateOrderSummary() {
             const listContainer = document.getElementById('selectedTestsList');
             const totalElement = document.getElementById('orderTotal');
@@ -803,11 +831,14 @@ try {
             let html = '';
 
             selectedTests.forEach((test) => {
-                total += test.precio;
+                const precio = esExterno && precioExterno[test.id_prueba] !== undefined ? precioExterno[test.id_prueba] : test.precio;
+                total += precio;
                 html += `
                 <div class="selected-test-item">
                     <span class="test-item-name" title="${test.nombre_prueba}">${test.nombre_prueba}</span>
-                    <span class="test-item-price">Q${test.precio.toFixed(2)}</span>
+                    ${esExterno
+                        ? `<input type="number" class="form-control form-control-sm externo-precio" min="0" step="0.01" value="${precio.toFixed(2)}" data-id="${test.id_prueba}" aria-label="Precio de ${test.nombre_prueba}" style="width:96px;text-align:right">`
+                        : `<span class="test-item-price">Q${test.precio.toFixed(2)}</span>`}
                     <i class="bi bi-x-circle test-item-remove" 
                        onclick="removeTest(${test.id_prueba})"
                        title="Remover prueba"></i>
@@ -862,11 +893,12 @@ try {
             submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Generando...';
 
             Swal.fire({
-                title: '¿Confirmar Orden?',
+                title: esExterno ? '¿Confirmar orden externa?' : '¿Confirmar Orden?',
                 html: `
                 <div class="text-start">
-                    <p>Se crear una orden con <strong>${selectedTests.length} pruebas</strong></p>
+                    <p>Se creará una orden con <strong>${selectedTests.length} pruebas</strong></p>
                     <p class="mb-0">Total: <strong class="text-success">${document.getElementById('orderTotal').textContent}</strong></p>
+                    ${esExterno ? '<p class="mt-2 mb-0 small"><b>Externo:</b> se imprime el ticket, pero el cobro no se guarda.</p>' : ''}
                 </div>
             `,
                 icon: 'question',
@@ -884,6 +916,14 @@ try {
                     });
 
                     const formData = new FormData(this);
+                    if (esExterno) {
+                        formData.append('es_externo', '1');
+                        formData.append('tipo_pago', document.getElementById('externoPago').value);
+                        selectedTests.forEach(t => {
+                            const v = precioExterno[t.id_prueba] !== undefined ? precioExterno[t.id_prueba] : t.precio;
+                            formData.append('custom_prices[' + t.id_prueba + ']', v);
+                        });
+                    }
                     fetch('api/create_order.php', {
                         method: 'POST',
                         body: formData
@@ -901,6 +941,9 @@ try {
                                       avisos.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : ''),
                                 confirmButtonColor: '#283251'
                             }).then(() => {
+                                if (data.externo && data.id_orden) {
+                                    window.open('print_lab_receipt.php?orden=' + data.id_orden, '_blank');
+                                }
                                 if (data.redirect) {
                                     window.location.href = data.redirect;
                                 } else if (window.parent && window.parent.closeModal) {
@@ -927,11 +970,11 @@ try {
                     })
                     .finally(() => {
                         submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> Generar Orden de Laboratorio';
+                        submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> <span class="submit-label">' + (esExterno ? 'Generar orden externa y ticket' : 'Generar Orden de Laboratorio') + '</span>';
                     });
                 } else {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> Generar Orden de Laboratorio';
+                    submitBtn.innerHTML = '<i class="bi bi-file-earmark-check"></i> <span class="submit-label">' + (esExterno ? 'Generar orden externa y ticket' : 'Generar Orden de Laboratorio') + '</span>';
                 }
             });
         });

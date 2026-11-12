@@ -63,7 +63,7 @@ try {
         JOIN pacientes p ON ol.id_paciente = p.id_paciente
         WHERE ol.fecha_orden BETWEEN ? AND ?
         AND op.estado != 'Devuelto'
-        AND ol.id_hospital = ?
+        AND ol.id_hospital = ?" . (lab_externo_cols($conn) ? " AND COALESCE(ol.es_externo, 0) = 0" : "") . "
         ORDER BY ol.fecha_orden DESC
     ");
     $stmt_labs_detail->execute([$start_datetime, $end_datetime, $id_hospital]);

@@ -43,6 +43,10 @@ if ($lab_externo === null) {
     exit;
 }
 
+// Externo: el paciente paga a otro laboratorio. Se crea la orden y el ticket, pero NO se guarda cobro.
+// (is_eps es el nombre anterior del mismo botón)
+$es_externo = !empty($data['es_externo']) || !empty($data['is_eps']);
+
 try {
     // CSRF validation
     $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
@@ -52,6 +56,10 @@ try {
 
     $database = new Database();
     $conn = $database->getConnection();
+    // Columnas de órdenes Externo (se agregan antes de abrir la transacción)
+    if ($es_externo && !lab_externo_cols($conn, true)) {
+        throw new Exception('No se pudo preparar la orden Externo. Avise al administrador.');
+    }
     $conn->beginTransaction();
 
     // 1. Generate unique order number (race-condition safe: retry on duplicate key)
@@ -123,8 +131,8 @@ try {
         if ($test_info) {
             $final_price = $test_info['precio'];
 
-            // EPS Logic: Use custom price if available and is_eps is true
-            if (!empty($data['is_eps']) && isset($data['custom_prices'][$id_prueba])) {
+            // Externo: precio que se cobra para el otro laboratorio (editable)
+            if ($es_externo && isset($data['custom_prices'][$id_prueba])) {
                 $final_price = floatval($data['custom_prices'][$id_prueba]);
             }
 
@@ -136,11 +144,16 @@ try {
         }
     }
 
-    // Descontar del almacén de Laboratorio los insumos de cada prueba
-    area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+    if ($es_externo) {
+        // Sin cobro ni insumos: solo se guarda lo que lleva el ticket
+        lab_externo_marcar($conn, (int) $id_orden, (int) $id_hospital, $items_for_billing, $data['tipo_pago'] ?? 'Efectivo');
+    } else {
+        // Descontar del almacén de Laboratorio los insumos de cada prueba
+        area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+    }
 
     // 5. Billing Integration (if hospitalized)
-    if ($id_encamamiento) {
+    if ($id_encamamiento && !$es_externo) {
         $stmt_cargo = $conn->prepare("
             INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por, id_hospital)
             VALUES (
@@ -187,7 +200,7 @@ try {
     }
 
     // 6. Integration with Payments (if NOT hospitalized)
-    if (!$id_encamamiento) {
+    if (!$id_encamamiento && !$es_externo) {
         $tipo_pago = $data['tipo_pago'] ?? 'Efectivo';
         $total_order = 0;
         $pruebas_nombres = [];
@@ -252,8 +265,9 @@ try {
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'Orden y cobro generados',
+        'message' => $es_externo ? 'Orden externa generada (sin cobro)' : 'Orden y cobro generados',
         'id_orden' => $id_orden,
+        'externo' => $es_externo,
         'numero_orden' => $numero_orden,
         'id_pago' => $id_pago ?? null,
         'cargo_inhabil' => $cargo_inhabil ?? 0.0,

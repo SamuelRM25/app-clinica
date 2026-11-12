@@ -364,26 +364,20 @@ try {
                             </div>
 
                             <div class="row">
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <label for="precio" class="form-label">
                                         <i class="bi bi-currency-dollar"></i> Precio Venta (Q)
                                     </label>
                                     <input type="number" step="0.01" class="form-control" id="precio" name="precio"
                                         placeholder="0.00" value="0">
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="precio_medilab" class="form-label">
-                                        <i class="bi bi-building"></i> Costo Medialab (Q)
+                                <div class="col-md-6 mb-3">
+                                    <label for="costo_externo" class="form-label">
+                                        <i class="bi bi-building"></i> Costo Externo (Q)
                                     </label>
-                                    <input type="number" step="0.01" class="form-control" id="precio_medilab" name="precio_medilab"
+                                    <input type="number" step="0.01" min="0" class="form-control" id="costo_externo" name="costo_externo"
                                         placeholder="0.00" value="0">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="precio_la_esperanza" class="form-label">
-                                        <i class="bi bi-building"></i> Costo La Esperanza (Q)
-                                    </label>
-                                    <input type="number" step="0.01" class="form-control" id="precio_la_esperanza" name="precio_la_esperanza"
-                                        placeholder="0.00" value="0">
+                                    <small class="text-muted">Lo que se paga al laboratorio externo por esta prueba.</small>
                                 </div>
                             </div>
                             <div class="row">
@@ -607,8 +601,7 @@ try {
                 document.getElementById('categoria').value = data.categoria || '';
                 document.getElementById('descripcion').value = data.notas || '';
                 document.getElementById('precio').value = data.precio || '0';
-                document.getElementById('precio_medilab').value = data.precio_medilab || '0';
-                document.getElementById('precio_la_esperanza').value = data.precio_la_esperanza || '0';
+                document.getElementById('costo_externo').value = (parseFloat(data.precio_medilab) || parseFloat(data.precio_la_esperanza) || 0);
                 document.getElementById('muestra_requerida').value = data.muestra_requerida || '';
                 document.getElementById('tiempo_procesamiento_horas').value = data.tiempo_procesamiento_horas || '24';
                 if (document.getElementById('id_plantilla')) document.getElementById('id_plantilla').value = data.id_plantilla || '';

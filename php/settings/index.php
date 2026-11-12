@@ -1213,7 +1213,7 @@ $page_title = "Configuración del Sistema";
                                     </div>
                                     <p class="text-muted small mb-3">
                                         <i class="bi bi-info-circle"></i>
-                                        Configure el costo que paga a cada laboratorio externo por prueba.
+                                        Configure el costo que paga al laboratorio externo por cada prueba.
                                         El precio de venta se edita desde el catálogo de pruebas en Laboratorio.
                                     </p>
                                     <div class="tarifa-table-wrap" data-tarifa-table>
@@ -1224,8 +1224,7 @@ $page_title = "Configuración del Sistema";
                                                     <th>Nombre de la Prueba</th>
                                                     <th>Categoría</th>
                                                     <th>Precio Venta (Q)</th>
-                                                    <th>Costo Medialab (Q)</th>
-                                                    <th>Costo La Esperanza (Q)</th>
+                                                    <th>Costo Externo (Q)</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="tarifa-laboratorio-body">
@@ -2287,12 +2286,9 @@ $page_title = "Configuración del Sistema";
                             <td data-label="Categoría"><span class="badge bg-secondary">${p.categoria || 'Gral'}</span></td>
                             <td data-label="Precio Venta (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
                                 value="${parseFloat(p.precio || 0).toFixed(2)}" readonly></td>
-                            <td data-label="Costo Medialab (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
-                                value="${parseFloat(p.precio_medilab || 0).toFixed(2)}"
-                                data-field="precio_medilab" data-id="${p.id_prueba}" placeholder="0.00"></td>
-                            <td data-label="Costo La Esperanza (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
-                                value="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}"
-                                data-field="precio_la_esperanza" data-id="${p.id_prueba}" placeholder="0.00"></td>
+                            <td data-label="Costo Externo (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
+                                value="${(parseFloat(p.precio_medilab) || parseFloat(p.precio_la_esperanza) || 0).toFixed(2)}"
+                                data-field="costo_externo" data-id="${p.id_prueba}" placeholder="0.00"></td>
                         </tr>`;
                     });
                     tbody.innerHTML = html;
@@ -2314,7 +2310,10 @@ $page_title = "Configuración del Sistema";
                 const id = inp.dataset.id;
                 const field = inp.dataset.field;
                 if (!grouped[id]) grouped[id] = { id_prueba: id, precio_medilab: 0, precio_la_esperanza: 0 };
-                grouped[id][field] = parseFloat(inp.value) || 0;
+                // Un solo costo externo: se guarda igual en ambas columnas
+                const v = parseFloat(inp.value) || 0;
+                if (field === 'costo_externo') { grouped[id].precio_medilab = v; grouped[id].precio_la_esperanza = v; }
+                else grouped[id][field] = v;
             });
 
             const items = Object.values(grouped);

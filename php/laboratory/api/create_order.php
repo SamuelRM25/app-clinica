@@ -23,6 +23,10 @@ $indicaciones = $_POST['instrucciones'] ?? '';
 $observaciones = $_POST['observaciones'] ?? '';
 $pruebas_ids = $_POST['pruebas'] ?? [];
 $is_embedded = isset($_POST['is_embedded']) && $_POST['is_embedded'] == '1';
+// Externo: el paciente paga a otro laboratorio. Se crea la orden y el ticket, pero NO se guarda cobro.
+$es_externo = !empty($_POST['es_externo']);
+$custom_prices = is_array($_POST['custom_prices'] ?? null) ? $_POST['custom_prices'] : [];
+$tipo_pago_ext = in_array($_POST['tipo_pago'] ?? '', ['Efectivo', 'Transferencia', 'Tarjeta'], true) ? $_POST['tipo_pago'] : 'Efectivo';
 
 $priority_map = [
     'Normal' => 'Rutina',
@@ -44,6 +48,9 @@ try {
 
     $database = new Database();
     $conn = $database->getConnection();
+    if ($es_externo && !lab_externo_cols($conn, true)) {
+        throw new Exception('No se pudo preparar la orden Externo. Avise al administrador.');
+    }
     $conn->beginTransaction();
 
     $today = date('Ymd');
@@ -91,18 +98,28 @@ try {
         $stmt_price->execute([$id_prueba, $id_hospital]);
         $test_info = $stmt_price->fetch(PDO::FETCH_ASSOC);
         if ($test_info) {
-            $total_order += $test_info['precio'];
+            $precio = $test_info['precio'];
+            if ($es_externo && isset($custom_prices[$id_prueba]) && is_numeric($custom_prices[$id_prueba])) {
+                $precio = max(0, (float) $custom_prices[$id_prueba]);
+            }
+            $total_order += $precio;
             $items_for_billing[] = [
                 'nombre' => $test_info['nombre_prueba'],
-                'precio' => $test_info['precio']
+                'precio' => $precio
             ];
         }
     }
 
-    // Descontar del almacén de Laboratorio los insumos de cada prueba
-    $avisos_almacen = area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+    $avisos_almacen = [];
+    if ($es_externo) {
+        // Sin cobro ni insumos: solo se guarda lo que lleva el ticket
+        lab_externo_marcar($conn, (int) $id_orden, (int) $id_hospital, $items_for_billing, $tipo_pago_ext);
+    } else {
+        // Descontar del almacén de Laboratorio los insumos de cada prueba
+        $avisos_almacen = area_consumir_orden_lab($conn, (int) $id_hospital, (int) $id_orden);
+    }
 
-    if ($id_encamamiento) {
+    if ($id_encamamiento && !$es_externo) {
         $stmt_cargo = $conn->prepare("
             INSERT INTO cargos_hospitalarios (id_cuenta, tipo_cargo, descripcion, precio_unitario, fecha_cargo, registrado_por, id_hospital)
             VALUES (
@@ -130,6 +147,8 @@ try {
         'success' => true,
         'message' => 'Orden generada correctamente',
         'order_number' => $numero_orden,
+        'id_orden' => (int) $id_orden,
+        'externo' => $es_externo,
         'avisos_almacen' => $avisos_almacen,
         'redirect' => !$is_embedded ? '../index.php?success=1&order=' . $numero_orden : null
     ]);

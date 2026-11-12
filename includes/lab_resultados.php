@@ -318,6 +318,41 @@ if (!function_exists('lab_install_sql')) {
         return false;
     }
 
+    /**
+     * Órdenes "Externo": el paciente paga a otro laboratorio. Se crea la orden y el ticket,
+     * pero no se guarda cobro. Columnas: ordenes_laboratorio.es_externo y externo_detalle (JSON del ticket).
+     * $crear = true agrega las columnas si faltan (la primera vez que se usa).
+     */
+    function lab_externo_cols($conn, bool $crear = false): bool
+    {
+        static $ok = null;
+        if ($ok === true) return true;
+        try {
+            $ok = (bool) $conn->query("SHOW COLUMNS FROM ordenes_laboratorio LIKE 'externo_detalle'")->fetch();
+            if (!$ok && $crear) {
+                $tiene = (bool) $conn->query("SHOW COLUMNS FROM ordenes_laboratorio LIKE 'es_externo'")->fetch();
+                if (!$tiene) $conn->exec("ALTER TABLE ordenes_laboratorio ADD COLUMN es_externo TINYINT(1) NOT NULL DEFAULT 0");
+                $conn->exec("ALTER TABLE ordenes_laboratorio ADD COLUMN externo_detalle TEXT NULL");
+                $ok = true;
+            }
+        } catch (Throwable $e) {
+            error_log('lab_externo_cols: ' . $e->getMessage());
+            $ok = false;
+        }
+        return $ok;
+    }
+
+    /** Guarda en la orden lo que lleva el ticket de una orden Externo. */
+    function lab_externo_marcar($conn, int $id_orden, int $id_hospital, array $items, string $tipo_pago): void
+    {
+        $total = 0;
+        foreach ($items as $it) $total += (float) $it['precio'];
+        $detalle = json_encode(['items' => array_map(fn($it) => ['nombre' => $it['nombre'], 'precio' => round((float) $it['precio'], 2)], $items),
+            'total' => round($total, 2), 'tipo_pago' => $tipo_pago, 'usuario' => $_SESSION['nombre'] ?? ''], JSON_UNESCAPED_UNICODE);
+        $conn->prepare("UPDATE ordenes_laboratorio SET es_externo = 1, externo_detalle = ? WHERE id_orden = ? AND id_hospital = ?")
+            ->execute([$detalle, $id_orden, $id_hospital]);
+    }
+
     /** Edad legible para impresión. */
     function lab_edad(?string $fnac): string
     {
