@@ -4,4 +4,4 @@
  * Archivo de identidad del hospital.
  */
 
-define('CURRENT_HOSPITAL_CODE', 'CMRM');
+define('CURRENT_HOSPITAL_CODE', 'FARM');
