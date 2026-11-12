@@ -1,6 +1,6 @@
 <?php
 // print_inventory_cut.php - Corte de Inventario Físico Interactivo
-// Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica
+// ClinicApp Farmacia - Sistema de Gestión Médica
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -10,6 +10,9 @@ require_once '../../includes/module_guard.php';
 if (!isset($_SESSION['user_id'])) {
     die("Acceso no autorizado");
 }
+
+check_module_access('inventory');
+if (function_exists('farmacia_shell')) { farmacia_shell('inventario', ['titulo' => 'Corte de inventario', 'sub' => 'Conteo físico']); } // Diseño ClinicApp Farmacia
 
 $hosp_id = hospital_id();
 $user_id = $_SESSION['user_id'];
@@ -110,7 +113,7 @@ try {
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title>Corte de Inventario Físico - <?php echo date('d/m/Y'); ?></title>
 
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/global_dashboard.css">
@@ -399,7 +402,7 @@ try {
         <header class="dashboard-header no-print">
             <div class="header-content">
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
+                    <img src="../../assets/img/farmacia/wordmark.svg" alt="<?php echo htmlspecialchars(farmacia_local()); ?>" class="brand-logo">
                 </div>
                 <div class="header-controls">
                     <div class="theme-toggle">
@@ -498,7 +501,7 @@ try {
             <!-- Table -->
             <div class="card animate-in delay-1 p-4 mb-4">
                 <div class="header text-center mb-4">
-                    <h4 class="fw-bold">Centro Médico</h4>
+                    <h4 class="fw-bold"><?php echo htmlspecialchars(farmacia_local()); ?></h4>
                     <h5 class="text-muted">Hoja de Conteo Físico</h5>
                     <p class="mb-0"><strong>Fecha:</strong> <?php echo date('d/m/Y H:i A'); ?></p>
                 </div>

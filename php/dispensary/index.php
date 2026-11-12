@@ -1,5 +1,5 @@
 <?php
-// inventory/index.php - Módulo de Ventas - Centro Médico Dr. Roberto Morales
+// inventory/index.php - Módulo de Ventas - ClinicApp Farmacia
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -15,6 +15,7 @@ require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
 
 check_module_access('pharmacy');
+if (function_exists('farmacia_shell')) { farmacia_shell('pos', ['sub' => 'Cobro en mostrador']); } // Diseño ClinicApp Farmacia
 
 date_default_timezone_set('America/Guatemala');
 verify_session();
@@ -88,7 +89,7 @@ try {
     $user_specialty = $_SESSION['especialidad'] ?? 'Profesional Médico';
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico Dr. Roberto Morales";
+    $page_title = "Ventas - " . FARMA_NOMBRE;
 
 } catch (Exception $e) {
     error_log('Error en dispensary/index.php: ' . $e->getMessage());
@@ -102,12 +103,12 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas del Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas del <?php echo htmlspecialchars(farmacia_local()); ?>">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -567,7 +568,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
+                    <img src="../../assets/img/farmacia/wordmark.svg" alt="<?php echo htmlspecialchars(farmacia_local()); ?>" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1081,7 +1082,7 @@ try {
 
     <!-- JavaScript Optimizado (mismo que dashboard con funcionalidad POS) -->
     <script>
-        // Dashboard Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Dashboard Reingenierizado - ClinicApp Farmacia
         // Módulo de Ventas - Punto de Venta
 
         (function () {
@@ -2203,7 +2204,7 @@ try {
                 };
 
                 // Log de inicialización
-                console.log('Módulo de Ventas - Centro Médico Dr. Roberto Morales');
+                console.log('Módulo de Ventas');
                 console.log('Usuario: <?php echo htmlspecialchars($user_name); ?>');
                 console.log('Productos disponibles: <?php echo count($inventario); ?>');
                 console.log('Ventas hoy: <?php echo $today_sales['count'] ?? 0; ?>');

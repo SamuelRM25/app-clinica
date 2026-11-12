@@ -1,5 +1,5 @@
 <?php
-// inventory/print_receipt.php - Recibo de Venta - Centro Médico Dr. Roberto Morales
+// inventory/print_receipt.php - Recibo de Venta - ClinicApp Farmacia
 // Versión: 4.0 - Diseño Responsive con Sidebar Moderna y Efecto Mármol
 session_start();
 
@@ -74,7 +74,7 @@ try {
     $month_sales = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
     // Título de la página
-    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - Centro Médico Dr. Roberto Morales";
+    $page_title = "Recibo de Venta #" . str_pad($id_venta, 5, '0', STR_PAD_LEFT) . " - " . FARMA_NOMBRE;
 
 } catch (Exception $e) {
     error_log('Error en dispensary/print_quote.php: ' . $e->getMessage());
@@ -92,11 +92,11 @@ $hora_formateada = $fecha->format('H:i');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Recibo de venta del Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
+    <meta name="description" content="Recibo de venta del <?php echo htmlspecialchars(farmacia_local()); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 
     <!-- Google Fonts - Inter -->
     <!-- Bootstrap Icons -->
@@ -112,10 +112,10 @@ $hora_formateada = $fecha->format('H:i');
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2 class="fw-bold">Centro Médico Dr. Roberto Morales</h2>
+            <h2 class="fw-bold"><?php echo htmlspecialchars(farmacia_local()); ?></h2>
             <div class="clinic-info">
-                <p>7a Av 7-25 Zona 1 HH</p>
-                <p>Tel: (+502) 5214-8836</p>
+                <?php if (FARMA_DIRECCION !== ''): ?><p><?php echo htmlspecialchars(FARMA_DIRECCION); ?></p><?php endif; ?>
+                <?php if (FARMA_TELEFONO !== ''): ?><p>Tel: <?php echo htmlspecialchars(FARMA_TELEFONO); ?></p><?php endif; ?>
             </div>
         </div>
 
@@ -149,7 +149,7 @@ $hora_formateada = $fecha->format('H:i');
                                     style="font-size: 9px;"><?php echo htmlspecialchars($item['presentacion_med']); ?></small>
                             </td>
                             <td class="text-center"><?php echo $item['cantidad_vendida']; ?></td>
-                            <td class="text-right">Q<?php echo number_format($item['subtotal'], 2); ?></td>
+                            <td class="text-right">Q<?php echo number_format($item['subtotal'] ?? ((float) ($item['cantidad_vendida'] ?? 0) * (float) ($item['precio_unitario'] ?? 0)), 2); ?></td>
                         </tr>
                 <?php endforeach; ?>
             </tbody>

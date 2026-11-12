@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/edition.php'; // Edición ClinicApp Farmacia (solo módulos de farmacia)
 require_once __DIR__ . '/roles.php'; // Tipos de usuario y permisos por módulo
 require_once __DIR__ . '/area_inventory.php'; // Almacén de Laboratorio y Quirófano
 require_once __DIR__ . '/lab_resultados.php'; // Plantillas y resultados de laboratorio
@@ -756,4 +757,7 @@ function revertirStockConsumoCirugia($conn, $id_consumo, $id_hospital, $user_id,
     ];
 }
 
-?>
+// Edición farmacia: las carpetas clínicas no se pueden abrir
+if (function_exists('farmacia_bloquear_rutas')) {
+    farmacia_bloquear_rutas();
+}

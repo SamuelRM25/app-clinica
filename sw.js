@@ -9,16 +9,16 @@
  *  - Auto-actualización silenciosa: skipWaiting() + clients.claim() + postMessage
  */
 
-const CACHE_NAME = 'clinicapp-cmrm-v1.1.0';
+const CACHE_NAME = 'clinicapp-farmacia-v1.0.0';
 
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
-    '/assets/img/logo_cmrm.svg',
-    '/assets/img/logo_cmrm_dark.svg',
-    '/assets/img/icon-cmrm-192.png',
-    '/assets/img/icon-cmrm-512.png',
+    '/assets/img/farmacia/mark.svg',
+    '/assets/img/farmacia/icon-192.png',
+    '/assets/img/farmacia/icon-512.png',
     '/assets/css/global_dashboard.css',
+    '/assets/css/farmacia.css',
     '/assets/css/print_thermal.css',
     '/assets/js/install-prompt.js'
 ];

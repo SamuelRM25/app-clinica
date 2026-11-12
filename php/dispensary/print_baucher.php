@@ -72,17 +72,17 @@ $hora_formateada = $fecha->format('H:i');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?> - CMHS</title>
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../assets/css/print_thermal.css">
 </head>
 <body>
     <div class="receipt-container">
         <div class="clinic-header text-center">
-            <h2>Centro Médico Dr. Roberto Morales</h2>
+            <h2><?php echo htmlspecialchars(farmacia_local()); ?></h2>
             <div class="clinic-info">
-                <p>7a Av 7-25 Zona 1 HH</p>
-                <p>Tel: (+502) 5214-8836</p>
+                <?php if (FARMA_DIRECCION !== ''): ?><p><?php echo htmlspecialchars(FARMA_DIRECCION); ?></p><?php endif; ?>
+                <?php if (FARMA_TELEFONO !== ''): ?><p>Tel: <?php echo htmlspecialchars(FARMA_TELEFONO); ?></p><?php endif; ?>
             </div>
         </div>
 
@@ -114,7 +114,7 @@ $hora_formateada = $fecha->format('H:i');
                     <tr>
                         <td><?php echo htmlspecialchars($item['nom_medicamento']); ?></td>
                         <td class="text-center"><?php echo $item['cantidad_vendida']; ?></td>
-                        <td class="text-right">Q<?php echo number_format($item['subtotal'], 2); ?></td>
+                        <td class="text-right">Q<?php echo number_format($item['subtotal'] ?? ((float) ($item['cantidad_vendida'] ?? 0) * (float) ($item['precio_unitario'] ?? 0)), 2); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

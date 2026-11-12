@@ -14,6 +14,13 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Edición farmacia: el inicio es el panel de farmacia
+if (function_exists('is_farmacia') && is_farmacia()) {
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    header('Location: ../farmacia/inicio.php' . ($qs !== '' ? '?' . $qs : ''));
+    exit;
+}
+
 // Incluir configuraciones adicionales
 require_once '../../config/database.php';
 

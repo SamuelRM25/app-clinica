@@ -1,6 +1,6 @@
 <?php
 // inventory/index.php - Módulo de Inventario Reingenierizado
-// Centro Médico Dr. Roberto Morales - Sistema de Gestión Médica
+// ClinicApp Farmacia - Sistema de Gestión Médica
 // Versión: 4.0 - Mismo diseño que Dashboard Principal
 
 session_start();
@@ -19,6 +19,7 @@ require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
 
 check_module_access('inventory');
+if (function_exists('farmacia_shell')) { farmacia_shell('inventario', ['sub' => 'Productos, existencias y vencimientos']); } // Diseño ClinicApp Farmacia
 
 $hosp_id = hospital_id();
 
@@ -153,7 +154,7 @@ try {
     $inventory_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Título de la página
-    $page_title = "Inventario - Centro Médico Dr. Roberto Morales";
+    $page_title = "Inventario - " . FARMA_NOMBRE;
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -169,12 +170,12 @@ output_keep_alive_script();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Inventario - Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Inventario - <?php echo htmlspecialchars(farmacia_local()); ?>">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <!-- Bootstrap Icons -->
@@ -334,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
+                    <img src="../../assets/img/farmacia/wordmark.svg" alt="<?php echo htmlspecialchars(farmacia_local()); ?>" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -535,16 +536,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             Resumen CSV
                         </a>
                         <?php if ($user_type === 'admin'): ?>
-                                <a href="insumos.php" class="action-btn" style="background: var(--color-info);">
+                                <a href="insumos.php" class="action-btn fx-clinic" style="background: var(--color-info);">
                                     <i class="bi bi-box-fill"></i>
                                     Descarga de Insumos
                                 </a>
-                                <button type="button" class="action-btn" style="background: var(--color-warning);"
+                                <button type="button" class="action-btn fx-clinic" style="background: var(--color-warning);"
                                     onclick="document.getElementById('insumosReportModal').classList.add('active')">
                                     <i class="bi bi-file-earmark-bar-graph"></i>
                                     Reporte Diario
                                 </button>
-                                <button type="button" class="action-btn" style="background: var(--color-info);"
+                                <button type="button" class="action-btn fx-clinic" style="background: var(--color-info);"
                                     onclick="document.getElementById('insumosMensualModal').classList.add('active')">
                                     <i class="bi bi-calendar-check"></i>
                                     Reporte Mensual
@@ -556,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </a>
                         <?php endif; ?>
                         <?php if ($can_manage_inventory): ?>
-                                <a href="hospital_medications.php" class="action-btn" style="background: var(--color-primary);">
+                                <a href="hospital_medications.php" class="action-btn fx-clinic" style="background: var(--color-primary);">
                                     <i class="bi bi-hospital"></i>
                                     Meds. Hospitalarios
                                 </a>
@@ -792,9 +793,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     <div class="d-flex flex-column gap-1" style="font-size: 0.85rem;">
                                                         <span class="text-primary fw-bold">V:
                                                             Q<?php echo number_format($item['precio_venta'] ?? 0, 2); ?></span>
-                                                        <span class="text-info">H:
+                                                        <span class="text-info fx-clinic">H:
                                                             Q<?php echo number_format($item['precio_hospital'] ?? 0, 2); ?></span>
-                                                        <span class="text-success">M:
+                                                        <span class="text-success fx-clinic">M:
                                                             Q<?php echo number_format($item['precio_medico'] ?? 0, 2); ?></span>
                                                         <span class="text-secondary">E:
                                                             Q<?php echo number_format($item['precio_especial'] ?? 0, 2); ?></span>
@@ -807,11 +808,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         <span class="status-badge <?php echo $status_class; ?>">
                                                             <i class="bi bi-shop me-1"></i>Farm: <?php echo $item['cantidad_med']; ?>
                                                         </span>
-                                                        <span class="status-badge status-info">
+                                                        <span class="status-badge status-info fx-clinic">
                                                             <i class="bi bi-hospital me-1"></i>Hosp:
                                                             <?php echo $item['stock_hospital'] ?? 0; ?>
                                                         </span>
-                                                        <span class="status-badge" style="background: rgba(168, 85, 247, 0.15); color: #7c3aed;">
+                                                        <span class="status-badge fx-clinic" style="background: rgba(168, 85, 247, 0.15); color: #7c3aed;">
                                                             <i class="bi bi-bandaid me-1"></i>Qx:
                                                             <?php echo $item['stock_quirofano'] ?? 0; ?>
                                                         </span>
@@ -892,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </section>
 
             <!-- Reporte de Inventario por Servicio (Farmacia / Hospitalización / Quirófano) -->
-            <section class="appointments-section animate-in delay-3" id="reportePorServicio">
+            <section class="appointments-section animate-in delay-3 fx-clinic" id="reportePorServicio">
                 <div class="section-header">
                     <h3 class="section-title">
                         <i class="bi bi-diagram-3 section-title-icon"></i>
@@ -1192,12 +1193,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="number" class="form-control" id="cantidad_med" name="cantidad_med" min="0"
                                 required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 fx-clinic">
                             <label for="stock_hospital" class="form-label">Stock Hospital</label>
                             <input type="number" class="form-control" id="stock_hospital" name="stock_hospital" min="0"
                                 value="0" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 fx-clinic">
                             <label for="stock_quirofano" class="form-label">Stock Quirófano</label>
                             <input type="number" class="form-control" id="stock_quirofano" name="stock_quirofano" min="0"
                                 value="0" required>
@@ -1218,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     min="0" step="0.01" required>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="precio_hospital" class="form-label">Precio Hosp.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1226,7 +1227,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     min="0" step="0.01" required>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="precio_medico" class="form-label">Precio Méd.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1309,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="text" class="form-control" id="edit_casa_farmaceutica" name="casa_farmaceutica"
                                 required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label class="form-label fw-bold">Stock Total</label>
                             <input type="number" class="form-control bg-light" id="edit_total_stock" readonly>
                         </div>
@@ -1318,12 +1319,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="number" class="form-control" id="edit_cantidad_med" name="cantidad_med" min="0"
                                 required oninput="updateStockDistribution('edit_cantidad_med')">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="edit_stock_hospital" class="form-label">Stock Hospital</label>
                             <input type="number" class="form-control" id="edit_stock_hospital" name="stock_hospital"
                                 min="0" required oninput="updateStockDistribution('edit_stock_hospital')">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="edit_stock_quirofano" class="form-label">Stock Quirófano</label>
                             <input type="number" class="form-control" id="edit_stock_quirofano" name="stock_quirofano"
                                 min="0" required oninput="updateStockDistribution('edit_stock_quirofano')">
@@ -1344,7 +1345,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     min="0" step="0.01" required>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="edit_precio_hospital" class="form-label">Precio Hosp.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1352,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     name="precio_hospital" min="0" step="0.01" required>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="edit_precio_quirofano" class="form-label">Precio Quirófano</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1360,7 +1361,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     name="precio_quirofano" min="0" step="0.01" value="0.00">
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 fx-clinic">
                             <label for="edit_precio_medico" class="form-label">Precio Méd.</label>
                             <div class="input-group">
                                 <span class="input-group-text">Q</span>
@@ -1467,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Inventario Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Módulo de Inventario Reingenierizado - ClinicApp Farmacia
 
         (function () {
             'use strict';
@@ -1480,6 +1481,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Función Global para distribución de stock (mantiene total fijo con confirmación)
             window.updateStockDistribution = function (changedFieldId) {
                 if (!document.getElementById('edit_cantidad_med')) return;
+
+                // Edición farmacia: solo existe el stock de farmacia, se ajusta directo
+                if (document.body.classList.contains('fx')) {
+                    const v = parseInt(document.getElementById('edit_cantidad_med').value) || 0;
+                    physicalTotal = v;
+                    document.getElementById('edit_total_stock').value = v;
+                    lastValidValues = { pharmacy: v, hospital: 0, quirofano: 0 };
+                    return;
+                }
 
                 const pharmacy = parseInt(document.getElementById('edit_cantidad_med').value) || 0;
                 const hospital = parseInt(document.getElementById('edit_stock_hospital').value) || 0;

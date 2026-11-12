@@ -29,7 +29,8 @@ if (!defined('APP_ROLES')) {
     define('ROLE_MODULES', [
         'lab'  => ['laboratory'],
         'qx'   => ['surgery'],
-        'farm' => ['pharmacy', 'inventory'],
+        // En la edición farmacia el cajero también ve el historial de ventas
+        'farm' => (defined('APP_EDITION') && APP_EDITION === 'farmacia') ? ['pharmacy', 'inventory', 'sales'] : ['pharmacy', 'inventory'],
     ]);
 
     /** Nombre legible del tipo de usuario. */

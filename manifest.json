@@ -1,35 +1,35 @@
 {
-  "name": "Clínica Médica Dr. Roberto Morales",
-  "short_name": "CMRM",
-  "description": "Sistema de Gestión Clínica - Clínica Médica Dr. Roberto Morales",
-  "start_url": "/php/dashboard/index.php",
+  "name": "ClinicApp Farmacia",
+  "short_name": "Farmacia",
+  "description": "Punto de venta, inventario, compras y reportes para farmacias",
+  "start_url": "/php/farmacia/inicio.php",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#1b2440",
-  "theme_color": "#1b2440",
+  "background_color": "#0b2b26",
+  "theme_color": "#0b2b26",
   "lang": "es-GT",
   "dir": "ltr",
   "categories": [
-    "medical",
+    "business",
     "productivity",
-    "business"
+    "medical"
   ],
   "icons": [
     {
-      "src": "/assets/img/icon-cmrm-192.png",
+      "src": "/assets/img/farmacia/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-cmrm-512.png",
+      "src": "/assets/img/farmacia/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/img/icon-cmrm-maskable-512.png",
+      "src": "/assets/img/farmacia/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -37,25 +37,37 @@
   ],
   "shortcuts": [
     {
-      "name": "Nueva Orden Lab",
-      "short_name": "Lab",
-      "description": "Crear nueva orden de laboratorio",
-      "url": "/php/laboratory/crear_orden.php",
+      "name": "Punto de venta",
+      "short_name": "Vender",
+      "description": "Abrir el punto de venta",
+      "url": "/php/dispensary/index.php",
       "icons": [
         {
-          "src": "/assets/img/icon-cmrm-192.png",
+          "src": "/assets/img/farmacia/icon-192.png",
           "sizes": "192x192"
         }
       ]
     },
     {
-      "name": "Cobros",
-      "short_name": "Cobros",
-      "description": "Registrar nuevo cobro",
-      "url": "/php/billing/index.php",
+      "name": "Inventario",
+      "short_name": "Inventario",
+      "description": "Ver productos y existencias",
+      "url": "/php/inventory/index.php",
       "icons": [
         {
-          "src": "/assets/img/icon-cmrm-192.png",
+          "src": "/assets/img/farmacia/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "short_name": "Reportes",
+      "description": "Ventas y utilidad",
+      "url": "/php/farmacia/reportes.php",
+      "icons": [
+        {
+          "src": "/assets/img/farmacia/icon-192.png",
           "sizes": "192x192"
         }
       ]

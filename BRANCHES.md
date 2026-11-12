@@ -18,6 +18,15 @@ Este repositorio utiliza una **estrategia de 3 ramas** para separar el código g
 - No se usa activamente para desarrollo
 - Existirá por un tiempo para no romper refs existentes
 
+### `farmacia`
+
+- Edición **ClinicApp Farmacia**: versión del sistema solo para farmacias (sale de `hospital/cmrm`)
+- Módulos: Inicio, Punto de venta, Ventas, Inventario, Compras, Reportes y Sucursales (próximamente)
+- Todo lo clínico queda bloqueado por `includes/edition.php` (carpetas y archivos no permitidos → 403 / inicio)
+- Diseño propio: `assets/css/farmacia.css`, `assets/js/farmacia.js`, `assets/img/farmacia/`, páginas en `php/farmacia/`
+- La marca, dirección y teléfono de los comprobantes se cambian en las constantes `FARMA_*` de `includes/edition.php`
+- Indicador: `.active-hospital = "farmacia"` · En el servidor: `CURRENT_HOSPITAL_CODE = 'FARM'`
+
 ### `hospital/<código>`
 
 - Una rama por cada hospital/cliente
@@ -81,6 +90,7 @@ git rebase Base  # reescribe historial (cuidado si ya se desplegó)
 |----------|--------|------|------------|
 | Centro Médico Herrera Saenz | CMHS | `hospital/cmhs` | `cmhs.clinicapp.gt` |
 | Centro Médico Dr. Roberto Morales | CMRM | `hospital/cmrm` | `cmrm.clinicapp.gt` |
+| Farmacia Demo (ClinicApp Farmacia) | FARM | `farmacia` | demo |
 
 ## 🔧 Notas técnicas
 

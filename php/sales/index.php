@@ -1,5 +1,5 @@
 <?php
-// sales/index.php - Módulo de Ventas - Centro Médico Dr. Roberto Morales
+// sales/index.php - Módulo de Ventas - ClinicApp Farmacia
 // Reingenierizado con Diseño Dashboard Moderno
 session_start();
 
@@ -16,6 +16,7 @@ require_once '../../includes/multitenant.php';
 require_once '../../includes/module_guard.php';
 
 check_module_access('sales');
+if (function_exists('farmacia_shell')) { farmacia_shell('ventas', ['sub' => 'Historial y comprobantes']); } // Diseño ClinicApp Farmacia
 
 verify_session();
 
@@ -80,13 +81,20 @@ try {
     $stmt->execute([$id_hospital]);
     $total_mes = $stmt->fetch(PDO::FETCH_ASSOC)['total_mes'] ?? 0;
 
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM ventas WHERE MONTH(fecha_venta) = MONTH(CURDATE()) AND YEAR(fecha_venta) = YEAR(CURDATE()) AND id_hospital = ?");
+    $stmt->execute([$id_hospital]);
+    $ventas_mes = (int) $stmt->fetchColumn();
+    // Los montos solo los ve el administrador; el resto ve cantidad de operaciones
+    $ver_montos = ($_SESSION['tipoUsuario'] ?? '') === 'admin';
+    $mes_es = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][(int) date('n') - 1];
+
     // Obtener ventas pendientes
     $stmt = $conn->prepare("SELECT COUNT(*) as pendientes FROM ventas WHERE estado = 'Pendiente' AND id_hospital = ?");
     $stmt->execute([$id_hospital]);
     $pendientes = $stmt->fetch(PDO::FETCH_ASSOC)['pendientes'] ?? 0;
 
     // Título de la página
-    $page_title = "Ventas - Centro Médico Dr. Roberto Morales";
+    $page_title = "Ventas - " . FARMA_NOMBRE;
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -107,12 +115,12 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Módulo de Ventas - Centro Médico Dr. Roberto Morales - Sistema de gestión médica">
+    <meta name="description" content="Módulo de Ventas - <?php echo htmlspecialchars(farmacia_local()); ?>">
     <meta name="csrf-token" content="<?php echo csrf_token(); ?>">
     <title><?php echo htmlspecialchars($page_title); ?></title>
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <!-- Bootstrap Icons -->
@@ -468,7 +476,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
+                    <img src="../../assets/img/farmacia/wordmark.svg" alt="<?php echo htmlspecialchars(farmacia_local()); ?>" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -571,7 +579,7 @@ try {
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Recaudado Hoy</div>
-                            <div class="stat-value"><?= $ventas_hoy ?> ops</div>
+                            <div class="stat-value"><?= $ver_montos ? 'Q' . number_format((float) $total_hoy, 2) : $ventas_hoy . ' ops' ?></div>
                         </div>
                         <div class="stat-icon success">
                             <i class="bi bi-currency-dollar"></i>
@@ -588,7 +596,7 @@ try {
                     <div class="stat-header">
                         <div>
                             <div class="stat-title">Ventas Mes</div>
-                            <div class="stat-value"><?= $ventas_mes ?> ops</div>
+                            <div class="stat-value"><?= $ver_montos ? 'Q' . number_format((float) $total_mes, 2) : $ventas_mes . ' ops' ?></div>
                         </div>
                         <div class="stat-icon info">
                             <i class="bi bi-calendar-month"></i>
@@ -596,7 +604,7 @@ try {
                     </div>
                     <div class="stat-change positive">
                         <i class="bi bi-calendar"></i>
-                        <span>Mes <?php echo date('F'); ?></span>
+                        <span><?php echo $ventas_mes; ?> operaciones en <?php echo $mes_es; ?></span>
                     </div>
                 </div>
 
@@ -803,7 +811,7 @@ try {
                 <!-- Contenido Premium de Factura -->
                 <div id="drawer-content" class="invoice-wrapper" style="display: none;">
                     <div class="invoice-header text-center">
-                        <div class="invoice-brand">Centro Médico Dr. Roberto Morales</div>
+                        <div class="invoice-brand"><?php echo htmlspecialchars(farmacia_local()); ?></div>
                         <div class="text-muted small">Servicios de Salud Premium</div>
                         <div class="invoice-no mt-2" id="drawer-sale-no">#VTA-00000</div>
                     </div>
@@ -896,7 +904,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Ventas Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Módulo de Ventas Reingenierizado - ClinicApp Farmacia
 
         (function () {
             'use strict';

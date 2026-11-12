@@ -1,5 +1,5 @@
 <?php
-// purchases/index.php - Módulo de Compras del Centro Médico Dr. Roberto Morales
+// purchases/index.php - Módulo de Compras del ClinicApp Farmacia
 // Diseño Responsive, Barra Lateral Moderna, Efecto Mármol
 session_start();
 
@@ -17,6 +17,7 @@ require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
 
 check_module_access('purchases');
+if (function_exists('farmacia_shell')) { farmacia_shell('compras', ['sub' => 'Proveedores, facturas y pagos']); } // Diseño ClinicApp Farmacia
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
@@ -147,7 +148,7 @@ try {
     }
 
     // Título de la página
-    $page_title = "Compras - Centro Médico Dr. Roberto Morales";
+    $page_title = "Compras - " . FARMA_NOMBRE;
 
 } catch (Exception $e) {
     // Manejo de errores
@@ -162,12 +163,12 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="Módulo de Compras - Centro Médico Dr. Roberto Morales - Gestión de compras de medicamentos e insumos">
+        content="Módulo de Compras - <?php echo htmlspecialchars(farmacia_local()); ?> - Gestión de compras de medicamentos e insumos">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <meta name="csrf-token" content="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
 
     <!-- logo -->
-    <link rel="icon" type="image/png" href="../../assets/img/favicon-cmrm.png">
+    <link rel="icon" type="image/png" href="../../assets/img/farmacia/favicon-32.png">
 
     <!-- Google Fonts - Inter (moderno y legible) -->
     <!-- Bootstrap Icons -->
@@ -460,7 +461,7 @@ try {
             <div class="header-content">
                 <!-- logo -->
                 <div class="brand-container">
-                    <img src="../../assets/img/logo_cmrm.svg" alt="Centro Médico Dr. Roberto Morales" class="brand-logo">
+                    <img src="../../assets/img/farmacia/wordmark.svg" alt="<?php echo htmlspecialchars(farmacia_local()); ?>" class="brand-logo">
                 </div>
 
                 <!-- Controles -->
@@ -1482,7 +1483,7 @@ try {
 
     <!-- JavaScript Optimizado -->
     <script>
-        // Módulo de Compras Reingenierizado - Centro Médico Dr. Roberto Morales
+        // Módulo de Compras Reingenierizado - ClinicApp Farmacia
 
         (function () {
             'use strict';

@@ -17,6 +17,8 @@ require_once '../../includes/module_guard.php';
 require_once '../../includes/breadcrumbs.php';
 
 check_module_access('reports');
+// Edición farmacia: los reportes de farmacia viven en php/farmacia/reportes.php
+if (function_exists('is_farmacia') && is_farmacia()) { header('Location: ../farmacia/reportes.php'); exit; }
 
 // Establecer zona horaria
 date_default_timezone_set('America/Guatemala');
