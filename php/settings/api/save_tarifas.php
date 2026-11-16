@@ -29,6 +29,17 @@ if (!$data || !isset($data['action'])) {
 
 $action = $data['action'];
 
+/**
+ * El electrocardiograma tiene UNA sola tarifa por hospital.
+ * Devuelve la existente (la más reciente) para actualizarla en vez de crear otra.
+ */
+function tarifa_electro_existente(PDO $conn, int $id_hospital): ?int {
+    $st = $conn->prepare("SELECT MAX(id_tarifa) FROM tarifas_servicios WHERE id_hospital = ? AND tipo_servicio = 'electrocardiograma'");
+    $st->execute([$id_hospital]);
+    $id = (int) $st->fetchColumn();
+    return $id > 0 ? $id : null;
+}
+
 try {
     $database = new Database();
     $conn = $database->getConnection();
@@ -81,6 +92,23 @@ try {
         if ($tipo === 'rayos_x') {
             if (isset($data['precio_impreso_normal'])  && $data['precio_impreso_normal']  !== '' && $data['precio_impreso_normal']  !== null) $costo_normal  = (float)$data['precio_impreso_normal'];
             if (isset($data['precio_impreso_inhabil']) && $data['precio_impreso_inhabil'] !== '' && $data['precio_impreso_inhabil'] !== null) $costo_inhabil = (float)$data['precio_impreso_inhabil'];
+        }
+
+        $existente = $tipo === 'electrocardiograma' ? tarifa_electro_existente($conn, $id_hospital) : null;
+        if ($existente) {
+            $conn->prepare("
+                UPDATE tarifas_servicios
+                SET precio_normal = ?, precio_inhabil = ?, costo_normal = ?, costo_inhabil = ?
+                WHERE id_tarifa = ? AND id_hospital = ?
+            ")->execute([$normal, $inhabil, $costo_normal, $costo_inhabil, $existente, $id_hospital]);
+            $conn->commit();
+            audit_log('update', 'tarifas', "Tarifa de electrocardiograma actualizada: ID=$existente", [
+                'table_name' => 'tarifas_servicios',
+                'record_id' => $existente,
+                'new_data' => ['precio_normal' => $normal, 'precio_inhabil' => $inhabil, 'costo_normal' => $costo_normal, 'costo_inhabil' => $costo_inhabil]
+            ]);
+            echo json_encode(['success' => true, 'message' => 'Tarifa actualizada', 'id_tarifa' => $existente]);
+            exit;
         }
 
         $stmt = $conn->prepare("
@@ -239,6 +267,10 @@ try {
             }
 
             $id_tarifa = isset($item['id_tarifa']) && (int)$item['id_tarifa'] > 0 ? (int)$item['id_tarifa'] : null;
+            // Electro: nunca crear una segunda tarifa, actualizar la que ya existe
+            if (!$id_tarifa && $tipo === 'electrocardiograma') {
+                $id_tarifa = tarifa_electro_existente($conn, $id_hospital);
+            }
 
             if ($id_tarifa) {
                 $stmtUpdate->execute([$normal, $inhabil, $radio,

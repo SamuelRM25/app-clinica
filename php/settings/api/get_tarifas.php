@@ -85,7 +85,10 @@ try {
             $item['id_medico'] = $medico;
             $result[$tipo][] = $item;
         } elseif ($tipo === 'electrocardiograma') {
-            $result['electrocardiograma'] = $item;
+            // Solo existe una tarifa de electro por hospital: si hay duplicadas se usa la más reciente
+            if (empty($result['electrocardiograma']) || $id_tarifa > (int)$result['electrocardiograma']['id_tarifa']) {
+                $result['electrocardiograma'] = $item;
+            }
         } elseif ($tipo === 'procedimiento') {
             $item['nombre_servicio'] = $nombre;
             $result['procedimiento'][] = $item;

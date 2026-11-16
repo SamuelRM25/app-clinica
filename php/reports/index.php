@@ -245,8 +245,8 @@ try {
                         )) AS cost
                        FROM electrocardiogramas ec
                        LEFT JOIN tarifas_servicios t
-                         ON t.id_hospital = ec.id_hospital
-                        AND t.tipo_servicio = 'electrocardiograma'
+                         ON t.id_tarifa = (SELECT MAX(t2.id_tarifa) FROM tarifas_servicios t2
+                                           WHERE t2.id_hospital = ec.id_hospital AND t2.tipo_servicio = 'electrocardiograma')
                        WHERE ec.fecha_realizado BETWEEN ? AND ?
                          AND ec.id_hospital = ?",
             'params' => [$start_datetime, $end_datetime, $id_hospital],

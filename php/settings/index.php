@@ -1194,8 +1194,8 @@ $page_title = "Configuración del Sistema";
                                     </div>
                                     <p class="text-muted small mb-3">
                                         <i class="bi bi-info-circle"></i>
-                                        Configure el costo que paga a cada laboratorio externo por prueba.
-                                        El precio de venta se edita desde el catálogo de pruebas en Laboratorio.
+                                        Edite el precio de venta y el costo que paga a cada laboratorio externo por prueba.
+                                        Solo se guardan las filas que cambie.
                                     </p>
                                     <div class="tarifa-table-wrap" data-tarifa-table>
                                         <table class="data-table">
@@ -2249,12 +2249,13 @@ $page_title = "Configuración del Sistema";
                             <td data-label="Nombre de la Prueba" class="fw-medium">${escapeHtml(p.nombre_prueba)}</td>
                             <td data-label="Categoría"><span class="badge bg-secondary">${p.categoria || 'Gral'}</span></td>
                             <td data-label="Precio Venta (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
-                                value="${parseFloat(p.precio || 0).toFixed(2)}" readonly></td>
+                                value="${parseFloat(p.precio || 0).toFixed(2)}" data-orig="${parseFloat(p.precio || 0).toFixed(2)}"
+                                data-field="precio" data-id="${p.id_prueba}" placeholder="0.00"></td>
                             <td data-label="Costo Medialab (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
-                                value="${parseFloat(p.precio_medilab || 0).toFixed(2)}"
+                                value="${parseFloat(p.precio_medilab || 0).toFixed(2)}" data-orig="${parseFloat(p.precio_medilab || 0).toFixed(2)}"
                                 data-field="precio_medilab" data-id="${p.id_prueba}" placeholder="0.00"></td>
                             <td data-label="Costo La Esperanza (Q)"><input type="number" step="0.01" min="0" class="form-control form-control-sm tarifa-input text-end"
-                                value="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}"
+                                value="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}" data-orig="${parseFloat(p.precio_la_esperanza || 0).toFixed(2)}"
                                 data-field="precio_la_esperanza" data-id="${p.id_prueba}" placeholder="0.00"></td>
                         </tr>`;
                     });
@@ -2265,7 +2266,7 @@ $page_title = "Configuración del Sistema";
                 });
         }
 
-        function saveLabCosts() {
+        async function saveLabCosts() {
             const container = document.getElementById('tarifa-laboratorio-body');
             if (!container) return;
             const inputs = container.querySelectorAll('.tarifa-input[data-field]');
@@ -2273,56 +2274,58 @@ $page_title = "Configuración del Sistema";
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             const grouped = {};
+            const cambiadas = new Set();
+            let invalido = false;
             inputs.forEach(inp => {
                 const id = inp.dataset.id;
                 const field = inp.dataset.field;
-                if (!grouped[id]) grouped[id] = { id_prueba: id, precio_medilab: 0, precio_la_esperanza: 0 };
-                grouped[id][field] = parseFloat(inp.value) || 0;
+                const val = parseFloat(inp.value);
+                if (inp.value !== '' && (isNaN(val) || val < 0)) invalido = true;
+                if (!grouped[id]) grouped[id] = { id_prueba: id };
+                grouped[id][field] = isNaN(val) ? 0 : val;
+                if ((isNaN(val) ? 0 : val).toFixed(2) !== (inp.dataset.orig ?? '')) cambiadas.add(id);
             });
+            if (invalido) {
+                Swal.fire('Revise los montos', 'Los precios y costos deben ser números mayores o iguales a 0.', 'warning');
+                return;
+            }
 
-            const items = Object.values(grouped);
-            let completed = 0;
+            const items = [...cambiadas].map(id => grouped[id]);
+            if (!items.length) {
+                Swal.fire('Sin cambios', 'No modificó ningún precio ni costo.', 'info');
+                return;
+            }
 
-            let lastSuccess = true;
-            items.forEach(item => {
-                item.csrf_token = csrfToken;
-                fetch('api/save_lab_cost.php', {
+            tarifasCargando(`Guardando ${items.length} prueba(s)...`);
+            try {
+                const r = await fetch('api/save_lab_cost.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                })
-                    .then(async r => {
-                        if (!r.ok) {
-                            const txt = await r.text();
-                            throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 100));
-                        }
-                        const ct = r.headers.get('content-type');
-                        if (!ct || !ct.includes('application/json')) {
-                            const txt = await r.text();
-                            throw new Error('Respuesta no JSON: ' + txt.slice(0, 100));
-                        }
-                        return r.json();
-                    })
-                    .then(res => {
-                        if (!res.success) lastSuccess = false;
-                        completed++;
-                        if (completed === items.length) {
-                            const ok = lastSuccess && res.success;
-                            Swal.fire({
-                                icon: ok ? 'success' : 'error',
-                                title: ok ? 'Costos guardados' : 'Error',
-                                text: ok ? `${items.length} prueba(s) actualizada(s)` : (res.error || 'Error al guardar')
-                            });
-                            if (ok) loadLabCosts();
-                        }
-                    })
-                    .catch(err => {
-                        lastSuccess = false;
-                        completed++;
-                        if (completed === items.length) {
-                            Swal.fire({ icon: 'error', title: 'Error de red', text: err.message });
-                        }
-                    });
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ csrf_token: csrfToken, items })
+                });
+                const ct = r.headers.get('content-type') || '';
+                if (!r.ok || !ct.includes('application/json')) {
+                    const txt = await r.text();
+                    throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 120));
+                }
+                const res = await r.json();
+                if (!res.success) throw new Error(res.error || 'Error al guardar');
+                await Swal.fire({ icon: 'success', title: 'Laboratorio actualizado', text: `${res.updated ?? items.length} prueba(s) guardada(s)` });
+                loadLabCosts();
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: err.message });
+            }
+        }
+
+        /** Animación de "cargando" mientras se guardan tarifas */
+        function tarifasCargando(texto) {
+            Swal.fire({
+                title: 'Guardando cambios',
+                text: texto || 'Un momento, por favor...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
             });
         }
 
@@ -2414,6 +2417,7 @@ $page_title = "Configuración del Sistema";
                 if (!isNaN(cII) && document.getElementById('tarifaCostoImpresoInhabil').value !== '') payload.costo_impreso_inhabil = cII;
             }
 
+            tarifasCargando('Guardando tarifa...');
             try {
                 const response = await fetch('api/save_tarifas.php', {
                     method: 'POST',
@@ -2437,6 +2441,7 @@ $page_title = "Configuración del Sistema";
                 if (res.success) {
                     Swal.fire('Éxito', res.message, 'success').then(() => {
                         tarifaModal.hide();
+                        tarifasCargando('Actualizando...');
                         location.reload();
                     });
                 } else {
@@ -2526,6 +2531,7 @@ $page_title = "Configuración del Sistema";
                 return;
             }
 
+            tarifasCargando('Guardando tarifas...');
             try {
                 const response = await fetch('api/save_tarifas.php', {
                     method: 'POST',
@@ -2538,7 +2544,7 @@ $page_title = "Configuración del Sistema";
                 });
                 const res = await response.json();
                 if (res.success) {
-                    Swal.fire('Éxito', 'Tarifas guardadas correctamente', 'success').then(() => location.reload());
+                    Swal.fire('Éxito', 'Tarifas guardadas correctamente', 'success').then(() => { tarifasCargando('Actualizando...'); location.reload(); });
                 } else {
                     Swal.fire('Error', res.message, 'error');
                 }
@@ -2561,6 +2567,7 @@ $page_title = "Configuración del Sistema";
 
             if (result.isConfirmed) {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                tarifasCargando('Eliminando tarifa...');
                 try {
                     const response = await fetch('api/save_tarifas.php', {
                         method: 'POST',
