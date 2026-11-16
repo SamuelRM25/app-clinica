@@ -1,6 +1,6 @@
 <?php
 // inventory/insumos.php - Módulo de Insumos
-// Centro Médico Dr. Roberto Morales
+// Centro Médico Herrera Saenz
 
 session_start();
 
